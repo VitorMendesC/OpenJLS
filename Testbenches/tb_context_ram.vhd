@@ -21,7 +21,11 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.Common.all;
+
+library openlogic_base;
+use openlogic_base.olo_base_pkg_math.all;
+
+use std.env.all;
 
 entity tb_context_ram is
 end;
@@ -29,73 +33,58 @@ end;
 architecture bench of tb_context_ram is
   -- Clock period
   constant clk_period : time := 5 ns;
+  constant cStdWait   : time := 10 * clk_period;
+
   -- Generics
-  constant WIDTH   : natural := 4 * 16;
-  constant DEPTH   : natural := 367;
-  constant MAX_VAL : natural := 4095;
+  constant RAM_DEPTH  : positive := 1024;
+  constant WORD_WIDTH : positive := 32;
   -- Ports
-  signal iClk         : std_logic                             := '1';
-  signal iRst         : std_logic                             := '0';
-  signal iValid       : std_logic                             := '0';
-  signal iWriteEnable : std_logic                             := '0';
-  signal iAddrA       : unsigned (clog2(DEPTH) - 1 downto 0)  := (others => '0');
-  signal iAddrB       : unsigned (clog2(DEPTH) - 1 downto 0)  := (others => '0');
-  signal iData        : std_logic_vector (WIDTH - 1 downto 0) := (others => '0');
-  signal oData        : std_logic_vector (WIDTH - 1 downto 0);
-
-  signal sQ : unsigned (8 downto 0);
-
+  signal iClk    : std_logic                                          := '1';
+  signal iWrAddr : std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0) := (others => '0');
+  signal iWrEn   : std_logic                                          := '0';
+  signal iWrData : std_logic_vector(WORD_WIDTH - 1 downto 0)          := (others => '0');
+  signal iRdAddr : std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0) := (others => '0');
+  signal iRdEn   : std_logic                                          := '0';
+  signal oRdData : std_logic_vector(WORD_WIDTH - 1 downto 0);
 begin
-
-  iAddrA <= sQ;
-  iAddrB <= sQ;
 
   context_ram_inst : entity work.context_ram
     generic map(
-      WIDTH   => WIDTH,
-      DEPTH   => DEPTH,
-      MAX_VAL => MAX_VAL
+      RAM_DEPTH  => RAM_DEPTH,
+      WORD_WIDTH => WORD_WIDTH
     )
     port map
     (
-      iClk         => iClk,
-      iRst         => iRst,
-      iValid       => iValid,
-      iWriteEnable => iWriteEnable,
-      iAddrA       => iAddrA,
-      iAddrB       => iAddrB,
-      iData        => iData,
-      oData        => oData
+      iClk    => iClk,
+      iWrAddr => iWrAddr,
+      iWrEn   => iWrEn,
+      iWrData => iWrData,
+      iRdAddr => iRdAddr,
+      iRdEn   => iRdEn,
+      oRdData => oRdData
     );
 
   iClk <= not iClk after clk_period/2;
 
   process
   begin
-    wait for 10 * clk_period;
-    iRst <= '1';
+
+    -- Feed-forward test
+    wait for cStdWait;
+    iWrEn   <= '1';
+    iRdEn   <= '1';
+    iWrData <= x"BEEBEBEE";
+
+    assert oRdData = x"BEEBEBEE"
+    report "Feed-forward test failed!" severity error;
+
     wait for clk_period;
-    iRst <= '0';
+    iWrEn <= '0';
+    iRdEn <= '0';
 
-    wait for 10 * clk_period;
-    sQ     <= to_unsigned(10, sQ'length);
-    iValid <= '1';
-    wait for clk_period;
-    iValid <= '0';
+    wait for cStdWait;
 
-    wait for 10 * clk_period;
-    iWriteEnable <= '1';
-    iData        <= std_logic_vector(to_unsigned(133, iData'length));
-    wait for 2 * clk_period;
-    iWriteEnable <= '0';
-
-    wait for 10 * clk_period;
-    sQ     <= to_unsigned(10, sQ'length);
-    iValid <= '1';
-    wait for clk_period;
-    iValid <= '0';
-
-    wait;
+    finish;
 
   end process;
 
