@@ -49,10 +49,6 @@ architecture bench of tb_context_ram is
 begin
 
   context_ram_inst : entity work.context_ram
-    generic map(
-      RAM_DEPTH  => RAM_DEPTH,
-      WORD_WIDTH => WORD_WIDTH
-    )
     port map
     (
       iClk    => iClk,
@@ -75,10 +71,10 @@ begin
     iRdEn   <= '1';
     iWrData <= x"BEEBEBEE";
 
-    assert oRdData = x"BEEBEBEE"
-    report "Feed-forward test failed!" severity error;
-
     wait for clk_period;
+    assert oRdData = x"BEEBEBEE"
+    report "Feed-forward test failed!" severity failure;
+
     iWrEn <= '0';
     iRdEn <= '0';
 
