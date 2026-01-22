@@ -16,11 +16,14 @@
 -- Revision 0.01 - File Created
 -- Additional Comments:                 Code segment A.3
 --                                      Local gradient computation for context determination
+--
+--                                NOTE: Losless mode specific
 -- 
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
+use ieee.std_logic_misc.all;
 
 entity A3_mode_selection is
   generic (
@@ -36,12 +39,12 @@ entity A3_mode_selection is
 end A3_mode_selection;
 
 architecture Behavioral of A3_mode_selection is
-  constant cZeroVect : std_logic_vector (BITNESS downto 0) := (others => '0');
-  signal sModeRun    : std_logic;
+  signal sModeRun : std_logic;
 begin
 
-  sModeRun <= '1' when std_logic_vector(iD1 or iD2 or iD3) = cZeroVect else
+  sModeRun <= '1' when or_reduce(std_logic_vector(iD1 or iD2 or iD3)) = '0' else
     '0';
+
   oModeRun     <= sModeRun;
   oModeRegular <= not sModeRun;
 
