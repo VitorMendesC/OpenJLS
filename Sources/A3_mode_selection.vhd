@@ -23,7 +23,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
-use ieee.std_logic_misc.all;
+use IEEE.STD_LOGIC_MISC.all;
 
 entity A3_mode_selection is
   generic (

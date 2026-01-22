@@ -21,6 +21,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
+
 use Work.Common.all;
 
 entity A4_quantization_gradients is

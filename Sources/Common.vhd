@@ -31,12 +31,9 @@ package Common is
   constant CO_MAX_VAL : natural := 2 ** CO_BITNESS - 1;
   constant CO_RANGE   : natural := 2 ** CO_BITNESS;
 
-  function minimum (a, b : in natural) return natural;
-  function minimum (a, b : in unsigned) return unsigned;
-
-  function maximum (a, b : in unsigned) return unsigned;
-
-  function clog2 (value : natural) return natural;
+  function minimum(a, b : in natural) return natural;
+  function minimum(a, b : in unsigned) return unsigned;
+  function maximum(a, b : in unsigned) return unsigned;
 
 end package;
 
@@ -68,17 +65,5 @@ package body Common is
       return b;
     end if;
   end function;
-
-  -- Returns the ceiling of log2(value), i.e., the minimum number of bits to represent value-1
-  function clog2 (value : natural) return natural is
-    variable result       : natural := 0;
-    variable v            : natural := value - 1;
-  begin
-    while (v > 0) loop
-      v      := v / 2;
-      result := result + 1;
-    end loop;
-    return result;
-  end function clog2;
 
 end package body;

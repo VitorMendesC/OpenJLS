@@ -18,16 +18,18 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
-use work.Common.all;
+
+library openlogic_base;
+use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity A11_2_bit_packer is
   generic (
     LIMIT           : natural := 32;
     OUT_WIDTH       : natural := 72;
     BUFFER_WIDTH    : natural := 96;
-    UNARY_WIDTH     : natural := 6;  -- matches A11_1 oUnaryZeros width
+    UNARY_WIDTH     : natural := 6; -- matches A11_1 oUnaryZeros width
     SUFFIX_WIDTH    : natural := 16; -- matches A11_1 oSuffixVal width
-    SUFFIXLEN_WIDTH : natural := 5   -- matches A11_1 oSuffixLen width
+    SUFFIXLEN_WIDTH : natural := 5 -- matches A11_1 oSuffixLen width
   );
   port (
     iClk            : in std_logic;
@@ -47,15 +49,15 @@ end A11_2_bit_packer;
 architecture Behavioral of A11_2_bit_packer is
 
   signal sBuffer          : std_logic_vector (BUFFER_WIDTH - 1 downto 0);
-  signal sWritePointer    : unsigned (clog2(BUFFER_WIDTH) - 1 downto 0) := to_unsigned(BUFFER_WIDTH - 1, clog2(BUFFER_WIDTH));
-  signal sReadPointer     : unsigned (clog2(BUFFER_WIDTH) - 1 downto 0) := to_unsigned(BUFFER_WIDTH - 1, clog2(BUFFER_WIDTH));
-  signal sQuantityBits    : unsigned (clog2(BUFFER_WIDTH) downto 0); -- has to count up to BUFFER_SIZE
+  signal sWritePointer    : unsigned (log2ceil(BUFFER_WIDTH) - 1 downto 0) := to_unsigned(BUFFER_WIDTH - 1, log2ceil(BUFFER_WIDTH));
+  signal sReadPointer     : unsigned (log2ceil(BUFFER_WIDTH) - 1 downto 0) := to_unsigned(BUFFER_WIDTH - 1, log2ceil(BUFFER_WIDTH));
+  signal sQuantityBits    : unsigned (log2ceil(BUFFER_WIDTH) downto 0); -- has to count up to BUFFER_SIZE
   signal sAxiHandshake    : boolean;
   signal sOutWordBuffer   : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal sWordValidBuffer : std_logic;
   signal sWriteBuffer     : std_logic;
   signal sWordToWrite     : std_logic_vector (LIMIT - 1 downto 0);
-  signal sWordLen         : unsigned (clog2(LIMIT) downto 0);
+  signal sWordLen         : unsigned (log2ceil(LIMIT) downto 0);
 
 begin
 

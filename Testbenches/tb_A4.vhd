@@ -3,6 +3,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use Work.Common.all;
+
 entity tb_A4 is
 end;
 
@@ -22,15 +24,6 @@ architecture bench of tb_A4 is
   constant BASIC_T3 : integer := 21;
 
   -- Functions
-  function minimum(a : integer; b : integer) return integer is
-  begin
-    if a < b then
-      return a;
-    else
-      return b;
-    end if;
-  end function;
-
   function clamp (
     i        : integer;
     j        : integer;
