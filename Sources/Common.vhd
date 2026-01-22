@@ -31,6 +31,11 @@ package Common is
   constant CO_MAX_VAL : natural := 2 ** CO_BITNESS - 1;
   constant CO_RANGE   : natural := 2 ** CO_BITNESS;
 
+  -- C[Q] parameters, signed value
+  constant CO_MAX_CQ   : integer := 127;
+  constant CO_MIN_CQ   : integer := - 128;
+  constant CO_CQ_WIDTH : natural := 8;
+
   function minimum(a, b : in natural) return natural;
   function minimum(a, b : in unsigned) return unsigned;
   function maximum(a, b : in unsigned) return unsigned;
