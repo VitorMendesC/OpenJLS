@@ -25,7 +25,8 @@ use Work.Common.all;
 
 entity A4_quantization_gradients is
   generic (
-    BITNESS : natural range 8 to 16 := 12
+    BITNESS : natural range 8 to 16 := 12;
+    NEAR    : natural               := 0
   );
   port (
     iD1 : in signed (BITNESS downto 0);
@@ -51,7 +52,7 @@ architecture Behavioral of A4_quantization_gradients is
     end if;
   end function;
 
-  -- NOTE: can de improved for performance
+  -- NOTE: This computation has symmetry, it can de improved for performance
   function quantizate (
     signal Di   : signed (BITNESS downto 0);
     constant T1 : natural;
@@ -66,9 +67,9 @@ architecture Behavioral of A4_quantization_gradients is
       Qi := to_signed(-3, Qi'length);
     elsif (Di <= - T1) then
       Qi := to_signed(-2, Qi'length);
-    elsif (Di < 0) then
+    elsif (Di <- NEAR) then
       Qi := to_signed(-1, Qi'length);
-    elsif (Di = 0) then
+    elsif (Di <= NEAR) then
       Qi := to_signed(0, Qi'length);
     elsif (Di < T1) then
       Qi := to_signed(1, Qi'length);
@@ -83,7 +84,6 @@ architecture Behavioral of A4_quantization_gradients is
     return Qi;
   end function;
 
-  constant NEAR     : natural := 0;
   constant MAX_VAL  : natural := 2 ** BITNESS - 1;
   constant BASIC_T1 : natural := 3;
   constant BASIC_T2 : natural := 7;
