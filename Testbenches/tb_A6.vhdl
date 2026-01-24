@@ -87,7 +87,6 @@ begin
       iCq   => iCq,
       oPx   => oPx
     );
-  -- clk <= not clk after clk_period/2;
 
   stim : process
     variable lfsr : unsigned(31 downto 0) := x"6C1A9F2D";

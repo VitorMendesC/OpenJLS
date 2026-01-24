@@ -30,7 +30,7 @@ entity A7_prediction_error is
   port (
     iIx         : in unsigned (BITNESS - 1 downto 0);
     iPx         : in unsigned (BITNESS - 1 downto 0);
-    iSign       : in std_logic;
+    iSign       : in std_logic; -- '1' for SIGN = -1
     oErrorValue : out signed (BITNESS downto 0)
   );
 end A7_prediction_error;
