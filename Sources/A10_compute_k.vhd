@@ -24,11 +24,14 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 use work.Common.all;
 
+library openlogic_base;
+use openlogic_base.olo_base_pkg_math.log2ceil;
+
 entity A10_compute_k is
   generic (
-    N_WIDTH : natural := 12;
-    A_WIDTH : natural := 12;
-    K_WIDTH : natural := 4
+    A_WIDTH : natural := CO_A_MAX_WIDTH;
+    K_WIDTH : natural := log2ceil(CO_A_MAX_WIDTH) + 1;
+    N_WIDTH : natural := CO_N_MAX_WIDTH
   );
   port (
     iNq : in unsigned (N_WIDTH - 1 downto 0);
@@ -38,19 +41,24 @@ entity A10_compute_k is
 end A10_compute_k;
 
 architecture Behavioral of A10_compute_k is
+  -- Worst case: Nq = 1 and Aq = 2^A_WIDTH - 1
+  constant MAX_K : natural := A_WIDTH;
+
 begin
 
   process (iNq, iAq)
-    variable vK     : unsigned (K_WIDTH - 1 downto 0);
-    variable vNqTmp : unsigned(N_WIDTH - 1 downto 0);
+    variable vK     : unsigned (oK'range);
+    variable vAq    : unsigned (A_WIDTH downto 0);
+    variable vNqTmp : unsigned (A_WIDTH downto 0);
 
   begin
 
     vK     := (others => '0');
-    vNqTmp := iNq;
+    vAq    := resize(iAq, vNqTmp'length);
+    vNqTmp := resize(iNq, vNqTmp'length);
 
-    for i in 0 to vNqTmp'high loop
-      if (vNqTmp < iAq) then
+    for i in 0 to MAX_K loop
+      if (vNqTmp < vAq) then
         vNqTmp := SHIFT_LEFT(vNqTmp, 1);
         vK     := vK + 1;
       else
