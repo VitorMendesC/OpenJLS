@@ -23,13 +23,19 @@ use IEEE.NUMERIC_STD.all;
 
 package Common is
 
-  constant CO_BITNESS : natural := 12;
-  constant CO_A_WIDTH : natural := CO_BITNESS + 6;
-  constant CO_B_WIDTH : natural := CO_BITNESS + 5;
-  constant CO_C_WIDTH : natural := CO_BITNESS + 1;
-  constant CO_N_WIDTH : natural := 7;
-  constant CO_MAX_VAL : natural := 2 ** CO_BITNESS - 1;
-  constant CO_RANGE   : natural := 2 ** CO_BITNESS;
+  constant CO_BITNESS_MAX_WIDTH : natural := 16;
+
+  -- Unspecified by T.87
+  constant CO_A_MAX_WIDTH : natural := CO_BITNESS_MAX_WIDTH * 2;
+  constant CO_B_MAX_WIDTH : natural := CO_BITNESS_MAX_WIDTH * 2;
+  constant CO_C_MAX_WIDTH : natural := CO_BITNESS_MAX_WIDTH * 2;
+
+  -- MAXVAL
+  constant CO_MAXVAL_MAX_WIDTH : natural := 16;
+
+  -- RESET and N[Q]
+  constant CO_RESET_MAX_WIDTH : natural := 16;
+  constant CO_N_MAX_WIDTH     : natural := 16; -- Counts up to RESET
 
   -- C[Q] parameters, signed value
   constant CO_MAX_CQ   : integer := 127;
