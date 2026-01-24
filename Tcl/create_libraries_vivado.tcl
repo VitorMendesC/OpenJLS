@@ -11,3 +11,5 @@ set olo_dir  [file join $third_party_dir open-logic src base vhdl]
 set olo_files [glob -nocomplain -directory $olo_dir *.vhd]
 add_files -fileset sources_1 $olo_files
 set_property library openlogic_base [get_files $olo_files]
+# Set VHDL-2008 for all the files (packages + RTL)
+set_property FILE_TYPE {VHDL 2008} [get_files $olo_files]
