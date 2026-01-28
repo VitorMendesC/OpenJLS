@@ -26,8 +26,8 @@ use work.Common.all;
 
 entity A6_prediction_correction is
   generic (
-    BITNESS : natural := 12;
-    MAX_VAL : natural := 4095
+    BITNESS : natural := CO_BITNESS_STD;
+    MAX_VAL : natural := CO_MAX_VAL_STD
   );
   port (
     iPx   : in unsigned (BITNESS - 1 downto 0);
@@ -38,7 +38,7 @@ entity A6_prediction_correction is
 end A6_prediction_correction;
 
 architecture Behavioral of A6_prediction_correction is
-  constant EXT_WIDTH : natural := BITNESS + 2;
+  constant EXT_WIDTH : natural                        := BITNESS + 2;
   constant ZERO_S    : signed(EXT_WIDTH - 1 downto 0) := (others => '0');
   constant MAX_S     : signed(EXT_WIDTH - 1 downto 0) := to_signed(MAX_VAL, EXT_WIDTH);
 

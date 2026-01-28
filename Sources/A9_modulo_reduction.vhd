@@ -26,7 +26,8 @@ use work.Common.all;
 
 entity A9_modulo_reduction is
   generic (
-    BITNESS : natural range 8 to 16 := 12
+    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
+    MAX_VAL : natural               := CO_MAX_VAL_STD
   );
   port (
     iErrorValue : in signed (BITNESS downto 0);
@@ -35,7 +36,6 @@ entity A9_modulo_reduction is
 end A9_modulo_reduction;
 
 architecture Behavioral of A9_modulo_reduction is
-  constant MAX_VAL : natural := 2 ** (BITNESS) - 1;
   constant C_RANGE : natural := MAX_VAL + 1;
   signal sErrAdj   : signed (BITNESS downto 0);
 begin

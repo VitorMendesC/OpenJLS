@@ -26,7 +26,7 @@ use work.Common.all;
 
 entity A5_edge_detecting_predictor is
   generic (
-    BITNESS : natural range 8 to 16 := 12
+    BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
     iA  : in unsigned (BITNESS - 1 downto 0);

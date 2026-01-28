@@ -21,13 +21,13 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
-
 use Work.Common.all;
 
 entity A4_quantization_gradients is
   generic (
-    BITNESS : natural range 8 to 16 := 12;
-    NEAR    : natural               := 0
+    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
+    MAX_VAL : natural               := CO_MAX_VAL_STD;
+    NEAR    : natural               := CO_NEAR_STD
   );
   port (
     iD1 : in signed (BITNESS downto 0);
@@ -85,7 +85,6 @@ architecture Behavioral of A4_quantization_gradients is
     return Qi;
   end function;
 
-  constant MAX_VAL  : natural := 2 ** BITNESS - 1;
   constant BASIC_T1 : natural := 3;
   constant BASIC_T2 : natural := 7;
   constant BASIC_T3 : natural := 21;

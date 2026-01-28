@@ -1,12 +1,23 @@
 ----------------------------------------------------------------------------------
 -- Company:
--- Module:      A12_variables_update  (NEAR = 0)
--- Purpose:     JPEG-LS T.87 A.12 variables update in one cycle (keeps A12+A13 same cycle)
--- Notes:       - Rescale when N == RESET
---              - B += Errval (NEAR=0 => factor (2*NEAR+1)=1)
---              - Arithmetic shift for B => floor(B/2) for negatives per T.87
---              - Uses unsigned(abs(iErrorValue)); safe in lossless mode after clamp
+-- Engineer:    Vitor Mendes Camilow
+-- 
+-- Create Date:
+-- Design Name: 
+-- Module Name: A12_variables_update - Behavioral
+-- Project Name: 
+-- Target Devices: 
+-- Tool Versions: 
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+-- 
 ----------------------------------------------------------------------------------
+use work.Common.all;
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -14,14 +25,14 @@ use IEEE.NUMERIC_STD.all;
 
 entity A12_variables_update is
   generic (
-    BITNESS : natural range 8 to 16 := 12;
-    A_WIDTH : natural               := 22;
-    B_WIDTH : natural               := 16;
-    N_WIDTH : natural               := 12;
-    RESET   : natural               := 64
+    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
+    A_WIDTH : natural               := CO_AQ_WIDTH_STD;
+    B_WIDTH : natural               := CO_BQ_WIDTH_STD;
+    N_WIDTH : natural               := CO_NQ_WIDTH_STD;
+    RESET   : natural               := CO_RESET_STD
   );
   port (
-    iErrorValue : in signed (BITNESS downto 0);       -- Errval after correction & clamp
+    iErrorValue : in signed (BITNESS downto 0); -- Errval after correction & clamp
     iAq         : in unsigned (A_WIDTH - 1 downto 0); -- context RAM (registered)
     iBq         : in signed (B_WIDTH - 1 downto 0);
     iNq         : in unsigned (N_WIDTH - 1 downto 0);
@@ -38,9 +49,9 @@ architecture rtl of A12_variables_update is
 
   signal sErrExtend      : signed (B_WIDTH - 1 downto 0);
   signal sErrorAbsExtend : unsigned(A_WIDTH - 1 downto 0);
-  signal sA              : unsigned(A_WIDTH - 1 downto 0);
-  signal sB              : signed (B_WIDTH - 1 downto 0);
-  signal sN              : unsigned(N_WIDTH - 1 downto 0);
+  signal sAqNew          : unsigned(A_WIDTH - 1 downto 0);
+  signal sBqNew          : signed (B_WIDTH - 1 downto 0);
+  signal sNqNew          : unsigned(N_WIDTH - 1 downto 0);
   signal sARescale       : unsigned(A_WIDTH - 1 downto 0);
   signal sBRescale       : signed (B_WIDTH - 1 downto 0);
   signal sNRescale       : unsigned(N_WIDTH - 1 downto 0);
@@ -53,21 +64,21 @@ begin
   sErrExtend      <= resize(iErrorValue, B_WIDTH);
   sErrorAbsExtend <= resize(unsigned(abs(iErrorValue)), A_WIDTH);
 
-  sA <= iAq + sErrorAbsExtend;
-  sB <= iBq + sErrExtend;
-  sN <= iNq + 1;
+  sAqNew <= iAq + sErrorAbsExtend;
+  sBqNew <= iBq + sErrExtend;
+  sNqNew <= iNq + 1;
 
   -- Rescale: halve A & B; N sequencing: (N>>1) + 1 (per T.87)
-  sARescale <= shift_right(sA, 1);
-  sBRescale <= shift_right(sB, 1); -- arithmetic >> 1 => floor for negatives
+  sARescale <= shift_right(sAqNew, 1);
+  sBRescale <= shift_right(sBqNew, 1); -- arithmetic >> 1 => floor for negatives
   sNRescale <= shift_right(iNq, 1) + 1;
 
   -- Late select (parallel cones + shallow 2:1 muxes)
   oAq <= sARescale when sDoRescale = '1' else
-    sA;
+    sAqNew;
   oBq <= sBRescale when sDoRescale = '1' else
-    sB;
+    sBqNew;
   oNq <= sNRescale when sDoRescale = '1' else
-    sN;
+    sNqNew;
 
 end architecture;

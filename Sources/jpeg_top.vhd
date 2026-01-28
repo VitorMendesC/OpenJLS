@@ -47,7 +47,7 @@ architecture Behavioral of jpeg_top is
   -- TODO: Check ALL of these values
   constant C_RESET         : natural                           := 64;
   constant C_RANGE         : natural                           := 2 ** BITNESS; -- modulo reduction RANGE
-  constant C_QBPP          : natural                           := BITNESS;      -- ceil(log2(RANGE))
+  constant C_QBPP          : natural                           := BITNESS; -- ceil(log2(RANGE))
   constant C_MAX_C         : natural                           := 127;
   constant C_MIN_C         : natural                           := 0;
   constant C_MAX_K         : natural                           := 12;
@@ -446,7 +446,7 @@ begin
     port map
     (
       iK          => sK_11,
-      iMErrval    => sMappedErr_11,
+      iMapErrval  => sMappedErr_11,
       oUnaryZeros => wUnaryZeros_11,
       oSuffixLen  => wSuffixLen_11,
       oSuffixVal  => wSuffixVal_11,

@@ -22,13 +22,14 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
+use work.Common.all;
 
 entity A11_error_mapping is
   generic (
-    BITNESS : natural range 8 to 16 := 12;
-    N_WIDTH : natural               := 7;
-    B_WIDTH : natural               := 19;
-    K_WIDTH : natural               := 4
+    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
+    N_WIDTH : natural               := CO_NQ_WIDTH_STD;
+    B_WIDTH : natural               := CO_BQ_WIDTH_STD;
+    K_WIDTH : natural               := CO_K_WIDTH_STD
   );
   port (
     iK           : in unsigned (K_WIDTH - 1 downto 0);
@@ -77,11 +78,11 @@ begin
   sErrAbsU <= unsigned(abs(iErrorValue));
 
   -- Special mapping
-  sMapErrorSpecialPos <= shift_left(sErrU, 1) + 1;    -- 2*Errval + 1
+  sMapErrorSpecialPos <= shift_left(sErrU, 1) + 1; -- 2*Errval + 1
   sMapErrorSpecialNeg <= shift_left(sErrAbsU, 1) - 2; -- -2*(Errval+1) = 2*abs(Errval) - 2
 
   -- Regular mapping
-  sMapErrorRegPos <= shift_left(sErrU, 1);        -- 2*Errval
+  sMapErrorRegPos <= shift_left(sErrU, 1); -- 2*Errval
   sMapErrorRegNeg <= shift_left(sErrAbsU, 1) - 1; -- -2*Errval - 1 = 2*abs(Errval) - 1
 
   -- Final selection (purely combinational)

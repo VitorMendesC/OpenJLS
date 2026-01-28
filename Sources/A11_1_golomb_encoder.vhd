@@ -23,25 +23,26 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
+use work.Common.all;
 
 entity A11_1_golomb_encoder is
   generic (
-    BITNESS         : natural range 8 to 16 := 12; -- sample precision
-    K_WIDTH         : natural               := 4;  -- width of k
-    QBPP            : natural range 1 to 16 := 12; -- number of bits to represent RANGE (ceil(log2(RANGE)))
-    LIMIT           : natural               := 32; -- maximum length of the limited Golomb code (JPEG-LS typical)
-    UNARY_WIDTH     : natural               := 6;  -- enough to hold LIMIT - QBPP - 1
-    SUFFIX_WIDTH    : natural               := 16; -- max(qbpp, max_k)
-    SUFFIXLEN_WIDTH : natural               := 5;  -- bits to encode suffix length (up to 31)
-    TOTLEN_WIDTH    : natural               := 6   -- bits to encode total length (up to LIMIT)
+    BITNESS         : natural range 8 to 16 := CO_BITNESS_STD;
+    K_WIDTH         : natural               := CO_K_WIDTH_STD;
+    QBPP            : natural range 1 to 16 := CO_QBPP_STD;
+    LIMIT           : natural               := CO_GOLOMB_LIMIT_STD;
+    UNARY_WIDTH     : natural               := CO_UNARY_WIDTH_STD;
+    SUFFIX_WIDTH    : natural               := CO_SUFFIX_WIDTH_STD;
+    SUFFIXLEN_WIDTH : natural               := CO_SUFFIXLEN_WIDTH_STD;
+    TOTLEN_WIDTH    : natural               := CO_TOTLEN_WIDTH_STD
   );
   port (
     iK          : in unsigned (K_WIDTH - 1 downto 0);
-    iMErrval    : in unsigned (BITNESS downto 0);              -- mapped error value (non-negative)
-    oUnaryZeros : out unsigned (UNARY_WIDTH - 1 downto 0);     -- number of leading zeros (possibly saturated to LIMIT-QBPP-1)
+    iMapErrval  : in unsigned (BITNESS downto 0); -- mapped error value (non-negative)
+    oUnaryZeros : out unsigned (UNARY_WIDTH - 1 downto 0); -- number of leading zeros (possibly saturated to LIMIT-QBPP-1)
     oSuffixLen  : out unsigned (SUFFIXLEN_WIDTH - 1 downto 0); -- k or qbpp
-    oSuffixVal  : out unsigned (SUFFIX_WIDTH - 1 downto 0);    -- remainder or (MErrval-1)
-    oTotalLen   : out unsigned (TOTLEN_WIDTH - 1 downto 0);    -- unaryZeros + 1 + suffixLen
+    oSuffixVal  : out unsigned (SUFFIX_WIDTH - 1 downto 0); -- remainder or (MErrval-1)
+    oTotalLen   : out unsigned (TOTLEN_WIDTH - 1 downto 0); -- unaryZeros + 1 + suffixLen
     oIsEscape   : out std_logic
   );
 end A11_1_golomb_encoder;
@@ -56,15 +57,15 @@ begin
   --   - oSuffixVal: r (or MErrval-1 in escape), aligned LSB
   --   - oTotalLen : unaryZeros + 1 + suffixLen
   --   - oIsEscape : '1' when q >= LIMIT - QBPP - 1
-  process (iK, iMErrval)
+  process (iK, iMapErrval)
     variable vLen        : integer;
     variable vK          : integer;
     variable vM          : integer;
     variable vQ          : integer; -- quotient (high-order bits of MErrval)
     variable vThresh     : integer; -- LIMIT - qbpp - 1
-    variable uM          : unsigned(iMErrval'range);
-    variable uR          : unsigned(iMErrval'range);
-    variable uTmp        : unsigned(iMErrval'range);
+    variable uM          : unsigned(iMapErrval'range);
+    variable uR          : unsigned(iMapErrval'range);
+    variable uTmp        : unsigned(iMapErrval'range);
     variable vUnaryZeros : integer;
     variable vSuffixLen  : integer;
     variable vIsEscape   : boolean;
@@ -72,8 +73,8 @@ begin
   begin
 
     vK := to_integer(iK);
-    vM := to_integer(iMErrval);
-    uM := iMErrval;
+    vM := to_integer(iMapErrval);
+    uM := iMapErrval;
     -- q = high-order bits of MErrval = floor(MErrval / 2^k)
     vQ := to_integer(shift_right(uM, vK));
     -- r = low k bits of MErrval = MErrval - (q << k)

@@ -14,6 +14,7 @@
 --              TODO: Test if a accumulator has better timing than buffering
 --
 ----------------------------------------------------------------------------------
+use work.Common.all;
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -27,9 +28,9 @@ entity A11_2_bit_packer is
     LIMIT           : natural := 32;
     OUT_WIDTH       : natural := 72;
     BUFFER_WIDTH    : natural := 96;
-    UNARY_WIDTH     : natural := 6; -- matches A11_1 oUnaryZeros width
-    SUFFIX_WIDTH    : natural := 16; -- matches A11_1 oSuffixVal width
-    SUFFIXLEN_WIDTH : natural := 5 -- matches A11_1 oSuffixLen width
+    UNARY_WIDTH     : natural := CO_UNARY_WIDTH_STD; -- matches A11_1 oUnaryZeros width
+    SUFFIX_WIDTH    : natural := CO_SUFFIX_WIDTH_STD; -- matches A11_1 oSuffixVal width
+    SUFFIXLEN_WIDTH : natural := CO_SUFFIXLEN_WIDTH_STD -- matches A11_1 oSuffixLen width
   );
   port (
     iClk            : in std_logic;

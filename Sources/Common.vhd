@@ -14,28 +14,46 @@
 -- 
 -- Revision:
 -- Revision 0.01 - File Created
--- Additional Comments:
+-- Additional Comments:           
+--
+--                          TODO: everything here needs to be throughly checked
 -- 
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
+library openlogic_base;
+use openlogic_base.olo_base_pkg_math.log2ceil;
+
 package Common is
 
   constant CO_BITNESS_MAX_WIDTH : natural := 16;
 
+  -- Standard reference values
+  constant CO_BITNESS_STD : natural := 12;
+  constant CO_MAX_VAL_STD : natural := 2 ** CO_BITNESS_STD - 1;
+  constant CO_NEAR_STD    : natural := 0;
+
+  -- TODO: need to be checked
+  constant CO_QBPP_STD  : natural := 12; -- number of bits to represent RANGE (ceil(log2(RANGE)))
+  constant CO_RESET_STD : natural := 64;
   -- Unspecified by T.87
-  constant CO_A_MAX_WIDTH : natural := CO_BITNESS_MAX_WIDTH * 2;
-  constant CO_B_MAX_WIDTH : natural := CO_BITNESS_MAX_WIDTH * 2;
-  constant CO_C_MAX_WIDTH : natural := CO_BITNESS_MAX_WIDTH * 2;
+  constant CO_GOLOMB_LIMIT_STD    : natural := 32; -- maximum length of the limited Golomb code (JPEG-LS typical)
+  constant CO_UNARY_WIDTH_STD     : natural := 6; -- enough to hold LIMIT - QBPP - 1
+  constant CO_SUFFIX_WIDTH_STD    : natural := 16; -- max(qbpp, max_k)
+  constant CO_SUFFIXLEN_WIDTH_STD : natural := 5; -- bits to encode suffix length (up to 31)
+  constant CO_TOTLEN_WIDTH_STD    : natural := 6; -- bits to encode total length (up to LIMIT)
+  constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
+  constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
+  constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
 
   -- MAXVAL
   constant CO_MAXVAL_MAX_WIDTH : natural := 16;
 
-  -- RESET and N[Q]
+  -- RESET
   constant CO_RESET_MAX_WIDTH : natural := 16;
-  constant CO_N_MAX_WIDTH     : natural := 16; -- Counts up to RESET
+  constant CO_NQ_WIDTH_STD    : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET TODO: check
 
   -- C[Q] parameters, signed value
   constant CO_MAX_CQ   : integer := 127;

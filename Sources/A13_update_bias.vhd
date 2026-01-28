@@ -1,19 +1,40 @@
+----------------------------------------------------------------------------------
+-- Company:
+-- Engineer:    Vitor Mendes Camilow
+-- 
+-- Create Date:
+-- Design Name: 
+-- Module Name: A13_update_bias - Behavioral
+-- Project Name: 
+-- Target Devices: 
+-- Tool Versions: 
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+-- 
+----------------------------------------------------------------------------------
+use work.Common.all;
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
 entity A13_update_bias is
   generic (
-    B_WIDTH : natural := 16;
-    N_WIDTH : natural := 12;
-    C_WIDTH : natural := 9;
-    MIN_C   : natural := 0;
-    MAX_C   : natural := 127
+    B_WIDTH : natural := CO_BQ_WIDTH_STD;
+    N_WIDTH : natural := CO_NQ_WIDTH_STD;
+    C_WIDTH : natural := CO_CQ_WIDTH;
+    MIN_C   : natural := CO_MIN_CQ;
+    MAX_C   : natural := CO_MAX_CQ
   );
   port (
     iBq : in signed (B_WIDTH - 1 downto 0);
     iNq : in unsigned (N_WIDTH - 1 downto 0);
-    iCq : in unsigned (C_WIDTH - 1 downto 0);
+    iCq : in unsigned (C_WIDTH - 1 downto 0); -- TODO: CQ is signed
     oBq : out signed (B_WIDTH - 1 downto 0);
     oCq : out unsigned (C_WIDTH - 1 downto 0)
   );
@@ -45,10 +66,10 @@ begin
   sN <= signed(resize(iNq, B_WIDTH));
 
   -- Precompute thresholds and candidates
-  sNegThr   <= - sN;      -- -N
+  sNegThr   <= - sN; -- -N
   sNegThrP1 <= (-sN) + 1; -- -N + 1
-  sBPlusN   <= iBq + sN;  -- B + N
-  sBMinusN  <= iBq - sN;  -- B - N
+  sBPlusN   <= iBq + sN; -- B + N
+  sBMinusN  <= iBq - sN; -- B - N
 
   -- Band selection (equivalent to if/else-if)
   sIsNegBand <= '1' when (iBq <= sNegThr) else
