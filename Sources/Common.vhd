@@ -25,6 +25,7 @@ use IEEE.NUMERIC_STD.all;
 
 library openlogic_base;
 use openlogic_base.olo_base_pkg_math.log2ceil;
+use openlogic_base.olo_base_pkg_math.log2;
 
 package Common is
 
@@ -36,7 +37,6 @@ package Common is
   constant CO_NEAR_STD    : natural := 0;
 
   -- TODO: need to be checked
-  constant CO_QBPP_STD  : natural := 12; -- number of bits to represent RANGE (ceil(log2(RANGE)))
   constant CO_RESET_STD : natural := 64;
   -- Unspecified by T.87
   constant CO_GOLOMB_LIMIT_STD    : natural := 32; -- maximum length of the limited Golomb code (JPEG-LS typical)
@@ -47,6 +47,12 @@ package Common is
   constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
+
+  -- Specified at initialisation
+  constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
+  constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD); -- number of bits to represent RANGE (ceil(log2(RANGE)))
+  constant CO_BPP_STD   : natural := maximum(2, log2ceil(CO_MAX_VAL_STD + 1)); -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
+  constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + maximum(8, CO_BPP_STD)); -- maximum length of the limited Golomb code
 
   -- MAXVAL
   constant CO_MAXVAL_MAX_WIDTH : natural := 16;
