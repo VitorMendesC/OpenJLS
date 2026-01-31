@@ -2,6 +2,7 @@
 # Information
 - The code segments bellow are written in C
 - In T.87 sometimes a requirement is in written form instead of code segments
+- All code segments and written requirements where directly taken from T.87 verbatim
 - Each code segment or written requirement is implemented by a RTL located in the folder `Sources`
 - Written requirements are labeled, in this project, as a child of the code segment that originated it, as in `A.4.1` if under code segment `A.4`, this is an organizational and styling choice
 - Each RTL file has a name that matches a code segment or written requirement, examples:
@@ -51,14 +52,16 @@ else Qi = 4;
 ```
 
 ## Written requirement A.4.1
-If the first non-zero element of the vector (Q1, Q2, Q3) is negative, then all the signs of the vector (Q1, Q2, Q3) shall be reversed to obtain (–Q1, –Q2, –Q3).
+"If the first non-zero element of the vector (Q1, Q2, Q3) is negative, then all the signs of the vector (Q1, Q2, Q3) shall be reversed to obtain (–Q1, –Q2, –Q3).
 
-In this case, the variable SIGN shall be set to –1, otherwise it shall be set to +1. 
+In this case, the variable SIGN shall be set to –1, otherwise it shall be set to +1." 
+(T.87 1998, pg. 19)
 
 ## Written requirement A.4.2
-After this possible "merging", the vector (Q1, Q2, Q3) is mapped, on a one-to-one basis, into an integer Q representing the context for the sample x. The function mapping the vector (Q1, Q2, Q3) to the integer Q is not specified in this Recommendation | International Standard. This Recommendation | International Standard only requires that the mapping shall be one-to-one, that it shall produce an integer in the range [0..364], and that it be defined for all possible values of the vector (Q1, Q2, Q3), including the vector (0, 0, 0).
+"After this possible "merging", the vector (Q1, Q2, Q3) is mapped, on a one-to-one basis, into an integer Q representing the context for the sample x. The function mapping the vector (Q1, Q2, Q3) to the integer Q is not specified in this Recommendation | International Standard. This Recommendation | International Standard only requires that the mapping shall be one-to-one, that it shall produce an integer in the range [0..364], and that it be defined for all possible values of the vector (Q1, Q2, Q3), including the vector (0, 0, 0).
 
-NOTE – A total of 9 × 9 × 9 = 729 possible vectors are defined by the procedure in Code segment A.4. The vector (0, 0, 0) and its corresponding mapped value can only occur in regular mode for sample interleaved multi-component scans, as detailed in Annex B.
+NOTE – A total of 9 × 9 × 9 = 729 possible vectors are defined by the procedure in Code segment A.4. The vector (0, 0, 0) and its corresponding mapped value can only occur in regular mode for sample interleaved multi-component scans, as detailed in Annex B."
+(T.87 1998, pg. 19)
 
 ## Code segment A.5 – Edge-detecting predictor
 ```
@@ -134,13 +137,15 @@ else {
 ```
 
 ## Written requirement A.11.1
-If the number formed by the high order bits of MErrval (all but the k least significant bits) is less than LIMIT – qbpp – 1, this number shall be appended to the encoded bit stream in unary representation, that is, by as many zeros as the value of this number, followed by a binary one. The k least significant bits of MErrval shall then be appended to the encoded bit stream without change, with the most significant bit first, followed by the remaining bits in decreasing order of significance.
+"If the number formed by the high order bits of MErrval (all but the k least significant bits) is less than LIMIT – qbpp – 1, this number shall be appended to the encoded bit stream in unary representation, that is, by as many zeros as the value of this number, followed by a binary one. The k least significant bits of MErrval shall then be appended to the encoded bit stream without change, with the most significant bit first, followed by the remaining bits in decreasing order of significance."
+(T.87 1998, pg. 21)
 
 ## Written requirement A.11.2
-Otherwise, LIMIT – qbpp – 1 zeros shall be appended to the encoded bit stream, followed by a binary
+"Otherwise, LIMIT – qbpp – 1 zeros shall be appended to the encoded bit stream, followed by a binary
 one. The binary representation of MErrval – 1 shall then be appended to the encoded bit stream using
 qbpp bits, with the most significant bit first, followed by the remaining bits in decreasing order of
-significance.
+significance."
+(T.87 1998, pg. 22)
 
 ## Code segment A.12 – Variables update
 ```
