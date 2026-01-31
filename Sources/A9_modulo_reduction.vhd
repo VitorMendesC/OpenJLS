@@ -30,8 +30,8 @@ entity A9_modulo_reduction is
     MAX_VAL : natural               := CO_MAX_VAL_STD
   );
   port (
-    iErrorValue : in signed (BITNESS downto 0);
-    oErrorValue : out signed (BITNESS downto 0)
+    iErrorVal : in signed (BITNESS downto 0);
+    oErrorVal : out signed (BITNESS downto 0)
   );
 end A9_modulo_reduction;
 
@@ -41,11 +41,11 @@ architecture Behavioral of A9_modulo_reduction is
 begin
 
   -- First stage: if negative, add RANGE
-  sErrAdj <= iErrorValue + C_RANGE when iErrorValue < 0 else
-    iErrorValue;
+  sErrAdj <= iErrorVal + C_RANGE when iErrorVal < 0 else
+    iErrorVal;
 
   -- Second stage: if >= (RANGE + 1)/2, subtract RANGE
-  oErrorValue <= sErrAdj - C_RANGE when sErrAdj >= (C_RANGE + 1) / 2 else
+  oErrorVal <= sErrAdj - C_RANGE when sErrAdj >= (C_RANGE + 1) / 2 else
     sErrAdj;
 
 end Behavioral;

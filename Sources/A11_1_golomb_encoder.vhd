@@ -27,23 +27,24 @@ use work.Common.all;
 
 entity A11_1_golomb_encoder is
   generic (
-    BITNESS         : natural range 8 to 16 := CO_BITNESS_STD;
-    K_WIDTH         : natural               := CO_K_WIDTH_STD;
-    QBPP            : natural range 1 to 16 := CO_QBPP_STD;
-    LIMIT           : natural               := CO_GOLOMB_LIMIT_STD;
-    UNARY_WIDTH     : natural               := CO_UNARY_WIDTH_STD;
-    SUFFIX_WIDTH    : natural               := CO_SUFFIX_WIDTH_STD;
-    SUFFIXLEN_WIDTH : natural               := CO_SUFFIXLEN_WIDTH_STD;
-    TOTLEN_WIDTH    : natural               := CO_TOTLEN_WIDTH_STD
+    BITNESS                : natural := CO_BITNESS_STD; -- TODO: Why is this here?
+    K_WIDTH                : natural := CO_K_WIDTH_STD;
+    QBPP                   : natural := CO_QBPP_STD;
+    LIMIT                  : natural := CO_LIMIT_STD;
+    UNARY_WIDTH            : natural := CO_UNARY_WIDTH_STD;
+    SUFFIX_WIDTH           : natural := CO_SUFFIX_WIDTH_STD;
+    SUFFIXLEN_WIDTH        : natural := CO_SUFFIXLEN_WIDTH_STD;
+    TOTLEN_WIDTH           : natural := CO_TOTLEN_WIDTH_STD;
+    MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iK          : in unsigned (K_WIDTH - 1 downto 0);
-    iMapErrval  : in unsigned (BITNESS downto 0); -- mapped error value (non-negative)
-    oUnaryZeros : out unsigned (UNARY_WIDTH - 1 downto 0); -- number of leading zeros (possibly saturated to LIMIT-QBPP-1)
-    oSuffixLen  : out unsigned (SUFFIXLEN_WIDTH - 1 downto 0); -- k or qbpp
-    oSuffixVal  : out unsigned (SUFFIX_WIDTH - 1 downto 0); -- remainder or (MErrval-1)
-    oTotalLen   : out unsigned (TOTLEN_WIDTH - 1 downto 0); -- unaryZeros + 1 + suffixLen
-    oIsEscape   : out std_logic
+    iK              : in unsigned (K_WIDTH - 1 downto 0);
+    iMappedErrorVal : in unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+    oUnaryZeros     : out unsigned (UNARY_WIDTH - 1 downto 0);
+    oSuffixLen      : out unsigned (SUFFIXLEN_WIDTH - 1 downto 0);
+    oSuffixVal      : out unsigned (SUFFIX_WIDTH - 1 downto 0);
+    oTotalLen       : out unsigned (TOTLEN_WIDTH - 1 downto 0);
+    oIsEscape       : out std_logic
   );
 end A11_1_golomb_encoder;
 
@@ -57,15 +58,15 @@ begin
   --   - oSuffixVal: r (or MErrval-1 in escape), aligned LSB
   --   - oTotalLen : unaryZeros + 1 + suffixLen
   --   - oIsEscape : '1' when q >= LIMIT - QBPP - 1
-  process (iK, iMapErrval)
+  process (iK, iMappedErrorVal)
     variable vLen        : integer;
     variable vK          : integer;
     variable vM          : integer;
     variable vQ          : integer; -- quotient (high-order bits of MErrval)
     variable vThresh     : integer; -- LIMIT - qbpp - 1
-    variable uM          : unsigned(iMapErrval'range);
-    variable uR          : unsigned(iMapErrval'range);
-    variable uTmp        : unsigned(iMapErrval'range);
+    variable uM          : unsigned(iMappedErrorVal'range);
+    variable uR          : unsigned(iMappedErrorVal'range);
+    variable uTmp        : unsigned(iMappedErrorVal'range);
     variable vUnaryZeros : integer;
     variable vSuffixLen  : integer;
     variable vIsEscape   : boolean;
@@ -73,8 +74,8 @@ begin
   begin
 
     vK := to_integer(iK);
-    vM := to_integer(iMapErrval);
-    uM := iMapErrval;
+    vM := to_integer(iMappedErrorVal);
+    uM := iMappedErrorVal;
     -- q = high-order bits of MErrval = floor(MErrval / 2^k)
     vQ := to_integer(shift_right(uM, vK));
     -- r = low k bits of MErrval = MErrval - (q << k)

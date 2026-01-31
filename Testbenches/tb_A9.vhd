@@ -13,8 +13,8 @@ architecture bench of tb_A9 is
   constant HALF_RANGE : natural               := (C_RANGE + 1) / 2;
 
   -- Ports
-  signal iErrorValue : signed (BITNESS downto 0);
-  signal oErrorValue : signed (BITNESS downto 0);
+  signal iErrorVal : signed (BITNESS downto 0);
+  signal oErrorVal : signed (BITNESS downto 0);
 
   function modulo_reduce(errval : integer) return integer is
     variable v                    : integer := errval;
@@ -61,8 +61,8 @@ begin
     )
     port map
     (
-      iErrorValue => iErrorValue,
-      oErrorValue => oErrorValue
+      iErrorVal => iErrorVal,
+      oErrorVal => oErrorVal
     );
 
   stim : process
@@ -70,22 +70,22 @@ begin
     variable errv : integer;
   begin
     -- Directed boundary cases
-    check_case(iErrorValue, oErrorValue, 0);
-    check_case(iErrorValue, oErrorValue, 1);
-    check_case(iErrorValue, oErrorValue, -1);
-    check_case(iErrorValue, oErrorValue, integer(HALF_RANGE) - 1);
-    check_case(iErrorValue, oErrorValue, integer(HALF_RANGE));
-    check_case(iErrorValue, oErrorValue, integer(HALF_RANGE) + 1);
-    check_case(iErrorValue, oErrorValue, -integer(HALF_RANGE));
-    check_case(iErrorValue, oErrorValue, -integer(HALF_RANGE) - 1);
-    check_case(iErrorValue, oErrorValue, integer(C_RANGE) - 1);
-    check_case(iErrorValue, oErrorValue, -integer(C_RANGE));
+    check_case(iErrorVal, oErrorVal, 0);
+    check_case(iErrorVal, oErrorVal, 1);
+    check_case(iErrorVal, oErrorVal, -1);
+    check_case(iErrorVal, oErrorVal, integer(HALF_RANGE) - 1);
+    check_case(iErrorVal, oErrorVal, integer(HALF_RANGE));
+    check_case(iErrorVal, oErrorVal, integer(HALF_RANGE) + 1);
+    check_case(iErrorVal, oErrorVal, -integer(HALF_RANGE));
+    check_case(iErrorVal, oErrorVal, -integer(HALF_RANGE) - 1);
+    check_case(iErrorVal, oErrorVal, integer(C_RANGE) - 1);
+    check_case(iErrorVal, oErrorVal, -integer(C_RANGE));
 
     -- Pseudo-random coverage
     for i in 0 to 999 loop
       lfsr := lfsr_next(lfsr);
       errv := to_integer(signed(lfsr(BITNESS downto 0)));
-      check_case(iErrorValue, oErrorValue, errv);
+      check_case(iErrorVal, oErrorVal, errv);
     end loop;
 
     report "A9_tb completed" severity note;

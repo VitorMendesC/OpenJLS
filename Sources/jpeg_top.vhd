@@ -354,10 +354,10 @@ begin
     )
     port map
     (
-      iIx         => sIx_8,
-      iPx         => sPxCorr_8,
-      iSign       => sSign_8,
-      oErrorValue => wErr_8
+      iIx       => sIx_8,
+      iPx       => sPxCorr_8,
+      iSign     => sSign_8,
+      oErrorVal => wErr_8
     );
 
   A10_compute_k_inst : entity work.A10_compute_k
@@ -385,8 +385,8 @@ begin
     )
     port map
     (
-      iErrorValue => sErr_9,
-      oErrorValue => wErr_9
+      iErrorVal => sErr_9,
+      oErrorVal => wErr_9
     );
 
   -----------------------------------------------------------------
@@ -405,8 +405,8 @@ begin
       iK           => sK_10,
       iBq          => sBq_10_in,
       iNq          => sNq_10_in,
-      iErrorValue  => sErr_10,
-      oMappedError => wMappedErr_10
+      iErrorVal    => sErr_10,
+      oMappedErrorVal => wMappedErr_10
     );
 
   A12_variables_update_inst : entity work.A12_variables_update
@@ -419,13 +419,13 @@ begin
     )
     port map
     (
-      iErrorValue => sErr_10,
-      iAq         => sAq_10_in,
-      iBq         => sBq_10_in,
-      iNq         => sNq_10_in,
-      oAq         => wAq_10,
-      oBq         => wBq_10,
-      oNq         => wNq_10
+      iErrorVal => sErr_10,
+      iAq       => sAq_10_in,
+      iBq       => sBq_10_in,
+      iNq       => sNq_10_in,
+      oAq       => wAq_10,
+      oBq       => wBq_10,
+      oNq       => wNq_10
     );
 
   -----------------------------------------------------------------
@@ -446,7 +446,7 @@ begin
     port map
     (
       iK          => sK_11,
-      iMapErrval  => sMappedErr_11,
+      iMappedErrorVal  => sMappedErr_11,
       oUnaryZeros => wUnaryZeros_11,
       oSuffixLen  => wSuffixLen_11,
       oSuffixVal  => wSuffixVal_11,

@@ -26,17 +26,19 @@ use work.Common.all;
 
 entity A11_error_mapping is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    N_WIDTH : natural               := CO_NQ_WIDTH_STD;
-    B_WIDTH : natural               := CO_BQ_WIDTH_STD;
-    K_WIDTH : natural               := CO_K_WIDTH_STD
+    BITNESS                : natural := CO_BITNESS_STD;
+    N_WIDTH                : natural := CO_NQ_WIDTH_STD;
+    B_WIDTH                : natural := CO_BQ_WIDTH_STD;
+    K_WIDTH                : natural := CO_K_WIDTH_STD;
+    ERROR_VALUE_WIDTH      : natural := CO_ERROR_VALUE_WIDTH_STD;
+    MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
     iK           : in unsigned (K_WIDTH - 1 downto 0);
     iBq          : in signed (B_WIDTH - 1 downto 0);
     iNq          : in unsigned (N_WIDTH - 1 downto 0);
-    iErrorValue  : in signed (BITNESS downto 0);
-    oMappedError : out unsigned (BITNESS downto 0)
+    iErrorVal    : in signed (ERROR_VALUE_WIDTH - 1 downto 0);
+    oMappedErrorVal : out unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0)
   );
 end A11_error_mapping;
 
@@ -52,11 +54,11 @@ architecture Behavioral of A11_error_mapping is
   signal sNegN    : signed(B_WIDTH downto 0);
 
   -- Precomputed mapping candidates (parallel)
-  signal sErrU, sErrAbsU     : unsigned (oMappedError'range);
-  signal sMapErrorSpecialPos : unsigned (oMappedError'range);
-  signal sMapErrorSpecialNeg : unsigned (oMappedError'range);
-  signal sMapErrorRegPos     : unsigned (oMappedError'range);
-  signal sMapErrorRegNeg     : unsigned (oMappedError'range);
+  signal sErrU, sErrAbsU     : unsigned (oMappedErrorVal'range);
+  signal sMapErrorSpecialPos : unsigned (oMappedErrorVal'range);
+  signal sMapErrorSpecialNeg : unsigned (oMappedErrorVal'range);
+  signal sMapErrorRegPos     : unsigned (oMappedErrorVal'range);
+  signal sMapErrorRegNeg     : unsigned (oMappedErrorVal'range);
 
 begin
 
@@ -70,12 +72,12 @@ begin
     '0'; -- NEAR=0 for this IP
 
   -- Error sign flag
-  sErrEqualGreaterZero <= '1' when iErrorValue >= 0 else
+  sErrEqualGreaterZero <= '1' when iErrorVal >= 0 else
     '0';
 
   -- Magnitudes for mapping
-  sErrU    <= unsigned(iErrorValue);
-  sErrAbsU <= unsigned(abs(iErrorValue));
+  sErrU    <= unsigned(iErrorVal); -- NOTE: what does it mean to unsigned(signed) ?
+  sErrAbsU <= unsigned(abs(iErrorVal));
 
   -- Special mapping
   sMapErrorSpecialPos <= shift_left(sErrU, 1) + 1; -- 2*Errval + 1
@@ -86,7 +88,7 @@ begin
   sMapErrorRegNeg <= shift_left(sErrAbsU, 1) - 1; -- -2*Errval - 1 = 2*abs(Errval) - 1
 
   -- Final selection (purely combinational)
-  oMappedError <= sMapErrorSpecialPos when (sSpecialMap = '1' and sErrEqualGreaterZero = '1') else
+  oMappedErrorVal <= sMapErrorSpecialPos when (sSpecialMap = '1' and sErrEqualGreaterZero = '1') else
     sMapErrorSpecialNeg when (sSpecialMap = '1' and sErrEqualGreaterZero = '0') else
     sMapErrorRegPos when (sSpecialMap = '0' and sErrEqualGreaterZero = '1') else
     sMapErrorRegNeg; -- last case (Errval<0)

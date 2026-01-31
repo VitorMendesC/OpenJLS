@@ -10,8 +10,8 @@
 --              NOTE: buffer is written from MSB, to match bitstream pattern
 --
 --              TODO: iFlush is unused
---              TODO: Add one internal pipeline wall: “build codeword/length” → “write 64-bit buffer”.
---              TODO: Test if a accumulator has better timing than buffering
+--              TODO: Add one internal pipeline wall/register: “build codeword/length” → “write 64-bit buffer”.
+--              TODO: Test if a accumulator has better timing than buffering (I have no fucking clue what this means)
 --
 ----------------------------------------------------------------------------------
 use work.Common.all;
@@ -25,12 +25,12 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity A11_2_bit_packer is
   generic (
-    LIMIT           : natural := 32;
-    OUT_WIDTH       : natural := 72;
-    BUFFER_WIDTH    : natural := 96;
-    UNARY_WIDTH     : natural := CO_UNARY_WIDTH_STD; -- matches A11_1 oUnaryZeros width
-    SUFFIX_WIDTH    : natural := CO_SUFFIX_WIDTH_STD; -- matches A11_1 oSuffixVal width
-    SUFFIXLEN_WIDTH : natural := CO_SUFFIXLEN_WIDTH_STD -- matches A11_1 oSuffixLen width
+    LIMIT           : natural := CO_LIMIT_STD;
+    OUT_WIDTH       : natural := CO_OUT_WIDTH_STD;
+    BUFFER_WIDTH    : natural := CO_BUFFER_WIDTH_STD;
+    UNARY_WIDTH     : natural := CO_UNARY_WIDTH_STD;
+    SUFFIX_WIDTH    : natural := CO_SUFFIX_WIDTH_STD;
+    SUFFIXLEN_WIDTH : natural := CO_SUFFIXLEN_WIDTH_STD
   );
   port (
     iClk            : in std_logic;

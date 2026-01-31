@@ -32,7 +32,7 @@ entity A12_variables_update is
     RESET   : natural               := CO_RESET_STD
   );
   port (
-    iErrorValue : in signed (BITNESS downto 0); -- Errval after correction & clamp
+    iErrorVal : in signed (BITNESS downto 0); -- Errval after correction & clamp
     iAq         : in unsigned (A_WIDTH - 1 downto 0); -- context RAM (registered)
     iBq         : in signed (B_WIDTH - 1 downto 0);
     iNq         : in unsigned (N_WIDTH - 1 downto 0);
@@ -61,8 +61,8 @@ begin
   sDoRescale <= '1' when (iNq = to_unsigned(RESET, iNq'length)) else
     '0';
 
-  sErrExtend      <= resize(iErrorValue, B_WIDTH);
-  sErrorAbsExtend <= resize(unsigned(abs(iErrorValue)), A_WIDTH);
+  sErrExtend      <= resize(iErrorVal, B_WIDTH);
+  sErrorAbsExtend <= resize(unsigned(abs(iErrorVal)), A_WIDTH);
 
   sAqNew <= iAq + sErrorAbsExtend;
   sBqNew <= iBq + sErrExtend;

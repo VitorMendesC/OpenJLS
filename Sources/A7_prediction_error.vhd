@@ -29,17 +29,17 @@ entity A7_prediction_error is
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
-    iIx         : in unsigned (BITNESS - 1 downto 0);
-    iPx         : in unsigned (BITNESS - 1 downto 0);
-    iSign       : in std_logic; -- '1' for SIGN = -1
-    oErrorValue : out signed (BITNESS downto 0)
+    iIx       : in unsigned (BITNESS - 1 downto 0);
+    iPx       : in unsigned (BITNESS - 1 downto 0);
+    iSign     : in std_logic; -- '1' for SIGN = -1
+    oErrorVal : out signed (BITNESS downto 0)
   );
 end A7_prediction_error;
 
 architecture Behavioral of A7_prediction_error is
 begin
 
-  oErrorValue <= signed('0' & iIx) - signed('0' & iPx) when iSign = '0'
+  oErrorVal <= signed('0' & iIx) - signed('0' & iPx) when iSign = '0'
     else
     signed('0' & iPx) - signed('0' & iIx);
 

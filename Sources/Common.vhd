@@ -32,14 +32,18 @@ package Common is
   constant CO_BITNESS_MAX_WIDTH : natural := 16;
 
   -- Standard reference values
-  constant CO_BITNESS_STD : natural := 12;
-  constant CO_MAX_VAL_STD : natural := 2 ** CO_BITNESS_STD - 1;
-  constant CO_NEAR_STD    : natural := 0;
+  constant CO_BITNESS_STD                : natural := 12;
+  constant CO_MAX_VAL_STD                : natural := 2 ** CO_BITNESS_STD - 1;
+  constant CO_NEAR_STD                   : natural := 0;
+  constant CO_ERROR_VALUE_WIDTH_STD      : natural := CO_BITNESS_STD + 1;
+  constant CO_MAPPED_ERROR_VAL_WIDTH_STD : natural := CO_BITNESS_STD + 2;
+  constant CO_OUT_WIDTH_STD              : natural := 72; -- Output word width
+  constant CO_BUFFER_WIDTH_STD           : natural := 96; -- Output buffer width
 
   -- TODO: need to be checked
   constant CO_RESET_STD : natural := 64;
+
   -- Unspecified by T.87
-  constant CO_GOLOMB_LIMIT_STD    : natural := 32; -- maximum length of the limited Golomb code (JPEG-LS typical)
   constant CO_UNARY_WIDTH_STD     : natural := 6; -- enough to hold LIMIT - QBPP - 1
   constant CO_SUFFIX_WIDTH_STD    : natural := 16; -- max(qbpp, max_k)
   constant CO_SUFFIXLEN_WIDTH_STD : natural := 5; -- bits to encode suffix length (up to 31)

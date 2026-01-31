@@ -12,10 +12,10 @@ architecture bench of tb_A7 is
   -- Generics
   constant BITNESS : natural range 8 to 16 := 12;
   -- Ports
-  signal iIx         : unsigned (BITNESS - 1 downto 0);
-  signal iPx         : unsigned (BITNESS - 1 downto 0);
-  signal iSign       : std_logic;
-  signal oErrorValue : signed (BITNESS downto 0);
+  signal iIx       : unsigned (BITNESS - 1 downto 0);
+  signal iPx       : unsigned (BITNESS - 1 downto 0);
+  signal iSign     : std_logic;
+  signal oErrorVal : signed (BITNESS downto 0);
 
   procedure check_case(
     signal iIx_s   : out unsigned(BITNESS - 1 downto 0);
@@ -42,12 +42,12 @@ architecture bench of tb_A7 is
       exp_v := - exp_v;
     end if;
 
-    assert oErrorValue = exp_v
+    assert oErrorVal = exp_v
     report "A7 mismatch: Ix=" & integer'image(ix_val) &
       " Px=" & integer'image(px_val) &
       " Sign=" & std_logic'image(sign_val) &
       " Exp=" & integer'image(to_integer(exp_v)) &
-      " Got=" & integer'image(to_integer(oErrorValue))
+      " Got=" & integer'image(to_integer(oErrorVal))
       severity error;
   end procedure;
 begin
@@ -58,10 +58,10 @@ begin
     )
     port map
     (
-      iIx         => iIx,
-      iPx         => iPx,
-      iSign       => iSign,
-      oErrorValue => oErrorValue
+      iIx       => iIx,
+      iPx       => iPx,
+      iSign     => iSign,
+      oErrorVal => oErrorVal
     );
 
   stim_proc : process
