@@ -33,9 +33,9 @@ entity A12_variables_update is
   );
   port (
     iErrorVal : in signed (BITNESS downto 0); -- Errval after correction & clamp
-    iAq         : in unsigned (A_WIDTH - 1 downto 0); -- context RAM (registered)
-    iBq         : in signed (B_WIDTH - 1 downto 0);
-    iNq         : in unsigned (N_WIDTH - 1 downto 0);
+    iAq       : in unsigned (A_WIDTH - 1 downto 0); -- context RAM (registered)
+    iBq       : in signed (B_WIDTH - 1 downto 0);
+    iNq       : in unsigned (N_WIDTH - 1 downto 0);
 
     oAq : out unsigned (A_WIDTH - 1 downto 0); -- to context RAM (register outside)
     oBq : out signed (B_WIDTH - 1 downto 0);

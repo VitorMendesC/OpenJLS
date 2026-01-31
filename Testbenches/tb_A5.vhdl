@@ -55,7 +55,7 @@ architecture bench of tb_A5 is
     signal sPx : in unsigned;
     a, b, c    : natural
   ) is
-    variable exp_px              : natural;
+    variable exp_px : natural;
   begin
     sA <= to_unsigned(a, sA'length);
     sB <= to_unsigned(b, sB'length);

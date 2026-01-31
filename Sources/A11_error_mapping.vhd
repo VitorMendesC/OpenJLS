@@ -34,10 +34,10 @@ entity A11_error_mapping is
     MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iK           : in unsigned (K_WIDTH - 1 downto 0);
-    iBq          : in signed (B_WIDTH - 1 downto 0);
-    iNq          : in unsigned (N_WIDTH - 1 downto 0);
-    iErrorVal    : in signed (ERROR_VALUE_WIDTH - 1 downto 0);
+    iK              : in unsigned (K_WIDTH - 1 downto 0);
+    iBq             : in signed (B_WIDTH - 1 downto 0);
+    iNq             : in unsigned (N_WIDTH - 1 downto 0);
+    iErrorVal       : in signed (ERROR_VALUE_WIDTH - 1 downto 0);
     oMappedErrorVal : out unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0)
   );
 end A11_error_mapping;
