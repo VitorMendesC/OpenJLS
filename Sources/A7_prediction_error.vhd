@@ -19,10 +19,11 @@
 -- 
 ----------------------------------------------------------------------------------
 
+use work.Common.all;
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
-use work.Common.all;
 
 entity A7_prediction_error is
   generic (

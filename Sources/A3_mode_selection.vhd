@@ -20,11 +20,12 @@
 --                                NOTE: Losless mode specific
 -- 
 ----------------------------------------------------------------------------------
+use work.Common.all;
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 use IEEE.STD_LOGIC_MISC.all;
-use work.Common.all;
 
 entity A3_mode_selection is
   generic (

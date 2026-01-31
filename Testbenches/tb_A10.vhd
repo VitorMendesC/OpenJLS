@@ -1,7 +1,8 @@
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 use work.Common.all;
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.NUMERIC_STD.all;
 
 library openlogic_base;
 use openlogic_base.olo_base_pkg_math.log2ceil;
