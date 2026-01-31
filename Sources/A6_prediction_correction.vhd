@@ -18,11 +18,11 @@
 --                                      Prediction correction from the bias
 -- 
 ----------------------------------------------------------------------------------
+use work.Common.all;
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
-use work.Common.all;
 
 entity A6_prediction_correction is
   generic (
@@ -64,7 +64,7 @@ begin
     unsigned(sPxMinusCq(BITNESS - 1 downto 0));
 
   -- Final 2:1 mux by sign
-  oPx <= sAddSat when iSign = '0' else
+  oPx <= sAddSat when iSign = CO_SIGN_POS else
     sSubSat;
 
 end Behavioral;

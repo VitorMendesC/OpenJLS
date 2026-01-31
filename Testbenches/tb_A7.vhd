@@ -1,3 +1,4 @@
+use work.Common.all;
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -38,7 +39,7 @@ architecture bench of tb_A7 is
     wait for 1 ns;
 
     exp_v := signed('0' & ix_u) - signed('0' & px_u);
-    if sign_val = '1' then
+    if sign_val = CO_SIGN_NEG then
       exp_v := - exp_v;
     end if;
 
@@ -67,20 +68,20 @@ begin
   stim_proc : process
   begin
     -- Basic cases
-    check_case(iIx, iPx, iSign, 0, 0, '0');
-    check_case(iIx, iPx, iSign, 0, 0, '1');
-    check_case(iIx, iPx, iSign, 10, 3, '0');
-    check_case(iIx, iPx, iSign, 10, 3, '1');
-    check_case(iIx, iPx, iSign, 3, 10, '0');
-    check_case(iIx, iPx, iSign, 3, 10, '1');
+    check_case(iIx, iPx, iSign, 0, 0, CO_SIGN_POS);
+    check_case(iIx, iPx, iSign, 0, 0, CO_SIGN_NEG);
+    check_case(iIx, iPx, iSign, 10, 3, CO_SIGN_POS);
+    check_case(iIx, iPx, iSign, 10, 3, CO_SIGN_NEG);
+    check_case(iIx, iPx, iSign, 3, 10, CO_SIGN_POS);
+    check_case(iIx, iPx, iSign, 3, 10, CO_SIGN_NEG);
 
     -- Extremes within BITNESS
-    check_case(iIx, iPx, iSign, 0, 2 ** BITNESS - 1, '0');
-    check_case(iIx, iPx, iSign, 0, 2 ** BITNESS - 1, '1');
-    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 0, '0');
-    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 0, '1');
-    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, '0');
-    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, '1');
+    check_case(iIx, iPx, iSign, 0, 2 ** BITNESS - 1, CO_SIGN_POS);
+    check_case(iIx, iPx, iSign, 0, 2 ** BITNESS - 1, CO_SIGN_NEG);
+    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 0, CO_SIGN_POS);
+    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 0, CO_SIGN_NEG);
+    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, CO_SIGN_POS);
+    check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, CO_SIGN_NEG);
 
     report "tb_A7 completed" severity note;
     wait;

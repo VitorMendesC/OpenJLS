@@ -18,6 +18,7 @@
 --                                    Text only, described on section A.3.4
 -- 
 ----------------------------------------------------------------------------------
+use work.Common.all;
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -41,17 +42,17 @@ architecture Behavioral of A4_1_quant_gradient_merging is
 begin
 
   -- Sign of first non-zero (1 if negative)
-  sSign <= '1' when iQ1 < 0 else
-    '1' when (iQ1 = 0 and iQ2 < 0) else
-    '1' when (iQ1 = 0 and iQ2 = 0 and iQ3 < 0) else
-    '0';
+  sSign <= CO_SIGN_NEG when iQ1 < 0 else
+    CO_SIGN_NEG when (iQ1 = 0 and iQ2 < 0) else
+    CO_SIGN_NEG when (iQ1 = 0 and iQ2 = 0 and iQ3 < 0) else
+    CO_SIGN_POS;
 
   -- Flip quantized values if sign is negative
-  oQ1 <= - iQ1 when sSign = '1' else
+  oQ1 <= - iQ1 when sSign = CO_SIGN_NEG else
     iQ1;
-  oQ2 <= - iQ2 when sSign = '1' else
+  oQ2 <= - iQ2 when sSign = CO_SIGN_NEG else
     iQ2;
-  oQ3 <= - iQ3 when sSign = '1' else
+  oQ3 <= - iQ3 when sSign = CO_SIGN_NEG else
     iQ3;
 
   oSign <= sSign;

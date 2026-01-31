@@ -70,6 +70,9 @@ package Common is
   constant CO_MIN_CQ   : integer := - 128;
   constant CO_CQ_WIDTH : natural := 8;
 
+  constant CO_SIGN_POS : std_logic := '0';
+  constant CO_SIGN_NEG : std_logic := '1';
+
   function minimum(a, b : in natural) return natural;
   function minimum(a, b : in unsigned) return unsigned;
   function maximum(a, b : in unsigned) return unsigned;

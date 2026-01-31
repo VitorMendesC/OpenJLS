@@ -1,8 +1,8 @@
+use work.Common.all;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.Common.all;
 
 entity tb_A6 is
 end;
@@ -25,7 +25,7 @@ architecture bench of tb_A6 is
   function predict(px : natural; sign : std_logic; cq : integer) return natural is
     variable v : integer;
   begin
-    if sign = '0' then
+    if sign = CO_SIGN_POS then
       v := integer(px) + cq;
     else
       v := integer(px) - cq;
@@ -95,22 +95,22 @@ begin
     variable sign : std_logic;
   begin
     -- Directed edge cases
-    check_case(iPx, iSign, iCq, oPx, 0, '0', 0);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL, '0', 0);
-    check_case(iPx, iSign, iCq, oPx, 0, '1', 0);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL, '1', 0);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL - 10, '0', 50); -- add saturates
-    check_case(iPx, iSign, iCq, oPx, 10, '1', 50); -- sub underflows
-    check_case(iPx, iSign, iCq, oPx, 100, '0', 50); -- add no sat
-    check_case(iPx, iSign, iCq, oPx, 100, '1', 50); -- sub no sat
-    check_case(iPx, iSign, iCq, oPx, 0, '0', MAX_CQ);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL, '0', MAX_CQ);
-    check_case(iPx, iSign, iCq, oPx, 0, '1', MAX_CQ);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL, '1', MAX_CQ);
-    check_case(iPx, iSign, iCq, oPx, 0, '0', MIN_CQ);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL, '0', MIN_CQ);
-    check_case(iPx, iSign, iCq, oPx, 0, '1', MIN_CQ);
-    check_case(iPx, iSign, iCq, oPx, MAX_VAL, '1', MIN_CQ);
+    check_case(iPx, iSign, iCq, oPx, 0, CO_SIGN_POS, 0);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL, CO_SIGN_POS, 0);
+    check_case(iPx, iSign, iCq, oPx, 0, CO_SIGN_NEG, 0);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL, CO_SIGN_NEG, 0);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL - 10, CO_SIGN_POS, 50); -- add saturates
+    check_case(iPx, iSign, iCq, oPx, 10, CO_SIGN_NEG, 50); -- sub underflows
+    check_case(iPx, iSign, iCq, oPx, 100, CO_SIGN_POS, 50); -- add no sat
+    check_case(iPx, iSign, iCq, oPx, 100, CO_SIGN_NEG, 50); -- sub no sat
+    check_case(iPx, iSign, iCq, oPx, 0, CO_SIGN_POS, MAX_CQ);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL, CO_SIGN_POS, MAX_CQ);
+    check_case(iPx, iSign, iCq, oPx, 0, CO_SIGN_NEG, MAX_CQ);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL, CO_SIGN_NEG, MAX_CQ);
+    check_case(iPx, iSign, iCq, oPx, 0, CO_SIGN_POS, MIN_CQ);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL, CO_SIGN_POS, MIN_CQ);
+    check_case(iPx, iSign, iCq, oPx, 0, CO_SIGN_NEG, MIN_CQ);
+    check_case(iPx, iSign, iCq, oPx, MAX_VAL, CO_SIGN_NEG, MIN_CQ);
 
     -- Pseudo-random coverage
     for i in 0 to 999 loop
