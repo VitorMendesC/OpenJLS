@@ -22,8 +22,6 @@
 -- Assumptions:
 --              (1) k <= SUFFIX_WIDTH       and     k   <= MAPPED_ERROR_VAL_WIDTH
 --              (2) QBPP <= SUFFIX_WIDTH    and     QBPP <= MAPPED_ERROR_VAL_WIDTH
---       True   (3) k can be 0
---       True   (4) MappedErrorVal can be 0
 --
 ----------------------------------------------------------------------------------
 
@@ -66,16 +64,16 @@ begin
   --   - oTotalLen : unaryZeros + 1 + suffixLen
   --   - oIsEscape : '1' when q >= LIMIT - QBPP - 1
   process (iK, iMappedErrorVal)
-    variable vLen        : unsigned(oTotalLen'range);
-    variable vKInt       : integer;
-    variable vHighOrder  : unsigned(iMappedErrorVal'range);
-    variable vThresh     : unsigned(iMappedErrorVal'range); -- TODO: Check width, doesn't need to be full width
-    variable vLowOrder   : unsigned(iMappedErrorVal'range);
-    variable vTmpUns     : unsigned(iMappedErrorVal'range);
-    variable vUnaryZeros : unsigned(oUnaryZeros'range);
-    variable vSuffixLen  : unsigned(oSuffixLen'range);
-    variable vIsEscape   : boolean;
-    variable vSuffixVal  : unsigned(SUFFIX_WIDTH - 1 downto 0);
+    variable vLen            : unsigned(oTotalLen'range);
+    variable vKInt           : integer;
+    variable vHighOrder      : unsigned(iMappedErrorVal'range);
+    variable vThresh         : unsigned(iMappedErrorVal'range); -- TODO: Check width, doesn't need to be full width
+    variable vLowOrder       : unsigned(iMappedErrorVal'range);
+    variable vMappedErrorDec : unsigned(iMappedErrorVal'range);
+    variable vUnaryZeros     : unsigned(oUnaryZeros'range);
+    variable vSuffixLen      : unsigned(oSuffixLen'range);
+    variable vIsEscape       : boolean;
+    variable vSuffixVal      : unsigned(SUFFIX_WIDTH - 1 downto 0);
   begin
 
     vKInt := to_integer(iK);
@@ -91,25 +89,24 @@ begin
       vUnaryZeros := resize(vHighOrder, vUnaryZeros'length);
       vSuffixLen  := resize(iK, vSuffixLen'length);
       vLen        := vUnaryZeros + 1 + vSuffixLen;
-      vSuffixVal  := (others => '0');
 
-      if vKInt > 0 then
-        vSuffixVal(vKInt - 1 downto 0) := vLowOrder(vKInt - 1 downto 0);
-      end if;
+      vSuffixVal := resize(vLowOrder, vSuffixVal'length);
 
     else
+      -- SIM ONLY ------------------------------------------------------------------
+      assert (iMappedErrorVal /= 0) -- Catch impossible case on simulation set
+      report "LG(k,LIMIT) escape with MErrval=0 is impossible per T.87/14495-1"
+        severity failure;
+      ------------------------------------------------------------------------------
+
       vUnaryZeros := vThresh;
       vSuffixLen  := to_unsigned(QBPP, vSuffixLen'length);
       vLen        := to_unsigned(LIMIT, vLen'length);
 
-      if iMappedErrorVal > 0 then
-        vTmpUns := iMappedErrorVal - 1;
-      else
-        vTmpUns := (others => '0');
-      end if;
+      vMappedErrorDec := iMappedErrorVal - 1; -- MErrval is guaranteed to be greater than 1 when escape
 
       vSuffixVal                    := (others => '0');
-      vSuffixVal(QBPP - 1 downto 0) := vTmpUns(QBPP - 1 downto 0);
+      vSuffixVal(QBPP - 1 downto 0) := vMappedErrorDec(QBPP - 1 downto 0);
     end if;
 
     oUnaryZeros <= vUnaryZeros;
