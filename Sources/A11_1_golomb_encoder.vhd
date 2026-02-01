@@ -81,7 +81,7 @@ begin
     -- q = high-order bits of MErrval = floor(MErrval / 2^k)
     vHighOrder := shift_right(iMappedErrorVal, vKInt);
     -- r = low k bits of MErrval = MErrval - (q << k)
-    vLowOrder := iMappedErrorVal - shift_left(shift_right(iMappedErrorVal, vKInt), vKInt);
+    vLowOrder := iMappedErrorVal - shift_left(vHighOrder, vKInt);
 
     vIsEscape := (vHighOrder >= THRESHOLD);
 
