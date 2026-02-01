@@ -54,6 +54,8 @@ entity A11_1_golomb_encoder is
 end A11_1_golomb_encoder;
 
 architecture Behavioral of A11_1_golomb_encoder is
+  constant THRESHOLD : natural := LIMIT - QBPP - 1;
+
 begin
 
   -- Implements the Limited-Length Golomb code LG(k, LIMIT) as per T.87 A.5.3
@@ -67,7 +69,6 @@ begin
     variable vLen            : unsigned(oTotalLen'range);
     variable vKInt           : integer;
     variable vHighOrder      : unsigned(iMappedErrorVal'range);
-    variable vThresh         : unsigned(iMappedErrorVal'range); -- TODO: Check width, doesn't need to be full width
     variable vLowOrder       : unsigned(iMappedErrorVal'range);
     variable vMappedErrorDec : unsigned(iMappedErrorVal'range);
     variable vUnaryZeros     : unsigned(oUnaryZeros'range);
@@ -81,9 +82,8 @@ begin
     vHighOrder := shift_right(iMappedErrorVal, vKInt);
     -- r = low k bits of MErrval = MErrval - (q << k)
     vLowOrder := iMappedErrorVal - shift_left(shift_right(iMappedErrorVal, vKInt), vKInt);
-    vThresh   := to_unsigned(LIMIT - QBPP - 1, vThresh'length);
 
-    vIsEscape := (vHighOrder >= vThresh);
+    vIsEscape := (vHighOrder >= THRESHOLD);
 
     if not vIsEscape then
       vUnaryZeros := resize(vHighOrder, vUnaryZeros'length);
@@ -99,7 +99,7 @@ begin
         severity failure;
       ------------------------------------------------------------------------------
 
-      vUnaryZeros := vThresh;
+      vUnaryZeros := to_unsigned(THRESHOLD, vUnaryZeros'length);
       vSuffixLen  := to_unsigned(QBPP, vSuffixLen'length);
       vLen        := to_unsigned(LIMIT, vLen'length);
 
