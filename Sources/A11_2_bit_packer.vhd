@@ -7,11 +7,9 @@
 -- Description:  
 -- 
 -- Notes:
---              NOTE: buffer is written from MSB, to match bitstream pattern
+--              buffer is written from MSB, to match bitstream pattern
 --
 --              TODO: iFlush is unused
---              TODO: Add one internal pipeline wall/register: “build codeword/length” → “write 64-bit buffer”.
---              TODO: Test if a accumulator has better timing than buffering (I have no fucking clue what this means)
 --
 ----------------------------------------------------------------------------------
 use work.Common.all;
@@ -75,7 +73,7 @@ begin
     variable vSuffixLenInt    : natural;
     variable vWritePointerInt : integer;
     variable vReadPointerInt  : integer;
-    variable vWritenBits      : natural;
+    variable vWrittenBits     : natural;
     variable vReadBits        : natural;
     variable vSliceWidthWr    : natural;
     variable vSliceWidthRd    : natural;
@@ -108,7 +106,7 @@ begin
         vReadPointerInt  := to_integer(sReadPointer);
         vEncodedWord     := (others => '0');
         vReadBits        := 0;
-        vWritenBits      := 0;
+        vWrittenBits     := 0;
         sWriteBuffer <= iValid;
         vWordLenInt := to_integer(sWordLen);
 
@@ -146,7 +144,7 @@ begin
           end if;
           sWritePointer <= to_unsigned(vWritePointerInt, sWritePointer'length);
 
-          vWritenBits := vWordLenInt;
+          vWrittenBits := vWordLenInt;
         end if;
 
         ------------------------------------------------------------------------------------------------------------
@@ -173,7 +171,7 @@ begin
         elsif sQuantityBits < OUT_WIDTH and sAxiHandshake then
           sWordValidBuffer <= '0';
         end if;
-        sQuantityBits <= sQuantityBits + vWritenBits - vReadBits;
+        sQuantityBits <= sQuantityBits + vWrittenBits - vReadBits;
 
       end if;
     end if;
