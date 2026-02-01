@@ -17,7 +17,14 @@
 -- Additional Comments:             Code segment A11.1
 --                                  Not actual segment, described in text
 --                                  on A.5.3
--- 
+--
+--
+-- Assumptions:
+--              (1) k <= SUFFIX_WIDTH       and     k   <= MAPPED_ERROR_VAL_WIDTH
+--              (2) QBPP <= SUFFIX_WIDTH    and     QBPP <= MAPPED_ERROR_VAL_WIDTH
+--       True   (3) k can be 0
+--       True   (4) MappedErrorVal can be 0
+--
 ----------------------------------------------------------------------------------
 
 use work.Common.all;
@@ -28,7 +35,6 @@ use IEEE.NUMERIC_STD.all;
 
 entity A11_1_golomb_encoder is
   generic (
-    BITNESS                : natural := CO_BITNESS_STD; -- TODO: Why is this here?
     K_WIDTH                : natural := CO_K_WIDTH_STD;
     QBPP                   : natural := CO_QBPP_STD;
     LIMIT                  : natural := CO_LIMIT_STD;
@@ -60,62 +66,57 @@ begin
   --   - oTotalLen : unaryZeros + 1 + suffixLen
   --   - oIsEscape : '1' when q >= LIMIT - QBPP - 1
   process (iK, iMappedErrorVal)
-    variable vLen        : integer;
-    variable vK          : integer;
-    variable vM          : integer;
-    variable vQ          : integer; -- quotient (high-order bits of MErrval)
-    variable vThresh     : integer; -- LIMIT - qbpp - 1
-    variable uM          : unsigned(iMappedErrorVal'range);
-    variable uR          : unsigned(iMappedErrorVal'range);
-    variable uTmp        : unsigned(iMappedErrorVal'range);
-    variable vUnaryZeros : integer;
-    variable vSuffixLen  : integer;
+    variable vLen        : unsigned(oTotalLen'range);
+    variable vKInt       : integer;
+    variable vHighOrder  : unsigned(iMappedErrorVal'range);
+    variable vThresh     : unsigned(iMappedErrorVal'range); -- TODO: Check width, doesn't need to be full width
+    variable vLowOrder   : unsigned(iMappedErrorVal'range);
+    variable vTmpUns     : unsigned(iMappedErrorVal'range);
+    variable vUnaryZeros : unsigned(oUnaryZeros'range);
+    variable vSuffixLen  : unsigned(oSuffixLen'range);
     variable vIsEscape   : boolean;
     variable vSuffixVal  : unsigned(SUFFIX_WIDTH - 1 downto 0);
   begin
 
-    vK := to_integer(iK);
-    vM := to_integer(iMappedErrorVal);
-    uM := iMappedErrorVal;
+    vKInt := to_integer(iK);
     -- q = high-order bits of MErrval = floor(MErrval / 2^k)
-    vQ := to_integer(shift_right(uM, vK));
+    vHighOrder := shift_right(iMappedErrorVal, vKInt);
     -- r = low k bits of MErrval = MErrval - (q << k)
-    uR      := uM - shift_left(shift_right(uM, vK), vK);
-    vThresh := integer(LIMIT) - integer(QBPP) - 1;
+    vLowOrder := iMappedErrorVal - shift_left(shift_right(iMappedErrorVal, vKInt), vKInt);
+    vThresh   := to_unsigned(LIMIT - QBPP - 1, vThresh'length);
 
-    vIsEscape := (vQ >= vThresh);
+    vIsEscape := (vHighOrder >= vThresh);
 
     if not vIsEscape then
-      vUnaryZeros := vQ;
-      vSuffixLen  := vK;
+      vUnaryZeros := resize(vHighOrder, vUnaryZeros'length);
+      vSuffixLen  := resize(iK, vSuffixLen'length);
       vLen        := vUnaryZeros + 1 + vSuffixLen;
       vSuffixVal  := (others => '0');
 
-      if vK > 0 then
-        vSuffixVal(vK - 1 downto 0) := uR(vK - 1 downto 0);
+      if vKInt > 0 then
+        vSuffixVal(vKInt - 1 downto 0) := vLowOrder(vKInt - 1 downto 0);
       end if;
 
     else
       vUnaryZeros := vThresh;
-      vSuffixLen  := integer(QBPP);
-      vLen        := integer(LIMIT);
+      vSuffixLen  := to_unsigned(QBPP, vSuffixLen'length);
+      vLen        := to_unsigned(LIMIT, vLen'length);
 
-      if vM > 0 then
-        uTmp := to_unsigned(vM - 1, uTmp'length);
+      if iMappedErrorVal > 0 then
+        vTmpUns := iMappedErrorVal - 1;
       else
-        uTmp := (others => '0');
+        vTmpUns := (others => '0');
       end if;
 
-      vSuffixVal := (others => '0');
-      if QBPP > 0 then
-        vSuffixVal(QBPP - 1 downto 0) := uTmp(QBPP - 1 downto 0);
-      end if;
+      vSuffixVal                    := (others => '0');
+      vSuffixVal(QBPP - 1 downto 0) := vTmpUns(QBPP - 1 downto 0);
     end if;
 
-    oUnaryZeros <= to_unsigned(vUnaryZeros, oUnaryZeros'length);
-    oSuffixLen  <= to_unsigned(vSuffixLen, oSuffixLen'length);
-    oSuffixVal  <= resize(vSuffixVal, oSuffixVal'length);
-    oTotalLen   <= to_unsigned(vLen, oTotalLen'length);
+    oUnaryZeros <= vUnaryZeros;
+    oSuffixLen  <= vSuffixLen;
+    oSuffixVal  <= vSuffixVal;
+    oTotalLen   <= vLen;
+
     if vIsEscape then
       oIsEscape <= '1';
     else
