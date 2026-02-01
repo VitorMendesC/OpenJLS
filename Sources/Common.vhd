@@ -40,19 +40,20 @@ package Common is
   constant CO_OUT_WIDTH_STD              : natural := 72; -- Output word width
   constant CO_BUFFER_WIDTH_STD           : natural := 96; -- Output buffer width
 
-  -- TODO: need to be checked
+  -- TODO: needs to be checked
   constant CO_RESET_STD : natural := 64;
 
   -- Unspecified by T.87
-  constant CO_UNARY_WIDTH_STD     : natural := 6; -- enough to hold LIMIT - QBPP - 1
+  -- TODO: needs to be checked
+  constant CO_UNARY_WIDTH_STD     : natural := 16; -- enough to hold LIMIT - QBPP - 1
   constant CO_SUFFIX_WIDTH_STD    : natural := 16; -- max(qbpp, max_k)
-  constant CO_SUFFIXLEN_WIDTH_STD : natural := 5; -- bits to encode suffix length (up to 31)
-  constant CO_TOTLEN_WIDTH_STD    : natural := 6; -- bits to encode total length (up to LIMIT)
+  constant CO_SUFFIXLEN_WIDTH_STD : natural := 16; -- bits to encode suffix length (up to 31)
+  constant CO_TOTLEN_WIDTH_STD    : natural := 16; -- bits to encode total length (up to LIMIT)
   constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
 
-  -- Specified at initialisation
+  -- Specified at initialization
   constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
   constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD); -- number of bits to represent RANGE (ceil(log2(RANGE)))
   constant CO_BPP_STD   : natural := maximum(2, log2ceil(CO_MAX_VAL_STD + 1)); -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
@@ -63,7 +64,8 @@ package Common is
 
   -- RESET
   constant CO_RESET_MAX_WIDTH : natural := 16;
-  constant CO_NQ_WIDTH_STD    : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET TODO: check
+  -- TODO: needs to be checked
+  constant CO_NQ_WIDTH_STD : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
 
   -- C[Q] parameters, signed value
   constant CO_MAX_CQ   : integer := 127;
