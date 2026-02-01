@@ -129,11 +129,11 @@ begin
         -- Save the word
         if sWriteBuffer = '1' then
           -- Write to buffer
-          if sWritePointer - vWordLenInt + 1 >= 0 then
+          if vWritePointerInt - vWordLenInt + 1 >= 0 then
             sBuffer(vWritePointerInt downto vWritePointerInt - vWordLenInt + 1) <= sWordToWrite(vWordLenInt - 1 downto 0);
           else
             -- sliced write
-            vSliceWidthWr := to_integer(vWordLenInt - sWritePointer - 1);
+            vSliceWidthWr := vWordLenInt - vWritePointerInt - 1;
             sBuffer(vWritePointerInt downto 0)                            <= sWordToWrite(vWordLenInt - 1 downto vSliceWidthWr);
             sBuffer(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - vSliceWidthWr) <= sWordToWrite(vSliceWidthWr - 1 downto 0);
           end if;
@@ -152,10 +152,10 @@ begin
         ------------------------------------------------------------------------------------------------------------
 
         if sQuantityBits >= OUT_WIDTH and (sAxiHandshake or sWordValidBuffer = '0') then
-          if sReadPointer - OUT_WIDTH + 1 >= 0 then
+          if vReadPointerInt - OUT_WIDTH + 1 >= 0 then
             sOutWordBuffer <= sBuffer(vReadPointerInt downto vReadPointerInt - OUT_WIDTH + 1);
           else
-            vSliceWidthRd := to_integer(OUT_WIDTH - sReadPointer - 1);
+            vSliceWidthRd := OUT_WIDTH - vReadPointerInt - 1;
             sOutWordBuffer(OUT_WIDTH - 1 downto vSliceWidthRd) <= sBuffer(vReadPointerInt downto 0);
             sOutWordBuffer(vSliceWidthRd - 1 downto 0)         <= sBuffer(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - vSliceWidthRd);
           end if;
