@@ -115,12 +115,7 @@ begin
           vFullLength := to_integer(iUnaryZeros + 1 + iSuffixLen);
 
           -- Bit 1 to end unary zeros
-          if vSuffixLenInt > 0 then
-            vEncodedWord(vSuffixLenInt downto 0) := '1' & std_logic_vector(iSuffixVal(vSuffixLenInt - 1 downto 0));
-          else
-            -- this case should never happen, it's just for robustness
-            vEncodedWord(vSuffixLenInt downto 0) := "1";
-          end if;
+          vEncodedWord(vSuffixLenInt downto 0) := '1' & std_logic_vector(resize(iSuffixVal, vSuffixLenInt));
 
           sWordToWrite <= vEncodedWord;
           sWordLen     <= to_unsigned(vFullLength, sWordLen'length);
