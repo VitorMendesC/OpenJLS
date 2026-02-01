@@ -74,7 +74,7 @@ begin
     variable vUnaryZeros     : unsigned(oUnaryZeros'range);
     variable vSuffixLen      : unsigned(oSuffixLen'range);
     variable vIsEscape       : boolean;
-    variable vSuffixVal      : unsigned(SUFFIX_WIDTH - 1 downto 0);
+    variable vSuffixVal      : unsigned(oSuffixVal'range);
   begin
 
     vKInt := to_integer(iK);
