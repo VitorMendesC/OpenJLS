@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
 -- Company:
--- Engineer:    Vitor Mendes Camilow
+-- Engineer:    Vitor Mendes Camilo
 -- 
 -- Create Date:
 -- Design Name: 
@@ -29,7 +29,8 @@ entity A12_variables_update is
     A_WIDTH : natural               := CO_AQ_WIDTH_STD;
     B_WIDTH : natural               := CO_BQ_WIDTH_STD;
     N_WIDTH : natural               := CO_NQ_WIDTH_STD;
-    RESET   : natural               := CO_RESET_STD
+    RESET   : natural               := CO_RESET_STD;
+    NEAR    : natural               := CO_NEAR_STD
   );
   port (
     iErrorVal : in signed (BITNESS downto 0); -- Errval after correction & clamp
@@ -45,9 +46,11 @@ end entity;
 
 architecture rtl of A12_variables_update is
 
-  signal sDoRescale : std_logic;
+  constant C_ERR_SCALE : signed (B_WIDTH - 1 downto 0) := to_signed((2 * NEAR) + 1, B_WIDTH);
 
+  signal sDoRescale      : std_logic;
   signal sErrExtend      : signed (B_WIDTH - 1 downto 0);
+  signal sErrScaledWide  : signed ((2 * B_WIDTH) - 1 downto 0);
   signal sErrorAbsExtend : unsigned(A_WIDTH - 1 downto 0);
   signal sAqNew          : unsigned(A_WIDTH - 1 downto 0);
   signal sBqNew          : signed (B_WIDTH - 1 downto 0);
@@ -62,10 +65,11 @@ begin
     '0';
 
   sErrExtend      <= resize(iErrorVal, B_WIDTH);
+  sErrScaledWide  <= sErrExtend * C_ERR_SCALE;
   sErrorAbsExtend <= resize(unsigned(abs(iErrorVal)), A_WIDTH);
 
   sAqNew <= iAq + sErrorAbsExtend;
-  sBqNew <= iBq + sErrExtend;
+  sBqNew <= iBq + resize(sErrScaledWide, B_WIDTH);
   sNqNew <= iNq + 1;
 
   -- Rescale: halve A & B; N sequencing: (N>>1) + 1 (per T.87)
