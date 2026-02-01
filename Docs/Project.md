@@ -136,11 +136,10 @@ else {
 }
 ```
 
-## Written requirement A.11.1
+## Written requirement A.11.1 and A.11.2 (Golomb encoder and packer)
 "If the number formed by the high order bits of MErrval (all but the k least significant bits) is less than LIMIT – qbpp – 1, this number shall be appended to the encoded bit stream in unary representation, that is, by as many zeros as the value of this number, followed by a binary one. The k least significant bits of MErrval shall then be appended to the encoded bit stream without change, with the most significant bit first, followed by the remaining bits in decreasing order of significance."
 (T.87 1998, pg. 21)
 
-## Written requirement A.11.2
 "Otherwise, LIMIT – qbpp – 1 zeros shall be appended to the encoded bit stream, followed by a binary
 one. The binary representation of MErrval – 1 shall then be appended to the encoded bit stream using
 qbpp bits, with the most significant bit first, followed by the remaining bits in decreasing order of
