@@ -31,14 +31,28 @@ package Common is
 
   constant CO_BITNESS_MAX_WIDTH : natural := 16;
 
-  -- Standard reference values
-  constant CO_BITNESS_STD                : natural := 12;
+  -- Project's standard reference values ----------------------------------------------
+  constant CO_BITNESS_STD      : natural := 12;
+  constant CO_NEAR_STD         : natural := 0;
+  constant CO_OUT_WIDTH_STD    : natural := 72; -- Output word width
+  constant CO_BUFFER_WIDTH_STD : natural := 96; -- Output buffer width
+
+  -- Defined values from T.87 ----------------------------------------------------------
   constant CO_MAX_VAL_STD                : natural := 2 ** CO_BITNESS_STD - 1;
-  constant CO_NEAR_STD                   : natural := 0;
   constant CO_ERROR_VALUE_WIDTH_STD      : natural := CO_BITNESS_STD + 1;
   constant CO_MAPPED_ERROR_VAL_WIDTH_STD : natural := CO_BITNESS_STD + 2;
-  constant CO_OUT_WIDTH_STD              : natural := 72; -- Output word width
-  constant CO_BUFFER_WIDTH_STD           : natural := 96; -- Output buffer width
+  constant CO_CQ_WIDTH                   : natural := 8;
+  -- Initialization
+  constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
+  constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD); -- number of bits to represent RANGE (ceil(log2(RANGE)))
+  constant CO_BPP_STD   : natural := maximum(2, log2ceil(CO_MAX_VAL_STD + 1)); -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
+  constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + maximum(8, CO_BPP_STD)); -- maximum length of the limited Golomb code
+
+  -- Defined ranges from T.87 ---------------------------------------------------------- 
+  constant CO_MAX_VAL_MAX_WIDTH : natural := 16;
+  constant CO_RESET_MAX_WIDTH   : natural := 16;
+  constant CO_MAX_CQ            : integer := 127;
+  constant CO_MIN_CQ            : integer := - 128;
 
   -- TODO: needs to be checked
   constant CO_RESET_STD : natural := 64;
@@ -52,26 +66,9 @@ package Common is
   constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
+  constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
 
-  -- Specified at initialization
-  constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
-  constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD); -- number of bits to represent RANGE (ceil(log2(RANGE)))
-  constant CO_BPP_STD   : natural := maximum(2, log2ceil(CO_MAX_VAL_STD + 1)); -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
-  constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + maximum(8, CO_BPP_STD)); -- maximum length of the limited Golomb code
-
-  -- MAXVAL
-  constant CO_MAXVAL_MAX_WIDTH : natural := 16;
-
-  -- RESET
-  constant CO_RESET_MAX_WIDTH : natural := 16;
-  -- TODO: needs to be checked
-  constant CO_NQ_WIDTH_STD : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
-
-  -- C[Q] parameters, signed value
-  constant CO_MAX_CQ   : integer := 127;
-  constant CO_MIN_CQ   : integer := - 128;
-  constant CO_CQ_WIDTH : natural := 8;
-
+  -- Internal ----------------------------------------------------------------------------
   constant CO_SIGN_POS : std_logic := '0';
   constant CO_SIGN_NEG : std_logic := '1';
 
