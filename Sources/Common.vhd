@@ -53,6 +53,7 @@ package Common is
   constant CO_RESET_MAX_WIDTH   : natural := 16;
   constant CO_MAX_CQ            : integer := 127;
   constant CO_MIN_CQ            : integer := - 128;
+  constant CO_NEAR_MAX_STD      : natural := minimum(255, CO_MAX_VAL_STD/2);
 
   -- TODO: needs to be checked
   constant CO_RESET_STD : natural := 64;
