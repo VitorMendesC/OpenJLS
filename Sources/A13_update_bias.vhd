@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
 -- Company:
--- Engineer:    Vitor Mendes Camilow
+-- Engineer:    Vitor Mendes Camilo
 -- 
 -- Create Date:
 -- Design Name: 
@@ -15,6 +15,9 @@
 -- Revision:
 -- Revision 0.01 - File Created
 -- Additional Comments:
+--
+-- Assumptions:
+--               N_WIDTH > B_WIDTH
 -- 
 ----------------------------------------------------------------------------------
 use work.Common.all;
