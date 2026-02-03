@@ -28,15 +28,15 @@ entity A13_update_bias is
     B_WIDTH : natural := CO_BQ_WIDTH_STD;
     N_WIDTH : natural := CO_NQ_WIDTH_STD;
     C_WIDTH : natural := CO_CQ_WIDTH;
-    MIN_C   : natural := CO_MIN_CQ;
-    MAX_C   : natural := CO_MAX_CQ
+    MIN_C   : integer := CO_MIN_CQ;
+    MAX_C   : integer := CO_MAX_CQ
   );
   port (
     iBq : in signed (B_WIDTH - 1 downto 0);
     iNq : in unsigned (N_WIDTH - 1 downto 0);
-    iCq : in unsigned (C_WIDTH - 1 downto 0); -- TODO: CQ is signed
+    iCq : in signed (C_WIDTH - 1 downto 0);
     oBq : out signed (B_WIDTH - 1 downto 0);
-    oCq : out unsigned (C_WIDTH - 1 downto 0)
+    oCq : out signed (C_WIDTH - 1 downto 0)
   );
 end entity A13_update_bias;
 
