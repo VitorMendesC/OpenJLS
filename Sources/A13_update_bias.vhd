@@ -42,65 +42,46 @@ end entity A13_update_bias;
 
 architecture rtl of A13_update_bias is
 
-  -- Common constants
-  constant ZERO_B : signed(B_WIDTH - 1 downto 0) := (others => '0');
-
-  -- Parallel computations (no clock, no process)
-  signal sN          : signed(B_WIDTH - 1 downto 0);
-  signal sNegThr     : signed(B_WIDTH - 1 downto 0);
-  signal sNegThrP1   : signed(B_WIDTH - 1 downto 0);
-  signal sBPlusN     : signed(B_WIDTH - 1 downto 0);
-  signal sBMinusN    : signed(B_WIDTH - 1 downto 0);
-  signal sIsNegBand  : std_logic;
-  signal sIsPosBand  : std_logic;
-  signal sNeedNegClp : std_logic;
-  signal sNeedPosClp : std_logic;
-  signal sBNegFinal  : signed(B_WIDTH - 1 downto 0);
-  signal sBPosFinal  : signed(B_WIDTH - 1 downto 0);
-  signal sCDec       : unsigned(C_WIDTH - 1 downto 0);
-  signal sCInc       : unsigned(C_WIDTH - 1 downto 0);
+  signal sIsBNegBranch : std_logic;
+  signal sIsBPosBranch : std_logic;
+  signal sNeedNegClp   : std_logic;
+  signal sNeedPosClp   : std_logic;
+  signal sNqSig        : signed(iBq'range); -- signed and extended Nq
+  signal sBNegFinal    : signed(iBq'range);
+  signal sBPosFinal    : signed(iBq'range);
+  signal sCDec         : signed(iCq'range);
+  signal sCInc         : signed(iCq'range);
 
 begin
 
-  -- Extend N to B width for signed math
-  sN <= signed(resize(iNq, B_WIDTH));
+  sNqSig <= signed(resize(iNq, B_WIDTH));
 
-  -- Precompute thresholds and candidates
-  sNegThr   <= - sN; -- -N
-  sNegThrP1 <= (-sN) + 1; -- -N + 1
-  sBPlusN   <= iBq + sN; -- B + N
-  sBMinusN  <= iBq - sN; -- B - N
-
-  -- Band selection (equivalent to if/else-if)
-  sIsNegBand <= '1' when (iBq <= sNegThr) else
+  sIsBNegBranch <= '1' when iBq <= - sNqSig else
     '0';
-  sIsPosBand <= '1' when (iBq > ZERO_B) else
+  sIsBPosBranch <= '1' when iBq > 0 else
     '0';
 
-  -- C update candidates with saturation to [MIN_C .. MAX_C]
-  sCDec <= (iCq - 1) when (iCq > MIN_C) else
-    iCq; -- if (C>MIN_C) C--
-  sCInc <= (iCq + 1) when (iCq < MAX_C) else
-    iCq; -- if (C<MAX_C) C++
+  sCDec <= iCq - 1 when iCq > MIN_C else
+    iCq;
+  sCInc <= iCq + 1 when iCq < MAX_C else
+    iCq;
 
-  -- B clamping after update
-  sNeedNegClp <= '1' when (sBPlusN <= sNegThr) else
-    '0'; -- if (B+N <= -N) => B=-N+1
-  sNeedPosClp <= '1' when (sBMinusN > ZERO_B) else
-    '0'; -- if (B-N > 0)  => B=0
+  sNeedNegClp <= '1' when iBq + sNqSig <= - sNqSig else
+    '0';
+  sNeedPosClp <= '1' when iBq - sNqSig > 0 else
+    '0';
 
-  sBNegFinal <= sNegThrP1 when (sNeedNegClp = '1') else
-    sBPlusN;
-  sBPosFinal <= ZERO_B when (sNeedPosClp = '1') else
-    sBMinusN;
+  sBNegFinal <= - sNqSig + 1 when sNeedNegClp = '1' else
+    iBq + sNqSig;
+  sBPosFinal <= to_signed(0, sBPosFinal'length) when sNeedPosClp = '1' else
+    iBq - sNqSig;
 
-  -- Final select (no process: pure parallel logic)
-  oBq <= sBNegFinal when (sIsNegBand = '1') else
-    sBPosFinal when (sIsPosBand = '1') else
+  oBq <= sBNegFinal when sIsBNegBranch = '1' else
+    sBPosFinal when sIsBPosBranch = '1' else
     iBq;
 
-  oCq <= sCDec when (sIsNegBand = '1') else
-    sCInc when (sIsPosBand = '1') else
+  oCq <= sCDec when sIsBNegBranch = '1' else
+    sCInc when sIsBPosBranch = '1' else
     iCq;
 
 end architecture rtl;
