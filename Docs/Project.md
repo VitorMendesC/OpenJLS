@@ -108,6 +108,10 @@ else if (Rx > MAXVAL)
   Rx = MAXVAL;
 ```
 
+### Written requirement A.8.1 - Reconstructed value in lossless mode (LOSSLESS ONLY)
+"In lossless coding (NEAR = 0), the reconstructed value Rx shall be set to Ix."
+(T.87 1998, pg. 20)
+
 ### Code segment A.9 – Modulo reduction of the error
 ```c
 if (Errval < 0)
