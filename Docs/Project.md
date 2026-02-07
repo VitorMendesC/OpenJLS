@@ -54,7 +54,6 @@ else Qi = 4;
 
 ### Written requirement A.4.1
 "If the first non-zero element of the vector (Q1, Q2, Q3) is negative, then all the signs of the vector (Q1, Q2, Q3) shall be reversed to obtain (–Q1, –Q2, –Q3).
-
 In this case, the variable SIGN shall be set to –1, otherwise it shall be set to +1." 
 (T.87 1998, pg. 19)
 
@@ -267,6 +266,7 @@ else
 
 ### Written requirement A.20.1 – Golomb k variable
 - Note: Use A.10 hardware
+  
 "Set Q = RItype + 365. The Golomb variable k shall be computed, following the same procedure as in the
 regular mode, Code segment A.10, but using TEMP instead of A[Q]." (T.87 1998, pg. 25)
 
