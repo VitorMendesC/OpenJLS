@@ -88,7 +88,7 @@ architecture Behavioral of A4_quantization_gradients is
   constant BASIC_T1 : natural := 3;
   constant BASIC_T2 : natural := 7;
   constant BASIC_T3 : natural := 21;
-  constant FACTOR   : natural := (minimum(MAX_VAL, 4095) + 128) / 256;
+  constant FACTOR   : natural := (math_min(MAX_VAL, 4095) + 128) / 256;
   constant T1       : natural := clamp(FACTOR * (BASIC_T1 - 2) + 2 + 3 * NEAR, NEAR + 1, MAX_VAL);
   constant T2       : natural := clamp(FACTOR * (BASIC_T2 - 3) + 3 + 5 * NEAR, T1, MAX_VAL);
   constant T3       : natural := clamp(FACTOR * (BASIC_T3 - 4) + 4 + 7 * NEAR, T2, MAX_VAL);

@@ -40,8 +40,8 @@ end A5_edge_detecting_predictor;
 architecture Behavioral of A5_edge_detecting_predictor is
 begin
 
-  oPx                     <= minimum(iA, iB) when iC >= maximum(iA, iB) else
-    maximum(iA, iB) when iC <= minimum(iA, iB) else
+  oPx                      <= math_min(iA, iB) when iC >= math_max(iA, iB) else
+    math_max(iA, iB) when iC <= math_min(iA, iB) else
     iA + iB - iC;
 
 end Behavioral;

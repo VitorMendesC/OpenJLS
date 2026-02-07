@@ -16,7 +16,7 @@ architecture bench of tb_A10 is
   constant N_WIDTH     : natural := CO_NQ_WIDTH_STD;
   constant K_WIDTH     : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
   constant MAX_K       : natural := A_WIDTH;
-  constant DIR_A_WIDTH : natural := minimum(A_WIDTH, 12);
+  constant DIR_A_WIDTH : natural := math_min(A_WIDTH, 12);
   constant DIR_A_MAX   : natural := 2 ** DIR_A_WIDTH - 1;
   constant DIR_A_POW2  : natural := 2 ** (DIR_A_WIDTH - 1);
 

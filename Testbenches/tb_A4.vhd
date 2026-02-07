@@ -36,7 +36,7 @@ architecture bench of tb_A4 is
     end if;
   end function;
 
-  constant FACTOR : integer := (minimum(MAX_VAL, 4095) + 128) / 256;
+  constant FACTOR : integer := (math_min(MAX_VAL, 4095) + 128) / 256;
 
   function t1_for(near : integer) return integer is
   begin
