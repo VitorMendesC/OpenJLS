@@ -1,3 +1,6 @@
 backups/
 ThirdParty/open-logic/doc
 settings.json
+build/
+*.log
+*.jou
