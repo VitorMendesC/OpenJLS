@@ -80,7 +80,7 @@ begin
     '0';
 
   -- Magnitudes for mapping
-  sErrU    <= unsigned(iErrorVal); -- Only used when ErrorVal >= 0, conversion is safe
+  sErrU    <= resize(unsigned(iErrorVal), sErrU'length); -- Only used when ErrorVal >= 0, conversion is safe
   sErrAbsU <= resize(unsigned(abs(sErrorValExt)), sErrAbsU'length);
 
   -- Special mapping
