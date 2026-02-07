@@ -169,7 +169,7 @@ N[Q] = N[Q] + 1;
 if (B[Q] <= –N[Q]) {
   B[Q] = B[Q] + N[Q];
   if (C[Q] > MIN_C)
-    C[Q] = C[Q – 1;
+    C[Q] = C[Q] – 1;
   if (B[Q] <= –N[Q])
     B[Q] = –N[Q] + 1;
 }
