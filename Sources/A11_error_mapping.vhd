@@ -84,12 +84,12 @@ begin
   sErrAbsU <= resize(unsigned(abs(sErrorValExt)), sErrAbsU'length);
 
   -- Special mapping
-  sMapErrorSpecialPos <= (2 * sErrU) + 1; -- 2*Errval + 1
-  sMapErrorSpecialNeg <= (2 * sErrAbsU) - 2; -- -2*(Errval+1) = 2*abs(Errval) - 2
+  sMapErrorSpecialPos <= resize((2 * sErrU) + 1, sMapErrorSpecialPos'length);
+  sMapErrorSpecialNeg <= resize((2 * sErrAbsU) - 2, sMapErrorSpecialNeg'length);
 
   -- Regular mapping
-  sMapErrorRegPos <= 2 * sErrU;
-  sMapErrorRegNeg <= (2 * sErrAbsU) - 1; -- -2*Errval - 1 = 2*abs(Errval) - 1
+  sMapErrorRegPos <= resize(2 * sErrU, sMapErrorRegPos'length);
+  sMapErrorRegNeg <= resize((2 * sErrAbsU) - 1, sMapErrorRegNeg'length);
 
   -- Final selection (purely combinational)
   oMappedErrorVal <= sMapErrorSpecialPos when (sSpecialMap = '1' and sErrEqualGreaterZero = '1') else
