@@ -1,13 +1,13 @@
-# Batch-run all VHDL testbenches in Testbenches/ using Vivado XSim.
+# Batch-run all VHDL testbenches in Testbenches/ using Vivado XSim in project mode.
 #
 # Usage:
-#   vivado -mode batch -source Tcl/run_all_testbenches.tcl -tclargs \
-#     -runtime all
+#    vivado -mode batch -notrace -source Tcl/run_all_testbenches.tcl -tclargs
 #
 # Notes:
 # - Vivado requires a part for project creation, even for simulation-only runs.
 # - Default part is xc7z020clg400-1 (override with -part).
 # - Testbenches call std.env.finish; default runtime is "all".
+# - Use -notrace to suppress echoed Tcl commands if tcl.commandTrace is enabled.
 
 set part "xc7z020clg400-1"
 set runtime "all"
