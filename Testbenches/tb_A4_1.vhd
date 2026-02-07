@@ -4,10 +4,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A4_1 is
 end;
 
 architecture bench of tb_A4_1 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   signal iQ1   : signed(3 downto 0) := (others => '0');
   signal iQ2   : signed(3 downto 0) := (others => '0');
   signal iQ3   : signed(3 downto 0) := (others => '0');
@@ -62,37 +74,37 @@ architecture bench of tb_A4_1 is
       exp_q3 := q3;
     end if;
 
-    assert sSign = exp_sign
-      report "A4.1 sign mismatch: Q1=" & integer'image(q1) &
-             " Q2=" & integer'image(q2) &
-             " Q3=" & integer'image(q3) &
-             " expSign=" & std_logic'image(exp_sign) &
-             " gotSign=" & std_logic'image(sSign)
-      severity failure;
+    check(sSign = exp_sign,
+      "A4.1 sign mismatch: Q1=" & integer'image(q1) &
+      " Q2=" & integer'image(q2) &
+      " Q3=" & integer'image(q3) &
+      " expSign=" & std_logic'image(exp_sign) &
+      " gotSign=" & std_logic'image(sSign)
+    );
 
-    assert sOut1 = to_signed(exp_q1, sOut1'length)
-      report "A4.1 Q1 mismatch: Q1=" & integer'image(q1) &
-             " Q2=" & integer'image(q2) &
-             " Q3=" & integer'image(q3) &
-             " exp=" & integer'image(exp_q1) &
-             " got=" & integer'image(to_integer(sOut1))
-      severity failure;
+    check(sOut1 = to_signed(exp_q1, sOut1'length),
+      "A4.1 Q1 mismatch: Q1=" & integer'image(q1) &
+      " Q2=" & integer'image(q2) &
+      " Q3=" & integer'image(q3) &
+      " exp=" & integer'image(exp_q1) &
+      " got=" & integer'image(to_integer(sOut1))
+    );
 
-    assert sOut2 = to_signed(exp_q2, sOut2'length)
-      report "A4.1 Q2 mismatch: Q1=" & integer'image(q1) &
-             " Q2=" & integer'image(q2) &
-             " Q3=" & integer'image(q3) &
-             " exp=" & integer'image(exp_q2) &
-             " got=" & integer'image(to_integer(sOut2))
-      severity failure;
+    check(sOut2 = to_signed(exp_q2, sOut2'length),
+      "A4.1 Q2 mismatch: Q1=" & integer'image(q1) &
+      " Q2=" & integer'image(q2) &
+      " Q3=" & integer'image(q3) &
+      " exp=" & integer'image(exp_q2) &
+      " got=" & integer'image(to_integer(sOut2))
+    );
 
-    assert sOut3 = to_signed(exp_q3, sOut3'length)
-      report "A4.1 Q3 mismatch: Q1=" & integer'image(q1) &
-             " Q2=" & integer'image(q2) &
-             " Q3=" & integer'image(q3) &
-             " exp=" & integer'image(exp_q3) &
-             " got=" & integer'image(to_integer(sOut3))
-      severity failure;
+    check(sOut3 = to_signed(exp_q3, sOut3'length),
+      "A4.1 Q3 mismatch: Q1=" & integer'image(q1) &
+      " Q2=" & integer'image(q2) &
+      " Q3=" & integer'image(q3) &
+      " exp=" & integer'image(exp_q3) &
+      " got=" & integer'image(to_integer(sOut3))
+    );
   end procedure;
 begin
   dut : entity work.A4_1_quant_gradient_merging
@@ -116,7 +128,11 @@ begin
       end loop;
     end loop;
 
-    report "tb_A4_1 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A4_1 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A4_1 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

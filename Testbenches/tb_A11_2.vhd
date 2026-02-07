@@ -2,10 +2,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A11_2 is
 end;
 
 architecture bench of tb_A11_2 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   constant CLK_PERIOD      : time    := 10 ns;
   constant LIMIT           : natural := 16;
   constant OUT_WIDTH       : natural := 8;
@@ -88,33 +100,35 @@ begin
       wait for 1 ns;
 
       if oWordValid = '1' then
-        assert out_idx < C_EXP_WORDS'length
-          report "A11.2 produced unexpected extra output word: " &
-                 integer'image(integer(out_idx))
-          severity failure;
+        check(out_idx < C_EXP_WORDS'length,
+          "A11.2 produced unexpected extra output word: " &
+          integer'image(integer(out_idx))
+        );
 
-        assert oWord = C_EXP_WORDS(out_idx)
-          report "A11.2 output mismatch at index " &
-                 integer'image(integer(out_idx)) &
-                 " exp=" & integer'image(to_integer(unsigned(C_EXP_WORDS(out_idx)))) &
-                 " got=" & integer'image(to_integer(unsigned(oWord)))
-          severity failure;
+        check(oWord = C_EXP_WORDS(out_idx),
+          "A11.2 output mismatch at index " &
+          integer'image(integer(out_idx)) &
+          " exp=" & integer'image(to_integer(unsigned(C_EXP_WORDS(out_idx)))) &
+          " got=" & integer'image(to_integer(unsigned(oWord)))
+        );
 
         out_idx := out_idx + 1;
       end if;
     end loop;
 
-    assert out_idx = C_EXP_WORDS'length
-      report "A11.2 output count mismatch. exp=" &
-             integer'image(C_EXP_WORDS'length) &
-             " got=" & integer'image(integer(out_idx))
-      severity failure;
+    check(out_idx = C_EXP_WORDS'length,
+      "A11.2 output count mismatch. exp=" &
+      integer'image(C_EXP_WORDS'length) &
+      " got=" & integer'image(integer(out_idx))
+    );
 
-    assert oBufferOverflow = '0'
-      report "A11.2 buffer overflow should not occur in directed sequence"
-      severity failure;
+    check(oBufferOverflow = '0', "A11.2 buffer overflow should not occur in directed sequence");
 
-    report "tb_A11_2 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A11_2 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A11_2 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

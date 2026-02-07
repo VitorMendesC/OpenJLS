@@ -3,10 +3,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A3 is
 end;
 
 architecture bench of tb_A3 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Clock period
   constant cStdWait : time := 100 ns;
   -- Generics
@@ -44,13 +56,9 @@ begin
     iD3 <= to_signed(0, BITNESS + 1);
 
     wait for cStdWait;
-    assert oModeRun = '1'
-    report "Test 1 Failed: oModeRun should be asserted for zero gradients"
-      severity failure;
+    check(oModeRun = '1', "Test 1 Failed: oModeRun should be asserted for zero gradients");
 
-    assert oModeRegular = '0'
-    report "Test 1 Failed: oModeRegular should be deasserted for zero gradients"
-      severity failure;
+    check(oModeRegular = '0', "Test 1 Failed: oModeRegular should be deasserted for zero gradients");
 
     -- Non-zero gradients test
     wait for cStdWait;
@@ -59,16 +67,16 @@ begin
     iD3 <= (others => '1');
 
     wait for cStdWait;
-    assert oModeRun = '0'
-    report "Test 2 Failed: oModeRun should be deasserted for non-zero gradients"
-      severity failure;
+    check(oModeRun = '0', "Test 2 Failed: oModeRun should be deasserted for non-zero gradients");
 
-    assert oModeRegular = '1'
-    report "Test 2 Failed: oModeRegular should be asserted for non-zero gradients"
-      severity failure;
+    check(oModeRegular = '1', "Test 2 Failed: oModeRegular should be asserted for non-zero gradients");
 
-    report "All tests passed!" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A3 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A3 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 
 end;

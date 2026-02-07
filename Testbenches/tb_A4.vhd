@@ -3,12 +3,24 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 use Work.Common.all;
 
 entity tb_A4 is
 end;
 
 architecture bench of tb_A4 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   constant cStdWait : time := 20 ns;
 
   -- Generics
@@ -178,21 +190,21 @@ begin
       iD3 <= to_signed(di, iD3'length);
       wait for cStdWait;
 
-      assert oQ1_n0 = to_signed(exp, oQ1_n0'length)
-      report "oQ1 NEAR=0 mismatch Di=" & integer'image(di) &
+      check(oQ1_n0 = to_signed(exp, oQ1_n0'length),
+        "oQ1 NEAR=0 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ1_n0))
-        severity failure;
-      assert oQ2_n0 = to_signed(exp, oQ2_n0'length)
-      report "oQ2 NEAR=0 mismatch Di=" & integer'image(di) &
+      );
+      check(oQ2_n0 = to_signed(exp, oQ2_n0'length),
+        "oQ2 NEAR=0 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ2_n0))
-        severity failure;
-      assert oQ3_n0 = to_signed(exp, oQ3_n0'length)
-      report "oQ3 NEAR=0 mismatch Di=" & integer'image(di) &
+      );
+      check(oQ3_n0 = to_signed(exp, oQ3_n0'length),
+        "oQ3 NEAR=0 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ3_n0))
-        severity failure;
+      );
     end loop;
 
     for idx in test_vectors_n3'range loop
@@ -204,25 +216,29 @@ begin
       iD3 <= to_signed(di, iD3'length);
       wait for cStdWait;
 
-      assert oQ1_n3 = to_signed(exp, oQ1_n3'length)
-      report "oQ1 NEAR=3 mismatch Di=" & integer'image(di) &
+      check(oQ1_n3 = to_signed(exp, oQ1_n3'length),
+        "oQ1 NEAR=3 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ1_n3))
-        severity failure;
-      assert oQ2_n3 = to_signed(exp, oQ2_n3'length)
-      report "oQ2 NEAR=3 mismatch Di=" & integer'image(di) &
+      );
+      check(oQ2_n3 = to_signed(exp, oQ2_n3'length),
+        "oQ2 NEAR=3 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ2_n3))
-        severity failure;
-      assert oQ3_n3 = to_signed(exp, oQ3_n3'length)
-      report "oQ3 NEAR=3 mismatch Di=" & integer'image(di) &
+      );
+      check(oQ3_n3 = to_signed(exp, oQ3_n3'length),
+        "oQ3 NEAR=3 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ3_n3))
-        severity failure;
+      );
     end loop;
 
-    report "tb_A4 complete" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A4 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A4 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 
 end;

@@ -4,10 +4,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A13 is
 end;
 
 architecture bench of tb_A13 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   constant B_WIDTH : natural := 16;
   constant N_WIDTH : natural := CO_NQ_WIDTH_STD;
   constant C_WIDTH : natural := CO_CQ_WIDTH;
@@ -70,21 +82,21 @@ architecture bench of tb_A13 is
       exp_c := cq_val;
     end if;
 
-    assert sBOut = to_signed(exp_b, sBOut'length)
-      report "A13 Bq mismatch: Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(nq_val) &
-             " Cq=" & integer'image(cq_val) &
-             " exp=" & integer'image(exp_b) &
-             " got=" & integer'image(to_integer(sBOut))
-      severity failure;
+    check(sBOut = to_signed(exp_b, sBOut'length),
+      "A13 Bq mismatch: Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(nq_val) &
+      " Cq=" & integer'image(cq_val) &
+      " exp=" & integer'image(exp_b) &
+      " got=" & integer'image(to_integer(sBOut))
+    );
 
-    assert sCOut = to_signed(exp_c, sCOut'length)
-      report "A13 Cq mismatch: Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(nq_val) &
-             " Cq=" & integer'image(cq_val) &
-             " exp=" & integer'image(exp_c) &
-             " got=" & integer'image(to_integer(sCOut))
-      severity failure;
+    check(sCOut = to_signed(exp_c, sCOut'length),
+      "A13 Cq mismatch: Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(nq_val) &
+      " Cq=" & integer'image(cq_val) &
+      " exp=" & integer'image(exp_c) &
+      " got=" & integer'image(to_integer(sCOut))
+    );
   end procedure;
 begin
   dut : entity work.A13_update_bias
@@ -133,7 +145,11 @@ begin
       check_case(iBq, iNq, iCq, oBq, oCq, bqv, nqv, cqv);
     end loop;
 
-    report "tb_A13 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A13 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A13 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

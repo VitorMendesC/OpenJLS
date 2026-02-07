@@ -31,6 +31,16 @@ entity tb_context_ram is
 end;
 
 architecture bench of tb_context_ram is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Clock period
   constant clk_period : time := 5 ns;
   constant cStdWait   : time := 10 * clk_period;
@@ -72,14 +82,18 @@ begin
     iWrData <= x"BEEBEBEE";
 
     wait for clk_period;
-    assert oRdData = x"BEEBEBEE"
-    report "Feed-forward test failed!" severity failure;
+    check(oRdData = x"BEEBEBEE", "Feed-forward test failed!");
 
     iWrEn <= '0';
     iRdEn <= '0';
 
     wait for cStdWait;
 
+    if err_count > 0 then
+      report "tb_context_ram RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_context_ram RESULT: PASS" severity note;
+    end if;
     finish;
 
   end process;

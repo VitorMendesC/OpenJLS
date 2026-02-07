@@ -4,10 +4,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A11_1 is
 end;
 
 architecture bench of tb_A11_1 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   constant K_WIDTH                : natural := CO_K_WIDTH_STD;
   constant QBPP                   : natural := CO_QBPP_STD;
   constant LIMIT                  : natural := CO_LIMIT_STD;
@@ -89,40 +101,40 @@ architecture bench of tb_A11_1 is
       exp_escape  := '1';
     end if;
 
-    assert sUnary = to_unsigned(exp_unary, sUnary'length)
-      report "A11.1 unary mismatch: k=" & integer'image(integer(k_val)) &
-             " MErr=" & integer'image(integer(merr_val)) &
-             " exp=" & integer'image(integer(exp_unary)) &
-             " got=" & integer'image(to_integer(sUnary))
-      severity failure;
+    check(sUnary = to_unsigned(exp_unary, sUnary'length),
+      "A11.1 unary mismatch: k=" & integer'image(integer(k_val)) &
+      " MErr=" & integer'image(integer(merr_val)) &
+      " exp=" & integer'image(integer(exp_unary)) &
+      " got=" & integer'image(to_integer(sUnary))
+    );
 
-    assert sSufLen = to_unsigned(exp_suf_len, sSufLen'length)
-      report "A11.1 suffix length mismatch: k=" & integer'image(integer(k_val)) &
-             " MErr=" & integer'image(integer(merr_val)) &
-             " exp=" & integer'image(integer(exp_suf_len)) &
-             " got=" & integer'image(to_integer(sSufLen))
-      severity failure;
+    check(sSufLen = to_unsigned(exp_suf_len, sSufLen'length),
+      "A11.1 suffix length mismatch: k=" & integer'image(integer(k_val)) &
+      " MErr=" & integer'image(integer(merr_val)) &
+      " exp=" & integer'image(integer(exp_suf_len)) &
+      " got=" & integer'image(to_integer(sSufLen))
+    );
 
-    assert sSufVal = to_unsigned(exp_suf_val, sSufVal'length)
-      report "A11.1 suffix value mismatch: k=" & integer'image(integer(k_val)) &
-             " MErr=" & integer'image(integer(merr_val)) &
-             " exp=" & integer'image(integer(exp_suf_val)) &
-             " got=" & integer'image(to_integer(sSufVal))
-      severity failure;
+    check(sSufVal = to_unsigned(exp_suf_val, sSufVal'length),
+      "A11.1 suffix value mismatch: k=" & integer'image(integer(k_val)) &
+      " MErr=" & integer'image(integer(merr_val)) &
+      " exp=" & integer'image(integer(exp_suf_val)) &
+      " got=" & integer'image(to_integer(sSufVal))
+    );
 
-    assert sTotLen = to_unsigned(exp_tot_len, sTotLen'length)
-      report "A11.1 total length mismatch: k=" & integer'image(integer(k_val)) &
-             " MErr=" & integer'image(integer(merr_val)) &
-             " exp=" & integer'image(integer(exp_tot_len)) &
-             " got=" & integer'image(to_integer(sTotLen))
-      severity failure;
+    check(sTotLen = to_unsigned(exp_tot_len, sTotLen'length),
+      "A11.1 total length mismatch: k=" & integer'image(integer(k_val)) &
+      " MErr=" & integer'image(integer(merr_val)) &
+      " exp=" & integer'image(integer(exp_tot_len)) &
+      " got=" & integer'image(to_integer(sTotLen))
+    );
 
-    assert sEscape = exp_escape
-      report "A11.1 escape mismatch: k=" & integer'image(integer(k_val)) &
-             " MErr=" & integer'image(integer(merr_val)) &
-             " exp=" & std_logic'image(exp_escape) &
-             " got=" & std_logic'image(sEscape)
-      severity failure;
+    check(sEscape = exp_escape,
+      "A11.1 escape mismatch: k=" & integer'image(integer(k_val)) &
+      " MErr=" & integer'image(integer(merr_val)) &
+      " exp=" & std_logic'image(exp_escape) &
+      " got=" & std_logic'image(sEscape)
+    );
   end procedure;
 begin
   dut : entity work.A11_1_golomb_encoder
@@ -170,7 +182,11 @@ begin
       check_case(iK, iMappedErrorVal, oUnaryZeros, oSuffixLen, oSuffixVal, oTotalLen, oIsEscape, k_v, merr_v);
     end loop;
 
-    report "tb_A11_1 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A11_1 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A11_1 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

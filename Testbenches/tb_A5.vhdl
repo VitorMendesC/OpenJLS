@@ -3,10 +3,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A5 is
 end;
 
 architecture bench of tb_A5 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Clock period
   constant clk_period : time := 5 ns;
   -- Generics
@@ -62,13 +74,13 @@ architecture bench of tb_A5 is
     sC <= to_unsigned(c, sC'length);
     wait for 1 ns;
     exp_px := predict(a, b, c);
-    assert sPx = to_unsigned(exp_px, sPx'length)
-    report "Mismatch: A=" & integer'image(a) &
+    check(sPx = to_unsigned(exp_px, sPx'length),
+      "Mismatch: A=" & integer'image(a) &
       " B=" & integer'image(b) &
       " C=" & integer'image(c) &
       " exp=" & integer'image(exp_px) &
       " got=" & integer'image(to_integer(sPx))
-      severity failure;
+    );
   end procedure;
 begin
 
@@ -114,7 +126,11 @@ begin
       check_case(iA, iB, iC, oPx, a, b, c);
     end loop;
 
-    report "tb_A5 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A5 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A5 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

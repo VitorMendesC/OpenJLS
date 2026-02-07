@@ -4,6 +4,8 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
+use std.env.all;
+
 library openlogic_base;
 use openlogic_base.olo_base_pkg_math.log2ceil;
 
@@ -11,6 +13,16 @@ entity tb_A10 is
 end;
 
 architecture bench of tb_A10 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Generics
   constant A_WIDTH     : natural := CO_AQ_WIDTH_STD;
   constant N_WIDTH     : natural := CO_NQ_WIDTH_STD;
@@ -68,12 +80,12 @@ architecture bench of tb_A10 is
     wait for 1 ns;
     exp_k := compute_k(to_unsigned(nq_val, sNq'length),
       to_unsigned(aq_val, sAq'length));
-    assert sK = exp_k
-    report "A10 mismatch: Nq=" & integer'image(nq_val) &
+    check(sK = exp_k,
+      "A10 mismatch: Nq=" & integer'image(nq_val) &
       " Aq=" & integer'image(aq_val) &
       " ExpK=" & integer'image(to_integer(exp_k)) &
       " GotK=" & integer'image(to_integer(sK))
-      severity failure;
+    );
   end procedure;
 begin
 
@@ -119,7 +131,11 @@ begin
       check_case(iNq, iAq, oK, nq, aq);
     end loop;
 
-    report "tb_A10 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A10 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A10 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

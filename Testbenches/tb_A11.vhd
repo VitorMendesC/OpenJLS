@@ -4,10 +4,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A11 is
 end;
 
 architecture bench of tb_A11 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   constant BITNESS                : natural := CO_BITNESS_STD;
   constant N_WIDTH                : natural := CO_NQ_WIDTH_STD;
   constant B_WIDTH                : natural := CO_BQ_WIDTH_STD;
@@ -84,23 +96,23 @@ architecture bench of tb_A11 is
     exp_n0 := model_map(err_val, bq_val, nq_val, k_val, 0);
     exp_n2 := model_map(err_val, bq_val, nq_val, k_val, 2);
 
-    assert sOutN0 = to_unsigned(exp_n0, sOutN0'length)
-      report "A11 NEAR=0 mismatch: Errval=" & integer'image(err_val) &
-             " Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(nq_val) &
-             " K=" & integer'image(k_val) &
-             " exp=" & integer'image(integer(exp_n0)) &
-             " got=" & integer'image(to_integer(sOutN0))
-      severity failure;
+    check(sOutN0 = to_unsigned(exp_n0, sOutN0'length),
+      "A11 NEAR=0 mismatch: Errval=" & integer'image(err_val) &
+      " Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(nq_val) &
+      " K=" & integer'image(k_val) &
+      " exp=" & integer'image(integer(exp_n0)) &
+      " got=" & integer'image(to_integer(sOutN0))
+    );
 
-    assert sOutN2 = to_unsigned(exp_n2, sOutN2'length)
-      report "A11 NEAR=2 mismatch: Errval=" & integer'image(err_val) &
-             " Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(nq_val) &
-             " K=" & integer'image(k_val) &
-             " exp=" & integer'image(integer(exp_n2)) &
-             " got=" & integer'image(to_integer(sOutN2))
-      severity failure;
+    check(sOutN2 = to_unsigned(exp_n2, sOutN2'length),
+      "A11 NEAR=2 mismatch: Errval=" & integer'image(err_val) &
+      " Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(nq_val) &
+      " K=" & integer'image(k_val) &
+      " exp=" & integer'image(integer(exp_n2)) &
+      " got=" & integer'image(to_integer(sOutN2))
+    );
   end procedure;
 begin
   dut_near0 : entity work.A11_error_mapping
@@ -178,7 +190,11 @@ begin
       check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, err_v, bq_v, nq_v, k_v);
     end loop;
 
-    report "tb_A11 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A11 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A11 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

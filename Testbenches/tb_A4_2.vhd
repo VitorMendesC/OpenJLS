@@ -2,10 +2,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A4_2 is
 end;
 
 architecture bench of tb_A4_2 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   signal iQ1 : signed(3 downto 0) := (others => '0');
   signal iQ2 : signed(3 downto 0) := (others => '0');
   signal iQ3 : signed(3 downto 0) := (others => '0');
@@ -46,24 +58,22 @@ architecture bench of tb_A4_2 is
     exp_q := expected_map(q1, q2, q3);
     got_q := to_integer(sOut);
 
-    assert exp_q >= 0 and exp_q <= 364
-      report "A4.2 expected Q out of range for q1=" & integer'image(q1) &
-             " q2=" & integer'image(q2) &
-             " q3=" & integer'image(q3) &
-             " expQ=" & integer'image(exp_q)
-      severity failure;
+    check(exp_q >= 0 and exp_q <= 364,
+      "A4.2 expected Q out of range for q1=" & integer'image(q1) &
+      " q2=" & integer'image(q2) &
+      " q3=" & integer'image(q3) &
+      " expQ=" & integer'image(exp_q)
+    );
 
-    assert got_q = exp_q
-      report "A4.2 mapping mismatch: q1=" & integer'image(q1) &
-             " q2=" & integer'image(q2) &
-             " q3=" & integer'image(q3) &
-             " expQ=" & integer'image(exp_q) &
-             " gotQ=" & integer'image(got_q)
-      severity failure;
+    check(got_q = exp_q,
+      "A4.2 mapping mismatch: q1=" & integer'image(q1) &
+      " q2=" & integer'image(q2) &
+      " q3=" & integer'image(q3) &
+      " expQ=" & integer'image(exp_q) &
+      " gotQ=" & integer'image(got_q)
+    );
 
-    assert not seen(exp_q)
-      report "A4.2 is not one-to-one: duplicate Q=" & integer'image(exp_q)
-      severity failure;
+    check(not seen(exp_q), "A4.2 is not one-to-one: duplicate Q=" & integer'image(exp_q));
 
     seen(exp_q) := true;
     cnt         := cnt + 1;
@@ -103,18 +113,20 @@ begin
       end if;
     end loop;
 
-    assert count = 365
-      report "A4.2 did not cover all merged contexts. Count=" &
-             integer'image(integer(count))
-      severity failure;
+    check(count = 365,
+      "A4.2 did not cover all merged contexts. Count=" &
+      integer'image(integer(count))
+    );
 
     for q in seen'range loop
-      assert seen(q)
-        report "A4.2 missing mapped value Q=" & integer'image(q)
-        severity failure;
+      check(seen(q), "A4.2 missing mapped value Q=" & integer'image(q));
     end loop;
 
-    report "tb_A4_2 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A4_2 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A4_2 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

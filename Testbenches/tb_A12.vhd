@@ -4,10 +4,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A12 is
 end;
 
 architecture bench of tb_A12 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   constant BITNESS : natural := CO_BITNESS_STD;
   constant A_WIDTH : natural := CO_AQ_WIDTH_STD;
   constant B_WIDTH : natural := CO_BQ_WIDTH_STD;
@@ -77,32 +89,32 @@ architecture bench of tb_A12 is
       exp_n := nq_new;
     end if;
 
-    assert sAOut = to_unsigned(exp_a, sAOut'length)
-      report "A12 " & name_tag & " Aq mismatch: Err=" & integer'image(err_val) &
-             " Aq=" & integer'image(integer(aq_val)) &
-             " Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(integer(nq_val)) &
-             " exp=" & integer'image(exp_a) &
-             " got=" & integer'image(to_integer(sAOut))
-      severity failure;
+    check(sAOut = to_unsigned(exp_a, sAOut'length),
+      "A12 " & name_tag & " Aq mismatch: Err=" & integer'image(err_val) &
+      " Aq=" & integer'image(integer(aq_val)) &
+      " Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(integer(nq_val)) &
+      " exp=" & integer'image(exp_a) &
+      " got=" & integer'image(to_integer(sAOut))
+    );
 
-    assert sBOut = to_signed(exp_b, sBOut'length)
-      report "A12 " & name_tag & " Bq mismatch: Err=" & integer'image(err_val) &
-             " Aq=" & integer'image(integer(aq_val)) &
-             " Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(integer(nq_val)) &
-             " exp=" & integer'image(exp_b) &
-             " got=" & integer'image(to_integer(sBOut))
-      severity failure;
+    check(sBOut = to_signed(exp_b, sBOut'length),
+      "A12 " & name_tag & " Bq mismatch: Err=" & integer'image(err_val) &
+      " Aq=" & integer'image(integer(aq_val)) &
+      " Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(integer(nq_val)) &
+      " exp=" & integer'image(exp_b) &
+      " got=" & integer'image(to_integer(sBOut))
+    );
 
-    assert sNOut = to_unsigned(exp_n, sNOut'length)
-      report "A12 " & name_tag & " Nq mismatch: Err=" & integer'image(err_val) &
-             " Aq=" & integer'image(integer(aq_val)) &
-             " Bq=" & integer'image(bq_val) &
-             " Nq=" & integer'image(integer(nq_val)) &
-             " exp=" & integer'image(exp_n) &
-             " got=" & integer'image(to_integer(sNOut))
-      severity failure;
+    check(sNOut = to_unsigned(exp_n, sNOut'length),
+      "A12 " & name_tag & " Nq mismatch: Err=" & integer'image(err_val) &
+      " Aq=" & integer'image(integer(aq_val)) &
+      " Bq=" & integer'image(bq_val) &
+      " Nq=" & integer'image(integer(nq_val)) &
+      " exp=" & integer'image(exp_n) &
+      " got=" & integer'image(to_integer(sNOut))
+    );
   end procedure;
 
   procedure check_case(
@@ -205,7 +217,11 @@ begin
       check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, errv, aqv, bqv, nqv);
     end loop;
 
-    report "tb_A12 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A12 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A12 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

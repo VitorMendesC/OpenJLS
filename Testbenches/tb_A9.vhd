@@ -2,10 +2,22 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use std.env.all;
+
 entity tb_A9 is
 end;
 
 architecture bench of tb_A9 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Generics
   constant BITNESS    : natural range 8 to 16 := 12;
   constant MAX_VAL    : natural               := 2 ** BITNESS - 1;
@@ -47,11 +59,11 @@ architecture bench of tb_A9 is
     sIn <= to_signed(errval, sIn'length);
     wait for 1 ns;
     exp_v := modulo_reduce(errval);
-    assert sOut = to_signed(exp_v, sOut'length)
-    report "A9 mismatch: Errval=" & integer'image(errval) &
+    check(sOut = to_signed(exp_v, sOut'length),
+      "A9 mismatch: Errval=" & integer'image(errval) &
       " Exp=" & integer'image(exp_v) &
       " Got=" & integer'image(to_integer(sOut))
-      severity failure;
+    );
   end procedure;
 begin
 
@@ -88,7 +100,11 @@ begin
       check_case(iErrorVal, oErrorVal, errv);
     end loop;
 
-    report "A9_tb completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A9 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A9 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

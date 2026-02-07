@@ -4,10 +4,22 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
+use std.env.all;
+
 entity tb_A7 is
 end;
 
 architecture bench of tb_A7 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Clock period
   constant clk_period : time := 5 ns;
   -- Generics
@@ -43,13 +55,13 @@ architecture bench of tb_A7 is
       exp_v := - exp_v;
     end if;
 
-    assert oErrorVal = exp_v
-    report "A7 mismatch: Ix=" & integer'image(ix_val) &
+    check(oErrorVal = exp_v,
+      "A7 mismatch: Ix=" & integer'image(ix_val) &
       " Px=" & integer'image(px_val) &
       " Sign=" & std_logic'image(sign_val) &
       " Exp=" & integer'image(to_integer(exp_v)) &
       " Got=" & integer'image(to_integer(oErrorVal))
-      severity failure;
+    );
   end procedure;
 begin
 
@@ -83,7 +95,11 @@ begin
     check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, CO_SIGN_POS);
     check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, CO_SIGN_NEG);
 
-    report "tb_A7 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A7 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A7 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;

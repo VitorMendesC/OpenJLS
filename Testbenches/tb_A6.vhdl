@@ -4,10 +4,22 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
+use std.env.all;
+
 entity tb_A6 is
 end;
 
 architecture bench of tb_A6 is
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
   -- Clock period
   constant clk_period : time := 5 ns;
   -- Generics
@@ -65,13 +77,13 @@ architecture bench of tb_A6 is
     sCq   <= to_signed(cq, sCq'length);
     wait for 1 ns;
     exp_px := predict(px, sign, cq);
-    assert sOut = to_unsigned(exp_px, sOut'length)
-    report "Mismatch: Px=" & integer'image(px) &
+    check(sOut = to_unsigned(exp_px, sOut'length),
+      "Mismatch: Px=" & integer'image(px) &
       " Sign=" & std_logic'image(sign) &
       " Cq=" & integer'image(cq) &
       " exp=" & integer'image(exp_px) &
       " got=" & integer'image(to_integer(sOut))
-      severity failure;
+    );
   end procedure;
 begin
 
@@ -123,7 +135,11 @@ begin
       check_case(iPx, iSign, iCq, oPx, px, sign, cq);
     end loop;
 
-    report "tb_A6 completed" severity note;
-    wait;
+    if err_count > 0 then
+      report "tb_A6 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_A6 RESULT: PASS" severity note;
+    end if;
+    finish;
   end process;
 end;
