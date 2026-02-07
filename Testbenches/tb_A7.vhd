@@ -49,7 +49,7 @@ architecture bench of tb_A7 is
       " Sign=" & std_logic'image(sign_val) &
       " Exp=" & integer'image(to_integer(exp_v)) &
       " Got=" & integer'image(to_integer(oErrorVal))
-      severity error;
+      severity failure;
   end procedure;
 begin
 

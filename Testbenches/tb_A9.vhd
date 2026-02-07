@@ -51,7 +51,7 @@ architecture bench of tb_A9 is
     report "A9 mismatch: Errval=" & integer'image(errval) &
       " Exp=" & integer'image(exp_v) &
       " Got=" & integer'image(to_integer(sOut))
-      severity error;
+      severity failure;
   end procedure;
 begin
 

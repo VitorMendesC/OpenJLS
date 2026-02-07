@@ -71,7 +71,7 @@ architecture bench of tb_A6 is
       " Cq=" & integer'image(cq) &
       " exp=" & integer'image(exp_px) &
       " got=" & integer'image(to_integer(sOut))
-      severity error;
+      severity failure;
   end procedure;
 begin
 

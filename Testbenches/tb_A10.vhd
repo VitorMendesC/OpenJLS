@@ -73,7 +73,7 @@ architecture bench of tb_A10 is
       " Aq=" & integer'image(aq_val) &
       " ExpK=" & integer'image(to_integer(exp_k)) &
       " GotK=" & integer'image(to_integer(sK))
-      severity error;
+      severity failure;
   end procedure;
 begin
 

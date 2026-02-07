@@ -182,17 +182,17 @@ begin
       report "oQ1 NEAR=0 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ1_n0))
-        severity error;
+        severity failure;
       assert oQ2_n0 = to_signed(exp, oQ2_n0'length)
       report "oQ2 NEAR=0 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ2_n0))
-        severity error;
+        severity failure;
       assert oQ3_n0 = to_signed(exp, oQ3_n0'length)
       report "oQ3 NEAR=0 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ3_n0))
-        severity error;
+        severity failure;
     end loop;
 
     for idx in test_vectors_n3'range loop
@@ -208,17 +208,17 @@ begin
       report "oQ1 NEAR=3 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ1_n3))
-        severity error;
+        severity failure;
       assert oQ2_n3 = to_signed(exp, oQ2_n3'length)
       report "oQ2 NEAR=3 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ2_n3))
-        severity error;
+        severity failure;
       assert oQ3_n3 = to_signed(exp, oQ3_n3'length)
       report "oQ3 NEAR=3 mismatch Di=" & integer'image(di) &
         " exp=" & integer'image(exp) &
         " got=" & integer'image(to_integer(oQ3_n3))
-        severity error;
+        severity failure;
     end loop;
 
     report "tb_A4 complete" severity note;

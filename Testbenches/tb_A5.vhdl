@@ -68,7 +68,7 @@ architecture bench of tb_A5 is
       " C=" & integer'image(c) &
       " exp=" & integer'image(exp_px) &
       " got=" & integer'image(to_integer(sPx))
-      severity error;
+      severity failure;
   end procedure;
 begin
 
