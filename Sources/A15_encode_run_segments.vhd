@@ -43,21 +43,6 @@ entity A15_encode_run_segments is
 end A15_encode_run_segments;
 
 architecture Behavioral of A15_encode_run_segments is
-
-  type j_table_array is array (0 to 31) of natural;
-  constant J_TABLE : j_table_array := (
-  0, 0, 0, 0,
-  1, 1, 1, 1,
-  2, 2, 2, 2,
-  3, 3, 3, 3,
-  4, 4, 5, 5,
-  6, 6, 7, 7,
-  8, 9, 10, 11,
-  12, 13, 14, 15
-  );
-
-  constant J_TABLE_SIZE : natural := J_TABLE'length;
-
 begin
 
   process (iRunCnt, iRunIndex)
@@ -74,8 +59,8 @@ begin
     vAppendCnt   := (others => '0');
     vDoAppend    := '0';
 
-    for i in 0 to J_TABLE_SIZE - 1 loop
-      vJ  := J_TABLE(vRunIndexInt);
+    for i in 0 to CO_J_TABLE_SIZE - 1 loop
+      vJ  := CO_J_TABLE(vRunIndexInt);
       vRg := shift_left(to_unsigned(1, vRg'length), vJ);
       if vRunCnt >= vRg then
         vDoAppend  := '1';
@@ -91,7 +76,7 @@ begin
 
     -- NOTE: It is technically possible for the loop to exit before meeting the condition on the segment's while loop `while(RUNcnt >= (1 << J[RUNindex])) append '1'`, if this happens we won't comply with the standard
     -- TODO: Mathematically check if this condition can occur with the project parameters; Needs mathematical proof for bounds on the `for loop` to match the standard `while`;
-    vJ  := J_TABLE(vRunIndexInt);
+    vJ  := CO_J_TABLE(vRunIndexInt);
     vRg := shift_left(to_unsigned(1, vRg'length), vJ);
     assert not (vRunCnt >= vRg)
     report "A15: append count saturated; iterate externally or increase loop bound."

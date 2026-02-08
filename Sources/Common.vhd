@@ -56,6 +56,20 @@ package Common is
   constant CO_BPP_STD   : natural := math_max(2, log2ceil(CO_MAX_VAL_STD + 1)); -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
   constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + math_max(8, CO_BPP_STD)); -- math_max length of the limited Golomb code
 
+  type j_table_array is array (0 to 31) of natural;
+  constant CO_J_TABLE : j_table_array := (
+  0, 0, 0, 0,
+  1, 1, 1, 1,
+  2, 2, 2, 2,
+  3, 3, 3, 3,
+  4, 4, 5, 5,
+  6, 6, 7, 7,
+  8, 9, 10, 11,
+  12, 13, 14, 15
+  );
+
+  constant CO_J_TABLE_SIZE : natural := CO_J_TABLE'length;
+
   -- Defined ranges from T.87 ---------------------------------------------------------- 
   constant CO_MAX_VAL_MAX_WIDTH : natural := 16;
   constant CO_RESET_MAX_WIDTH   : natural := 16;
