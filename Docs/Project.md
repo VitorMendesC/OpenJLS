@@ -298,9 +298,9 @@ corresponds to the value of the variable before the decrement specified in Code 
 
 ### Code segment A.23 – Update of variables for run interruption sample
 ```c
-if Errval < 0)
+if (Errval < 0)
   Nn[Q] = Nn[Q] + 1;
-A[Q] = A[Q] + ((EMErrval + 1 RItype) >> 1);
+A[Q] = A[Q] + ((EMErrval + 1 - RItype) >> 1);
 if (N[Q] == RESET) {
   A[Q] = A[Q] >> 1;
   N[Q] = N[Q] >> 1;
