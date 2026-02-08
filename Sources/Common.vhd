@@ -33,10 +33,12 @@ package Common is
   constant CO_SIGN_POS : std_logic := '0';
   constant CO_SIGN_NEG : std_logic := '1';
 
+  -- Functions
   function math_min(a, b : in natural) return natural;
   function math_min(a, b : in unsigned) return unsigned;
   function math_max(a, b : in natural) return natural;
   function math_max(a, b : in unsigned) return unsigned;
+  function std_to_int(s  : in std_logic) return integer;
 
   -- Project's standard reference values ----------------------------------------------
   constant CO_BITNESS_STD      : natural := 12;
@@ -128,6 +130,15 @@ package body Common is
       return a;
     else
       return b;
+    end if;
+  end function;
+
+  function std_to_int(s : in std_logic) return integer is
+  begin
+    if s = '0' then
+      return 0;
+    else
+      return 1;
     end if;
   end function;
 
