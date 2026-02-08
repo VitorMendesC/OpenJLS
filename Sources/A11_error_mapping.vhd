@@ -27,7 +27,6 @@ use IEEE.NUMERIC_STD.all;
 
 entity A11_error_mapping is
   generic (
-    BITNESS                : natural := CO_BITNESS_STD;
     N_WIDTH                : natural := CO_NQ_WIDTH_STD;
     B_WIDTH                : natural := CO_BQ_WIDTH_STD;
     K_WIDTH                : natural := CO_K_WIDTH_STD;
