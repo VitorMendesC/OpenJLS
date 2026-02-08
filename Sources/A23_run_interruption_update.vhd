@@ -63,11 +63,7 @@ begin
       vNn := vNn + 1;
     end if;
 
-    if iRItype = '1' then
-      vRI := 1;
-    else
-      vRI := 0;
-    end if;
+    vRi := std_to_int(iRItype);
 
     vAq := vAq + (to_integer(iEMErrval) + 1 - vRI) / 2;
 

@@ -47,17 +47,8 @@ begin
     variable vEmErrval : integer;
   begin
 
-    if iRItype = '1' then
-      vRI := 1;
-    else
-      vRI := 0;
-    end if;
-
-    if iMap = '1' then
-      vMap := 1;
-    else
-      vMap := 0;
-    end if;
+    vRi  := std_to_int(iRItype);
+    vMap := std_to_int(iMap);
 
     vEmErrval := 2 * abs(to_integer(iErrval)) - vRI - vMap;
 
