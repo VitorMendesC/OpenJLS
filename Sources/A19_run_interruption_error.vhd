@@ -55,7 +55,7 @@ begin
     variable vErrQuant : integer;
     variable vErrAdj   : integer;
     variable vRx       : integer;
-    variable vSignMult : integer;
+    variable vSignInt  : integer;
     variable vSign     : std_logic;
   begin
     vErr := to_integer(iErrval);
@@ -68,9 +68,9 @@ begin
     end if;
 
     if vSign = CO_SIGN_POS then
-      vSignMult := 1;
+      vSignInt := 1;
     else
-      vSignMult := - 1;
+      vSignInt := - 1;
     end if;
 
     if NEAR > 0 then
@@ -85,7 +85,7 @@ begin
 
       -- ComputeRx (A.8)
       -- Rx = ComputeRx()
-      vRx := to_integer(iPx) + vSignMult * vErrQuant * C_SCALE;
+      vRx := to_integer(iPx) + vSignInt * vErrQuant * C_SCALE;
       if vRx < 0 then
         vRx := 0;
       elsif vRx > MAX_VAL then
