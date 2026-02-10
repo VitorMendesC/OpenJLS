@@ -59,9 +59,16 @@ if {$project_dir eq ""} {
   set project_dir [file join $repo_dir "project_testbenches"]
 }
 
+puts "Repo dir      : $repo_dir"
+puts "Sources dir   : $src_dir"
+puts "Testbenches dir: $tb_dir"
+puts "Project dir   : $project_dir"
+
 file mkdir $project_dir
 create_project -force tb_batch $project_dir -part $part
 set_property target_language VHDL [current_project]
+set_property source_mgmt_mode None [current_project]
+puts "source_mgmt_mode: [get_property source_mgmt_mode [current_project]]"
 
 # Third-party libs (openlogic_base)
 source [file join $repo_dir "Tcl" "create_libraries_vivado.tcl"]
@@ -73,6 +80,30 @@ set tb_files [concat \
   [glob -nocomplain -directory $tb_dir *.vhd] \
   [glob -nocomplain -directory $tb_dir *.vhdl]]
 
+puts "Found [llength $src_files] RTL files"
+puts "Found [llength $tb_files] testbench files"
+if {[llength $src_files] == 0} {
+  puts "ERROR: No RTL files found under $src_dir"
+  exit 2
+}
+if {[llength $tb_files] == 0} {
+  puts "ERROR: No testbench files found under $tb_dir"
+  exit 2
+}
+
+# Ensure Common.vhd (package) compiles before any dependent RTL
+set common_file [file join $src_dir "Common.vhd"]
+if {[file exists $common_file]} {
+  set reordered {}
+  lappend reordered $common_file
+  foreach f $src_files {
+    if {$f ne $common_file} {
+      lappend reordered $f
+    }
+  }
+  set src_files $reordered
+}
+
 add_files -fileset sources_1 $src_files
 add_files -fileset sim_1 $tb_files
 
@@ -82,6 +113,9 @@ set_property FILE_TYPE {VHDL 2008} [get_files $tb_files]
 update_compile_order -fileset sources_1
 update_compile_order -fileset sim_1
 
+puts "sources_1 files: [llength [get_files -of_objects [get_filesets sources_1]]]"
+puts "sim_1 files     : [llength [get_files -of_objects [get_filesets sim_1]]]"
+
 puts "Running testbenches (runtime: $runtime)"
 set pass_list {}
 set fail_list {}
@@ -89,6 +123,7 @@ foreach tb_file $tb_files {
   set tb [file rootname [file tail $tb_file]]
   puts "\n== $tb =="
   set_property top $tb [get_filesets sim_1]
+  update_compile_order -fileset sim_1
   reset_simulation -quiet
   set_property xsim.simulate.runtime $runtime [get_filesets sim_1]
   set sim_ok 1
