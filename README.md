@@ -17,8 +17,8 @@ This project has been **built and tested only on Xilinx Vivado** so far, targeti
 ## TCL scripts
 
 The `Tcl/` folder contains Vivado TCL scripts to:
-- build/create simulation libraries, and
-- batch-run simulations (useful for quick regressions).
+- build/create simulation libraries
+- batch-run simulations
 
 ## Repository layout
 
@@ -31,5 +31,5 @@ The `Tcl/` folder contains Vivado TCL scripts to:
 ## Licensing
 
 OpenJLS is dual-licensed:
-- **PolyForm Noncommercial** (free for non-commercial use)
-- **Commercial license** required for commercial use (see `COMMERCIAL_LICENSE.md` and `LICENSE.md`)
+- **PolyForm Noncommercial**, free for non-commercial use
+- **Commercial license**, required for commercial use
