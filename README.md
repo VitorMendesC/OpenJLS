@@ -1,3 +1,33 @@
 # OpenJLS
-OpenJLS is a source-available implementation of a JPEG-LS encoder (lossless only) for FPGAs using VHDL, free for non-commercial use with a commercial license available for companies.
 
+OpenJLS is a source-available **JPEG-LS encoder** for FPGAs, written in **VHDL**.
+
+## Status
+
+Work in progress.
+- Core RTL (combinational-only) and module-level testbenches are implemented.
+- Next step is **top-level integration** and adding the required registers/pipelining.
+
+## Tool support
+
+This project has been **built and tested only on Xilinx Vivado** so far, targeting a Zynq 7020 SoC.
+
+## TCL scripts
+
+The `Tcl/` folder contains Vivado TCL scripts to:
+- build/create simulation libraries, and
+- batch-run simulations (useful for quick regressions).
+
+## Repository layout
+
+- `Sources/` – encoder RTL (VHDL)
+- `Testbenches/` – simulation testbenches
+- `Tcl/` – Vivado TCL automation scripts
+- `Docs/` – project documentation
+- `ThirdParty/` – external dependencies
+
+## Licensing
+
+OpenJLS is dual-licensed:
+- **PolyForm Noncommercial** (free for non-commercial use)
+- **Commercial license** required for commercial use (see `COMMERCIAL_LICENSE.md` and `LICENSE.md`)
