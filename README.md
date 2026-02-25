@@ -2,6 +2,8 @@
 
 OpenJLS is a source-available **JPEG-LS encoder** for FPGAs, written in **VHDL**.
 
+More information about the project and the JPEG-LS standard on [Project.md](Docs/Project.md).
+
 ## Status
 
 Work in progress.
