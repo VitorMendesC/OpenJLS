@@ -134,7 +134,7 @@ if ((NEAR == 0) && ( k == 0) && ( 2 * B[Q] <= – N[Q])) {
     MErrval = –2 * (Errval + 1);
 }
 else {
-  if (Errval >= 0
+  if (Errval >= 0)
     MErrval = 2 * Errval;
   else
     MErrval = –2 * Errval – 1;
@@ -157,7 +157,7 @@ significance."
 B[Q] = B[Q] + Errval *(2 *NEAR + 1);
 A[Q] = A[Q] + abs(Errval);
 if (N[Q] == RESET) {
-  A[Q] == A[Q] >> 1;
+  A[Q] = A[Q] >> 1;
   if (B[Q] >= 0)
     B[Q] = B[Q] >> 1;
   else
@@ -178,9 +178,8 @@ if (B[Q] <= –N[Q]) {
 }
 else if (B[Q] > 0) {
   B[Q] = B[Q] – N[Q];
-  if C[Q] < MAX_C)
+  if (C[Q] < MAX_C)
     C[Q] = C[Q] + 1;
-  ο
   if (B[Q] > 0)
     B[Q] = 0
 }
@@ -228,7 +227,7 @@ else if (RUNcnt > 0)
 ## Run interruption sample encoding
 ### Code segment A.17 – Index computation
 ```c
-if (abs(Ra – Rb) <= NEAR
+if (abs(Ra – Rb) <= NEAR)
   RItype = 1;
 else
   RItype = 0;
@@ -280,7 +279,7 @@ if ((k == 0) && (Errval > 0) && (2 * Nn[Q] < N[Q]))
   map = 1;
 else if ((Errval < 0) && (2 * Nn[Q] >= N[Q]))
   map = 1;
-else if ((Errval < 0) && (k ! = 0))
+else if ((Errval < 0) && (k != 0))
   map = 1;
 else
   map = 0;
