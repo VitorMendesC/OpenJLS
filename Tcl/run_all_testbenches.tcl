@@ -110,7 +110,8 @@ add_files -fileset sim_1 $tb_files
 set_property FILE_TYPE {VHDL 2008} [get_files $src_files]
 set_property FILE_TYPE {VHDL 2008} [get_files $tb_files]
 
-update_compile_order -fileset sources_1
+# Keep sources_1 in manual order so pre-ordered libraries (openlogic_base)
+# are not re-sorted incorrectly by update_compile_order.
 update_compile_order -fileset sim_1
 
 puts "sources_1 files: [llength [get_files -of_objects [get_filesets sources_1]]]"
