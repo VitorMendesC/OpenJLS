@@ -19,6 +19,7 @@ This project has been **built and tested only on Xilinx Vivado** so far, targeti
 The `Tcl/` folder contains Vivado TCL scripts to:
 - build/create simulation libraries
 - batch-run simulations
+  - `vivado -mode batch -notrace -source Tcl/run_all_testbenches.tcl -tclargs -runtime all`
 
 ## Repository layout
 
