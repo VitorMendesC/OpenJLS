@@ -66,6 +66,10 @@ architecture rtl of A12_variables_update is
 
 begin
 
+  assert B_WIDTH >= C_ERR_SCALED_WIDTH
+    report "A12: B_WIDTH must be >= C_ERR_SCALED_WIDTH to avoid truncation"
+    severity failure;
+
   sDoRescale <= '1' when (iNq = to_unsigned(RESET, iNq'length)) else
     '0';
 

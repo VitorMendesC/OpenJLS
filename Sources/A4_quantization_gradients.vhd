@@ -68,7 +68,7 @@ architecture Behavioral of A4_quantization_gradients is
       Qi := to_signed(-3, Qi'length);
     elsif (Di <= - T1) then
       Qi := to_signed(-2, Qi'length);
-    elsif (Di <- NEAR) then
+    elsif (Di < -NEAR) then
       Qi := to_signed(-1, Qi'length);
     elsif (Di <= NEAR) then
       Qi := to_signed(0, Qi'length);

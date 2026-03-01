@@ -17,7 +17,7 @@
 -- Additional Comments:
 --
 -- Assumptions:
---               N_WIDTH > B_WIDTH
+--               B_WIDTH >= N_WIDTH
 -- 
 ----------------------------------------------------------------------------------
 use work.Common.all;
