@@ -11,6 +11,11 @@
 --
 --              TODO: iFlush is unused
 --
+--              iRawMode: when '1', appends iSuffixLen raw bits from iSuffixVal
+--                        directly — no unary prefix, no terminating '1'.
+--                        Use for A15 '1'-bit runs (SuffixLen=1, SuffixVal=1) and
+--                        A16's run-interruption bits (SuffixLen=J+1, SuffixVal='0'&RUNcnt).
+--
 ----------------------------------------------------------------------------------
 use work.Common.all;
 
@@ -34,6 +39,7 @@ entity A11_2_bit_packer is
     iClk            : in std_logic;
     iRst            : in std_logic;
     iFlush          : in std_logic;
+    iRawMode        : in std_logic;
     iValid          : in std_logic;
     iUnaryZeros     : in unsigned(UNARY_WIDTH - 1 downto 0);
     iSuffixLen      : in unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
@@ -112,10 +118,18 @@ begin
 
         -- Build the word
         if iValid = '1' then
-          vFullLength := to_integer(iUnaryZeros + 1 + iSuffixLen);
-
-          -- Bit 1 to end unary zeros
-          vEncodedWord(vSuffixLenInt downto 0) := '1' & std_logic_vector(resize(iSuffixVal, vSuffixLenInt));
+          if iRawMode = '1' then
+            -- Raw mode: append iSuffixLen bits of iSuffixVal as-is (MSB first).
+            -- iUnaryZeros is ignored. Used by A15/A16 run-mode bit emission.
+            vFullLength := vSuffixLenInt;
+            if vSuffixLenInt > 0 then
+              vEncodedWord(vSuffixLenInt - 1 downto 0) := std_logic_vector(resize(iSuffixVal, vSuffixLenInt));
+            end if;
+          else
+            -- Golomb mode: [iUnaryZeros zeros]['1'][iSuffixVal in iSuffixLen bits]
+            vFullLength := to_integer(iUnaryZeros + 1 + iSuffixLen);
+            vEncodedWord(vSuffixLenInt downto 0) := '1' & std_logic_vector(resize(iSuffixVal, vSuffixLenInt));
+          end if;
 
           sWordToWrite <= vEncodedWord;
           sWordLen     <= to_unsigned(vFullLength, sWordLen'length);
