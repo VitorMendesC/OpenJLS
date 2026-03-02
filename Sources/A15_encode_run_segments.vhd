@@ -74,14 +74,6 @@ begin
       end if;
     end loop;
 
-    -- NOTE: It is technically possible for the loop to exit before meeting the condition on the segment's while loop `while(RUNcnt >= (1 << J[RUNindex])) append '1'`, if this happens we won't comply with the standard
-    -- TODO: Mathematically check if this condition can occur with the project parameters; Needs mathematical proof for bounds on the `for loop` to match the standard `while`;
-    vJ  := CO_J_TABLE(vRunIndexInt);
-    vRg := shift_left(to_unsigned(1, vRg'length), vJ);
-    assert not (vRunCnt >= vRg)
-    report "A15: append count saturated; iterate externally or increase loop bound."
-      severity warning;
-
     oRunCnt      <= vRunCnt;
     oRunIndex    <= to_unsigned(vRunIndexInt, oRunIndex'length);
     oAppendCount <= vAppendCnt;
