@@ -182,6 +182,40 @@ begin
     );
     check(oBufferOverflow = '0', "A11.2 Raw: buffer overflow should not occur");
 
+    -- Flush test: write a 3-bit codeword (below OUT_WIDTH=8), then flush.
+    -- UnaryZeros=0, SuffixLen=2, SuffixVal=1 -> "101" (3 bits)
+    -- Expected output: "101" at MSB, zeros at LSB -> "10100000" = 0xA0
+    iRst   <= '1';
+    iValid <= '0';
+    wait until rising_edge(iClk);
+    wait until rising_edge(iClk);
+    iRst <= '0';
+
+    iValid      <= '1';
+    iRawMode    <= '0';
+    iUnaryZeros <= to_unsigned(0, iUnaryZeros'length);
+    iSuffixLen  <= to_unsigned(2, iSuffixLen'length);
+    iSuffixVal  <= to_unsigned(1, iSuffixVal'length);
+    wait until rising_edge(iClk);
+    iValid <= '0';
+    wait until rising_edge(iClk); -- let the write commit to the buffer
+
+    iFlush <= '1';
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    iFlush <= '0';
+
+    check(oWordValid = '1', "A11.2 Flush: oWordValid should be asserted after flush");
+    check(oWord = x"A0",
+      "A11.2 Flush: partial word mismatch. exp=0xA0 got=" &
+      integer'image(to_integer(unsigned(oWord)))
+    );
+
+    -- After the handshake (iReady='1') oWordValid should deassert
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    check(oWordValid = '0', "A11.2 Flush: oWordValid should deassert after handshake");
+
     if err_count > 0 then
       report "tb_A11_2 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
     else
