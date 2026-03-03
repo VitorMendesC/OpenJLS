@@ -1,6 +1,12 @@
+# Directories
 backups/
 ThirdParty/open-logic/doc
+project_testbenches/
+
+# Files
 settings.json
+
+# Extensions
 *.log
 *.jou
-project_testbenches/
+*.pb
