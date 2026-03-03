@@ -9,7 +9,9 @@
 -- Notes:
 --              buffer is written from MSB, to match bitstream pattern
 --
---              TODO: iFlush is unused
+--              iFlush: when asserted, outputs whatever partial word remains in the
+--                      buffer (< OUT_WIDTH bits), zero-padded at the LSB, then clears
+--                      the bit count. Has no effect if the buffer is empty.
 --
 --              iRawMode: when '1', appends iSuffixLen raw bits from iSuffixVal
 --                        directly — no unary prefix, no terminating '1'.
@@ -84,6 +86,8 @@ begin
     variable vSliceWidthWr    : natural;
     variable vSliceWidthRd    : natural;
     variable vWordLenInt      : natural;
+    variable vQuantInt        : natural;
+    variable vFlushWord       : std_logic_vector (OUT_WIDTH - 1 downto 0);
 
   begin
 
@@ -127,7 +131,7 @@ begin
             end if;
           else
             -- Golomb mode: [iUnaryZeros zeros]['1'][iSuffixVal in iSuffixLen bits]
-            vFullLength := to_integer(iUnaryZeros + 1 + iSuffixLen);
+            vFullLength                          := to_integer(iUnaryZeros + 1 + iSuffixLen);
             vEncodedWord(vSuffixLenInt downto 0) := '1' & std_logic_vector(resize(iSuffixVal, vSuffixLenInt));
           end if;
 
@@ -177,6 +181,25 @@ begin
           sReadPointer <= to_unsigned(vReadPointerInt, sReadPointer'length);
 
           vReadBits := OUT_WIDTH;
+        elsif iFlush = '1' and sQuantityBits > 0 and (sAxiHandshake or sWordValidBuffer = '0') then
+          -- Partial flush: read remaining bits and zero-pad LSBs to fill OUT_WIDTH
+          vQuantInt  := to_integer(sQuantityBits);
+          vFlushWord := (others => '0');
+          if vReadPointerInt - vQuantInt + 1 >= 0 then
+            vFlushWord(OUT_WIDTH - 1 downto OUT_WIDTH - vQuantInt) := sBuffer(vReadPointerInt downto vReadPointerInt - vQuantInt + 1);
+          else
+            vSliceWidthRd                                                            := vQuantInt - vReadPointerInt - 1;
+            vFlushWord(OUT_WIDTH - 1 downto OUT_WIDTH - vReadPointerInt - 1)         := sBuffer(vReadPointerInt downto 0);
+            vFlushWord(OUT_WIDTH - vReadPointerInt - 2 downto OUT_WIDTH - vQuantInt) := sBuffer(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - vSliceWidthRd);
+          end if;
+          sOutWordBuffer   <= vFlushWord;
+          sWordValidBuffer <= '1';
+          vReadPointerInt := vReadPointerInt - vQuantInt;
+          if vReadPointerInt < 0 then
+            vReadPointerInt := vReadPointerInt + BUFFER_WIDTH;
+          end if;
+          sReadPointer <= to_unsigned(vReadPointerInt, sReadPointer'length);
+          vReadBits := vQuantInt;
         elsif sQuantityBits < OUT_WIDTH and sAxiHandshake then
           sWordValidBuffer <= '0';
         end if;
