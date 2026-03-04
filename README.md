@@ -75,7 +75,7 @@ vivado -mode batch -notrace -source Tcl/run_all_testbenches.tcl -tclargs -runtim
 OpenJLS is dual-licensed:
 
 - **[GPL v3](LICENSE.md)** — free for any use that complies with GPL v3 terms. This means if you distribute a product containing OpenJLS, your design must also be released under GPL v3.
-- **[Commercial License](COMMERCIAL_LICENSE.md)** — for use in proprietary/closed-source products without GPL obligations. Contact **\<vitormendescamilo@protonmail.com\>** for pricing and terms.
+- **[Commercial License](COMMERCIAL_LICENSE.md)** — for use in proprietary/closed-source products without GPL obligations. Contact vitormendescamilo@protonmail.com for pricing and terms.
 
 **Evaluation is unrestricted.** You can clone, simulate, synthesize, and test OpenJLS freely under the GPL. A commercial license is only required when shipping a product.
 
@@ -91,4 +91,4 @@ OpenJLS is dual-licensed:
 
 ## Contact
 
-For commercial licensing, technical questions, or collaboration inquiries: **\<vitormendescamilo@protonmail.com\>**
+For commercial licensing, technical questions, or collaboration inquiries: vitormendescamilo@protonmail.com
