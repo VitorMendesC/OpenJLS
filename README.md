@@ -31,6 +31,4 @@ The `Tcl/` folder contains Vivado TCL scripts to:
 
 ## Licensing
 
-OpenJLS is dual-licensed:
-- **PolyForm Noncommercial**, free for non-commercial use
-- **Commercial license**, required for commercial use
+OpenJLS is dual-licensed under GPL v3 and a commercial license. For commercial use without GPL obligations, contact us.
