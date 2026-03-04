@@ -4,15 +4,15 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 
 ---
 
-## Phase 1 — Core Encoder (current)
+## Phase 1 — Core Encoder
 
 - [x] JPEG-LS building blocks: gradient computation, context modeling, MED predictor
 - [x] Golomb-Rice encoder
 - [x] Run-length encoding mode
 - [x] Context memory (vendor-agnostic via open-logic)
 - [ ] Top-level integration with pipelining and registers
-- [ ] AXI4-Stream input/output interfaces
 - [ ] Lossless mode — fully functional end-to-end encoder
+- [ ] AXI4-Stream input/output interfaces
 
 ## Phase 2 — Verification
 
