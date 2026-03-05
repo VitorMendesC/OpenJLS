@@ -16,7 +16,7 @@
 -- Revision 0.01 - File Created
 -- Additional Comments:           
 --
---                          TODO: everything here needs to be throughly checked
+--                          TODO: everything here needs to be thoroughly checked
 -- 
 ----------------------------------------------------------------------------------
 library IEEE;
@@ -34,11 +34,12 @@ package Common is
   constant CO_SIGN_NEG : std_logic := '1';
 
   -- Functions
-  function math_min(a, b : in natural) return natural;
-  function math_min(a, b : in unsigned) return unsigned;
-  function math_max(a, b : in natural) return natural;
-  function math_max(a, b : in unsigned) return unsigned;
-  function std_to_int(s  : in std_logic) return integer;
+  function math_min(a, b      : in natural) return natural;
+  function math_min(a, b      : in unsigned) return unsigned;
+  function math_max(a, b      : in natural) return natural;
+  function math_max(a, b      : in unsigned) return unsigned;
+  function math_ceil_div(a, b : in natural) return natural; -- ceil(a / b)
+  function std_to_int(s       : in std_logic) return integer;
 
   -- Project's standard reference values ----------------------------------------------
   constant CO_BITNESS_STD      : natural := 12;
@@ -131,6 +132,11 @@ package body Common is
     else
       return b;
     end if;
+  end function;
+
+  function math_ceil_div(a, b : in natural) return natural is
+  begin
+    return (a + b - 1) / b;
   end function;
 
   function std_to_int(s : in std_logic) return integer is
