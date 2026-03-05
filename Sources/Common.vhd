@@ -42,10 +42,11 @@ package Common is
   function std_to_int(s       : in std_logic) return integer;
 
   -- Project's standard reference values ----------------------------------------------
-  constant CO_BITNESS_STD      : natural := 12;
-  constant CO_NEAR_STD         : natural := 0;
-  constant CO_OUT_WIDTH_STD    : natural := 72; -- Output word width
-  constant CO_BUFFER_WIDTH_STD : natural := 96; -- Output buffer width
+  constant CO_BITNESS_STD           : natural := 12;
+  constant CO_NEAR_STD              : natural := 0;
+  constant CO_BYTE_STUFFER_IN_WIDTH : natural := 24; -- Bit packer output / byte stuffer input (3 bytes)
+  constant CO_OUT_WIDTH_STD         : natural := 72; -- Final IP AXI-Stream output word width
+  constant CO_BUFFER_WIDTH_STD      : natural := 96; -- Bit packer internal buffer width
 
   -- Defined values from T.87 ----------------------------------------------------------
   constant CO_BITNESS_MAX_WIDTH          : natural := 16;
