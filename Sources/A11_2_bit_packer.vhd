@@ -31,7 +31,7 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 entity A11_2_bit_packer is
   generic (
     LIMIT           : natural := CO_LIMIT_STD;
-    OUT_WIDTH       : natural := CO_OUT_WIDTH_STD;
+    OUT_WIDTH       : natural := CO_BYTE_STUFFER_IN_WIDTH;
     BUFFER_WIDTH    : natural := CO_BUFFER_WIDTH_STD;
     UNARY_WIDTH     : natural := CO_UNARY_WIDTH_STD;
     SUFFIX_WIDTH    : natural := CO_SUFFIX_WIDTH_STD;
