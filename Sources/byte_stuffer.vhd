@@ -19,6 +19,13 @@
 --              word boundaries so that a byte spanning two input words is
 --              detected correctly.
 --
+--              iFlush: when asserted, outputs whatever partial byte-aligned data
+--                      remains in the buffer (1–OUT_WIDTH bits, zero-padded to
+--                      the next byte boundary) as a single output word with
+--                      oValidBytes indicating how many bytes are meaningful.
+--                      Has no effect if the buffer is already empty.
+--                      oReady is deasserted while iFlush is held.
+--
 -- Assumptions:
 --              IN_WIDTH must be a multiple of 8.
 --              BUFFER_WIDTH >= 2 * IN_WIDTH + IN_WIDTH / 8
@@ -40,14 +47,16 @@ entity byte_stuffer is
     BUFFER_WIDTH : natural := 2 * CO_OUT_WIDTH_STD + CO_OUT_WIDTH_STD / 8
   );
   port (
-    iClk       : in  std_logic;
-    iRst       : in  std_logic;
-    iValid     : in  std_logic;
-    iWord      : in  std_logic_vector(IN_WIDTH  - 1 downto 0);
-    oReady     : out std_logic;
-    oWord      : out std_logic_vector(OUT_WIDTH - 1 downto 0);
-    oWordValid : out std_logic;
-    iReady     : in  std_logic
+    iClk        : in  std_logic;
+    iRst        : in  std_logic;
+    iValid      : in  std_logic;
+    iWord       : in  std_logic_vector(IN_WIDTH  - 1 downto 0);
+    iFlush      : in  std_logic;
+    oReady      : out std_logic;
+    oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
+    oWordValid  : out std_logic;
+    oValidBytes : out unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
+    iReady      : in  std_logic
   );
 end entity byte_stuffer;
 
@@ -55,10 +64,11 @@ architecture Behavioral of byte_stuffer is
 
   signal sBuffer          : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
   signal sCount           : unsigned(log2ceil(BUFFER_WIDTH) downto 0);
-  signal sByteReg         : std_logic_vector(7 downto 0); -- last 8 output bits (shift register)
-  signal sBytePos         : unsigned(2 downto 0);         -- bits into current output byte (0-7)
+  signal sByteReg         : std_logic_vector(7 downto 0); -- last 8 input bits (shift register for 0xFF detection)
+  signal sBytePos         : unsigned(2 downto 0);         -- bits into current input byte (0-7)
   signal sWordValidBuffer : std_logic;
   signal sOutWordBuffer   : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal sValidBytes      : unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
   signal sAxiHandshake    : boolean;
 
 begin
@@ -73,17 +83,20 @@ begin
 
   sAxiHandshake <= (iReady and sWordValidBuffer) = '1';
 
-  oWordValid <= sWordValidBuffer;
-  oWord      <= sOutWordBuffer;
+  oWordValid  <= sWordValidBuffer;
+  oWord       <= sOutWordBuffer;
+  oValidBytes <= sValidBytes;
 
-  -- Accept a new word only when the buffer has room for the worst-case expansion
-  oReady <= '1' when to_integer(sCount) + IN_WIDTH + IN_WIDTH / 8 <= BUFFER_WIDTH else '0';
+  -- Accept a new word only when the buffer has room for the worst-case expansion and not flushing
+  oReady <= '1' when to_integer(sCount) + IN_WIDTH + IN_WIDTH / 8 <= BUFFER_WIDTH
+                     and iFlush = '0' else '0';
 
   process (iClk)
-    variable vBuf     : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
-    variable vCount   : natural;
-    variable vByteReg : std_logic_vector(7 downto 0);
-    variable vBPos    : natural range 0 to 8;
+    variable vBuf        : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
+    variable vCount      : natural;
+    variable vByteReg    : std_logic_vector(7 downto 0);
+    variable vBPos       : natural range 0 to 8;
+    variable vValidBytes : natural range 0 to OUT_WIDTH / 8;
   begin
 
     if rising_edge(iClk) then
@@ -95,6 +108,7 @@ begin
         sBytePos         <= (others => '0');
         sWordValidBuffer <= '0';
         sOutWordBuffer   <= (others => '0');
+        sValidBytes      <= (others => '0');
 
       else
 
@@ -107,7 +121,7 @@ begin
         -- Input: expand incoming word, inserting a '0' stuffing bit after every 0xFF output byte
         ------------------------------------------------------------------------------------------------------------
 
-        if iValid = '1' and to_integer(sCount) + IN_WIDTH + IN_WIDTH / 8 <= BUFFER_WIDTH then
+        if iValid = '1' and iFlush = '0' and to_integer(sCount) + IN_WIDTH + IN_WIDTH / 8 <= BUFFER_WIDTH then
           for i in IN_WIDTH - 1 downto 0 loop
             -- Append data bit to buffer (MSB of valid data is at index BUFFER_WIDTH-1)
             vBuf(BUFFER_WIDTH - 1 - vCount) := iWord(i);
@@ -133,12 +147,22 @@ begin
         ------------------------------------------------------------------------------------------------------------
 
         if vCount >= OUT_WIDTH and (sAxiHandshake or sWordValidBuffer = '0') then
-          sOutWordBuffer <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
-          -- Shift valid data to the MSB end, zero-fill the vacated LSBs
-          vBuf   := std_logic_vector(shift_left(unsigned(vBuf), OUT_WIDTH));
-          vCount := vCount - OUT_WIDTH;
+          -- Full word: emit OUT_WIDTH bits, shift buffer, report all bytes valid
+          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
+          vBuf             := std_logic_vector(shift_left(unsigned(vBuf), OUT_WIDTH));
+          vCount           := vCount - OUT_WIDTH;
           sWordValidBuffer <= '1';
-        elsif vCount < OUT_WIDTH and sAxiHandshake then
+          sValidBytes      <= to_unsigned(OUT_WIDTH / 8, sValidBytes'length);
+        elsif iFlush = '1' and vCount > 0 and (sAxiHandshake or sWordValidBuffer = '0') then
+          -- Flush: emit remaining bits zero-padded to the next byte boundary.
+          -- Bits beyond vCount are already '0' (shift_left fills with zeros).
+          vValidBytes      := math_ceil_div(vCount, 8);
+          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
+          vCount           := 0;
+          sWordValidBuffer <= '1';
+          sValidBytes      <= to_unsigned(vValidBytes, sValidBytes'length);
+        elsif sAxiHandshake then
+          -- Downstream consumed the last word; nothing new to produce
           sWordValidBuffer <= '0';
         end if;
 
