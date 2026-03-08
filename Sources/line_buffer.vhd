@@ -7,7 +7,7 @@
 -- Description:
 --
 -- Notes:
---              Stores one row of pixels and provides the four T.87 causal
+--              Stores one row of pixels on FIFO and provides the four T.87 causal
 --              context neighbors for each pixel, where x is the current pixel:
 --
 --                  c  b  d
@@ -19,7 +19,7 @@
 --              d = upper-right neighbor (previous row, col+1)
 --
 --              Border conditions (T.87 A.2.1):
---                First row      : b = c = d = 0, a = 0
+--                First row      : b = c = d = 0
 --                Col 0 (rows>0) : a = Rb = first pixel of previous row
 --                                 c = Ra from start of previous row
 --                                   = first pixel of the row before that
@@ -46,21 +46,19 @@ entity line_buffer is
     BITNESS          : natural := CO_BITNESS_STD
   );
   port (
-    iClk : in std_logic;
-    iRst : in std_logic;
-    -- Runtime image dimensions
+    iClk         : in std_logic;
+    iRst         : in std_logic;
     iImageWidth  : in unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
     iImageHeight : in unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
     iValid       : in std_logic;
     iPixel       : in unsigned(BITNESS - 1 downto 0);
-
-    oA     : out unsigned(BITNESS - 1 downto 0);
-    oB     : out unsigned(BITNESS - 1 downto 0);
-    oC     : out unsigned(BITNESS - 1 downto 0);
-    oD     : out unsigned(BITNESS - 1 downto 0);
-    oValid : out std_logic;
-    oEOL   : out std_logic; -- end-of-line: last pixel of current row
-    oEOI   : out std_logic -- end-of-image: last pixel of last row
+    oA           : out unsigned(BITNESS - 1 downto 0);
+    oB           : out unsigned(BITNESS - 1 downto 0);
+    oC           : out unsigned(BITNESS - 1 downto 0);
+    oD           : out unsigned(BITNESS - 1 downto 0);
+    oValid       : out std_logic;
+    oEOL         : out std_logic; -- end of line
+    oEOI         : out std_logic -- end of image
   );
 end entity line_buffer;
 
@@ -72,8 +70,7 @@ architecture Behavioral of line_buffer is
   type fifo_state_t is (PRELOAD, WAIT_END_FIRST_ROW, NOMINAL);
   signal sFifoState : fifo_state_t;
 
-  -- FIFO: holds the previous row
-  signal sFifoRst            : std_logic; -- iRst OR combinatorial reset at EOI
+  signal sFifoRst            : std_logic;
   signal sFifoOutReady       : std_logic;
   signal sFifoOutValid       : std_logic;
   signal sFifoOutData        : std_logic_vector(BITNESS - 1 downto 0);
@@ -90,8 +87,7 @@ architecture Behavioral of line_buffer is
   signal sIsEOI              : boolean;
   signal sIsEOL              : boolean;
   signal sIsFifoOutHandshake : boolean;
-
-  signal sPreloadCounter : unsigned(1 downto 0); -- counts preloading previous row pixels
+  signal sPreloadCounter     : unsigned(1 downto 0);
 
 begin
 
@@ -156,6 +152,7 @@ begin
         case sFifoState is
 
           when PRELOAD =>
+            -- When FIFO receives the first pixels it loads them into registers, preparing for nominal operation
             sFifoOutReady <= '1';
 
             if sIsFifoOutHandshake then
@@ -167,12 +164,13 @@ begin
             end if;
 
           when WAIT_END_FIRST_ROW =>
+            -- Nominal operation starts only on second row, since first row has no valid context
             if sIsEOL then
               sFifoState <= NOMINAL;
             end if;
 
           when NOMINAL =>
-            -- On valid operation, every new pixel steps the context window by reading new neighbor pixels
+            -- On valid operation, every new pixel steps the context window by reading a new neighbor pixels and shifting the current ones
             sFifoOutReady <= iValid;
 
             if sIsEOI then
@@ -198,12 +196,14 @@ begin
         end if;
 
         -- Output control -------------------------------
+        -- Shift context window
         if sIsFifoOutHandshake then
           sC <= sB;
           sB <= sD;
           sD <= unsigned(sFifoOutData);
         end if;
 
+        -- Store last pixel
         if iValid = '1' then
           sA <= iPixel;
         end if;
@@ -225,7 +225,7 @@ begin
       Rst       => sFifoRst,
       In_Data   => std_logic_vector(iPixel),
       In_Valid  => iValid,
-      Out_Ready => sFifoOutReady, -- Read enable
+      Out_Ready => sFifoOutReady, -- Read FIFO if not empty (valid)
       Out_Data  => sFifoOutData,
       Out_Valid => sFifoOutValid,
       Full      => sFifoFull,
