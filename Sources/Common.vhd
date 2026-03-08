@@ -40,6 +40,7 @@ package Common is
   function math_max(a, b      : in unsigned) return unsigned;
   function math_ceil_div(a, b : in natural) return natural; -- ceil(a / b)
   function std_to_int(s       : in std_logic) return integer;
+  function bool2bit(b         : in boolean) return std_logic;
 
   -- Project's standard reference values ----------------------------------------------
   constant CO_BITNESS_STD           : natural := 12;
@@ -146,6 +147,15 @@ package body Common is
       return 0;
     else
       return 1;
+    end if;
+  end function;
+
+  function bool2bit(b : in boolean) return std_logic is
+  begin
+    if b then
+      return '1';
+    else
+      return '0';
     end if;
   end function;
 
