@@ -54,14 +54,13 @@ entity line_buffer is
     iValid       : in std_logic;
     iPixel       : in unsigned(BITNESS - 1 downto 0);
 
-    oA        : out unsigned(BITNESS - 1 downto 0);
-    oB        : out unsigned(BITNESS - 1 downto 0);
-    oC        : out unsigned(BITNESS - 1 downto 0);
-    oD        : out unsigned(BITNESS - 1 downto 0);
-    oValid    : out std_logic;
-    oFirstRow : out std_logic; -- high throughout row 0; b=c=d=0
-    oEOL      : out std_logic; -- end-of-line: last pixel of current row
-    oEOI      : out std_logic -- end-of-image: last pixel of last row
+    oA     : out unsigned(BITNESS - 1 downto 0);
+    oB     : out unsigned(BITNESS - 1 downto 0);
+    oC     : out unsigned(BITNESS - 1 downto 0);
+    oD     : out unsigned(BITNESS - 1 downto 0);
+    oValid : out std_logic;
+    oEOL   : out std_logic; -- end-of-line: last pixel of current row
+    oEOI   : out std_logic -- end-of-image: last pixel of last row
   );
 end entity line_buffer;
 
@@ -81,32 +80,39 @@ architecture Behavioral of line_buffer is
   signal sFifoFull     : std_logic;
   signal sFifoEmpty    : std_logic;
 
-  signal sD : unsigned(BITNESS - 1 downto 0); -- d: upper-right
-  signal sB : unsigned(BITNESS - 1 downto 0); -- b: upper
-  signal sC : unsigned(BITNESS - 1 downto 0); -- c: upper-left
-  signal sA : unsigned(BITNESS - 1 downto 0); -- a: left
-
-  signal sColCounter : unsigned(COL_WIDTH - 1 downto 0);
-  signal sRowCounter : unsigned(ROW_WIDTH - 1 downto 0);
-
+  signal sD                  : unsigned(BITNESS - 1 downto 0); -- d: upper-right
+  signal sB                  : unsigned(BITNESS - 1 downto 0); -- b: upper
+  signal sC                  : unsigned(BITNESS - 1 downto 0); -- c: upper-left
+  signal sA                  : unsigned(BITNESS - 1 downto 0); -- a: left
+  signal sColCounter         : unsigned(COL_WIDTH - 1 downto 0);
+  signal sRowCounter         : unsigned(ROW_WIDTH - 1 downto 0);
+  signal sFirstRow           : std_logic;
   signal sIsLastCol          : boolean;
   signal sIsLastRow          : boolean;
-  signal sIsEoi              : boolean;
-  signal sIsEol              : boolean;
+  signal sIsEOI              : boolean;
+  signal sIsEOL              : boolean;
   signal sIsFifoOutHandshake : boolean;
 
   signal sPreloadCounter : unsigned(1 downto 0); -- counts preloading previous row pixels
 
 begin
 
-  -- Positional signals --------------------------------------------------------------------
-  sIsLastCol          <= sColCounter = iImageWidth - 1;
-  sIsLastRow          <= sRowCounter = iImageHeight - 1;
-  sIsEol              <= sIsLastCol and iValid = '1';
-  sIsEoi              <= sIsLastCol and sIsLastRow and iValid = '1';
-  sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
+  -- Combinatorial process -----------------------------------------------------------------
+  comb_proc : process (all)
+  begin
+    oEOI                <= bool2bit(sIsEOI);
+    oEOL                <= bool2bit(sIsEOL);
+    sIsLastCol          <= sColCounter = iImageWidth - 1;
+    sIsLastRow          <= sRowCounter = iImageHeight - 1;
+    sIsEOL              <= sIsLastCol and iValid = '1';
+    sIsEOI              <= sIsLastCol and sIsLastRow and iValid = '1';
+    sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
 
-  -- Process -------------------------------------------------------------------------------
+    sFirstRow <= '1' when sRowCounter = 0 else
+      '0';
+  end process;
+
+  -- Clocked Process ----------------------------------------------------------------------
   process (iClk)
   begin
 
@@ -141,7 +147,7 @@ begin
             end if;
 
           when WAIT_END_FIRST_ROW =>
-            if sIsEol then
+            if sIsEOL then
               sFifoState <= NOMINAL;
             end if;
 
@@ -161,7 +167,9 @@ begin
         if iValid = '1' then
           if sIsLastCol then
             sColCounter <= (others => '0');
-            if not sIsLastRow then
+            if sIsLastRow then
+              sRowCounter <= (others => '0');
+            else
               sRowCounter <= sRowCounter + 1;
             end if;
           else
