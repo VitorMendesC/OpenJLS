@@ -111,19 +111,18 @@ begin
     else
       oB <= sB;
       oC <= sC;
-      oD <= sD;
+
+      if sColCounter = iImageWidth - 1 then
+        oD <= sB; -- Last col: replicate last pixel of previous row (= b)
+      else
+        oD <= sD;
+      end if;
     end if;
 
     if sColCounter = 0 then
-      oA <= sB; -- Replicate first pixel of previous row
+      oA <= sB; -- First col: replicate first pixel of previous row (= b)
     else
       oA <= sA;
-    end if;
-
-    if sColCounter = iImageWidth - 1 then
-      oD <= sB; -- Replicate last pixel of previous row
-    else
-      oD <= sD;
     end if;
 
   end process; ----------------------------------------------------------------------------
