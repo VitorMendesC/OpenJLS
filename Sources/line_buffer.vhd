@@ -103,6 +103,11 @@ begin
     sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
     oValid              <= iValid;
 
+    -- Read FIFO logic ------------------------------------------------------
+    sFifoOutReady <= '1' when sFifoState = PRELOAD else
+      iValid when sFifoState = NOMINAL else
+      '0';
+
     -- Corner case handling for border conditions (T.87 A.2.1) --------------
     if sRowCounter = 0 then -- First row: b = c = d = 0
       oB <= (others => '0');
@@ -134,7 +139,6 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sPreloadCounter <= (others => '0');
-        sFifoOutReady   <= '0';
         sFifoState      <= PRELOAD;
         sFifoRst        <= '0';
 
@@ -151,18 +155,17 @@ begin
         sFifoRst <= '0';
 
         -- FIFO control FSM ----------------------------
+        -- sFifoOutReady is controlled combinationally using these states
         case sFifoState is
 
           when PRELOAD =>
             -- When FIFO receives the first pixels it loads them into registers, preparing for nominal operation
             -- Only loads b and d, since c is out of image
-            sFifoOutReady <= '1';
 
             if sIsFifoOutHandshake then
               sPreloadCounter <= sPreloadCounter + 1;
               if sPreloadCounter = 1 then
-                sFifoState    <= WAIT_END_FIRST_ROW;
-                sFifoOutReady <= '0';
+                sFifoState <= WAIT_END_FIRST_ROW;
               end if;
             end if;
 
@@ -174,12 +177,10 @@ begin
 
           when NOMINAL =>
             -- On valid operation, every new pixel steps the context window by reading a new neighbor pixels and shifting the current ones
-            sFifoOutReady <= iValid;
 
             if sIsEOI then
               sFifoState      <= PRELOAD; -- Reset FIFO for next image
               sFifoRst        <= '1';
-              sFifoOutReady   <= '0';
               sPreloadCounter <= (others => '0');
             end if;
 
