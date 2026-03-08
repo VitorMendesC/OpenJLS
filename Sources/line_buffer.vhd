@@ -70,7 +70,6 @@ architecture Behavioral of line_buffer is
   type fifo_state_t is (PRELOAD, WAIT_END_FIRST_ROW, NOMINAL);
   signal sFifoState : fifo_state_t;
 
-  signal sFifoRst            : std_logic;
   signal sFifoOutReady       : std_logic;
   signal sFifoOutValid       : std_logic;
   signal sFifoOutData        : std_logic_vector(BITNESS - 1 downto 0);
@@ -96,6 +95,7 @@ begin
   -- Combinatorial process ----------------------------------------------------------------
   comb_proc : process (all)
   begin
+
     oValid              <= iValid;
     sIsLastCol          <= sColCounter = iImageWidth - 1;
     sIsLastRow          <= sRowCounter = iImageHeight - 1;
@@ -147,7 +147,6 @@ begin
       if iRst = '1' then
         sPreloadCounter <= (others => '0');
         sFifoState      <= PRELOAD;
-        sFifoRst        <= '0';
 
         sColCounter <= (others => '0');
         sRowCounter <= (others => '0');
@@ -159,8 +158,6 @@ begin
         sBorderC <= (others => '0');
 
       else
-
-        sFifoRst <= '0';
 
         -- FIFO control FSM ----------------------------
         -- sFifoOutReady is controlled combinationally using these states
@@ -187,8 +184,7 @@ begin
             -- On valid operation, every new pixel steps the context window by reading a new neighbor pixels and shifting the current ones
 
             if sIsEOI then
-              sFifoState      <= PRELOAD; -- Reset FIFO for next image
-              sFifoRst        <= '1';
+              sFifoState      <= PRELOAD;
               sPreloadCounter <= (others => '0');
             end if;
 
@@ -247,9 +243,9 @@ begin
     port map
     (
       Clk       => iClk,
-      Rst       => iRst or sFifoRst,
+      Rst       => iRst,
       In_Data   => std_logic_vector(iPixel),
-      In_Valid  => iValid,
+      In_Valid  => iValid and not bool2bit(sIsLastRow),
       Out_Ready => sFifoOutReady, -- Read FIFO if not empty (valid)
       Out_Data  => sFifoOutData,
       Out_Valid => sFifoOutValid,
