@@ -73,13 +73,12 @@ architecture Behavioral of line_buffer is
   signal sFifoState : fifo_state_t;
 
   -- FIFO: holds the previous row
-  signal sFifoRst      : std_logic; -- iRst OR combinatorial reset at EOI
-  signal sFifoOutReady : std_logic;
-  signal sFifoOutValid : std_logic;
-  signal sFifoOutData  : std_logic_vector(BITNESS - 1 downto 0);
-  signal sFifoFull     : std_logic;
-  signal sFifoEmpty    : std_logic;
-
+  signal sFifoRst            : std_logic; -- iRst OR combinatorial reset at EOI
+  signal sFifoOutReady       : std_logic;
+  signal sFifoOutValid       : std_logic;
+  signal sFifoOutData        : std_logic_vector(BITNESS - 1 downto 0);
+  signal sFifoFull           : std_logic;
+  signal sFifoEmpty          : std_logic;
   signal sD                  : unsigned(BITNESS - 1 downto 0); -- d: upper-right
   signal sB                  : unsigned(BITNESS - 1 downto 0); -- b: upper
   signal sC                  : unsigned(BITNESS - 1 downto 0); -- c: upper-left
@@ -97,23 +96,24 @@ architecture Behavioral of line_buffer is
 
 begin
 
-  -- Combinatorial process -----------------------------------------------------------------
+  -- Combinatorial process ----------------------------------------------------------------
   comb_proc : process (all)
   begin
+    sIsEOL              <= sIsLastCol and iValid = '1';
+    sIsEOI              <= sIsLastCol and sIsLastRow and iValid = '1';
     oEOI                <= bool2bit(sIsEOI);
     oEOL                <= bool2bit(sIsEOL);
     sIsLastCol          <= sColCounter = iImageWidth - 1;
     sIsLastRow          <= sRowCounter = iImageHeight - 1;
-    sIsEOL              <= sIsLastCol and iValid = '1';
-    sIsEOI              <= sIsLastCol and sIsLastRow and iValid = '1';
     sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
 
     sFirstRow <= '1' when sRowCounter = 0 else
       '0';
-  end process;
+
+  end process; ----------------------------------------------------------------------------
 
   -- Clocked Process ----------------------------------------------------------------------
-  process (iClk)
+  clocked_proc : process (iClk)
   begin
 
     if rising_edge(iClk) then
@@ -190,7 +190,7 @@ begin
 
       end if;
     end if;
-  end process;
+  end process; -----------------------------------------------------------------------------
 
   -- Instance FIFO -------------------------------------------------------------------------
   fifo_inst : entity openlogic_base.olo_base_fifo_sync
