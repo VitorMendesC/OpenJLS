@@ -216,11 +216,14 @@ begin
           sD <= unsigned(sFifoOutData);
         end if;
 
-        -- Store last pixel
         if iValid = '1' then
+          -- Store last pixel
           sA <= iPixel;
-          if sColCounter = 0 then
+
+          if sIsFirstCol then
             sBorderC <= sB; -- Capture sB at col 0 for use as c border at col 0 of next row
+          elsif sIsEOI then
+            sBorderC <= (others => '0'); -- Clear border c at end of image, since next image's first row has no valid context
           end if;
         end if;
 
