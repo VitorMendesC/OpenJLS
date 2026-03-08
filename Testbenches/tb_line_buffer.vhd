@@ -4,6 +4,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library openlogic_base;
+use openlogic_base.olo_base_pkg_math.log2ceil;
+
 use std.env.all;
 
 entity tb_line_buffer is
@@ -21,91 +24,83 @@ architecture bench of tb_line_buffer is
   end procedure;
 
   constant clk_period : time    := 5 ns;
-  constant cSettle    : time    := 1 ns; -- combinatorial settle time, << clk_period
+  constant cSettle    : time    := 1 ns;
+  constant BITNESS    : natural := CO_BITNESS_STD;
 
-  constant IMAGE_W : natural := 10;
-  constant IMAGE_H : natural := 10;
-  constant BITNESS : natural := CO_BITNESS_STD;
+  -- DUT is sized for the largest image
+  constant MAX_W : natural := 10;
+  constant MAX_H : natural := 10;
 
-  signal iClk         : std_logic := '1';
-  signal iRst         : std_logic := '1';
-  signal iImageWidth  : unsigned(3 downto 0) := to_unsigned(IMAGE_W, 4);
-  signal iImageHeight : unsigned(3 downto 0) := to_unsigned(IMAGE_H, 4);
-  signal iValid       : std_logic := '0';
-  signal iPixel       : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal oA           : unsigned(BITNESS - 1 downto 0);
-  signal oB           : unsigned(BITNESS - 1 downto 0);
-  signal oC           : unsigned(BITNESS - 1 downto 0);
-  signal oD           : unsigned(BITNESS - 1 downto 0);
-  signal oValid       : std_logic;
-  signal oEOL         : std_logic;
-  signal oEOI         : std_logic;
+  signal iClk        : std_logic := '1';
+  signal iRst        : std_logic := '1';
+  signal iImageWidth : unsigned(log2ceil(MAX_W + 1) - 1 downto 0) := (others => '0');
+  signal iImageHeight: unsigned(log2ceil(MAX_H + 1) - 1 downto 0) := (others => '0');
+  signal iValid      : std_logic := '0';
+  signal iPixel      : unsigned(BITNESS - 1 downto 0) := (others => '0');
+  signal oA, oB, oC, oD : unsigned(BITNESS - 1 downto 0);
+  signal oValid, oEOL, oEOI : std_logic;
 
-  -- Pixel value for image img, row r, col c: img*W*H + r*W + c
-  function pixel_val(img : natural; r : natural; c : natural) return natural is
+  -- Reference functions, parameterized by image dimensions
+  function pixel_val(img, r, c, W, H : natural) return natural is
   begin
-    return img * IMAGE_W * IMAGE_H + r * IMAGE_W + c;
+    return img * W * H + r * W + c;
   end function;
 
-  -- Expected context neighbors (T.87 A.2.1)
-  function exp_a(img : natural; r : natural; c : natural) return natural is
+  function exp_a(img, r, c, W, H : natural) return natural is
   begin
     if c = 0 then
       if r = 0 then return 0;
-      else return pixel_val(img, r - 1, 0); -- first pixel of previous row
+      else return pixel_val(img, r - 1, 0, W, H);
       end if;
     else
-      return pixel_val(img, r, c - 1);
+      return pixel_val(img, r, c - 1, W, H);
     end if;
   end function;
 
-  function exp_b(img : natural; r : natural; c : natural) return natural is
+  function exp_b(img, r, c, W, H : natural) return natural is
   begin
     if r = 0 then return 0;
-    else return pixel_val(img, r - 1, c);
+    else return pixel_val(img, r - 1, c, W, H);
     end if;
   end function;
 
-  function exp_c(img : natural; r : natural; c : natural) return natural is
+  function exp_c(img, r, c, W, H : natural) return natural is
   begin
     if r = 0 then
       return 0;
     elsif c = 0 then
-      -- c = first pixel of two rows ago (the Ra from start of previous row)
-      if r = 1 then return 0; -- row before row 0 doesn't exist
-      else return pixel_val(img, r - 2, 0);
+      if r = 1 then return 0;
+      else return pixel_val(img, r - 2, 0, W, H);
       end if;
     else
-      return pixel_val(img, r - 1, c - 1);
+      return pixel_val(img, r - 1, c - 1, W, H);
     end if;
   end function;
 
-  function exp_d(img : natural; r : natural; c : natural) return natural is
+  function exp_d(img, r, c, W, H : natural) return natural is
   begin
     if r = 0 then
       return 0;
-    elsif c = IMAGE_W - 1 then
-      return pixel_val(img, r - 1, c); -- replicate b at last col
+    elsif c = W - 1 then
+      return pixel_val(img, r - 1, c, W, H); -- replicate b at last col
     else
-      return pixel_val(img, r - 1, c + 1);
+      return pixel_val(img, r - 1, c + 1, W, H);
     end if;
   end function;
 
   procedure check_pixel(
-    signal sA : in unsigned(BITNESS - 1 downto 0);
-    signal sB : in unsigned(BITNESS - 1 downto 0);
-    signal sC : in unsigned(BITNESS - 1 downto 0);
-    signal sD : in unsigned(BITNESS - 1 downto 0);
-    img       : in natural;
-    r         : in natural;
-    c         : in natural
+    signal sA        : in unsigned(BITNESS - 1 downto 0);
+    signal sB        : in unsigned(BITNESS - 1 downto 0);
+    signal sC        : in unsigned(BITNESS - 1 downto 0);
+    signal sD        : in unsigned(BITNESS - 1 downto 0);
+    img, r, c, W, H : in natural
   ) is
     variable ea, eb, ec, ed : natural;
   begin
-    ea := exp_a(img, r, c);
-    eb := exp_b(img, r, c);
-    ec := exp_c(img, r, c);
-    ed := exp_d(img, r, c);
+    ea := exp_a(img, r, c, W, H);
+    eb := exp_b(img, r, c, W, H);
+    ec := exp_c(img, r, c, W, H);
+    ed := exp_d(img, r, c, W, H);
 
     check(sA = to_unsigned(ea, BITNESS),
       "img=" & natural'image(img) & " (" & natural'image(r) & "," & natural'image(c) & ")" &
@@ -121,35 +116,29 @@ architecture bench of tb_line_buffer is
       " oD exp=" & natural'image(ed) & " got=" & natural'image(to_integer(sD)));
   end procedure;
 
-  -- Feed one image and check outputs each pixel.
-  -- Call this after iRst='0' and just after a rising edge.
-  -- Leaves iValid='0' after last pixel's rising edge.
   procedure run_image(
-    signal clk   : in  std_logic;
-    signal valid : out std_logic;
-    signal pixel : out unsigned(BITNESS - 1 downto 0);
-    signal sA    : in  unsigned(BITNESS - 1 downto 0);
-    signal sB    : in  unsigned(BITNESS - 1 downto 0);
-    signal sC    : in  unsigned(BITNESS - 1 downto 0);
-    signal sD    : in  unsigned(BITNESS - 1 downto 0);
-    signal sEOL  : in  std_logic;
-    signal sEOI  : in  std_logic;
-    img          : in  natural
+    signal clk        : in  std_logic;
+    signal valid      : out std_logic;
+    signal pixel      : out unsigned(BITNESS - 1 downto 0);
+    signal sA         : in  unsigned(BITNESS - 1 downto 0);
+    signal sB         : in  unsigned(BITNESS - 1 downto 0);
+    signal sC         : in  unsigned(BITNESS - 1 downto 0);
+    signal sD         : in  unsigned(BITNESS - 1 downto 0);
+    signal sEOL       : in  std_logic;
+    signal sEOI       : in  std_logic;
+    img, W, H         : in  natural
   ) is
   begin
-    for r in 0 to IMAGE_H - 1 loop
-      for c in 0 to IMAGE_W - 1 loop
-        -- Drive inputs before the clock edge
-        pixel <= to_unsigned(pixel_val(img, r, c), BITNESS);
+    for r in 0 to H - 1 loop
+      for c in 0 to W - 1 loop
+        pixel <= to_unsigned(pixel_val(img, r, c, W, H), BITNESS);
         valid <= '1';
-        -- Let combinatorial outputs settle (registered state already reflects (r,c) position)
         wait for cSettle;
-        check_pixel(sA, sB, sC, sD, img, r, c);
-        check(sEOL = bool2bit(c = IMAGE_W - 1),
+        check_pixel(sA, sB, sC, sD, img, r, c, W, H);
+        check(sEOL = bool2bit(c = W - 1),
           "img=" & natural'image(img) & " (" & natural'image(r) & "," & natural'image(c) & ") oEOL wrong");
-        check(sEOI = bool2bit(r = IMAGE_H - 1 and c = IMAGE_W - 1),
+        check(sEOI = bool2bit(r = H - 1 and c = W - 1),
           "img=" & natural'image(img) & " (" & natural'image(r) & "," & natural'image(c) & ") oEOI wrong");
-        -- Advance clock: DUT latches pixel, shifts context window
         wait until rising_edge(clk);
       end loop;
     end loop;
@@ -158,10 +147,12 @@ architecture bench of tb_line_buffer is
 
 begin
 
+  iClk <= not iClk after clk_period / 2;
+
   dut : entity work.line_buffer
     generic map(
-      MAX_IMAGE_WIDTH  => IMAGE_W,
-      MAX_IMAGE_HEIGHT => IMAGE_H,
+      MAX_IMAGE_WIDTH  => MAX_W,
+      MAX_IMAGE_HEIGHT => MAX_H,
       BITNESS          => BITNESS
     )
     port map(
@@ -180,36 +171,60 @@ begin
       oEOI         => oEOI
     );
 
-  iClk <= not iClk after clk_period / 2;
-
   stim : process
+    constant W5  : natural := 5;
+    constant H5  : natural := 5;
+    constant W10 : natural := 10;
+    constant H10 : natural := 10;
   begin
 
-    -- Reset
     iRst <= '1';
     wait for 3 * clk_period;
     wait until rising_edge(iClk);
     iRst <= '0';
-    wait until rising_edge(iClk); -- one idle cycle after reset
+    wait until rising_edge(iClk);
 
     -- =========================================================
-    -- Test 1: one image, no reset afterwards
+    -- 5x5 Test 1: one image, no reset afterwards
     -- =========================================================
-    report "Test 1: single image";
-    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 0);
+    report "5x5 Test 1: single image";
+    iImageWidth  <= to_unsigned(W5, iImageWidth'length);
+    iImageHeight <= to_unsigned(H5, iImageHeight'length);
 
-    -- A few idle cycles (no reset)
+    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 0, W5, H5);
+
     wait for 3 * clk_period;
     wait until rising_edge(iClk);
 
     -- =========================================================
-    -- Test 2: two images back-to-back (one idle cycle between)
+    -- 5x5 Test 2: two images back-to-back, no bubble
     -- =========================================================
-    report "Test 2: two images back-to-back";
-    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 1);
-    -- One idle cycle gap between images
+    report "5x5 Test 2: two images back-to-back";
+    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 0, W5, H5);
+    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 0, W5, H5);
+
+    -- Wait between image size changes (no reset, DUT returns to PRELOAD after EOI)
+    wait for 10 * clk_period;
     wait until rising_edge(iClk);
-    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 2);
+
+    -- =========================================================
+    -- 10x10 Test 1: one image, no reset afterwards
+    -- =========================================================
+    report "10x10 Test 1: single image";
+    iImageWidth  <= to_unsigned(W10, iImageWidth'length);
+    iImageHeight <= to_unsigned(H10, iImageHeight'length);
+
+    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 0, W10, H10);
+
+    wait for 3 * clk_period;
+    wait until rising_edge(iClk);
+
+    -- =========================================================
+    -- 10x10 Test 2: two images back-to-back, no bubble
+    -- =========================================================
+    report "10x10 Test 2: two images back-to-back";
+    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 1, W10, H10);
+    run_image(iClk, iValid, iPixel, oA, oB, oC, oD, oEOL, oEOI, 2, W10, H10);
 
     wait for clk_period;
 
