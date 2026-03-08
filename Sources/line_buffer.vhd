@@ -148,6 +148,8 @@ begin
 
       else
 
+        sFifoRst <= '0';
+
         -- FIFO control FSM ----------------------------
         case sFifoState is
 
@@ -175,6 +177,7 @@ begin
 
             if sIsEOI then
               sFifoState      <= PRELOAD; -- Reset FIFO for next image
+              sFifoRst        <= '1';
               sFifoOutReady   <= '0';
               sPreloadCounter <= (others => '0');
             end if;
@@ -222,7 +225,7 @@ begin
     port map
     (
       Clk       => iClk,
-      Rst       => sFifoRst,
+      Rst       => iRst or sFifoRst,
       In_Data   => std_logic_vector(iPixel),
       In_Valid  => iValid,
       Out_Ready => sFifoOutReady, -- Read FIFO if not empty (valid)
