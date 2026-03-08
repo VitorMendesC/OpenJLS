@@ -155,11 +155,12 @@ begin
 
           when PRELOAD =>
             -- When FIFO receives the first pixels it loads them into registers, preparing for nominal operation
+            -- Only loads b and d, since c is out of image
             sFifoOutReady <= '1';
 
             if sIsFifoOutHandshake then
               sPreloadCounter <= sPreloadCounter + 1;
-              if sPreloadCounter = 2 then
+              if sPreloadCounter = 1 then
                 sFifoState    <= WAIT_END_FIRST_ROW;
                 sFifoOutReady <= '0';
               end if;
