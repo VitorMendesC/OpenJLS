@@ -41,7 +41,7 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity line_buffer is
   generic (
-    MAX_IMAGE_WIDTH  : positive;
+    MAX_IMAGE_WIDTH  : positive range 3 to integer'high;
     MAX_IMAGE_HEIGHT : positive;
     BITNESS          : natural := CO_BITNESS_STD
   );
@@ -98,11 +98,6 @@ architecture Behavioral of line_buffer is
   signal sPreloadCounter : unsigned(1 downto 0); -- counts preloading previous row pixels
 
 begin
-
-  -- Requirements --------------------------------------------------------------------------
-  assert MAX_IMAGE_WIDTH >= 3
-  report "line_buffer: MAX_IMAGE_WIDTH must be >= 3"
-    severity failure;
 
   -- Positional signals --------------------------------------------------------------------
   sIsLastCol          <= sColCounter = iImageWidth - 1;
