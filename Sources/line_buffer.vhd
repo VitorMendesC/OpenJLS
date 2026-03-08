@@ -221,10 +221,16 @@ begin
           sA <= iPixel;
 
           if sIsFirstCol then
-            sBorderC <= sB; -- Capture sB at col 0 for use as c border at col 0 of next row
-          elsif sIsEOI then
-            sBorderC <= (others => '0'); -- Clear border c at end of image, since next image's first row has no valid context
+            sBorderC <= sB; -- Capture sB at col 0 for use as c border at col 0 of next ro
           end if;
+        end if;
+
+        if sIsEOI then
+          sB       <= (others => '0');
+          sC       <= (others => '0');
+          sD       <= (others => '0');
+          sA       <= (others => '0');
+          sBorderC <= (others => '0');
         end if;
 
       end if;
