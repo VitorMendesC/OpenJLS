@@ -136,6 +136,7 @@ begin
         sPreloadCounter <= (others => '0');
         sFifoOutReady   <= '0';
         sFifoState      <= PRELOAD;
+        sFifoRst        <= '0';
 
         sColCounter <= (others => '0');
         sRowCounter <= (others => '0');
