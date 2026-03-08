@@ -85,7 +85,6 @@ architecture Behavioral of line_buffer is
   signal sA                  : unsigned(BITNESS - 1 downto 0); -- a: left
   signal sColCounter         : unsigned(COL_WIDTH - 1 downto 0);
   signal sRowCounter         : unsigned(ROW_WIDTH - 1 downto 0);
-  signal sFirstRow           : std_logic;
   signal sIsLastCol          : boolean;
   signal sIsLastRow          : boolean;
   signal sIsEOI              : boolean;
@@ -106,9 +105,30 @@ begin
     sIsLastCol          <= sColCounter = iImageWidth - 1;
     sIsLastRow          <= sRowCounter = iImageHeight - 1;
     sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
+    oValid              <= iValid;
 
-    sFirstRow <= '1' when sRowCounter = 0 else
-      '0';
+    -- Corner case handling for border conditions (T.87 A.2.1) --------------
+    if sRowCounter = 0 then -- First row: b = c = d = 0
+      oB <= (others => '0');
+      oC <= (others => '0');
+      oD <= (others => '0');
+    else
+      oB <= sB;
+      oC <= sC;
+      oD <= sD;
+    end if;
+
+    if sColCounter = 0 then
+      oA <= sB; -- Replicate first pixel of previous row
+    else
+      oA <= sA;
+    end if;
+
+    if sColCounter = iImageWidth - 1 then
+      oD <= sB; -- Replicate last pixel of previous row
+    else
+      oD <= sD;
+    end if;
 
   end process; ----------------------------------------------------------------------------
 
