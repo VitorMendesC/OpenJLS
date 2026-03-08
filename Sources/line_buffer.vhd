@@ -210,6 +210,10 @@ begin
           sC <= sB;
           sB <= sD;
           sD <= unsigned(sFifoOutData);
+        elsif sFifoState = NOMINAL and iValid = '1' then
+          -- FIFO empty (last row, end of row): sD has no new data but sB/sC still step
+          sC <= sB;
+          sB <= sD;
         end if;
 
         if iValid = '1' then
