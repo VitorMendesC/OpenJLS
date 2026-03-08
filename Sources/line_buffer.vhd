@@ -80,6 +80,7 @@ architecture Behavioral of line_buffer is
   signal sB                  : unsigned(BITNESS - 1 downto 0); -- b: upper
   signal sC                  : unsigned(BITNESS - 1 downto 0); -- c: upper-left
   signal sA                  : unsigned(BITNESS - 1 downto 0); -- a: left
+  signal sBorderC            : unsigned(BITNESS - 1 downto 0); -- c at col 0: sB captured at col 0 of previous row
   signal sColCounter         : unsigned(COL_WIDTH - 1 downto 0);
   signal sRowCounter         : unsigned(ROW_WIDTH - 1 downto 0);
   signal sIsLastCol          : boolean;
@@ -115,7 +116,11 @@ begin
       oD <= (others => '0');
     else
       oB <= sB;
-      oC <= sC;
+      if sColCounter = 0 then
+        oC <= sBorderC; -- Col 0: c = Ra from start of previous row
+      else
+        oC <= sC;
+      end if;
 
       if sColCounter = iImageWidth - 1 then
         oD <= sB; -- Last col: replicate last pixel of previous row (= b)
@@ -145,10 +150,11 @@ begin
         sColCounter <= (others => '0');
         sRowCounter <= (others => '0');
 
-        sB <= (others => '0');
-        sC <= (others => '0');
-        sD <= (others => '0');
-        sA <= (others => '0');
+        sB       <= (others => '0');
+        sC       <= (others => '0');
+        sD       <= (others => '0');
+        sA       <= (others => '0');
+        sBorderC <= (others => '0');
 
       else
 
@@ -211,6 +217,9 @@ begin
         -- Store last pixel
         if iValid = '1' then
           sA <= iPixel;
+          if sColCounter = 0 then
+            sBorderC <= sB; -- Capture sB at col 0 for use as c border at col 0 of next row
+          end if;
         end if;
 
       end if;
