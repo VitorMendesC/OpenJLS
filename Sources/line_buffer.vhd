@@ -88,6 +88,7 @@ architecture Behavioral of line_buffer is
   signal sIsEOI              : boolean;
   signal sIsEOL              : boolean;
   signal sIsFifoOutHandshake : boolean;
+  signal sIsFirstCol         : boolean;
   signal sPreloadCounter     : unsigned(1 downto 0);
 
 begin
@@ -95,14 +96,15 @@ begin
   -- Combinatorial process ----------------------------------------------------------------
   comb_proc : process (all)
   begin
+    oValid              <= iValid;
+    sIsLastCol          <= sColCounter = iImageWidth - 1;
+    sIsLastRow          <= sRowCounter = iImageHeight - 1;
+    sIsFirstCol         <= sColCounter = 0;
     sIsEOL              <= sIsLastCol and iValid = '1';
     sIsEOI              <= sIsLastCol and sIsLastRow and iValid = '1';
     oEOI                <= bool2bit(sIsEOI);
     oEOL                <= bool2bit(sIsEOL);
-    sIsLastCol          <= sColCounter = iImageWidth - 1;
-    sIsLastRow          <= sRowCounter = iImageHeight - 1;
     sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
-    oValid              <= iValid;
 
     -- Read FIFO logic ------------------------------------------------------
     sFifoOutReady <= '1' when sFifoState = PRELOAD else
@@ -116,20 +118,20 @@ begin
       oD <= (others => '0');
     else
       oB <= sB;
-      if sColCounter = 0 then
+      if sIsFirstCol then
         oC <= sBorderC; -- Col 0: c = Ra from start of previous row
       else
         oC <= sC;
       end if;
 
-      if sColCounter = iImageWidth - 1 then
+      if sIsLastCol then
         oD <= sB; -- Last col: replicate last pixel of previous row (= b)
       else
         oD <= sD;
       end if;
     end if;
 
-    if sColCounter = 0 then
+    if sIsFirstCol then
       oA <= sB; -- First col: replicate first pixel of previous row (= b)
     else
       oA <= sA;
