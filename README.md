@@ -6,7 +6,7 @@ It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — the best-p
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform. It is currently tested on Xilinx Zynq 7020.
 
-> **Status:** Active development. Core building blocks (codec segments, context memory) are implemented and individually verified. Top-level integration with AXI4-Stream interfaces is in progress. Check the [roadmap](ROADMAP.md) file for more details.
+> **Status:** Active development. Core building blocks (codec segments, context memory) are implemented and individually verified. Top-level integration with AXI4-Stream interfaces is in progress. Check the [roadmap](Docs/ROADMAP.md) file for more details.
 
 ---
 
