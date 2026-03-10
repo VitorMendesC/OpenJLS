@@ -1,0 +1,1024 @@
+name: OpenJLS
+project_disk_path: ''
+project_type: genericProject
+toplevel: ''
+files:
+  - name: ./Sources/A1_gradient_comp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A3_mode_selection.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A4_1_quant_gradient_merging.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A4_2_Q_mapping.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A4_quantization_gradients.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A5_edge_detecting_predictor.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A6_prediction_correction.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A7_prediction_error.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A9_modulo_reduction.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A10_compute_k.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A11_1_golomb_encoder.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A11_2_bit_packer.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A11_error_mapping.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A12_variables_update.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A13_update_bias.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/Common.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/jpeg_top.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ../..
+    file_type: none
+    file_version: !<tag:yaml.org,2002:js/undefined> ''
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: false
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_fifo_packet.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_fifo_sync.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_array.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_attribute.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_logic.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_math.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_string.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_ram_sdp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_ram_sp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_ram_tdp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: openlogic_base
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A11_2_bit_packer.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_context_ram.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_edge_detecting_predictor.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_gradient_comp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_jpeg_top.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_mode_selection.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_prediction_correction.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_quant_gradient_merging.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_quantization_gradients.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/context_ram.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A2_mode_selection.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A8_error_quantization.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A14_run_length_determination.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A15_encode_run_segments.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A16_encode_run_segments_short.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A17_run_interruption_index.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A18_run_interruption_prediction_error.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A19_run_interruption_error.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A20_compute_temp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A21_compute_map.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A22_errval_mapping.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/A23_run_interruption_update.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A1.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A2.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A3.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A4.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A4_1.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A4_2.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A7.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A8.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A9.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A10.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A11.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A11_1.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A11_2.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A12.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A13.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A14.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A15.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A16.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A17.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A18.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A19.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A20.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A21.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A22.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A23.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_fifo_packet.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_fifo_sync.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_array.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_attribute.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_logic.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_math.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_string.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_ram_sdp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_ram_sp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./ThirdParty/open-logic/src/base/vhdl/olo_base_ram_tdp.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A5.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_A6.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Testbenches/tb_byte_stuffer.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+  - name: ./Sources/byte_stuffer.vhd
+    file_type: vhdlSource
+    file_version: '2008'
+    is_include_file: false
+    include_path: ''
+    logical_name: ''
+    is_manual: true
+    source_type: none
+hooks:
+  pre_build: []
+  post_build: []
+  pre_run: []
+  post_run: []
+watchers: []
+configuration:
+  general:
+    general:
+      pypath: ''
+      makepath: ''
+      go_to_definition_vhdl: true
+      go_to_definition_verilog: true
+      developer_mode: false
+  documentation:
+    general:
+      language: english
+      symbol_vhdl: '!'
+      symbol_verilog: '!'
+      dependency_graph: true
+      self_contained: true
+      fsm: true
+      ports: all
+      generics: all
+      instantiations: all
+      signals: all
+      constants: all
+      types: all
+      process: all
+      functions: all
+      tasks: all
+      magic_config_path: ''
+  editor:
+    general:
+      stutter_comment_shortcuts: false
+      stutter_block_width: 80
+      stutter_max_width: 0
+      stutter_delimiters: false
+      stutter_bracket_shortcuts: false
+  formatter:
+    general:
+      formatter_verilog: istyle
+      formatter_vhdl: standalone
+    istyle:
+      style: ansi
+      indentation_size: 2
+    s3sv:
+      one_bind_per_line: false
+      one_declaration_per_line: false
+      use_tabs: false
+      indentation_size: 2
+    verible:
+      format_args: ''
+    standalone:
+      keyword_case: lowercase
+      name_case: lowercase
+      indentation: '  '
+      align_port_generic: true
+      align_comment: false
+      remove_comments: false
+      remove_reports: false
+      check_alias: false
+      new_line_after_then: new_line
+      new_line_after_semicolon: new_line
+      new_line_after_else: new_line
+      new_line_after_port: new_line
+      new_line_after_generic: new_line
+    svg:
+      configuration: ''
+      core_number: 2
+      aditional_arguments: ''
+  linter:
+    general:
+      linter_vhdl: none
+      linter_verilog: modelsim
+      lstyle_verilog: disabled
+      lstyle_vhdl: disabled
+    vhdlls:
+      standard: v2008
+      ignoreVunit: false
+      vunitPath: ''
+    ghdl:
+      arguments: ''
+    icarus:
+      arguments: ''
+    modelsim:
+      vhdl_arguments: ''
+      verilog_arguments: ''
+    verible:
+      arguments: ''
+    verilator:
+      arguments: ''
+    vivado:
+      vhdl_arguments: ''
+      verilog_arguments: ''
+    vsg:
+      arguments: ''
+  schematic:
+    general:
+      backend: yowasp
+      extra: ''
+      args: ''
+      args_ghdl: ''
+  templates:
+    general:
+      header_file_path: ''
+      indent: '  '
+      clock_generation_style: inline
+      instance_style: inline
+  tools:
+    general:
+      select_tool: ghdl
+      manual_compilation_order: ''
+      execution_mode: cmd
+      waveform_viewer: tool
+      gtkwave_installation_path: ''
+      gtkwave_extra_arguments: ''
+    quartus:
+      installation_path: ''
+      family: ''
+      device: ''
+      optimization_mode: BALANCED
+      allow_register_retiming: true
+      wave_file_questa: ''
+    vsg:
+      installation_path: ''
+    osvvm:
+      installation_path: ''
+      tclsh_binary: ''
+      simulator_name: ghdl
+    ascenlint:
+      installation_path: ''
+      ascentlint_options: []
+    cocotb:
+      installation_path: ''
+      simulator_name: ghdl
+      compile_args: ''
+      run_args: ''
+      plusargs: ''
+    diamond:
+      installation_path: ''
+      part: ''
+    ghdl:
+      installation_path: ''
+      waveform: vcd
+      analyze_options: []
+      run_options: []
+    icarus:
+      installation_path: ''
+      timescale: ''
+      iverilog_options: []
+    icestorm:
+      installation_path: ''
+      pnr: none
+      arch: xilinx
+      output_format: json
+      yosys_as_subtool: false
+      makefile_name: ''
+      arachne_pnr_options: []
+      nextpnr_options: []
+      yosys_synth_options: []
+    ise:
+      installation_path: ''
+      family: ''
+      device: ''
+      package: ''
+      speed: ''
+    isem:
+      installation_path: ''
+      fuse_options: []
+      isim_options: []
+    modelsim:
+      installation_path: ''
+      vcom_options: []
+      vlog_options: []
+      vsim_options: []
+    morty:
+      installation_path: ''
+      morty_options: []
+    radiant:
+      installation_path: ''
+      part: ''
+    rivierapro:
+      installation_path: ''
+      compilation_mode: ''
+      vlog_options: []
+      vsim_options: []
+    spyglass:
+      installation_path: ''
+      methodology: ''
+      goals: []
+      spyglass_options: []
+      rule_parameters: []
+    symbiyosys:
+      installation_path: ''
+      tasknames: []
+    symbiflow:
+      installation_path: ''
+      package: ''
+      part: ''
+      vendor: ''
+      pnr: vpr
+      vpr_options: ''
+      environment_script: ''
+    trellis:
+      installation_path: ''
+      arch: xilinx
+      output_format: json
+      yosys_as_subtool: false
+      makefile_name: ''
+      script_name: ''
+      nextpnr_options: []
+      yosys_synth_options: []
+    vcs:
+      installation_path: ''
+      vcs_options: []
+      run_options: []
+    verible:
+      installation_path: ''
+    verilator:
+      installation_path: ''
+      mode: lint-only
+      libs: []
+      verilator_options: []
+      make_options: []
+      run_options: []
+    vivado:
+      installation_path: ''
+      part: ''
+      synth: ''
+      pnr: vivado
+      jtag_freq: 10000
+      hw_target: ''
+    vunit:
+      installation_path: ''
+      simulator_name: ghdl
+      runpy_mode: standalone
+      extra_options: ''
+      enable_array_util_lib: false
+      enable_com_lib: false
+      enable_json4vhdl_lib: false
+      enable_osvvm_lib: false
+      enable_random_lib: false
+      enable_verification_components_lib: false
+    xcelium:
+      installation_path: ''
+      xmvhdl_options: []
+      xmvlog_options: []
+      xmsim_options: []
+      xrun_options: []
+    xsim:
+      installation_path: ''
+      xelab_options: []
+      xsim_options: []
+    yosys:
+      installation_path: ''
+      arch: xilinx
+      output_format: json
+      yosys_as_subtool: false
+      makefile_name: ''
+      script_name: ''
+      yosys_synth_options: []
+    openfpga:
+      installation_path: ''
+      arch: ''
+      task_options: []
+    activehdl:
+      installation_path: ''
+    questa:
+      installation_path: ''
+    raptor:
+      installation_path: ''
+      target_device: 1GE100
+      vhdl_version: VHDL_1993
+      verilog_version: V_2001
+      sv_version: SV_2012
+      optimization: none
+      effort: high
+      fsm_encoding: onehot
+      carry: auto
+      pnr_netlist_language: verilog
+      dsp_limit: 154
+      block_ram_limit: 154
+      fast_synthesis: false
+      top_level: ''
+      sim_source_list: []
+      simulate_rtl: false
+      waveform_rtl: syn_tb_rtl.fst
+      simulator_rtl: ghdl
+      simulation_options_rtl: '--stop-time=1000ns'
+      simulate_gate: false
+      waveform_gate: syn_tb_gate.fst
+      simulator_gate: ghdl
+      simulation_options_gate: '--stop-time=1000ns'
+      simulate_pnr: false
+      waveform_pnr: sim_pnr.fst
+      simulator_pnr: ghdl
+      simulation_options_pnr: '--stop-time=1000ns'
+tool_options:
+  ghdl:
+    name: ghdl
+    installation_path: ''
+    config:
+      installation_path: ''
+      waveform: vcd
+      analyze_options: []
+      run_options: []
