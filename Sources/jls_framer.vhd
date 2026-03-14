@@ -5,20 +5,33 @@
 -- Description:
 --
 --   Wraps the byte-stuffed compressed payload with JPEG-LS framing markers:
---     SOI + SOF55 + SOS  (before data)
---     EOI                (after data)
+--     SOI + SOF55 + SOS  (header, 25 bytes, before data)
+--     EOI = FF D9        (footer, 2 bytes, after data)
+--
+--   Sits downstream of byte_stuffer.  Does NOT issue a flush upstream; the
+--   bit-packer/byte-stuffer flush is driven by the pipelined EOI signal.
+--   The top level delays iEOI by one cycle relative to byte_stuffer.iFlush,
+--   so iEOI arrives at the framer simultaneously with the byte_stuffer's
+--   registered flush output on oWordValid / oValidBytes.
+--
+--   iEOI protocol (1-cycle pulse):
+--     - If iBsWordValid='1' on the same cycle, that word is the last payload
+--       word; iBsValidBytes indicates how many bytes are meaningful.
+--     - If iBsWordValid='0', the byte_stuffer had nothing buffered to flush.
+--     - In both cases the framer appends FF D9 and drains the accumulator,
+--       asserting oLast on the final output word (AXI tlast).
+--
+--   Back-to-back images: iStart for the next image may arrive the cycle
+--   immediately after iEOI.  The header is not emitted until the current
+--   image (footer included) has been fully drained.
+--
+--   Image dimensions are fixed at reset by the top level and read directly
+--   from the ports without registering.
 --
 --   IN_WIDTH  : word width from byte_stuffer  (CO_BYTE_STUFFER_IN_WIDTH = 24b)
---   OUT_WIDTH : final output word width        (CO_OUT_WIDTH_STD = 72b, min 32b)
---
---   Header emission is triggered by iStart (first pixel entering the encoder
---   pipeline).  BYTES_OUT header bytes are pushed into the accumulator per cycle,
---   so HEADER state lasts ceil(25 / BYTES_OUT) cycles.  Combined with FOOTER
---   (1 cycle) and FINAL_FLUSH (~2 cycles), the oBsReady='0' window is ~6 cycles
---   at 72b output, comfortably within CO_BUFFER_WIDTH_STD = 96b at typical rates.
+--   OUT_WIDTH : final output word width        (CO_OUT_WIDTH_STD = 72b)
 --
 --   Accumulator: 2*OUT_WIDTH-bit byte queue, MSB = head.
---   Worst-case fill: (BYTES_OUT-1) + BYTES_IN < 2*BYTES_OUT (since OUT >= IN).
 ----------------------------------------------------------------------------------
 use work.Common.all;
 
@@ -51,11 +64,11 @@ entity jls_framer is
     iBsWordValid  : in  std_logic;
     iBsValidBytes : in  unsigned(log2ceil(IN_WIDTH  / 8) downto 0);
     oBsReady      : out std_logic;
-    oBsFlush      : out std_logic;
-    -- Output (OUT_WIDTH wide)
+    -- Output (OUT_WIDTH wide, AXI-Stream)
     oWord         : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oWordValid    : out std_logic;
     oValidBytes   : out unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
+    oLast         : out std_logic;
     iReady        : in  std_logic
   );
 end jls_framer;
@@ -68,7 +81,7 @@ architecture Behavioral of jls_framer is
   constant BUFFER_WIDTH : natural := BUFFER_BYTES * 8;
   constant HEADER_LEN   : natural := 25;
 
-  type fsm_t is (IDLE, HEADER, DATA, FLUSH_BS, FOOTER, FINAL_FLUSH);
+  type fsm_t is (IDLE, HEADER, DATA, FOOTER, FINAL_FLUSH);
   signal sFsmState : fsm_t := IDLE;
 
   signal sBuffer    : std_logic_vector(BUFFER_WIDTH - 1 downto 0) := (others => '0');
@@ -76,15 +89,14 @@ architecture Behavioral of jls_framer is
 
   signal sOutWord    : std_logic_vector(OUT_WIDTH - 1 downto 0)      := (others => '0');
   signal sOutValid   : std_logic                                      := '0';
+  signal sOutLast    : std_logic                                      := '0';
   signal sValidBytes : unsigned(log2ceil(OUT_WIDTH / 8) downto 0)    := (others => '0');
-
-  signal sWidth  : unsigned(15 downto 0) := (others => '0');
-  signal sHeight : unsigned(15 downto 0) := (others => '0');
 
   -- Byte offset into header; increments by BYTES_OUT per cycle
   signal sHeaderByteIdx : natural range 0 to HEADER_LEN := 0;
-  -- Guards FLUSH_BS->FOOTER: wait 1 cycle after asserting oBsFlush
-  signal sFlushSettled  : std_logic := '0';
+
+  -- Set when iStart arrives during FOOTER / FINAL_FLUSH so it isn't missed
+  signal sNextPending : std_logic := '0';
 
   signal sAxiHandshake : boolean;
 
@@ -153,16 +165,21 @@ begin
   oWord       <= sOutWord;
   oWordValid  <= sOutValid;
   oValidBytes <= sValidBytes;
+  oLast       <= sOutLast;
 
-  oBsFlush <= '1' when sFsmState = FLUSH_BS else '0';
-  -- Accept from byte stuffer when accumulator has room for one more IN word
-  oBsReady <= '1' when (sFsmState = DATA or sFsmState = FLUSH_BS)
+  -- Accept from byte stuffer only in DATA state and when accumulator has room.
+  -- Uses registered sByteCount (conservative): the byte stuffer only presents
+  -- valid data after seeing oBsReady='1', so sByteCount + BYTES_IN <= BUFFER_BYTES
+  -- is guaranteed to hold whenever iBsWordValid='1'.
+  oBsReady <= '1' when sFsmState = DATA
                        and sByteCount + BYTES_IN <= BUFFER_BYTES else '0';
 
   process (iClk)
     variable vBuf       : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
     variable vCount     : natural range 0 to BUFFER_BYTES;
     variable vPushCount : natural range 0 to BYTES_OUT;
+    variable vWidth     : unsigned(15 downto 0);
+    variable vHeight    : unsigned(15 downto 0);
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
@@ -171,62 +188,65 @@ begin
         sByteCount     <= 0;
         sOutWord       <= (others => '0');
         sOutValid      <= '0';
+        sOutLast       <= '0';
         sValidBytes    <= (others => '0');
-        sWidth         <= (others => '0');
-        sHeight        <= (others => '0');
         sHeaderByteIdx <= 0;
-        sFlushSettled  <= '0';
+        sNextPending   <= '0';
       else
 
         vBuf       := sBuffer;
         vCount     := sByteCount;
         vPushCount := 0;
+        vWidth     := resize(iImageWidth,  16);
+        vHeight    := resize(iImageHeight, 16);
 
         ----------------------------------------------------------------
-        -- POP: drain accumulator → output register
+        -- POP: drain accumulator → output register (fires first so the
+        -- push section below sees the post-pop vCount)
         ----------------------------------------------------------------
         if vCount >= BYTES_OUT and (sAxiHandshake or sOutValid = '0') then
+          -- Full word; oLast when this is the last word in FINAL_FLUSH
           sOutWord    <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
           sValidBytes <= to_unsigned(BYTES_OUT, sValidBytes'length);
           sOutValid   <= '1';
+          sOutLast    <= bool2bit(sFsmState = FINAL_FLUSH and vCount = BYTES_OUT);
           vBuf        := std_logic_vector(shift_left(unsigned(vBuf), OUT_WIDTH));
           vCount      := vCount - BYTES_OUT;
 
         elsif sFsmState = FINAL_FLUSH and vCount > 0
               and (sAxiHandshake or sOutValid = '0') then
+          -- Partial last word of the image
           sOutWord    <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
           sValidBytes <= to_unsigned(vCount, sValidBytes'length);
           sOutValid   <= '1';
+          sOutLast    <= '1';
           vBuf        := (others => '0');
           vCount      := 0;
 
         elsif sAxiHandshake then
           sOutValid <= '0';
+          sOutLast  <= '0';
         end if;
 
         ----------------------------------------------------------------
-        -- FSM + push source selection (push uses post-pop vCount)
+        -- FSM + push (uses post-pop vCount / vBuf)
         ----------------------------------------------------------------
         case sFsmState is
 
           when IDLE =>
-            sFlushSettled <= '0';
             if iStart = '1' then
-              sWidth         <= resize(iImageWidth,  16);
-              sHeight        <= resize(iImageHeight, 16);
               sHeaderByteIdx <= 0;
               sFsmState      <= HEADER;
             end if;
 
           when HEADER =>
             -- Push up to BYTES_OUT header bytes per cycle.
-            -- Stalls only under downstream backpressure.
             if vCount + BYTES_OUT <= BUFFER_BYTES then
               for i in 0 to BYTES_OUT - 1 loop
                 if sHeaderByteIdx + i < HEADER_LEN then
                   vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
                        BUFFER_WIDTH     - (vCount + i) * 8 - 8)
-                    := get_header_byte(sHeaderByteIdx + i, sWidth, sHeight);
+                    := get_header_byte(sHeaderByteIdx + i, vWidth, vHeight);
                   vPushCount := vPushCount + 1;
                 end if;
               end loop;
@@ -238,44 +258,40 @@ begin
             end if;
 
           when DATA =>
-            -- Pass IN_WIDTH-wide byte stuffer words through the accumulator.
-            if iBsWordValid = '1' and sByteCount + BYTES_IN <= BUFFER_BYTES then
-              for i in 0 to BYTES_IN - 1 loop
-                vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
-                     BUFFER_WIDTH     - (vCount + i) * 8 - 8)
-                  := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
-              end loop;
-              vPushCount := BYTES_IN;
-            end if;
-            if iEOI = '1' then
-              sFsmState <= FLUSH_BS;
-            end if;
-
-          when FLUSH_BS =>
-            -- Assert oBsFlush (combinatorial). Wait 1 cycle (sFlushSettled) before
-            -- transitioning on iBsWordValid='0' so the byte stuffer can react.
-            sFlushSettled <= '1';
-            if iBsWordValid = '1' and sByteCount + BYTES_IN <= BUFFER_BYTES then
-              for i in 0 to BYTES_IN - 1 loop
-                if i < to_integer(iBsValidBytes) then
+            -- Pass byte-stuffer words into the accumulator.
+            -- On iEOI, the arriving word (if valid) is the last payload word
+            -- (byte_stuffer's registered flush output); use iBsValidBytes to
+            -- push only the meaningful bytes.
+            if iBsWordValid = '1' and vCount + BYTES_IN <= BUFFER_BYTES then
+              if iEOI = '1' then
+                for i in 0 to BYTES_IN - 1 loop
+                  if i < to_integer(iBsValidBytes) then
+                    vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
+                         BUFFER_WIDTH     - (vCount + i) * 8 - 8)
+                      := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
+                  end if;
+                end loop;
+                vPushCount := to_integer(iBsValidBytes);
+              else
+                for i in 0 to BYTES_IN - 1 loop
                   vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
                        BUFFER_WIDTH     - (vCount + i) * 8 - 8)
                     := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
-                end if;
-              end loop;
-              vPushCount := to_integer(iBsValidBytes);
-              -- Partial word = final flushed word from byte stuffer
-              if to_integer(iBsValidBytes) < BYTES_IN then
-                sFsmState <= FOOTER;
+                end loop;
+                vPushCount := BYTES_IN;
               end if;
-            elsif iBsWordValid = '0' and sFlushSettled = '1' then
+            end if;
+            if iEOI = '1' then
               sFsmState <= FOOTER;
             end if;
 
           when FOOTER =>
-            -- Push EOI in one cycle: FF then D9.
-            -- Pop fires first if vCount >= BYTES_OUT, ensuring room.
-            sFlushSettled <= '0';
+            -- Latch iStart that may arrive while stalled waiting for buffer room
+            if iStart = '1' then
+              sNextPending <= '1';
+            end if;
+            -- Append 2-byte EOI marker FF D9.
+            -- The pop above may have freed space; stall here if not yet.
             if vCount + 2 <= BUFFER_BYTES then
               vBuf(BUFFER_WIDTH - 1 -  vCount      * 8 downto
                    BUFFER_WIDTH     -  vCount      * 8 - 8) := x"FF";
@@ -286,13 +302,25 @@ begin
             end if;
 
           when FINAL_FLUSH =>
+            -- Latch iStart arriving before the drain completes
+            if iStart = '1' then
+              sNextPending <= '1';
+            end if;
+            -- Transition once the accumulator is empty and the output
+            -- register has been consumed by downstream (oLast handshake done).
             if sByteCount = 0 and sOutValid = '0' then
-              sFsmState <= IDLE;
+              sNextPending <= '0';
+              if sNextPending = '1' or iStart = '1' then
+                sHeaderByteIdx <= 0;
+                sFsmState      <= HEADER;
+              else
+                sFsmState <= IDLE;
+              end if;
             end if;
 
         end case;
 
-        vCount := vCount + vPushCount;
+        vCount     := vCount + vPushCount;
         sBuffer    <= vBuf;
         sByteCount <= vCount;
 
