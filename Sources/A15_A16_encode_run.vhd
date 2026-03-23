@@ -83,7 +83,7 @@ begin
 
   -- ── Combinational: outputs and next-state ─────────────────────────────────
   process (sRUNindex, sNextBound, sInRun,
-           iRunCnt, iRunHit, iRunContinue, iModeIsRun, iEOI,
+           iRunCnt, iRunHit, iRunContinue, iModeIsRun, iEOI, iRst,
            iIx, iRa, iRb)
     variable vJ        : natural;
     variable vJNext    : natural;
@@ -107,7 +107,7 @@ begin
     sNextBoundNext <= sNextBound;
     sInRunNext     <= sInRun;
 
-    if iModeIsRun = '1' and iEOI = '0' then
+    if iModeIsRun = '1' and iEOI = '0' and iRst = '0' then
 
       vJ    := CO_J_TABLE(to_integer(sRUNindex));
       vStep := shift_left(to_unsigned(1, C_BOUND_WIDTH), vJ);
