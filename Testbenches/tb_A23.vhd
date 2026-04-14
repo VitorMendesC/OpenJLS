@@ -23,23 +23,21 @@ architecture bench of tb_A23 is
   constant A_WIDTH  : natural := CO_AQ_WIDTH_STD;
   constant N_WIDTH  : natural := CO_NQ_WIDTH_STD;
   constant ERR_W    : natural := CO_ERROR_VALUE_WIDTH_STD;
-  constant ME_W     : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
   constant RESET_V  : natural := CO_RESET_STD;
 
-  signal iErr   : signed(ERR_W - 1 downto 0) := (others => '0');
-  signal iEmErr : unsigned(ME_W - 1 downto 0) := (others => '0');
-  signal iRI    : std_logic := '0';
-  signal iAq    : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
-  signal iNq    : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
-  signal iNn    : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
+  signal iErr : signed(ERR_W - 1 downto 0) := (others => '0');
+  signal iRI  : std_logic := '0';
+  signal iAq  : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
+  signal iNq  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
+  signal iNn  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
 
   signal oAq : unsigned(A_WIDTH - 1 downto 0);
   signal oNq : unsigned(N_WIDTH - 1 downto 0);
   signal oNn : unsigned(N_WIDTH - 1 downto 0);
 
+  -- Reference model using Mert 2018 Fig. 9 equivalent: A[Q] += abs(Errval) - RItype
   procedure model(
     errv   : integer;
-    emerr  : integer;
     ri     : integer;
     aq     : integer;
     nq     : integer;
@@ -51,7 +49,6 @@ architecture bench of tb_A23 is
     variable vA  : integer;
     variable vN  : integer;
     variable vNn : integer;
-    variable vDelta : integer;
   begin
     vA  := aq;
     vN  := nq;
@@ -61,8 +58,7 @@ architecture bench of tb_A23 is
       vNn := vNn + 1;
     end if;
 
-    vDelta := (emerr + 1 - ri) / 2;
-    vA := vA + vDelta;
+    vA := vA + abs(errv) - ri;
 
     if vN = integer(RESET_V) then
       vA  := vA / 2;
@@ -78,15 +74,15 @@ architecture bench of tb_A23 is
   end procedure;
 
   procedure check_case(
-    errv, emerr, aq, nq, nn : integer;
-    ri                     : std_logic;
-    aq_o                   : unsigned;
-    nq_o                   : unsigned;
-    nn_o                   : unsigned
+    errv, aq, nq, nn : integer;
+    ri               : std_logic;
+    aq_o             : unsigned;
+    nq_o             : unsigned;
+    nn_o             : unsigned
   ) is
-    variable ri_i  : integer;
-    variable exp_a : integer;
-    variable exp_n : integer;
+    variable ri_i   : integer;
+    variable exp_a  : integer;
+    variable exp_n  : integer;
     variable exp_nn : integer;
   begin
     if ri = '1' then
@@ -95,7 +91,7 @@ architecture bench of tb_A23 is
       ri_i := 0;
     end if;
 
-    model(errv, emerr, ri_i, aq, nq, nn, exp_a, exp_n, exp_nn);
+    model(errv, ri_i, aq, nq, nn, exp_a, exp_n, exp_nn);
 
     check(aq_o = to_unsigned(exp_a, aq_o'length),
       "A23 Aq mismatch exp=" & integer'image(exp_a) &
@@ -115,61 +111,59 @@ begin
 
   dut : entity work.A23_run_interruption_update
     generic map(
-      A_WIDTH             => A_WIDTH,
-      N_WIDTH             => N_WIDTH,
-      ERR_WIDTH           => ERR_W,
-      MAPPED_ERRVAL_WIDTH => ME_W,
-      RESET               => RESET_V
+      A_WIDTH   => A_WIDTH,
+      N_WIDTH   => N_WIDTH,
+      ERR_WIDTH => ERR_W,
+      RESET     => RESET_V
     )
     port map(
-      iErrval   => iErr,
-      iEMErrval => iEmErr,
-      iRItype   => iRI,
-      iAq       => iAq,
-      iNq       => iNq,
-      iNn       => iNn,
-      oAq       => oAq,
-      oNq       => oNq,
-      oNn       => oNn
+      iErrval => iErr,
+      iRItype => iRI,
+      iAq     => iAq,
+      iNq     => iNq,
+      iNn     => iNn,
+      oAq     => oAq,
+      oNq     => oNq,
+      oNn     => oNn
     );
 
   stim : process
   begin
-    iErr   <= to_signed(-3, iErr'length);
-    iEmErr <= to_unsigned(10, iEmErr'length);
-    iRI    <= '0';
-    iAq    <= to_unsigned(20, iAq'length);
-    iNq    <= to_unsigned(RESET_V, iNq'length);
-    iNn    <= to_unsigned(5, iNn'length);
+    -- Test 1: Errval<0, RItype=0, N=RESET (triggers halving)
+    iErr <= to_signed(-3, iErr'length);
+    iRI  <= '0';
+    iAq  <= to_unsigned(20, iAq'length);
+    iNq  <= to_unsigned(RESET_V, iNq'length);
+    iNn  <= to_unsigned(5, iNn'length);
     wait for 1 ns;
-    check_case(-3, 10, 20, RESET_V, 5, '0', oAq, oNq, oNn);
+    check_case(-3, 20, RESET_V, 5, '0', oAq, oNq, oNn);
 
-    iErr   <= to_signed(4, iErr'length);
-    iEmErr <= to_unsigned(7, iEmErr'length);
-    iRI    <= '1';
-    iAq    <= to_unsigned(50, iAq'length);
-    iNq    <= to_unsigned(10, iNq'length);
-    iNn    <= to_unsigned(2, iNn'length);
+    -- Test 2: Errval>0, RItype=1
+    iErr <= to_signed(4, iErr'length);
+    iRI  <= '1';
+    iAq  <= to_unsigned(50, iAq'length);
+    iNq  <= to_unsigned(10, iNq'length);
+    iNn  <= to_unsigned(2, iNn'length);
     wait for 1 ns;
-    check_case(4, 7, 50, 10, 2, '1', oAq, oNq, oNn);
+    check_case(4, 50, 10, 2, '1', oAq, oNq, oNn);
 
-    iErr   <= to_signed(-1, iErr'length);
-    iEmErr <= to_unsigned(5, iEmErr'length);
-    iRI    <= '1';
-    iAq    <= to_unsigned(100, iAq'length);
-    iNq    <= to_unsigned(3, iNq'length);
-    iNn    <= to_unsigned(1, iNn'length);
+    -- Test 3: Errval<0, RItype=1
+    iErr <= to_signed(-1, iErr'length);
+    iRI  <= '1';
+    iAq  <= to_unsigned(100, iAq'length);
+    iNq  <= to_unsigned(3, iNq'length);
+    iNn  <= to_unsigned(1, iNn'length);
     wait for 1 ns;
-    check_case(-1, 5, 100, 3, 1, '1', oAq, oNq, oNn);
+    check_case(-1, 100, 3, 1, '1', oAq, oNq, oNn);
 
-    iErr   <= to_signed(1, iErr'length);
-    iEmErr <= to_unsigned(0, iEmErr'length);
-    iRI    <= '0';
-    iAq    <= to_unsigned(0, iAq'length);
-    iNq    <= to_unsigned(0, iNq'length);
-    iNn    <= to_unsigned(0, iNn'length);
+    -- Test 4: Errval>0, RItype=0, all zeros
+    iErr <= to_signed(1, iErr'length);
+    iRI  <= '0';
+    iAq  <= to_unsigned(0, iAq'length);
+    iNq  <= to_unsigned(0, iNq'length);
+    iNn  <= to_unsigned(0, iNn'length);
     wait for 1 ns;
-    check_case(1, 0, 0, 0, 0, '0', oAq, oNq, oNn);
+    check_case(1, 0, 0, 0, '0', oAq, oNq, oNn);
 
     if err_count > 0 then
       report "tb_A23 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
