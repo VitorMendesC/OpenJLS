@@ -96,6 +96,60 @@ package Common is
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
   constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
 
+  -- Pipeline token record -------------------------------------------------------
+  --
+  -- A single record that flows through all pipeline stages. The mode tag
+  -- indicates which fields are valid; unused fields carry zero.
+  --
+  --   TOKEN_NONE             : pipeline bubble — all downstream stages are NOPs
+  --   TOKEN_REGULAR          : regular-mode sample (Ix/Ra/Rb/Rc valid)
+  --   TOKEN_RUN_INTERRUPTION : RI break (Ix/Ra/Rb/RUNindex valid;
+  --                            when HasRawPrefix='1' the PrefixLen/Val fields
+  --                            carry the A.16 residual bits that A11_2 must
+  --                            write before the RI Golomb code)
+  --   TOKEN_RAW              : raw bit append (RawSuffixLen/Val valid;
+  --                            used for A.15 '1' boundary bits)
+  --
+  -- All pixel-width fields use CO_BITNESS_MAX_WIDTH so the record is valid
+  -- for any supported bitness; stages resize when driving narrower ports.
+  -- ---------------------------------------------------------------------------
+  type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
+
+  type t_pipeline_token is record
+    mode         : t_token_mode;
+    -- Pixel fields — used by TOKEN_REGULAR and TOKEN_RUN_INTERRUPTION
+    Ix           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Ra           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Rb           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Rc           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    -- Run-interruption specific — valid for TOKEN_RUN_INTERRUPTION
+    RUNindex     : unsigned(4 downto 0);
+    -- Raw token fields — valid for TOKEN_RAW; reused as break residual
+    --   in TOKEN_RUN_INTERRUPTION when HasRawPrefix = '0'
+    RawSuffixLen : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
+    RawSuffixVal : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+    -- A.16 raw prefix piggy-backed on the RI token (break case only).
+    -- When HasRawPrefix = '1', A11_2 writes PrefixLen/Val as raw bits
+    -- before writing the RI Golomb code in the same clock cycle.
+    HasRawPrefix : std_logic;
+    PrefixLen    : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
+    PrefixVal    : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+  end record;
+
+  constant CO_TOKEN_NONE : t_pipeline_token := (
+    mode         => TOKEN_NONE,
+    Ix           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    Ra           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    Rb           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    Rc           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    RUNindex     => to_unsigned(0, 5),
+    RawSuffixLen => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
+    RawSuffixVal => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
+    HasRawPrefix => '0',
+    PrefixLen    => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
+    PrefixVal    => to_unsigned(0, CO_SUFFIX_WIDTH_STD)
+  );
+
 end package;
 
 package body Common is
