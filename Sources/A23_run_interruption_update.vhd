@@ -27,33 +27,30 @@ use IEEE.NUMERIC_STD.all;
 
 entity A23_run_interruption_update is
   generic (
-    A_WIDTH             : natural := CO_AQ_WIDTH_STD;
-    N_WIDTH             : natural := CO_NQ_WIDTH_STD;
-    ERR_WIDTH           : natural := CO_ERROR_VALUE_WIDTH_STD;
-    MAPPED_ERRVAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
-    RESET               : natural := CO_RESET_STD
+    A_WIDTH   : natural := CO_AQ_WIDTH_STD;
+    N_WIDTH   : natural := CO_NQ_WIDTH_STD;
+    ERR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
+    RESET     : natural := CO_RESET_STD
   );
   port (
-    iErrval   : in signed (ERR_WIDTH - 1 downto 0);
-    iEMErrval : in unsigned (MAPPED_ERRVAL_WIDTH - 1 downto 0);
-    iRItype   : in std_logic;
-    iAq       : in unsigned (A_WIDTH - 1 downto 0);
-    iNq       : in unsigned (N_WIDTH - 1 downto 0);
-    iNn       : in unsigned (N_WIDTH - 1 downto 0);
-    oAq       : out unsigned (A_WIDTH - 1 downto 0);
-    oNq       : out unsigned (N_WIDTH - 1 downto 0);
-    oNn       : out unsigned (N_WIDTH - 1 downto 0)
+    iErrval : in signed (ERR_WIDTH - 1 downto 0);
+    iRItype : in std_logic;
+    iAq     : in unsigned (A_WIDTH - 1 downto 0);
+    iNq     : in unsigned (N_WIDTH - 1 downto 0);
+    iNn     : in unsigned (N_WIDTH - 1 downto 0);
+    oAq     : out unsigned (A_WIDTH - 1 downto 0);
+    oNq     : out unsigned (N_WIDTH - 1 downto 0);
+    oNn     : out unsigned (N_WIDTH - 1 downto 0)
   );
 end A23_run_interruption_update;
 
 architecture Behavioral of A23_run_interruption_update is
 begin
 
-  process (iErrval, iEMErrval, iRItype, iAq, iNq, iNn)
+  process (iErrval, iRItype, iAq, iNq, iNn)
     variable vAq : integer;
     variable vNq : integer;
     variable vNn : integer;
-    variable vRI : integer;
   begin
     vAq := to_integer(iAq);
     vNq := to_integer(iNq);
@@ -63,9 +60,8 @@ begin
       vNn := vNn + 1;
     end if;
 
-    vRi := std_to_int(iRItype);
-
-    vAq := vAq + (to_integer(iEMErrval) + 1 - vRI) / 2;
+    -- Mert 2018 Fig. 9 equivalence: A[Q] += abs(Errval) - RItype
+    vAq := vAq + abs(to_integer(iErrval)) - std_to_int(iRItype);
 
     if vNq = integer(RESET) then
       vAq := vAq / 2;
