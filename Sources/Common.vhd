@@ -98,42 +98,75 @@ package Common is
 
   -- Pipeline token record -------------------------------------------------------
   --
-  -- A single record that flows through all pipeline stages. The mode tag
-  -- indicates which fields are valid; unused fields carry zero.
+  -- A single record that flows through all pipeline stages, modelling the
+  -- inter-stage register. Each stage populates its fields and passes
+  -- everything downstream; synthesis trims unused registers automatically.
   --
-  --   TOKEN_NONE             : pipeline bubble — all downstream stages are NOPs
-  --   TOKEN_REGULAR          : regular-mode sample (Ix/Ra/Rb/Rc valid)
-  --   TOKEN_RUN_INTERRUPTION : RI break (Ix/Ra/Rb/RUNindex valid;
-  --                            when HasRawPrefix='1' the PrefixLen/Val fields
-  --                            carry the A.16 residual bits that A11_2 must
-  --                            write before the RI Golomb code)
-  --   TOKEN_RAW              : raw bit append (RawSuffixLen/Val valid;
-  --                            used for A.15 '1' boundary bits)
+  -- Mode tag:
+  --   TOKEN_NONE             : pipeline bubble — downstream stages are NOPs
+  --   TOKEN_REGULAR          : regular-mode sample
+  --   TOKEN_RUN_INTERRUPTION : run-interruption break
+  --   TOKEN_RAW              : raw bit append (A.15 boundary '1's)
   --
-  -- All pixel-width fields use CO_BITNESS_MAX_WIDTH so the record is valid
-  -- for any supported bitness; stages resize when driving narrower ports.
+  -- All pixel-width fields use CO_BITNESS_MAX_WIDTH so the record is
+  -- valid for any supported bitness; stages resize when driving ports.
   -- ---------------------------------------------------------------------------
   type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
 
   type t_pipeline_token is record
-    mode         : t_token_mode;
-    -- Pixel fields — used by TOKEN_REGULAR and TOKEN_RUN_INTERRUPTION
-    Ix           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
-    Ra           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
-    Rb           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
-    Rc           : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
-    -- Run-interruption specific — valid for TOKEN_RUN_INTERRUPTION
-    RUNindex     : unsigned(4 downto 0);
-    -- Raw token fields — valid for TOKEN_RAW; reused as break residual
-    --   in TOKEN_RUN_INTERRUPTION when HasRawPrefix = '0'
+
+    mode : t_token_mode;
+
+    -- Pixel values (Input stage → consumed through Stage 3) -----------------
+    Ix : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Ra : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Rb : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Rc : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Rd : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+
+    -- Gradients (Stage 1 → consumed by Stage 2) ----------------------------
+    D1 : signed(CO_BITNESS_MAX_WIDTH downto 0);
+    D2 : signed(CO_BITNESS_MAX_WIDTH downto 0);
+    D3 : signed(CO_BITNESS_MAX_WIDTH downto 0);
+
+    -- Context (Stage 2 →) --------------------------------------------------
+    Q    : unsigned(8 downto 0);  -- context index 0..366
+    Sign : std_logic;             -- from A.4.1 (regular) or A.19 (run)
+
+    -- Context variables (memory read + forwarding mux, Stage 2/3 →) --------
+    Aq : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
+    Bq : signed(CO_BQ_WIDTH_STD - 1 downto 0);
+    Cq : signed(CO_CQ_WIDTH - 1 downto 0);
+    Nq : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
+    Nn : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
+
+    -- Prediction (Stage 3 →) -----------------------------------------------
+    Px     : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    Errval : signed(CO_ERROR_VALUE_WIDTH_STD - 1 downto 0);
+    Rx     : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);  -- reconstructed value
+
+    -- Error encoding (Stage 4 →) -------------------------------------------
+    k       : unsigned(CO_K_WIDTH_STD - 1 downto 0);
+    MErrval : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
+
+    -- Run mode (Stage 2/3 →) -----------------------------------------------
+    RUNindex : unsigned(4 downto 0);
+    RItype   : std_logic;
+
+    -- Golomb code (output stages) -------------------------------------------
+    UnaryZeros : unsigned(CO_UNARY_WIDTH_STD - 1 downto 0);
+    SuffixLen  : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
+    SuffixVal  : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+    TotalLen   : unsigned(CO_TOTLEN_WIDTH_STD - 1 downto 0);
+    IsEscape   : std_logic;
+
+    -- Raw bit fields (run encoding / RI prefix) -----------------------------
     RawSuffixLen : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
     RawSuffixVal : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
-    -- A.16 raw prefix piggy-backed on the RI token (break case only).
-    -- When HasRawPrefix = '1', A11_2 writes PrefixLen/Val as raw bits
-    -- before writing the RI Golomb code in the same clock cycle.
     HasRawPrefix : std_logic;
     PrefixLen    : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
     PrefixVal    : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+
   end record;
 
   constant CO_TOKEN_NONE : t_pipeline_token := (
@@ -142,7 +175,29 @@ package Common is
     Ra           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
     Rb           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
     Rc           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    Rd           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    D1           => to_signed(0, CO_BITNESS_MAX_WIDTH + 1),
+    D2           => to_signed(0, CO_BITNESS_MAX_WIDTH + 1),
+    D3           => to_signed(0, CO_BITNESS_MAX_WIDTH + 1),
+    Q            => to_unsigned(0, 9),
+    Sign         => '0',
+    Aq           => to_unsigned(0, CO_AQ_WIDTH_STD),
+    Bq           => to_signed(0, CO_BQ_WIDTH_STD),
+    Cq           => to_signed(0, CO_CQ_WIDTH),
+    Nq           => to_unsigned(0, CO_NQ_WIDTH_STD),
+    Nn           => to_unsigned(0, CO_NQ_WIDTH_STD),
+    Px           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    Errval       => to_signed(0, CO_ERROR_VALUE_WIDTH_STD),
+    Rx           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+    k            => to_unsigned(0, CO_K_WIDTH_STD),
+    MErrval      => to_unsigned(0, CO_MAPPED_ERROR_VAL_WIDTH_STD),
     RUNindex     => to_unsigned(0, 5),
+    RItype       => '0',
+    UnaryZeros   => to_unsigned(0, CO_UNARY_WIDTH_STD),
+    SuffixLen    => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
+    SuffixVal    => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
+    TotalLen     => to_unsigned(0, CO_TOTLEN_WIDTH_STD),
+    IsEscape     => '0',
     RawSuffixLen => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
     RawSuffixVal => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
     HasRawPrefix => '0',
