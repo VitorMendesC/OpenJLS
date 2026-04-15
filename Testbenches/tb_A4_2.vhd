@@ -27,13 +27,7 @@ architecture bench of tb_A4_2 is
 
   function expected_map(q1, q2, q3 : integer) return integer is
   begin
-    if q1 > 0 then
-      return (q1 - 1) * 81 + (q2 + 4) * 9 + (q3 + 4);
-    elsif q2 > 0 then
-      return 324 + (q2 - 1) * 9 + (q3 + 4);
-    else
-      return 360 + q3;
-    end if;
+    return 81 * q1 + 9 * q2 + q3;
   end function;
 
   procedure check_case(
