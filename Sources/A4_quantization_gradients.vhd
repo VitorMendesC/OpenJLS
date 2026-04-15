@@ -26,8 +26,7 @@ use Work.Common.all;
 entity A4_quantization_gradients is
   generic (
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    MAX_VAL : natural               := CO_MAX_VAL_STD;
-    NEAR    : natural               := CO_NEAR_STD
+    MAX_VAL : natural               := CO_MAX_VAL_STD
   );
   port (
     iD1 : in signed (BITNESS downto 0);
@@ -41,6 +40,7 @@ end A4_quantization_gradients;
 
 architecture Behavioral of A4_quantization_gradients is
 
+  -- T.87 compliant clamping function
   function clamp (
     i        : integer;
     j        : integer;
@@ -53,33 +53,33 @@ architecture Behavioral of A4_quantization_gradients is
     end if;
   end function;
 
-  -- NOTE: This computation has symmetry, it can de improved for performance
   function quantizate (
     signal Di   : signed (BITNESS downto 0);
     constant T1 : natural;
     constant T2 : natural;
     constant T3 : natural
   ) return signed is
-    variable Qi : signed (3 downto 0);
+    variable Qi     : signed (3 downto 0);
+    variable vAbsQi : natural;
+    variable vSign  : std_logic;
   begin
-    if (Di <= - T3) then
-      Qi := to_signed(-4, Qi'length);
-    elsif (Di <= - T2) then
-      Qi := to_signed(-3, Qi'length);
-    elsif (Di <= - T1) then
-      Qi := to_signed(-2, Qi'length);
-    elsif (Di < -NEAR) then
-      Qi := to_signed(-1, Qi'length);
-    elsif (Di <= NEAR) then
+    vAbsQi := abs(to_integer(Di));
+    vSign  := Di(Di'high);
+
+    if vAbsQi = 0 then
       Qi := to_signed(0, Qi'length);
-    elsif (Di < T1) then
+    elsif vAbsQi < T1 then
       Qi := to_signed(1, Qi'length);
-    elsif (Di < T2) then
+    elsif vAbsQi < T2 then
       Qi := to_signed(2, Qi'length);
-    elsif (Di < T3) then
+    elsif vAbsQi < T3 then
       Qi := to_signed(3, Qi'length);
     else
       Qi := to_signed(4, Qi'length);
+    end if;
+
+    if vSign = '1' then
+      Qi := - Qi;
     end if;
 
     return Qi;
@@ -89,9 +89,9 @@ architecture Behavioral of A4_quantization_gradients is
   constant BASIC_T2 : natural := 7;
   constant BASIC_T3 : natural := 21;
   constant FACTOR   : natural := (math_min(MAX_VAL, 4095) + 128) / 256;
-  constant T1       : natural := clamp(FACTOR * (BASIC_T1 - 2) + 2 + 3 * NEAR, NEAR + 1, MAX_VAL);
-  constant T2       : natural := clamp(FACTOR * (BASIC_T2 - 3) + 3 + 5 * NEAR, T1, MAX_VAL);
-  constant T3       : natural := clamp(FACTOR * (BASIC_T3 - 4) + 4 + 7 * NEAR, T2, MAX_VAL);
+  constant T1       : natural := clamp(FACTOR * (BASIC_T1 - 2) + 2, 1, MAX_VAL);
+  constant T2       : natural := clamp(FACTOR * (BASIC_T2 - 3) + 3, T1, MAX_VAL);
+  constant T3       : natural := clamp(FACTOR * (BASIC_T3 - 4) + 4, T2, MAX_VAL);
 
 begin
 
