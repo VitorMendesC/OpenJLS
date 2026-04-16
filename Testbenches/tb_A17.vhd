@@ -21,21 +21,18 @@ architecture bench of tb_A17 is
   end procedure;
 
   constant BITNESS : natural := CO_BITNESS_STD;
-  constant NEAR_V  : natural := 2;
 
-  signal iRa    : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal iRb    : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal oRI    : std_logic;
+  signal iRa : unsigned(BITNESS - 1 downto 0) := (others => '0');
+  signal iRb : unsigned(BITNESS - 1 downto 0) := (others => '0');
+  signal oRI : std_logic;
 
   procedure check_case(
     constant ra, rb : integer;
     ri_actual       : std_logic
   ) is
-    variable diff : integer;
-    variable exp  : std_logic;
+    variable exp : std_logic;
   begin
-    diff := abs(ra - rb);
-    if diff <= integer(NEAR_V) then
+    if ra = rb then
       exp := '1';
     else
       exp := '0';
@@ -53,12 +50,11 @@ begin
 
   dut : entity work.A17_run_interruption_index
     generic map(
-      BITNESS => BITNESS,
-      NEAR    => NEAR_V
+      BITNESS => BITNESS
     )
     port map(
-      iRa    => iRa,
-      iRb    => iRb,
+      iRa     => iRa,
+      iRb     => iRb,
       oRItype => oRI
     );
 
@@ -70,24 +66,29 @@ begin
     check_case(10, 10, oRI);
 
     iRa <= to_unsigned(10, iRa'length);
+    iRb <= to_unsigned(11, iRb'length);
+    wait for 1 ns;
+    check_case(10, 11, oRI);
+
+    iRa <= to_unsigned(10, iRa'length);
     iRb <= to_unsigned(12, iRb'length);
     wait for 1 ns;
     check_case(10, 12, oRI);
 
-    iRa <= to_unsigned(10, iRa'length);
-    iRb <= to_unsigned(13, iRb'length);
-    wait for 1 ns;
-    check_case(10, 13, oRI);
-
     iRa <= to_unsigned(200, iRa'length);
-    iRb <= to_unsigned(198, iRb'length);
+    iRb <= to_unsigned(200, iRb'length);
     wait for 1 ns;
-    check_case(200, 198, oRI);
+    check_case(200, 200, oRI);
 
     iRa <= to_unsigned(200, iRa'length);
     iRb <= to_unsigned(197, iRb'length);
     wait for 1 ns;
     check_case(200, 197, oRI);
+
+    iRa <= to_unsigned(0, iRa'length);
+    iRb <= to_unsigned(0, iRb'length);
+    wait for 1 ns;
+    check_case(0, 0, oRI);
 
     if err_count > 0 then
       report "tb_A17 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
