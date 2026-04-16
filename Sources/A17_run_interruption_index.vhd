@@ -27,8 +27,7 @@ use IEEE.NUMERIC_STD.all;
 
 entity A17_run_interruption_index is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    NEAR    : natural               := CO_NEAR_STD
+    BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
     iRa     : in unsigned (BITNESS - 1 downto 0);
@@ -40,14 +39,7 @@ end A17_run_interruption_index;
 architecture Behavioral of A17_run_interruption_index is
 begin
 
-  process (iRa, iRb)
-  begin
-
-    if abs(to_integer(iRa) - to_integer(iRb)) <= NEAR then
-      oRItype                                   <= '1';
-    else
-      oRItype <= '0';
-    end if;
-  end process;
+  oRItype <= '1' when iRa = iRb else
+    '0';
 
 end Behavioral;
