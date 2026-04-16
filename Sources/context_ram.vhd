@@ -8,7 +8,7 @@
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
--- Description:     Implements context RAM with data feed-forward
+-- Description:
 -- 
 -- Dependencies: 
 -- 
@@ -42,8 +42,6 @@ entity context_ram is
 end context_ram;
 
 architecture Behavioral of context_ram is
-  signal sRamRdData : std_logic_vector(WORD_WIDTH - 1 downto 0);
-
 begin
 
   olo_base_ram_sdp_inst : entity openlogic_base.olo_base_ram_sdp
@@ -68,10 +66,7 @@ begin
       Rd_Clk  => open,
       Rd_Addr => iRdAddr,
       Rd_Ena  => iRdEn,
-      Rd_Data => sRamRdData
+      Rd_Data => oRdData
     );
-
-  oRdData <= iWrData when ((iWrEn and iRdEn) = '1' and iWrAddr = iRdAddr) else
-    sRamRdData;
 
 end Behavioral;
