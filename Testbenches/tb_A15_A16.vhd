@@ -51,7 +51,6 @@ architecture bench of tb_A15_A16 is
   signal oRawSuffixLen : unsigned(4 downto 0);
   signal oRawSuffixVal : unsigned(RUN_CNT_WIDTH - 1 downto 0);
   signal oRIValid      : std_logic;
-  signal oRIRunIndex   : unsigned(4 downto 0);
   signal oRIIx         : unsigned(BITNESS - 1 downto 0);
   signal oRIRa         : unsigned(BITNESS - 1 downto 0);
   signal oRIRb         : unsigned(BITNESS - 1 downto 0);
@@ -79,7 +78,6 @@ begin
       oRawSuffixLen => oRawSuffixLen,
       oRawSuffixVal => oRawSuffixVal,
       oRIValid      => oRIValid,
-      oRIRunIndex   => oRIRunIndex,
       oRIIx         => oRIIx,
       oRIRa         => oRIRa,
       oRIRb         => oRIRb
@@ -97,7 +95,6 @@ begin
     --
     -- Break residual = iRunCnt(4) - (sNextBound(6) - vStep(2)) = 0
     -- SuffixLen = J[4]+1 = 2, SuffixVal = 0
-    -- oRIRunIndex = 4-1 = 3
     -- -----------------------------------------------------------------------
     iRst        <= '1';
     iRunHit     <= '0';
@@ -141,7 +138,6 @@ begin
     check(to_integer(oRawSuffixLen) = 2, "T1 break: SuffixLen should be J[4]+1=2");
     check(to_integer(oRawSuffixVal) = 0, "T1 break: residual=0");
     check(oRIValid = '1',          "T1 break: oRIValid should be asserted");
-    check(to_integer(oRIRunIndex) = 3,   "T1 break: oRIRunIndex should be 4-1=3");
     check(oRIIx = to_unsigned(50, BITNESS), "T1 break: oRIIx should be breaking pixel");
     check(oRIRa = to_unsigned(10, BITNESS), "T1 break: oRIRa should be last run sample");
     check(oRIRb = to_unsigned(20, BITNESS), "T1 break: oRIRb passthrough");
@@ -269,11 +265,10 @@ begin
     --   Match cycle  : oRawValid=1, SuffixLen=1, SuffixVal=1  (A.15 '1' bit)
     --                  oRIValid=0
     --   Break cycle  : oRawValid=1, SuffixLen=1, SuffixVal=0  (A.16: '0' break, J[1]=0 residual bits)
-    --                  oRIValid=1, oRIRunIndex=0
+    --                  oRIValid=1
     --
     -- Break residual: iRunCnt(1) - (sNextBound(2) - vStep(1)) = 0
     -- SuffixLen = J[1]+1 = 1,  SuffixVal = 0
-    -- oRIRunIndex = sRUNindex(1) - 1 = 0
     -- -----------------------------------------------------------------------
     iRst        <= '1';
     iModeIsRun  <= '1';
@@ -318,13 +313,64 @@ begin
         "T4 rep " & integer'image(rep) & " break: residual=0");
       check(oRIValid = '1',
         "T4 rep " & integer'image(rep) & " break: oRIValid expected");
-      check(to_integer(oRIRunIndex) = 0,
-        "T4 rep " & integer'image(rep) & " break: oRIRunIndex=0");
       wait until rising_edge(iClk);
       -- State: sRUNindex=0, sNextBound=1, sInRun=0
       -- (top-level resets RunCnt to 0 here; next match cycle drives iRunCnt=1)
 
     end loop;
+
+    iModeIsRun <= '0';
+    iRunHit    <= '0';
+    wait for 5 * CLK_PERIOD;
+
+    -- -----------------------------------------------------------------------
+    -- Test 5: Immediate break on first pixel of run mode (T.87 gap)
+    --
+    -- Mode selection entered run mode on gradients (D1=D2=D3=0 within NEAR),
+    -- but |Ix - Ra| > NEAR so A.14 reports iRunHit='0' immediately. State is
+    -- fresh: sRUNindex=0, sNextBound=1, sInRun=0, iRunCnt=0.
+    --
+    -- T.87 A.7.2.1.1: emit '0' marker + 0 residual bits (J[0]=0), plus RI.
+    -- FSM must produce: oRawValid=1, SuffixLen=1, SuffixVal=0, oRIValid=1.
+    --
+    -- State after break: sRUNindex stays at 0 (can't decrement), sNextBound=1,
+    -- sInRun stays at 0.
+    -- -----------------------------------------------------------------------
+    iRst        <= '1';
+    iModeIsRun  <= '1';
+    iRunHit     <= '0';
+    iRunContinue <= '0';
+    iRunCnt     <= (others => '0');
+    wait until rising_edge(iClk);
+    iRst <= '0';
+    -- State: sRUNindex=0, sNextBound=1, sInRun=0
+
+    iRunHit      <= '0';
+    iRunContinue <= '0';
+    iRunCnt      <= to_unsigned(0, RUN_CNT_WIDTH);
+    iIx          <= to_unsigned(99, BITNESS); -- breaking pixel
+    iRa          <= to_unsigned(10, BITNESS);
+    iRb          <= to_unsigned(20, BITNESS);
+    wait for 1 ns;
+    check(oRawValid = '1',
+      "T5 immediate break: oRawValid should be asserted");
+    check(to_integer(oRawSuffixLen) = 1,
+      "T5 immediate break: SuffixLen=J[0]+1=1");
+    check(to_integer(oRawSuffixVal) = 0,
+      "T5 immediate break: single '0' marker, residual=0");
+    check(oRIValid = '1',
+      "T5 immediate break: oRIValid should be asserted");
+    check(oRIIx = to_unsigned(99, BITNESS),
+      "T5 immediate break: oRIIx passthrough");
+    check(oRIRa = to_unsigned(10, BITNESS),
+      "T5 immediate break: oRIRa passthrough");
+    check(oRIRb = to_unsigned(20, BITNESS),
+      "T5 immediate break: oRIRb passthrough");
+    wait until rising_edge(iClk);
+
+    iModeIsRun <= '0';
+    iRunHit    <= '0';
+    wait for 5 * CLK_PERIOD;
 
     -- -----------------------------------------------------------------------
     if err_count > 0 then

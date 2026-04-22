@@ -23,23 +23,22 @@ architecture bench of tb_A20 is
   constant A_WIDTH : natural := CO_AQ_WIDTH_STD;
   constant N_WIDTH : natural := CO_NQ_WIDTH_STD;
 
-  signal iRI : std_logic := '0';
-  signal iA365 : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
-  signal iA366 : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
-  signal iN366 : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
+  signal iRI   : std_logic := '0';
+  signal iAq   : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
+  signal iNq   : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
   signal oTemp : unsigned(A_WIDTH - 1 downto 0);
 
   procedure check_case(
-    ri   : std_logic;
-    a365, a366, n366 : integer;
+    ri          : std_logic;
+    aq, nq      : integer;
     temp_actual : unsigned
   ) is
     variable exp : integer;
   begin
     if ri = '0' then
-      exp := a365;
+      exp := aq;
     else
-      exp := a366 + (n366 / 2);
+      exp := aq + (nq / 2);
     end if;
 
     check(temp_actual = to_unsigned(exp, temp_actual'length),
@@ -57,34 +56,53 @@ begin
     )
     port map(
       iRItype => iRI,
-      iA365   => iA365,
-      iA366   => iA366,
-      iN366   => iN366,
+      iAq     => iAq,
+      iNq     => iNq,
       oTemp   => oTemp
     );
 
   stim : process
   begin
-    iRI   <= '0';
-    iA365 <= to_unsigned(100, iA365'length);
-    iA366 <= to_unsigned(200, iA366'length);
-    iN366 <= to_unsigned(10, iN366'length);
+    -- RItype = 0 → TEMP = Aq (Nq ignored)
+    iRI <= '0';
+    iAq <= to_unsigned(100, iAq'length);
+    iNq <= to_unsigned(10, iNq'length);
     wait for 1 ns;
-    check_case('0', 100, 200, 10, oTemp);
+    check_case('0', 100, 10, oTemp);
 
-    iRI   <= '1';
-    iA365 <= to_unsigned(100, iA365'length);
-    iA366 <= to_unsigned(200, iA366'length);
-    iN366 <= to_unsigned(10, iN366'length);
+    -- RItype = 0, Nq varied — should not affect output
+    iRI <= '0';
+    iAq <= to_unsigned(100, iAq'length);
+    iNq <= to_unsigned(63, iNq'length);
     wait for 1 ns;
-    check_case('1', 100, 200, 10, oTemp);
+    check_case('0', 100, 63, oTemp);
 
-    iRI   <= '1';
-    iA365 <= to_unsigned(50, iA365'length);
-    iA366 <= to_unsigned(300, iA366'length);
-    iN366 <= to_unsigned(63, iN366'length);
+    -- RItype = 1 → TEMP = Aq + (Nq >> 1)
+    iRI <= '1';
+    iAq <= to_unsigned(200, iAq'length);
+    iNq <= to_unsigned(10, iNq'length);
     wait for 1 ns;
-    check_case('1', 50, 300, 63, oTemp);
+    check_case('1', 200, 10, oTemp);
+
+    iRI <= '1';
+    iAq <= to_unsigned(300, iAq'length);
+    iNq <= to_unsigned(63, iNq'length);
+    wait for 1 ns;
+    check_case('1', 300, 63, oTemp);
+
+    -- Edge: Nq = 0
+    iRI <= '1';
+    iAq <= to_unsigned(42, iAq'length);
+    iNq <= to_unsigned(0, iNq'length);
+    wait for 1 ns;
+    check_case('1', 42, 0, oTemp);
+
+    -- Edge: Nq = 1 (>>1 = 0)
+    iRI <= '1';
+    iAq <= to_unsigned(42, iAq'length);
+    iNq <= to_unsigned(1, iNq'length);
+    wait for 1 ns;
+    check_case('1', 42, 1, oTemp);
 
     if err_count > 0 then
       report "tb_A20 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;

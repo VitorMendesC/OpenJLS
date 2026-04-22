@@ -28,9 +28,7 @@ architecture bench of tb_A2 is
   signal iD3 : signed(BITNESS downto 0) := (others => '0');
 
   signal oRunN0 : std_logic;
-  signal oRegN0 : std_logic;
   signal oRunN2 : std_logic;
-  signal oRegN2 : std_logic;
 
   function is_run(d1, d2, d3 : integer; near_v : natural) return std_logic is
   begin
@@ -43,8 +41,8 @@ architecture bench of tb_A2 is
 
   procedure check_case(
     d1, d2, d3 : integer;
-    run0, reg0 : std_logic;
-    run2, reg2 : std_logic
+    run0       : std_logic;
+    run2       : std_logic
   ) is
     variable exp0 : std_logic;
     variable exp2 : std_logic;
@@ -67,9 +65,6 @@ architecture bench of tb_A2 is
       " expRun=" & std_logic'image(exp2) &
       " gotRun=" & std_logic'image(run2)
     );
-
-    check(reg0 = not exp0, "A2 NEAR=0 regular mismatch");
-    check(reg2 = not exp2, "A2 NEAR=2 regular mismatch");
   end procedure;
 
 begin
@@ -80,11 +75,10 @@ begin
       NEAR    => NEAR0
     )
     port map(
-      iD1          => iD1,
-      iD2          => iD2,
-      iD3          => iD3,
-      oModeRegular => oRegN0,
-      oModeRun     => oRunN0
+      iD1      => iD1,
+      iD2      => iD2,
+      iD3      => iD3,
+      oModeRun => oRunN0
     );
 
   dut_n2 : entity work.A2_mode_selection
@@ -93,11 +87,10 @@ begin
       NEAR    => NEAR2
     )
     port map(
-      iD1          => iD1,
-      iD2          => iD2,
-      iD3          => iD3,
-      oModeRegular => oRegN2,
-      oModeRun     => oRunN2
+      iD1      => iD1,
+      iD2      => iD2,
+      iD3      => iD3,
+      oModeRun => oRunN2
     );
 
   stim : process
@@ -106,43 +99,43 @@ begin
     iD2 <= to_signed(0, iD2'length);
     iD3 <= to_signed(0, iD3'length);
     wait for 1 ns;
-    check_case(0, 0, 0, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(0, 0, 0, oRunN0, oRunN2);
 
     iD1 <= to_signed(1, iD1'length);
     iD2 <= to_signed(0, iD2'length);
     iD3 <= to_signed(0, iD3'length);
     wait for 1 ns;
-    check_case(1, 0, 0, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(1, 0, 0, oRunN0, oRunN2);
 
     iD1 <= to_signed(2, iD1'length);
     iD2 <= to_signed(-2, iD2'length);
     iD3 <= to_signed(2, iD3'length);
     wait for 1 ns;
-    check_case(2, -2, 2, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(2, -2, 2, oRunN0, oRunN2);
 
     iD1 <= to_signed(3, iD1'length);
     iD2 <= to_signed(0, iD2'length);
     iD3 <= to_signed(0, iD3'length);
     wait for 1 ns;
-    check_case(3, 0, 0, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(3, 0, 0, oRunN0, oRunN2);
 
     iD1 <= to_signed(-3, iD1'length);
     iD2 <= to_signed(2, iD2'length);
     iD3 <= to_signed(-1, iD3'length);
     wait for 1 ns;
-    check_case(-3, 2, -1, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(-3, 2, -1, oRunN0, oRunN2);
 
     iD1 <= to_signed(2, iD1'length);
     iD2 <= to_signed(3, iD2'length);
     iD3 <= to_signed(1, iD3'length);
     wait for 1 ns;
-    check_case(2, 3, 1, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(2, 3, 1, oRunN0, oRunN2);
 
     iD1 <= to_signed(100, iD1'length);
     iD2 <= to_signed(0, iD2'length);
     iD3 <= to_signed(0, iD3'length);
     wait for 1 ns;
-    check_case(100, 0, 0, oRunN0, oRegN0, oRunN2, oRegN2);
+    check_case(100, 0, 0, oRunN0, oRunN2);
 
     if err_count > 0 then
       report "tb_A2 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
