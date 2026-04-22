@@ -39,7 +39,6 @@ entity A11_1_golomb_encoder is
     UNARY_WIDTH            : natural := CO_UNARY_WIDTH_STD;
     SUFFIX_WIDTH           : natural := CO_SUFFIX_WIDTH_STD;
     SUFFIXLEN_WIDTH        : natural := CO_SUFFIXLEN_WIDTH_STD;
-    TOTLEN_WIDTH           : natural := CO_TOTLEN_WIDTH_STD;
     MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
@@ -47,9 +46,7 @@ entity A11_1_golomb_encoder is
     iMappedErrorVal : in unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
     oUnaryZeros     : out unsigned (UNARY_WIDTH - 1 downto 0);
     oSuffixLen      : out unsigned (SUFFIXLEN_WIDTH - 1 downto 0);
-    oSuffixVal      : out unsigned (SUFFIX_WIDTH - 1 downto 0);
-    oTotalLen       : out unsigned (TOTLEN_WIDTH - 1 downto 0);
-    oIsEscape       : out std_logic
+    oSuffixVal      : out unsigned (SUFFIX_WIDTH - 1 downto 0)
   );
 end A11_1_golomb_encoder;
 
@@ -63,10 +60,7 @@ begin
   --   - oUnaryZeros: q (or LIMIT-QBPP-1 in escape)
   --   - oSuffixLen: k (or QBPP in escape)
   --   - oSuffixVal: r (or MErrval-1 in escape), aligned LSB
-  --   - oTotalLen : unaryZeros + 1 + suffixLen
-  --   - oIsEscape : '1' when q >= LIMIT - QBPP - 1
   process (iK, iMappedErrorVal)
-    variable vLen            : unsigned(oTotalLen'range);
     variable vKInt           : integer;
     variable vHighOrder      : unsigned(iMappedErrorVal'range);
     variable vLowOrder       : unsigned(iMappedErrorVal'range);
@@ -88,7 +82,6 @@ begin
     if not vIsEscape then
       vUnaryZeros := resize(vHighOrder, vUnaryZeros'length);
       vSuffixLen  := resize(iK, vSuffixLen'length);
-      vLen        := vUnaryZeros + 1 + vSuffixLen;
 
       vSuffixVal := resize(vLowOrder, vSuffixVal'length);
 
@@ -101,7 +94,6 @@ begin
 
       vUnaryZeros := to_unsigned(THRESHOLD, vUnaryZeros'length);
       vSuffixLen  := to_unsigned(QBPP, vSuffixLen'length);
-      vLen        := to_unsigned(LIMIT, vLen'length);
 
       vMappedErrorDec := iMappedErrorVal - 1; -- MErrval is guaranteed to be greater than 1 when escape
 
@@ -112,13 +104,6 @@ begin
     oUnaryZeros <= vUnaryZeros;
     oSuffixLen  <= vSuffixLen;
     oSuffixVal  <= vSuffixVal;
-    oTotalLen   <= vLen;
-
-    if vIsEscape then
-      oIsEscape <= '1';
-    else
-      oIsEscape <= '0';
-    end if;
 
   end process;
 end Behavioral;

@@ -32,22 +32,17 @@ entity A3_mode_selection is
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
-    iD1          : in signed(BITNESS downto 0); -- signed
-    iD2          : in signed(BITNESS downto 0);
-    iD3          : in signed(BITNESS downto 0);
-    oModeRegular : out std_logic;
-    oModeRun     : out std_logic
+    iD1      : in signed(BITNESS downto 0); -- signed
+    iD2      : in signed(BITNESS downto 0);
+    iD3      : in signed(BITNESS downto 0);
+    oModeRun : out std_logic
   );
 end A3_mode_selection;
 
 architecture Behavioral of A3_mode_selection is
-  signal sModeRun : std_logic;
 begin
 
-  sModeRun <= '1' when or_reduce(std_logic_vector(iD1 or iD2 or iD3)) = '0' else
+  oModeRun <= '1' when or_reduce(std_logic_vector(iD1 or iD2 or iD3)) = '0' else
     '0';
-
-  oModeRun     <= sModeRun;
-  oModeRegular <= not sModeRun;
 
 end Behavioral;

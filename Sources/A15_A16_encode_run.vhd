@@ -16,7 +16,10 @@
 --                if iRunCnt == sNextBound → emit A15 '1' (oA15Valid).
 --              When run ends (iRunContinue='0'):
 --                EOLine, residual > 0: emit A16 '1' bit (only if no boundary hit).
---                Break (iRunHit='0', sInRun='1'): emit RI token with A16 prefix.
+--                Break (iRunHit='0'): emit RI token with A16 prefix. Covers
+--                both breaks after one or more matches (sInRun='1') and the
+--                immediate-break case on the first pixel of run mode
+--                (sInRun='0', RUNcnt=0 → single '0' bit + RI).
 --
 --              RUNindex persists across runs within a scan; resets at iEOI.
 ----------------------------------------------------------------------------------
@@ -57,11 +60,10 @@ entity A15_A16_encode_run is
     oRawSuffixVal : out unsigned(RUN_CNT_WIDTH - 1 downto 0);
 
     -- Run-interruption token (break case only); carries Ix/Ra/Rb for Golomb path
-    oRIValid    : out std_logic;
-    oRIRunIndex : out unsigned(4 downto 0);
-    oRIIx       : out unsigned(BITNESS - 1 downto 0);
-    oRIRa       : out unsigned(BITNESS - 1 downto 0);
-    oRIRb       : out unsigned(BITNESS - 1 downto 0)
+    oRIValid : out std_logic;
+    oRIIx    : out unsigned(BITNESS - 1 downto 0);
+    oRIRa    : out unsigned(BITNESS - 1 downto 0);
+    oRIRb    : out unsigned(BITNESS - 1 downto 0)
   );
 end A15_A16_encode_run;
 
@@ -96,11 +98,10 @@ begin
     oRawValid     <= '0';
     oRawSuffixLen <= to_unsigned(1, 5);
     oRawSuffixVal <= to_unsigned(1, RUN_CNT_WIDTH);
-    oRIValid    <= '0';
-    oRIRunIndex <= (others => '0');
-    oRIIx       <= iIx;
-    oRIRa       <= iRa;
-    oRIRb       <= iRb;
+    oRIValid <= '0';
+    oRIIx    <= iIx;
+    oRIRa    <= iRa;
+    oRIRb    <= iRb;
 
     -- Next-state defaults: hold current
     sRUNindexNext  <= sRUNindex;
@@ -149,9 +150,13 @@ begin
           end if;
         end if;
 
-      elsif sInRun = '1' then
-        -- ── A.16: break ────────────────────────────────────────────────────
+      else
+        -- ── A.16: break (iRunHit='0') ─────────────────────────────────────
+        -- Covers both break-after-matches (sInRun='1') and immediate break on
+        -- the first pixel of run mode (sInRun='0', RUNcnt=0).
         -- residual = iRunCnt - (sNextBound - vStep) = count since last boundary
+        -- (for immediate break: iRunCnt=0, sNextBound=1, vStep=1 → residual=0,
+        --  SuffixLen = J[0]+1 = 1 → single '0' break marker).
         oRawValid     <= '1';
         oRawSuffixLen <= to_unsigned(vJ + 1, 5);
         oRawSuffixVal <= iRunCnt - resize(sNextBound - vStep, RUN_CNT_WIDTH);
@@ -161,11 +166,9 @@ begin
         oRIRb    <= iRb;
 
         if sRUNindex > 0 then
-          vNewIndex   := sRUNindex - 1;
-          oRIRunIndex <= sRUNindex - 1;
+          vNewIndex := sRUNindex - 1;
         else
-          vNewIndex   := (others => '0');
-          oRIRunIndex <= (others => '0');
+          vNewIndex := (others => '0');
         end if;
 
         sInRunNext     <= '0';
