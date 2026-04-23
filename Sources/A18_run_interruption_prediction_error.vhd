@@ -30,12 +30,11 @@ entity A18_run_interruption_prediction_error is
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
-    iRItype  : in std_logic;
-    iRa      : in unsigned (BITNESS - 1 downto 0);
-    iRb      : in unsigned (BITNESS - 1 downto 0);
-    iIx      : in unsigned (BITNESS - 1 downto 0);
-    oPx      : out unsigned (BITNESS - 1 downto 0);
-    oErrval  : out signed (BITNESS downto 0)
+    iRItype : in std_logic;
+    iRa     : in unsigned (BITNESS - 1 downto 0);
+    iRb     : in unsigned (BITNESS - 1 downto 0);
+    iIx     : in unsigned (BITNESS - 1 downto 0);
+    oErrval : out signed (BITNESS downto 0)
   );
 end A18_run_interruption_prediction_error;
 
@@ -47,7 +46,6 @@ begin
   sPx <= iRa when iRItype = '1' else
     iRb;
 
-  oPx     <= sPx;
   oErrval <= signed('0' & iIx) - signed('0' & sPx);
 
 end Behavioral;
