@@ -90,119 +90,77 @@ package Common is
   constant CO_UNARY_WIDTH_STD     : natural := 16; -- enough to hold LIMIT - QBPP - 1
   constant CO_SUFFIX_WIDTH_STD    : natural := 16; -- max(qbpp, max_k)
   constant CO_SUFFIXLEN_WIDTH_STD : natural := 16; -- bits to encode suffix length (up to 31)
-  constant CO_TOTLEN_WIDTH_STD    : natural := 16; -- bits to encode total length (up to LIMIT)
   constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
   constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
+  constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
+  constant CO_TOTAL_WIDTH_STD     : natural := CO_AQ_WIDTH_STD + CO_BQ_WIDTH_STD + CO_CQ_WIDTH + CO_NQ_WIDTH_STD;
 
   -- Pipeline token record -------------------------------------------------------
   --
-  -- A single record that flows through all pipeline stages, modelling the
-  -- inter-stage register. Each stage populates its fields and passes
-  -- everything downstream; synthesis trims unused registers automatically.
+  -- Fields that cross an inter-stage register boundary. Intermediate
+  -- combinational wires (gradients, mapped errval, Golomb code, Rx, Px)
+  -- are local to their stage and are NOT in the record.
   --
   -- Mode tag:
   --   TOKEN_NONE             : pipeline bubble — downstream stages are NOPs
-  --   TOKEN_REGULAR          : regular-mode sample
-  --   TOKEN_RUN_INTERRUPTION : run-interruption break
-  --   TOKEN_RAW              : raw bit append (A.15 boundary '1's)
+  --   TOKEN_REGULAR          : regular-mode sample (Golomb only)
+  --   TOKEN_RUN_INTERRUPTION : run break (Golomb + A.16 raw prefix)
+  --   TOKEN_RAW              : mid-run boundary emit (raw only)
   --
-  -- All pixel-width fields use CO_BITNESS_MAX_WIDTH so the record is
-  -- valid for any supported bitness; stages resize when driving ports.
+  -- Raw/Golomb bit-packer enables are derived from `mode` at Stage 5:
+  --   raw    = (mode = TOKEN_RUN_INTERRUPTION or mode = TOKEN_RAW)
+  --   Golomb = (mode = TOKEN_RUN_INTERRUPTION or mode = TOKEN_REGULAR)
   -- ---------------------------------------------------------------------------
   type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
 
   type t_pipeline_token is record
-
     mode : t_token_mode;
-
-    -- Pixel values (Input stage → consumed through Stage 3) -----------------
+    -- Pixel values (Stage 1 → Stage 3)
     Ix : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
     Ra : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
     Rb : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
     Rc : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
-    Rd : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
-
-    -- Gradients (Stage 1 → consumed by Stage 2) ----------------------------
-    D1 : signed(CO_BITNESS_MAX_WIDTH downto 0);
-    D2 : signed(CO_BITNESS_MAX_WIDTH downto 0);
-    D3 : signed(CO_BITNESS_MAX_WIDTH downto 0);
-
-    -- Context (Stage 2 →) --------------------------------------------------
-    Q    : unsigned(8 downto 0);  -- context index 0..366
-    Sign : std_logic;             -- from A.4.1 (regular) or A.19 (run)
-
-    -- Context variables (memory read + forwarding mux, Stage 2/3 →) --------
+    -- Context index + sign (Stage 2 → Stage 5)
+    Q      : unsigned(8 downto 0);
+    Sign   : std_logic;
+    RItype : std_logic;
+    -- Context variables (Stage 3 → Stage 5)
     Aq : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
     Bq : signed(CO_BQ_WIDTH_STD - 1 downto 0);
     Cq : signed(CO_CQ_WIDTH - 1 downto 0);
     Nq : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
     Nn : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
-
-    -- Prediction (Stage 3 →) -----------------------------------------------
-    Px     : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);
+    -- RI TEMP (A.20 output → Stage 4 shared A.10). RI-only; unused in regular.
+    Temp : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
+    -- Error + k (Stage 3/4 → Stage 5)
     Errval : signed(CO_ERROR_VALUE_WIDTH_STD - 1 downto 0);
-    Rx     : unsigned(CO_BITNESS_MAX_WIDTH - 1 downto 0);  -- reconstructed value
-
-    -- Error encoding (Stage 4 →) -------------------------------------------
-    k       : unsigned(CO_K_WIDTH_STD - 1 downto 0);
-    MErrval : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
-
-    -- Run mode (Stage 2/3 →) -----------------------------------------------
-    RUNindex : unsigned(4 downto 0);
-    RItype   : std_logic;
-
-    -- Golomb code (output stages) -------------------------------------------
-    UnaryZeros : unsigned(CO_UNARY_WIDTH_STD - 1 downto 0);
-    SuffixLen  : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
-    SuffixVal  : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
-    TotalLen   : unsigned(CO_TOTLEN_WIDTH_STD - 1 downto 0);
-    IsEscape   : std_logic;
-
-    -- Raw bit fields (run encoding / RI prefix) -----------------------------
-    RawSuffixLen : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
-    RawSuffixVal : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
-    HasRawPrefix : std_logic;
-    PrefixLen    : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
-    PrefixVal    : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
-
+    k      : unsigned(CO_K_WIDTH_STD - 1 downto 0);
+    -- Raw-bit fields (Stage 2 → Stage 5 bit packer)
+    RawLen : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
+    RawVal : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
   end record;
 
   constant CO_TOKEN_NONE : t_pipeline_token := (
-    mode         => TOKEN_NONE,
-    Ix           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    Ra           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    Rb           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    Rc           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    Rd           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    D1           => to_signed(0, CO_BITNESS_MAX_WIDTH + 1),
-    D2           => to_signed(0, CO_BITNESS_MAX_WIDTH + 1),
-    D3           => to_signed(0, CO_BITNESS_MAX_WIDTH + 1),
-    Q            => to_unsigned(0, 9),
-    Sign         => '0',
-    Aq           => to_unsigned(0, CO_AQ_WIDTH_STD),
-    Bq           => to_signed(0, CO_BQ_WIDTH_STD),
-    Cq           => to_signed(0, CO_CQ_WIDTH),
-    Nq           => to_unsigned(0, CO_NQ_WIDTH_STD),
-    Nn           => to_unsigned(0, CO_NQ_WIDTH_STD),
-    Px           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    Errval       => to_signed(0, CO_ERROR_VALUE_WIDTH_STD),
-    Rx           => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-    k            => to_unsigned(0, CO_K_WIDTH_STD),
-    MErrval      => to_unsigned(0, CO_MAPPED_ERROR_VAL_WIDTH_STD),
-    RUNindex     => to_unsigned(0, 5),
-    RItype       => '0',
-    UnaryZeros   => to_unsigned(0, CO_UNARY_WIDTH_STD),
-    SuffixLen    => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
-    SuffixVal    => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
-    TotalLen     => to_unsigned(0, CO_TOTLEN_WIDTH_STD),
-    IsEscape     => '0',
-    RawSuffixLen => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
-    RawSuffixVal => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
-    HasRawPrefix => '0',
-    PrefixLen    => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
-    PrefixVal    => to_unsigned(0, CO_SUFFIX_WIDTH_STD)
+  mode   => TOKEN_NONE,
+  Ix     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Ra     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Rb     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Rc     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Q      => to_unsigned(0, 9),
+  Sign   => '0',
+  RItype => '0',
+  Aq     => to_unsigned(0, CO_AQ_WIDTH_STD),
+  Bq     => to_signed(0, CO_BQ_WIDTH_STD),
+  Cq     => to_signed(0, CO_CQ_WIDTH),
+  Nq     => to_unsigned(0, CO_NQ_WIDTH_STD),
+  Nn     => to_unsigned(0, CO_NQ_WIDTH_STD),
+  Temp   => to_unsigned(0, CO_AQ_WIDTH_STD),
+  Errval => to_signed(0, CO_ERROR_VALUE_WIDTH_STD),
+  k      => to_unsigned(0, CO_K_WIDTH_STD),
+  RawLen => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
+  RawVal => to_unsigned(0, CO_SUFFIX_WIDTH_STD)
   );
 
 end package;
