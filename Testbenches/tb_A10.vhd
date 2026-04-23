@@ -127,7 +127,8 @@ begin
         nq := 1; -- Nq is initialized to 1 per T.87
       end if;
       lfsr := lfsr_next(lfsr);
-      aq   := to_integer(lfsr(A_WIDTH - 1 downto 0));
+      -- Clamp to 31 bits to keep aq within NATURAL range (2^31-1 max).
+      aq   := to_integer(lfsr(math_min(A_WIDTH, 31) - 1 downto 0));
       check_case(iNq, iAq, oK, nq, aq);
     end loop;
 
