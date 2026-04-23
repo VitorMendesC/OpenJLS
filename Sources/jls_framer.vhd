@@ -46,36 +46,36 @@ entity jls_framer is
   generic (
     NEAR             : natural := CO_NEAR_STD;
     BITNESS          : natural := CO_BITNESS_STD;
-    IN_WIDTH         : natural := CO_BYTE_STUFFER_IN_WIDTH;  -- from byte_stuffer
-    OUT_WIDTH        : natural := CO_OUT_WIDTH_STD;           -- to AXI-S output
+    IN_WIDTH         : natural := CO_BYTE_STUFFER_IN_WIDTH; -- from byte_stuffer
+    OUT_WIDTH        : natural := CO_OUT_WIDTH_STD;         -- to AXI-S output
     MAX_IMAGE_WIDTH  : natural := 4096;
     MAX_IMAGE_HEIGHT : natural := 4096
   );
   port (
-    iClk         : in  std_logic;
-    iRst         : in  std_logic;
+    iClk : in std_logic;
+    iRst : in std_logic;
     -- Image control
-    iStart       : in  std_logic;
-    iImageWidth  : in  unsigned(log2ceil(MAX_IMAGE_WIDTH  + 1) - 1 downto 0);
-    iImageHeight : in  unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-    iEOI         : in  std_logic;
+    iStart       : in std_logic;
+    iImageWidth  : in unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+    iImageHeight : in unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+    iEOI         : in std_logic;
     -- Byte stuffer interface (IN_WIDTH wide)
-    iBsWord       : in  std_logic_vector(IN_WIDTH  - 1 downto 0);
-    iBsWordValid  : in  std_logic;
-    iBsValidBytes : in  unsigned(log2ceil(IN_WIDTH  / 8) downto 0);
+    iBsWord       : in std_logic_vector(IN_WIDTH - 1 downto 0);
+    iBsWordValid  : in std_logic;
+    iBsValidBytes : in unsigned(log2ceil(IN_WIDTH / 8) downto 0);
     oBsReady      : out std_logic;
     -- Output (OUT_WIDTH wide, AXI-Stream)
-    oWord         : out std_logic_vector(OUT_WIDTH - 1 downto 0);
-    oWordValid    : out std_logic;
-    oValidBytes   : out unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
-    oLast         : out std_logic;
-    iReady        : in  std_logic
+    oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
+    oWordValid  : out std_logic;
+    oValidBytes : out unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
+    oLast       : out std_logic;
+    iReady      : in std_logic
   );
 end jls_framer;
 
 architecture Behavioral of jls_framer is
 
-  constant BYTES_IN     : natural := IN_WIDTH  / 8;
+  constant BYTES_IN     : natural := IN_WIDTH / 8;
   constant BYTES_OUT    : natural := OUT_WIDTH / 8;
   constant BUFFER_BYTES : natural := 2 * BYTES_OUT;
   constant BUFFER_WIDTH : natural := BUFFER_BYTES * 8;
@@ -87,10 +87,10 @@ architecture Behavioral of jls_framer is
   signal sBuffer    : std_logic_vector(BUFFER_WIDTH - 1 downto 0) := (others => '0');
   signal sByteCount : natural range 0 to BUFFER_BYTES             := 0;
 
-  signal sOutWord    : std_logic_vector(OUT_WIDTH - 1 downto 0)      := (others => '0');
-  signal sOutValid   : std_logic                                      := '0';
-  signal sOutLast    : std_logic                                      := '0';
-  signal sValidBytes : unsigned(log2ceil(OUT_WIDTH / 8) downto 0)    := (others => '0');
+  signal sOutWord    : std_logic_vector(OUT_WIDTH - 1 downto 0)   := (others => '0');
+  signal sOutValid   : std_logic                                  := '0';
+  signal sOutLast    : std_logic                                  := '0';
+  signal sValidBytes : unsigned(log2ceil(OUT_WIDTH / 8) downto 0) := (others => '0');
 
   -- Byte offset into header; increments by BYTES_OUT per cycle
   signal sHeaderByteIdx : natural range 0 to HEADER_LEN := 0;
@@ -130,9 +130,9 @@ architecture Behavioral of jls_framer is
       when 5      => return x"0B";
       when 6      => return std_logic_vector(to_unsigned(BITNESS, 8));
       when 7      => return std_logic_vector(height(15 downto 8));
-      when 8      => return std_logic_vector(height(7  downto 0));
+      when 8      => return std_logic_vector(height(7 downto 0));
       when 9      => return std_logic_vector(width(15 downto 8));
-      when 10     => return std_logic_vector(width(7  downto 0));
+      when 10     => return std_logic_vector(width(7 downto 0));
       when 11     => return x"01";
       when 12     => return x"01";
       when 13     => return x"11";
@@ -153,12 +153,12 @@ architecture Behavioral of jls_framer is
 
 begin
 
-  assert IN_WIDTH  mod 8 = 0
-    report "jls_framer: IN_WIDTH must be a multiple of 8"  severity failure;
+  assert IN_WIDTH mod 8 = 0
+  report "jls_framer: IN_WIDTH must be a multiple of 8" severity failure;
   assert OUT_WIDTH mod 8 = 0
-    report "jls_framer: OUT_WIDTH must be a multiple of 8" severity failure;
+  report "jls_framer: OUT_WIDTH must be a multiple of 8" severity failure;
   assert OUT_WIDTH >= IN_WIDTH
-    report "jls_framer: OUT_WIDTH must be >= IN_WIDTH"     severity failure;
+  report "jls_framer: OUT_WIDTH must be >= IN_WIDTH" severity failure;
 
   sAxiHandshake <= (iReady and sOutValid) = '1';
 
@@ -171,8 +171,9 @@ begin
   -- Uses registered sByteCount (conservative): the byte stuffer only presents
   -- valid data after seeing oBsReady='1', so sByteCount + BYTES_IN <= BUFFER_BYTES
   -- is guaranteed to hold whenever iBsWordValid='1'.
-  oBsReady <= '1' when sFsmState = DATA
-                       and sByteCount + BYTES_IN <= BUFFER_BYTES else '0';
+  oBsReady                  <= '1' when sFsmState = DATA
+    and sByteCount + BYTES_IN <= BUFFER_BYTES else
+    '0';
 
   process (iClk)
     variable vBuf       : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
@@ -197,7 +198,7 @@ begin
         vBuf       := sBuffer;
         vCount     := sByteCount;
         vPushCount := 0;
-        vWidth     := resize(iImageWidth,  16);
+        vWidth     := resize(iImageWidth, 16);
         vHeight    := resize(iImageHeight, 16);
 
         ----------------------------------------------------------------
@@ -210,18 +211,18 @@ begin
           sValidBytes <= to_unsigned(BYTES_OUT, sValidBytes'length);
           sOutValid   <= '1';
           sOutLast    <= bool2bit(sFsmState = FINAL_FLUSH and vCount = BYTES_OUT);
-          vBuf        := std_logic_vector(shift_left(unsigned(vBuf), OUT_WIDTH));
-          vCount      := vCount - BYTES_OUT;
+          vBuf   := std_logic_vector(shift_left(unsigned(vBuf), OUT_WIDTH));
+          vCount := vCount - BYTES_OUT;
 
         elsif sFsmState = FINAL_FLUSH and vCount > 0
-              and (sAxiHandshake or sOutValid = '0') then
+          and (sAxiHandshake or sOutValid = '0') then
           -- Partial last word of the image
           sOutWord    <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
           sValidBytes <= to_unsigned(vCount, sValidBytes'length);
           sOutValid   <= '1';
           sOutLast    <= '1';
-          vBuf        := (others => '0');
-          vCount      := 0;
+          vBuf   := (others => '0');
+          vCount := 0;
 
         elsif sAxiHandshake then
           sOutValid <= '0';
@@ -245,8 +246,8 @@ begin
               for i in 0 to BYTES_OUT - 1 loop
                 if sHeaderByteIdx + i < HEADER_LEN then
                   vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
-                       BUFFER_WIDTH     - (vCount + i) * 8 - 8)
-                    := get_header_byte(sHeaderByteIdx + i, vWidth, vHeight);
+                  BUFFER_WIDTH - (vCount + i) * 8 - 8)
+                  := get_header_byte(sHeaderByteIdx + i, vWidth, vHeight);
                   vPushCount := vPushCount + 1;
                 end if;
               end loop;
@@ -267,16 +268,16 @@ begin
                 for i in 0 to BYTES_IN - 1 loop
                   if i < to_integer(iBsValidBytes) then
                     vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
-                         BUFFER_WIDTH     - (vCount + i) * 8 - 8)
-                      := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
+                    BUFFER_WIDTH - (vCount + i) * 8 - 8)
+                    := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
                   end if;
                 end loop;
                 vPushCount := to_integer(iBsValidBytes);
               else
                 for i in 0 to BYTES_IN - 1 loop
                   vBuf(BUFFER_WIDTH - 1 - (vCount + i) * 8 downto
-                       BUFFER_WIDTH     - (vCount + i) * 8 - 8)
-                    := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
+                  BUFFER_WIDTH - (vCount + i) * 8 - 8)
+                  := iBsWord(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8);
                 end loop;
                 vPushCount := BYTES_IN;
               end if;
@@ -293,12 +294,12 @@ begin
             -- Append 2-byte EOI marker FF D9.
             -- The pop above may have freed space; stall here if not yet.
             if vCount + 2 <= BUFFER_BYTES then
-              vBuf(BUFFER_WIDTH - 1 -  vCount      * 8 downto
-                   BUFFER_WIDTH     -  vCount      * 8 - 8) := x"FF";
+              vBuf(BUFFER_WIDTH - 1 - vCount * 8 downto
+              BUFFER_WIDTH - vCount * 8 - 8) := x"FF";
               vBuf(BUFFER_WIDTH - 1 - (vCount + 1) * 8 downto
-                   BUFFER_WIDTH     - (vCount + 1) * 8 - 8) := x"D9";
-              vPushCount := 2;
-              sFsmState  <= FINAL_FLUSH;
+              BUFFER_WIDTH - (vCount + 1) * 8 - 8) := x"D9";
+              vPushCount                           := 2;
+              sFsmState <= FINAL_FLUSH;
             end if;
 
           when FINAL_FLUSH =>
@@ -320,7 +321,7 @@ begin
 
         end case;
 
-        vCount     := vCount + vPushCount;
+        vCount := vCount + vPushCount;
         sBuffer    <= vBuf;
         sByteCount <= vCount;
 
