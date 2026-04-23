@@ -22,32 +22,28 @@ architecture bench of tb_A14 is
 
   constant BITNESS       : natural := CO_BITNESS_STD;
   constant RUN_CNT_WIDTH : natural := 8;
-  constant NEAR_VAL      : natural := 1;
 
-  signal iRa      : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal iIx      : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal iRunCnt  : unsigned(RUN_CNT_WIDTH - 1 downto 0) := (others => '0');
-  signal iEOL     : std_logic := '0';
-  signal oRunCnt  : unsigned(RUN_CNT_WIDTH - 1 downto 0);
-  signal oRx      : unsigned(BITNESS - 1 downto 0);
-  signal oRunHit  : std_logic;
-  signal oCont    : std_logic;
+  signal iRa     : unsigned(BITNESS - 1 downto 0)       := (others => '0');
+  signal iIx     : unsigned(BITNESS - 1 downto 0)       := (others => '0');
+  signal iRunCnt : unsigned(RUN_CNT_WIDTH - 1 downto 0) := (others => '0');
+  signal iEOL    : std_logic                            := '0';
+  signal oRunCnt : unsigned(RUN_CNT_WIDTH - 1 downto 0);
+  signal oRunHit : std_logic;
+  signal oCont   : std_logic;
 
   procedure check_case(
     ra, ix, rc : integer;
     eol        : std_logic;
     run_cnt_o  : unsigned;
-    rx_o       : unsigned;
     run_hit_o  : std_logic;
     cont_o     : std_logic
   ) is
-    variable diff      : integer;
-    variable exp_hit   : std_logic;
-    variable exp_cnt   : integer;
-    variable exp_cont  : std_logic;
+    variable exp_hit  : std_logic;
+    variable exp_cnt  : integer;
+    variable exp_cont : std_logic;
   begin
-    diff := abs(ix - ra);
-    if diff <= integer(NEAR_VAL) then
+    -- Lossless: hit iff Ix == Ra.
+    if ix = ra then
       exp_hit := '1';
       exp_cnt := rc + 1;
     else
@@ -55,7 +51,7 @@ architecture bench of tb_A14 is
       exp_cnt := rc;
     end if;
 
-    if (exp_hit = '1') and (eol = '0') then
+    if exp_hit = '1' and eol = '0' then
       exp_cont := '1';
     else
       exp_cont := '0';
@@ -75,7 +71,6 @@ architecture bench of tb_A14 is
       "A14 RunContinue mismatch: exp=" & std_logic'image(exp_cont) &
       " got=" & std_logic'image(cont_o)
     );
-    check(rx_o = to_unsigned(ra, rx_o'length), "A14 Rx mismatch");
   end procedure;
 
 begin
@@ -83,8 +78,7 @@ begin
   dut : entity work.A14_run_length_determination
     generic map(
       BITNESS       => BITNESS,
-      RUN_CNT_WIDTH => RUN_CNT_WIDTH,
-      NEAR          => NEAR_VAL
+      RUN_CNT_WIDTH => RUN_CNT_WIDTH
     )
     port map(
       iRa          => iRa,
@@ -92,54 +86,59 @@ begin
       iRunCnt      => iRunCnt,
       iEOL         => iEOL,
       oRunCnt      => oRunCnt,
-      oRx          => oRx,
       oRunHit      => oRunHit,
       oRunContinue => oCont
     );
 
   stim : process
   begin
+    -- Match, not EOL → hit + continue
     iRa     <= to_unsigned(10, iRa'length);
     iIx     <= to_unsigned(10, iIx'length);
     iRunCnt <= to_unsigned(0, iRunCnt'length);
     iEOL    <= '0';
     wait for 1 ns;
-    check_case(10, 10, 0, '0', oRunCnt, oRx, oRunHit, oCont);
+    check_case(10, 10, 0, '0', oRunCnt, oRunHit, oCont);
 
+    -- Ix = Ra + 1 (lossy would hit, lossless must miss)
     iRa     <= to_unsigned(10, iRa'length);
     iIx     <= to_unsigned(11, iIx'length);
     iRunCnt <= to_unsigned(5, iRunCnt'length);
     iEOL    <= '0';
     wait for 1 ns;
-    check_case(10, 11, 5, '0', oRunCnt, oRx, oRunHit, oCont);
+    check_case(10, 11, 5, '0', oRunCnt, oRunHit, oCont);
 
+    -- Ix = Ra + 2 → miss
     iRa     <= to_unsigned(10, iRa'length);
     iIx     <= to_unsigned(12, iIx'length);
     iRunCnt <= to_unsigned(5, iRunCnt'length);
     iEOL    <= '0';
     wait for 1 ns;
-    check_case(10, 12, 5, '0', oRunCnt, oRx, oRunHit, oCont);
+    check_case(10, 12, 5, '0', oRunCnt, oRunHit, oCont);
 
+    -- Match + EOL → hit but continue must drop
     iRa     <= to_unsigned(10, iRa'length);
     iIx     <= to_unsigned(10, iIx'length);
     iRunCnt <= to_unsigned(3, iRunCnt'length);
     iEOL    <= '1';
     wait for 1 ns;
-    check_case(10, 10, 3, '1', oRunCnt, oRx, oRunHit, oCont);
+    check_case(10, 10, 3, '1', oRunCnt, oRunHit, oCont);
 
+    -- Ix < Ra → miss
     iRa     <= to_unsigned(100, iRa'length);
     iIx     <= to_unsigned(98, iIx'length);
     iRunCnt <= to_unsigned(7, iRunCnt'length);
     iEOL    <= '0';
     wait for 1 ns;
-    check_case(100, 98, 7, '0', oRunCnt, oRx, oRunHit, oCont);
+    check_case(100, 98, 7, '0', oRunCnt, oRunHit, oCont);
 
+    -- Ix > Ra with EOL → miss
     iRa     <= to_unsigned(100, iRa'length);
     iIx     <= to_unsigned(102, iIx'length);
     iRunCnt <= to_unsigned(7, iRunCnt'length);
     iEOL    <= '1';
     wait for 1 ns;
-    check_case(100, 102, 7, '1', oRunCnt, oRx, oRunHit, oCont);
+    check_case(100, 102, 7, '1', oRunCnt, oRunHit, oCont);
 
     if err_count > 0 then
       report "tb_A14 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
