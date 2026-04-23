@@ -551,7 +551,6 @@ begin
     (
       iIx => sReg2.Ix(BITNESS - 1 downto 0), iPx => sS3PxC,
       iSign => sReg2.Sign, oErrorVal => sS3Err7C);
-  iSign => sReg2.Sign, oErrorVal => sS3Err7C);
 
   u_a8_c : entity work.A8_error_quantization
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
@@ -559,7 +558,6 @@ begin
     (
       iErrorVal => sS3Err7C, iPx => sS3PxC, iSign => sReg2.Sign,
       oErrorVal => sS3Err8C, oRx => open);
-  oErrorVal => sS3Err8C, oRx => open);
 
   u_a9_c : entity work.A9_modulo_reduction
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
@@ -578,7 +576,6 @@ begin
     (
       iIx => sReg2.Ix(BITNESS - 1 downto 0), iPx => sS3PxP,
       iSign => sReg2.Sign, oErrorVal => sS3Err7P);
-  iSign => sReg2.Sign, oErrorVal => sS3Err7P);
 
   u_a8_p : entity work.A8_error_quantization
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
@@ -586,7 +583,6 @@ begin
     (
       iErrorVal => sS3Err7P, iPx => sS3PxP, iSign => sReg2.Sign,
       oErrorVal => sS3Err8P, oRx => open);
-  oErrorVal => sS3Err8P, oRx => open);
 
   u_a9_p : entity work.A9_modulo_reduction
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
@@ -605,7 +601,6 @@ begin
     (
       iIx => sReg2.Ix(BITNESS - 1 downto 0), iPx => sS3PxM,
       iSign => sReg2.Sign, oErrorVal => sS3Err7M);
-  iSign => sReg2.Sign, oErrorVal => sS3Err7M);
 
   u_a8_m : entity work.A8_error_quantization
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
@@ -613,7 +608,6 @@ begin
     (
       iErrorVal => sS3Err7M, iPx => sS3PxM, iSign => sReg2.Sign,
       oErrorVal => sS3Err8M, oRx => open);
-  oErrorVal => sS3Err8M, oRx => open);
 
   u_a9_m : entity work.A9_modulo_reduction
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
@@ -907,7 +901,8 @@ begin
   -- Byte 0 occupies oData(OUT_WIDTH-1 downto OUT_WIDTH-8) → oKeep(OUT_WIDTH/8 - 1).
   -- For a count of N valid bytes, the top N bits of oKeep are '1'.
   gen_keep : for i in 0 to OUT_WIDTH / 8 - 1 generate
-    oKeep(OUT_WIDTH / 8 - 1 - i) <= '1' when sFramerVBytes > i else '0';
+    oKeep(OUT_WIDTH / 8 - 1 - i) <= '1' when sFramerVBytes > i else
+    '0';
   end generate;
 
   -- ═══════════════════════════════════════════════════════════════════
