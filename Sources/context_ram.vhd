@@ -28,7 +28,7 @@ use work.Common.all;
 
 entity context_ram is
   generic (
-    RANGE_      : positive := CO_RANGE_STD;
+    RANGE_P      : positive := CO_RANGE_STD;
     RAM_DEPTH   : positive := 367;
     A_WIDTH     : positive := CO_AQ_WIDTH_STD;
     B_WIDTH     : positive := CO_BQ_WIDTH_STD;
@@ -52,7 +52,7 @@ end context_ram;
 
 architecture Behavioral of context_ram is
 
-  constant A_INIT : natural := math_max(2, (RANGE_ + 32) / 64);
+  constant A_INIT : natural := math_max(2, (RANGE_P + 32) / 64);
   constant B_INIT : integer := 0;
   constant C_INIT : integer := 0;
   constant N_INIT : natural := 1;
