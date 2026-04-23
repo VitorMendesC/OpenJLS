@@ -58,7 +58,7 @@ entity line_buffer is
     oD           : out unsigned(BITNESS - 1 downto 0);
     oValid       : out std_logic;
     oEOL         : out std_logic; -- end of line
-    oEOI         : out std_logic -- end of image
+    oEOI         : out std_logic  -- end of image
   );
 end entity line_buffer;
 
@@ -171,6 +171,10 @@ begin
               sPreloadCounter <= sPreloadCounter + 1;
               if sPreloadCounter = 1 then
                 sFifoState <= WAIT_END_FIRST_ROW;
+
+                if sIsEOL then -- needs this check to work with images with width=4 (Annex H.3 test image)
+                  sFifoState <= NOMINAL;
+                end if;
               end if;
             end if;
 
