@@ -151,11 +151,16 @@ architecture rtl of openjls_top is
   signal sS3Err9C, sS3Err9P, sS3Err9M : signed(BITNESS downto 0);
   signal sS3Err9Sel                   : signed(BITNESS downto 0);
 
-  -- Speculation control
+  -- Q3==Q4 forwarding: one flag per mode. Q ranges are disjoint (regular
+  -- 0..364, RI 365,366), so a Q match + the Stage-4 mode uniquely identifies
+  -- which writeback path is live; Stage-2 mode is implied.
   signal sFwdRegHit : std_logic;
-  signal sDeltaCq   : signed(CO_CQ_WIDTH - 1 downto 0);
-  signal sSpecUseM  : std_logic;
-  signal sSpecUseP  : std_logic;
+  signal sFwdRiHit  : std_logic;
+
+  -- Speculation control (Cq only)
+  signal sDeltaCq  : signed(CO_CQ_WIDTH - 1 downto 0);
+  signal sSpecUseM : std_logic;
+  signal sSpecUseP : std_logic;
 
   -- Stage 3 — RI path
   signal sS3RiPx                : unsigned(BITNESS - 1 downto 0);
@@ -459,16 +464,29 @@ begin
       oRdData => sCtxRdData
     );
 
-  -- Unpack read port (BRAM RdLatency=1 → valid at Stage 3).
-  sS3Aq <= unsigned(sCtxRdData(CTX_A_HI downto CTX_A_LO));
-  sS3Bq <= signed(sCtxRdData(CTX_B_HI downto CTX_B_LO));
-  sS3Cq <= signed(sCtxRdData(CTX_C_HI downto CTX_C_LO));
-  sS3Nq <= unsigned(sCtxRdData(CTX_N_HI downto CTX_N_LO));
+  -- Unpack read port (BRAM RdLatency=1 → valid at Stage 3), with Q3==Q4
+  -- forwarding: when Stage 4 is writing back to the Q that Stage 3 is
+  -- reading, forward the live Stage-4 update outputs instead of the BRAM
+  -- read (which would be stale by one cycle).
+  sS3Aq <= sS4AqNew when sFwdRegHit = '1' else
+    sS4RiAqNew when sFwdRiHit = '1' else
+    unsigned(sCtxRdData(CTX_A_HI downto CTX_A_LO));
 
-  -- Nn is only meaningful for RI; mask out for regular so downstream doesn't
-  -- see Bq LSBs misinterpreted as Nn.
-  sS3Nn <= (others => '0') when sReg2.mode = TOKEN_REGULAR
-    else
+  -- Bq is regular-only (the B slot carries Nn for RI, handled below).
+  sS3Bq <= sS4BqNew when sFwdRegHit = '1' else
+    signed(sCtxRdData(CTX_B_HI downto CTX_B_LO));
+
+  -- Cq forwarding is handled by the speculative 3-chain via sS3CqBase.
+  sS3Cq <= signed(sCtxRdData(CTX_C_HI downto CTX_C_LO));
+
+  sS3Nq <= sS4NqNew when sFwdRegHit = '1' else
+    sS4RiNqNew when sFwdRiHit = '1' else
+    unsigned(sCtxRdData(CTX_N_HI downto CTX_N_LO));
+
+  -- Nn is only meaningful for RI; mask to zero for regular so downstream
+  -- doesn't see Bq LSBs misinterpreted as Nn.
+  sS3Nn <= sS4RiNnNew when sFwdRiHit = '1' else
+    (others => '0') when sReg2.mode = TOKEN_REGULAR else
     unsigned(sCtxRdData(CTX_NN_HI downto CTX_NN_LO));
 
   -- ═══════════════════════════════════════════════════════════════════
@@ -518,11 +536,18 @@ begin
       oPx => sS3Px
     );
 
-  -- Forwarding hit: Stage 3 and Stage 4 share the same regular context Q.
+  -- Forwarding hits: Stage 2 read Q matches Stage 4 writeback Q.
+  -- Stage-4 mode selects which update output to forward; Stage-2 mode is
+  -- implied by the Q match (regular Q < 365, RI Q ∈ {365,366}).
   sFwdRegHit <= '1' when sReg2V = '1' and sReg3V = '1'
     and sReg2.Q = sReg3.Q
-    and sReg2.mode = TOKEN_REGULAR
     and sReg3.mode = TOKEN_REGULAR
+    else
+    '0';
+
+  sFwdRiHit <= '1' when sReg2V = '1' and sReg3V = '1'
+    and sReg2.Q = sReg3.Q
+    and sReg3.mode = TOKEN_RUN_INTERRUPTION
     else
     '0';
 
@@ -627,7 +652,7 @@ begin
     sS3Err9C;
 
   -- ═══════════════════════════════════════════════════════════════════
-  -- Stage 3 — RI: A.18 → A.19, A.20 (A.10 moved to Stage 4, shared)
+  -- Stage 3 — RI: A.18 → A.19, A.20
   -- ═══════════════════════════════════════════════════════════════════
   u_a18 : entity work.A18_run_interruption_prediction_error
     generic map(BITNESS => BITNESS)
