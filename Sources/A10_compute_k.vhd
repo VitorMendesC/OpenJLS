@@ -41,26 +41,37 @@ end A10_compute_k;
 architecture Behavioral of A10_compute_k is
   -- Worst case: Nq = 1 and Aq = 2^A_WIDTH - 1
   constant MAX_K : natural := A_WIDTH;
-
+  constant W     : natural := A_WIDTH + 1;
 begin
 
+  -- Parallel formulation: compute all candidate shifts up-front, compare each
+  -- against Aq, then priority-encode for the smallest index whose shift
+  -- reaches/exceeds Aq. Depth collapses from MAX_K ripple levels to one
+  -- compare + log2(MAX_K+1) encoder levels.
   process (iNq, iAq)
-    variable vK     : unsigned (oK'range);
-    variable vAq    : unsigned (A_WIDTH downto 0);
-    variable vNqTmp : unsigned (A_WIDTH downto 0);
-
+    variable vAq    : unsigned(W - 1 downto 0);
+    variable vNq    : unsigned(W - 1 downto 0);
+    variable vMatch : std_logic_vector(MAX_K downto 0);
+    variable vK     : unsigned(oK'range);
   begin
+    vAq := resize(iAq, W);
+    vNq := resize(iNq, W);
 
-    vK     := (others => '0');
-    vAq    := resize(iAq, vNqTmp'length);
-    vNqTmp := resize(iNq, vNqTmp'length);
-
-    for i in 0 to MAX_K loop
-      if (vNqTmp < vAq) then
-        vNqTmp := SHIFT_LEFT(vNqTmp, 1);
-        vK     := vK + 1;
+    -- Parallel compares: vMatch(k) = '1' iff (Nq << k) >= Aq
+    for k in 0 to MAX_K loop
+      if shift_left(vNq, k) >= vAq then
+        vMatch(k) := '1';
       else
-        exit;
+        vMatch(k) := '0';
+      end if;
+    end loop;
+
+    -- Priority encode: smallest index with match='1' wins.
+    -- Loop high→low, last assignment carried forward yields the lowest match.
+    vK := to_unsigned(MAX_K + 1, vK'length);
+    for k in MAX_K downto 0 loop
+      if vMatch(k) = '1' then
+        vK := to_unsigned(k, vK'length);
       end if;
     end loop;
 
