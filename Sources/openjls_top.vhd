@@ -114,7 +114,6 @@ architecture rtl of openjls_top is
   -- Stage 2 — run
   signal sRunCntReg     : unsigned(15 downto 0) := (others => '0');
   signal sS2RunCnt      : unsigned(15 downto 0);
-  signal sS2RunRx       : unsigned(BITNESS - 1 downto 0);
   signal sS2RunHit      : std_logic;
   signal sS2RunContinue : std_logic;
   signal sS2RItype      : std_logic;
@@ -163,8 +162,6 @@ architecture rtl of openjls_top is
   signal sSpecUseP : std_logic;
 
   -- Stage 3 — RI path
-  signal sS3RiPx                : unsigned(BITNESS - 1 downto 0);
-  signal sS3RiRx                : unsigned(BITNESS - 1 downto 0);
   signal sS3RiSign              : std_logic;
   signal sS3RiErr18, sS3RiErr19 : signed(BITNESS downto 0);
   signal sS3RiTemp              : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
@@ -360,7 +357,7 @@ begin
       iIx     => sReg1.Ix(BITNESS - 1 downto 0),
       iRunCnt => sRunCntReg,
       iEOL    => sReg1EOL,
-      oRunCnt => sS2RunCnt, oRx => sS2RunRx,
+      oRunCnt => sS2RunCnt,
       oRunHit => sS2RunHit, oRunContinue => sS2RunContinue
     );
 
@@ -662,7 +659,6 @@ begin
       iRa     => sReg2.Ra(BITNESS - 1 downto 0),
       iRb     => sReg2.Rb(BITNESS - 1 downto 0),
       iIx     => sReg2.Ix(BITNESS - 1 downto 0),
-      oPx     => sS3RiPx,
       oErrval => sS3RiErr18
     );
 
@@ -671,13 +667,10 @@ begin
     port map
     (
       iErrval => sS3RiErr18,
-      iPx     => sS3RiPx,
       iRItype => sReg2.RItype,
       iRa     => sReg2.Ra(BITNESS - 1 downto 0),
       iRb     => sReg2.Rb(BITNESS - 1 downto 0),
-      iIx     => sReg2.Ix(BITNESS - 1 downto 0),
       oErrval => sS3RiErr19,
-      oRx     => sS3RiRx,
       oSign   => sS3RiSign
     );
 
