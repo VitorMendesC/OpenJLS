@@ -960,3 +960,7 @@ begin
       end if;
     end if;
   end process;
+
+  sFramerStart <= sReady and sValid and not sImageActive;
+
+end rtl;
