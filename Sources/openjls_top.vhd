@@ -239,6 +239,16 @@ architecture rtl of openjls_top is
 
 begin
 
+  -- ========================== ASSERTIONS ==============================
+
+  assert B_WIDTH >= BITNESS + 1
+  report "A12: B_WIDTH must be >= BITNESS + 1 to avoid truncation"
+    severity failure;
+  assert A_WIDTH >= BITNESS + 1
+  report "A12: A_WIDTH must be >= BITNESS + 1 to avoid truncation"
+    severity failure;
+  -- ===================================================================
+
   -- Ready: asserted one cycle after iRst deasserts.
   process (iClk)
   begin
@@ -741,7 +751,9 @@ begin
     );
 
   u_a19 : entity work.A19_run_interruption_error
-    generic map(BITNESS => BITNESS, RANGE_P => RANGE_P)
+    generic map(
+      BITNESS => BITNESS,
+      RANGE_P => RANGE_P)
     port map
     (
       iErrval => sS3RiErr18,
@@ -754,6 +766,10 @@ begin
 
   -- A.20: single context read returns (Aq, Nq) for Q ∈ {365, 366}.
   u_a20 : entity work.A20_compute_temp
+    generic map(
+      A_WIDTH => A_WIDTH,
+      N_WIDTH => N_WIDTH
+    )
     port map
     (
       iRItype => sReg2.RItype,
@@ -809,6 +825,11 @@ begin
     sReg3.Aq;
 
   u_a10 : entity work.A10_compute_k
+    generic map(
+      A_WIDTH => A_WIDTH,
+      K_WIDTH => K_WIDTH,
+      N_WIDTH => N_WIDTH
+    )
     port map
     (
       iNq => sReg3.Nq,
