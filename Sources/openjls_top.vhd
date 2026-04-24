@@ -660,7 +660,7 @@ begin
       oRx => open);
 
   u_a9_c : entity work.A9_modulo_reduction
-    generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
+    generic map(BITNESS => BITNESS, RANGE_P => RANGE_P)
     port map
       (iErrorVal => sS3Err7C, oErrorVal => sS3Err9C);
 
@@ -685,7 +685,7 @@ begin
       oRx => open);
 
   u_a9_p : entity work.A9_modulo_reduction
-    generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
+    generic map(BITNESS => BITNESS, RANGE_P => RANGE_P)
     port map
       (iErrorVal => sS3Err7P, oErrorVal => sS3Err9P);
 
@@ -710,7 +710,7 @@ begin
       oRx => open);
 
   u_a9_m : entity work.A9_modulo_reduction
-    generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
+    generic map(BITNESS => BITNESS, RANGE_P => RANGE_P)
     port map
       (iErrorVal => sS3Err7M, oErrorVal => sS3Err9M);
 
