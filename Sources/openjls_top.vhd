@@ -180,12 +180,20 @@ architecture rtl of openjls_top is
 
   -- Stage 5
   signal sS5MErrval    : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
-  signal sS5RiMap      : std_logic;
+  signal sS5RiMap      : std_logic := '0';
   signal sS5RiEMErrval : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
   signal sS5GolMErr    : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
-  signal sS5Unary      : unsigned(CO_UNARY_WIDTH_STD - 1 downto 0);
-  signal sS5SufLen     : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
-  signal sS5SufVal     : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+
+  -- A.22 is RI-only. Gate its inputs on mode so non-RI tokens drive zeros and
+  -- the combinational arithmetic never produces a negative value. Also kills
+  -- the delta-cycle race where a token transition momentarily pairs a stale
+  -- sS5RiMap with a fresh sReg4.Errval.
+  signal sA22Errval : signed(CO_ERROR_VALUE_WIDTH_STD - 1 downto 0);
+  signal sA22RItype : std_logic;
+  signal sA22Map    : std_logic;
+  signal sS5Unary   : unsigned(CO_UNARY_WIDTH_STD - 1 downto 0);
+  signal sS5SufLen  : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
+  signal sS5SufVal  : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
 
   -- Output
   signal sBpRawV, sBpGolV : std_logic;
@@ -292,30 +300,37 @@ begin
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
-        sReg1        <= CO_TOKEN_NONE;
-        sReg1V       <= '0';
-        sReg1EOL     <= '0';
-        sReg1EOI     <= '0';
-        sReg1ModeRun <= '0';
-        sReg1D1      <= (others => '0');
-        sReg1D2      <= (others => '0');
-        sReg1D3      <= (others => '0');
+        sReg1    <= CO_TOKEN_NONE;
+        sReg1V   <= '0';
+        sReg1EOL <= '0';
+        sReg1EOI <= '0';
+        sReg1D1  <= (others => '0');
+        sReg1D2  <= (others => '0');
+        sReg1D3  <= (others => '0');
       else
-        v := CO_TOKEN_NONE;
+
+        if sLbValid = '1' and sS1ModeRun = '1' then
+          v.mode := TOKEN_RUN;
+        elsif sLbValid = '1' and sS1ModeRun = '0' then
+          v.mode := TOKEN_REGULAR;
+        else
+          v := CO_TOKEN_NONE;
+        end if;
+
         if sLbValid = '1' then
           v.Ix := resize(sPixel, CO_BITNESS_MAX_WIDTH);
           v.Ra := resize(sLbRa, CO_BITNESS_MAX_WIDTH);
           v.Rb := resize(sLbRb, CO_BITNESS_MAX_WIDTH);
           v.Rc := resize(sLbRc, CO_BITNESS_MAX_WIDTH);
         end if;
-        sReg1        <= v;
-        sReg1V       <= sLbValid;
-        sReg1EOL     <= sLbValid and sLbEOL;
-        sReg1EOI     <= sLbValid and sLbEOI;
-        sReg1ModeRun <= sLbValid and sS1ModeRun;
-        sReg1D1      <= sS1D1;
-        sReg1D2      <= sS1D2;
-        sReg1D3      <= sS1D3;
+
+        sReg1    <= v;
+        sReg1V   <= sLbValid;
+        sReg1EOL <= sLbValid and sLbEOL;
+        sReg1EOI <= sLbValid and sLbEOI;
+        sReg1D1  <= sS1D1;
+        sReg1D2  <= sS1D2;
+        sReg1D3  <= sS1D3;
       end if;
     end if;
   end process;
@@ -361,6 +376,9 @@ begin
       oRunHit => sS2RunHit, oRunContinue => sS2RunContinue
     );
 
+  sReg1ModeRun <= '1' when sReg1.mode = TOKEN_RUN else
+    '0';
+
   u_a15_16 : entity work.A15_A16_encode_run
     generic map(BITNESS => BITNESS)
     port map
@@ -399,7 +417,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sRunCntReg <= (others => '0');
-      elsif sReg1V = '1' and sReg1ModeRun = '1' then
+      elsif sReg1.mode = TOKEN_RUN then
         if sS2RunContinue = '1' then
           sRunCntReg <= sS2RunCnt;
         else
@@ -411,14 +429,14 @@ begin
 
   -- Stage 2 mode selection. Precedence: RI break (Golomb+raw) > raw-only.
   sS2TokenMode <=
-    TOKEN_REGULAR when sReg1ModeRun = '0' else
+    TOKEN_REGULAR when sReg1.mode = TOKEN_REGULAR else
     TOKEN_RUN_INTERRUPTION when sS2RIValid = '1' else
     TOKEN_RAW when sS2RawValid = '1' else
     TOKEN_NONE;
 
   -- A.20.1 inline: regular Q from A.4.2; run Q = 366 if RItype else 365
   sS2Q <=
-    sS2QReg when sReg1ModeRun = '0' else
+    sS2QReg when sReg1.mode = TOKEN_REGULAR else
     to_unsigned(366, 9) when sS2RItype = '1' else
     to_unsigned(365, 9);
 
@@ -498,21 +516,42 @@ begin
         sReg2V   <= '0';
         sReg2EOI <= '0';
       else
-        v        := sReg1;
-        v.mode   := sS2TokenMode;
-        v.Q      := sS2Q;
-        v.Sign   := sS2MSign;
-        v.RItype := sS2RItype;
-        v.RawLen := resize(sS2RawLen, v.RawLen'length);
-        v.RawVal := resize(sS2RawVal, v.RawVal'length);
-        if sS2TokenMode = TOKEN_RUN_INTERRUPTION then
-          v.Ix := resize(sS2RIIx, CO_BITNESS_MAX_WIDTH);
-          v.Ra := resize(sS2RIRa, CO_BITNESS_MAX_WIDTH);
-          v.Rb := resize(sS2RIRb, CO_BITNESS_MAX_WIDTH);
-        end if;
+        -- Build Reg2 per mode. Fields not meaningful for the current mode
+        -- stay at CO_TOKEN_NONE defaults so downstream mode-specific logic
+        -- (A.22, A.21, …) never sees stale values that could drive invalid
+        -- arithmetic.
+        v      := CO_TOKEN_NONE;
+        v.mode := sS2TokenMode;
+        v.Q    := sS2Q;
+
+        case sS2TokenMode is
+          when TOKEN_REGULAR =>
+            v.Ix   := sReg1.Ix;
+            v.Ra   := sReg1.Ra;
+            v.Rb   := sReg1.Rb;
+            v.Rc   := sReg1.Rc;
+            v.Sign := sS2MSign;
+
+          when TOKEN_RUN_INTERRUPTION =>
+            v.Ix     := resize(sS2RIIx, CO_BITNESS_MAX_WIDTH);
+            v.Ra     := resize(sS2RIRa, CO_BITNESS_MAX_WIDTH);
+            v.Rb     := resize(sS2RIRb, CO_BITNESS_MAX_WIDTH);
+            v.RItype := sS2RItype;
+            v.RawLen := resize(sS2RawLen, v.RawLen'length);
+            v.RawVal := resize(sS2RawVal, v.RawVal'length);
+
+          when TOKEN_RAW =>
+            v.RawLen := resize(sS2RawLen, v.RawLen'length);
+            v.RawVal := resize(sS2RawVal, v.RawVal'length);
+
+          when others =>
+            v := CO_TOKEN_NONE;
+        end case;
+
         if sReg1V = '0' or sS2TokenMode = TOKEN_NONE then
           v := CO_TOKEN_NONE;
         end if;
+
         sReg2    <= v;
         sReg2V   <= sReg1V and bool2bit(sS2TokenMode /= TOKEN_NONE);
         sReg2EOI <= sReg1EOI;
@@ -762,6 +801,9 @@ begin
     );
 
   u_a23 : entity work.A23_run_interruption_update
+    generic map(
+      ERR_WIDTH => BITNESS + 1
+    )
     port map
     (
       iErrval => sReg3.Errval(BITNESS downto 0),
@@ -821,12 +863,25 @@ begin
       oMap    => sS5RiMap
     );
 
+  -- Gate A.22's inputs on RI mode. Non-RI tokens drive zeros so the
+  -- combinational `2*|Errval| - RItype - Map` never goes negative, even
+  -- across delta-cycle transitions when sS5RiMap lags sReg4.
+  sA22Errval <= sReg4.Errval when sReg4.mode = TOKEN_RUN_INTERRUPTION
+    else
+    (others => '0');
+  sA22RItype <= sReg4.RItype when sReg4.mode = TOKEN_RUN_INTERRUPTION
+    else
+    '0';
+  sA22Map <= sS5RiMap when sReg4.mode = TOKEN_RUN_INTERRUPTION
+    else
+    '0';
+
   u_a22 : entity work.A22_errval_mapping
     port map
     (
-      iErrval   => sReg4.Errval,
-      iRItype   => sReg4.RItype,
-      iMap      => sS5RiMap,
+      iErrval   => sA22Errval,
+      iRItype   => sA22RItype,
+      iMap      => sA22Map,
       oEMErrval => sS5RiEMErrval
     );
 
