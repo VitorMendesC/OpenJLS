@@ -31,37 +31,24 @@ use IEEE.NUMERIC_STD.all;
 entity A8_error_quantization is
   generic (
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    MAX_VAL : natural               := CO_MAX_VAL_STD;
-    NEAR    : natural               := CO_NEAR_STD
+    MAX_VAL : natural               := CO_MAX_VAL_STD
   );
   port (
     iErrorVal : in signed (BITNESS downto 0);
     iPx       : in unsigned (BITNESS - 1 downto 0);
     iSign     : in std_logic;
-    oErrorVal : out signed (BITNESS downto 0);
     oRx       : out unsigned (BITNESS - 1 downto 0)
   );
 end A8_error_quantization;
 
 architecture Behavioral of A8_error_quantization is
-  constant C_SCALE : integer := (2 * NEAR) + 1;
-
 begin
 
   process (iErrorVal, iPx, iSign)
-    variable vErr       : integer;
-    variable vErrUpdate : integer;
-    variable vRx        : integer;
-    variable vSignMult  : integer;
+    variable vErrInt   : integer;
+    variable vRx       : integer;
+    variable vSignMult : integer;
   begin
-    vErr := to_integer(iErrorVal);
-
-    -- Guarantees positive division
-    if vErr > 0 then
-      vErrUpdate := (vErr + NEAR) / C_SCALE;
-    else
-      vErrUpdate := - ((NEAR - vErr) / C_SCALE); -- divide positive, then negate
-    end if;
 
     if iSign = CO_SIGN_POS then
       vSignMult := 1;
@@ -69,7 +56,8 @@ begin
       vSignMult := - 1;
     end if;
 
-    vRx := to_integer(iPx) + vSignMult * vErrUpdate * C_SCALE;
+    vErrInt := to_integer(iErrorVal);
+    vRx     := to_integer(iPx) + vSignMult * vErrInt;
 
     if vRx < 0 then
       vRx := 0;
@@ -77,8 +65,7 @@ begin
       vRx := MAX_VAL;
     end if;
 
-    oErrorVal <= to_signed(vErrUpdate, oErrorVal'length);
-    oRx       <= to_unsigned(vRx, oRx'length);
+    oRx <= to_unsigned(vRx, oRx'length);
   end process;
 
 end Behavioral;
