@@ -73,19 +73,22 @@ architecture rtl of openjls_top is
   constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
 
   -- Widths
-  constant K_WIDTH                : natural := CO_K_WIDTH_STD;
-  constant UNARY_WIDTH            : natural := CO_UNARY_WIDTH_STD;
-  constant SUFFIX_WIDTH           : natural := CO_SUFFIX_WIDTH_STD;
-  constant SUFFIXLEN_WIDTH        : natural := CO_SUFFIXLEN_WIDTH_STD;
-  constant MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
-  constant A_WIDTH                : natural := CO_AQ_WIDTH_STD;
-  constant B_WIDTH                : natural := CO_BQ_WIDTH_STD;
-  constant C_WIDTH                : natural := CO_CQ_WIDTH;
-  constant N_WIDTH                : natural := CO_NQ_WIDTH_STD;
-  constant NN_WIDTH               : natural := CO_NNQ_WIDTH_STD;
-  constant TOTAL_WIDTH            : natural := CO_TOTAL_WIDTH_STD;
-  constant BYTE_STUFFER_IN_WIDTH  : natural := CO_BYTE_STUFFER_IN_WIDTH;
-  constant BUFFER_WIDTH           : natural := CO_BUFFER_WIDTH_STD;
+  -- TODO: Widths need to be calculated given the generic parameters, so we don't oversize them
+  constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
+  constant RUN_CNT_WIDTH          : natural  := 16;
+  constant K_WIDTH                : natural  := CO_K_WIDTH_STD;
+  constant UNARY_WIDTH            : natural  := CO_UNARY_WIDTH_STD;
+  constant SUFFIX_WIDTH           : natural  := CO_SUFFIX_WIDTH_STD;
+  constant SUFFIXLEN_WIDTH        : natural  := CO_SUFFIXLEN_WIDTH_STD;
+  constant MAPPED_ERROR_VAL_WIDTH : natural  := CO_MAPPED_ERROR_VAL_WIDTH_STD;
+  constant A_WIDTH                : natural  := CO_AQ_WIDTH_STD;
+  constant B_WIDTH                : natural  := CO_BQ_WIDTH_STD;
+  constant C_WIDTH                : natural  := CO_CQ_WIDTH;
+  constant N_WIDTH                : natural  := CO_NQ_WIDTH_STD;
+  constant NN_WIDTH               : natural  := CO_NNQ_WIDTH_STD;
+  constant TOTAL_WIDTH            : natural  := CO_TOTAL_WIDTH_STD;
+  constant BYTE_STUFFER_IN_WIDTH  : natural  := CO_BYTE_STUFFER_IN_WIDTH;
+  constant BUFFER_WIDTH           : natural  := CO_BUFFER_WIDTH_STD;
   -- =================================================================================
 
   -- Packed context word slicing (A | B | C | N), matching context_ram layout.
@@ -166,7 +169,6 @@ architecture rtl of openjls_top is
   signal sS3CqBase, sS3CqP1, sS3CqM1  : signed(CO_CQ_WIDTH - 1 downto 0);
   signal sS3PxC, sS3PxP, sS3PxM       : unsigned(BITNESS - 1 downto 0);
   signal sS3Err7C, sS3Err7P, sS3Err7M : signed(BITNESS downto 0);
-  signal sS3Err8C, sS3Err8P, sS3Err8M : signed(BITNESS downto 0);
   signal sS3Err9C, sS3Err9P, sS3Err9M : signed(BITNESS downto 0);
   signal sS3Err9Sel                   : signed(BITNESS downto 0);
 
@@ -359,7 +361,10 @@ begin
   -- Stage 2 — Regular: A.4 → A.4.1 → A.4.2
   -- ═══════════════════════════════════════════════════════════════════
   u_a4 : entity work.A4_quantization_gradients
-    generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
+    generic map(
+      BITNESS => BITNESS,
+      MAX_VAL => MAX_VAL
+    )
     port map
     (
       iD1 => sReg1D1, iD2 => sReg1D2, iD3 => sReg1D3,
@@ -385,7 +390,10 @@ begin
   -- Stage 2 — Run: A.14, A.15/A.16 (FSM), A.17
   -- ═══════════════════════════════════════════════════════════════════
   u_a14 : entity work.A14_run_length_determination
-    generic map(BITNESS => BITNESS)
+    generic map(
+      BITNESS       => BITNESS,
+      RUN_CNT_WIDTH => RUN_CNT_WIDTH
+    )
     port map
     (
       iRa     => sReg1.Ra(BITNESS - 1 downto 0),
@@ -400,7 +408,10 @@ begin
     '0';
 
   u_a15_16 : entity work.A15_A16_encode_run
-    generic map(BITNESS => BITNESS)
+    generic map(
+      BITNESS       => BITNESS,
+      RUN_CNT_WIDTH => RUN_CNT_WIDTH
+    )
     port map
     (
       iClk          => iClk,
@@ -486,6 +497,7 @@ begin
   u_ctx_ram : entity work.context_ram
     generic map(
       RANGE_P     => RANGE_P,
+      RAM_DEPTH   => RAM_DEPTH,
       A_WIDTH     => A_WIDTH,
       B_WIDTH     => B_WIDTH,
       C_WIDTH     => C_WIDTH,
@@ -645,12 +657,12 @@ begin
     port map
     (
       iErrorVal => sS3Err7C, iPx => sS3PxC, iSign => sReg2.Sign,
-      oErrorVal => sS3Err8C, oRx => open);
+      oRx => open);
 
   u_a9_c : entity work.A9_modulo_reduction
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
     port map
-      (iErrorVal => sS3Err8C, oErrorVal => sS3Err9C);
+      (iErrorVal => sS3Err7C, oErrorVal => sS3Err9C);
 
   -- +1 chain (ΔCq = +1)
   u_a6_p : entity work.A6_prediction_correction
@@ -670,12 +682,12 @@ begin
     port map
     (
       iErrorVal => sS3Err7P, iPx => sS3PxP, iSign => sReg2.Sign,
-      oErrorVal => sS3Err8P, oRx => open);
+      oRx => open);
 
   u_a9_p : entity work.A9_modulo_reduction
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
     port map
-      (iErrorVal => sS3Err8P, oErrorVal => sS3Err9P);
+      (iErrorVal => sS3Err7P, oErrorVal => sS3Err9P);
 
   -- −1 chain (ΔCq = −1)
   u_a6_m : entity work.A6_prediction_correction
@@ -695,12 +707,12 @@ begin
     port map
     (
       iErrorVal => sS3Err7M, iPx => sS3PxM, iSign => sReg2.Sign,
-      oErrorVal => sS3Err8M, oRx => open);
+      oRx => open);
 
   u_a9_m : entity work.A9_modulo_reduction
     generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
     port map
-      (iErrorVal => sS3Err8M, oErrorVal => sS3Err9M);
+      (iErrorVal => sS3Err7M, oErrorVal => sS3Err9M);
 
   -- ΔCq from live Stage-4 A.13. On miss, sDeltaCq is irrelevant (sFwdRegHit=0).
   sDeltaCq <= sS4CqNew - sReg3.Cq;
