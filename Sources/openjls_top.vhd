@@ -741,7 +741,7 @@ begin
     );
 
   u_a19 : entity work.A19_run_interruption_error
-    generic map(BITNESS => BITNESS, MAX_VAL => MAX_VAL)
+    generic map(BITNESS => BITNESS, RANGE_P => RANGE_P)
     port map
     (
       iErrval => sS3RiErr18,
