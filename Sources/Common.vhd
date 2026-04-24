@@ -57,7 +57,7 @@ package Common is
   constant CO_CQ_WIDTH                   : natural := 8;
   -- Initialization
   constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
-  constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD);                         -- number of bits to represent RANGE (ceil(log2(RANGE)))
+  constant CO_QBPP_STD  : natural := log2ceil(CO_RANGE_STD);                     -- number of bits to represent RANGE (ceil(log2(RANGE)))
   constant CO_BPP_STD   : natural := math_max(2, log2ceil(CO_MAX_VAL_STD + 1));  -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
   constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + math_max(8, CO_BPP_STD)); -- math_max length of the limited Golomb code
 
