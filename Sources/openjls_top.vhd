@@ -475,7 +475,8 @@ begin
       iWrEn   => sCtxWrEn,
       iWrData => sCtxWrData,
       iRdAddr => std_logic_vector(sS2Q),
-      iRdEn   => sReg1V,
+      iRdEn   => sReg1V and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
+                             bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
       oRdData => sCtxRdData
     );
 
