@@ -20,7 +20,7 @@ use IEEE.NUMERIC_STD.all;
 entity A19_run_interruption_error is
   generic (
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    MAX_VAL : natural               := CO_MAX_VAL_STD
+    RANGE_P : natural               := CO_RANGE_STD
   );
   port (
     iErrval : in signed (BITNESS downto 0);
@@ -33,7 +33,6 @@ entity A19_run_interruption_error is
 end A19_run_interruption_error;
 
 architecture Behavioral of A19_run_interruption_error is
-  constant C_RANGE : integer := MAX_VAL + 1;
 begin
 
   process (iErrval, iRItype, iRa, iRb)
@@ -42,20 +41,20 @@ begin
   begin
     -- Sign adjustment: RItype=0 and Ra > Rb → negate error
     if iRItype = '0' and iRa > iRb then
-      vErr  := - to_integer(iErrval);
+      vErr := - to_integer(iErrval);
       oSign <= CO_SIGN_NEG;
     else
-      vErr  := to_integer(iErrval);
+      vErr := to_integer(iErrval);
       oSign <= CO_SIGN_POS;
     end if;
 
     -- Modulo reduction (A.9 inline)
     vErrAdj := vErr;
     if vErrAdj < 0 then
-      vErrAdj := vErrAdj + C_RANGE;
+      vErrAdj := vErrAdj + RANGE_P;
     end if;
-    if vErrAdj >= (C_RANGE + 1) / 2 then
-      vErrAdj := vErrAdj - C_RANGE;
+    if vErrAdj >= (RANGE_P + 1) / 2 then
+      vErrAdj := vErrAdj - RANGE_P;
     end if;
 
     oErrval <= to_signed(vErrAdj, oErrval'length);
