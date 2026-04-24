@@ -44,7 +44,6 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity jls_framer is
   generic (
-    NEAR             : natural := CO_NEAR_STD;
     BITNESS          : natural := CO_BITNESS_STD;
     IN_WIDTH         : natural := CO_BYTE_STUFFER_IN_WIDTH; -- from byte_stuffer
     OUT_WIDTH        : natural := CO_OUT_WIDTH_STD;         -- to AXI-S output
@@ -75,6 +74,7 @@ end jls_framer;
 
 architecture Behavioral of jls_framer is
 
+  constant NEAR         : natural := 0;
   constant BYTES_IN     : natural := IN_WIDTH / 8;
   constant BYTES_OUT    : natural := OUT_WIDTH / 8;
   constant BUFFER_BYTES : natural := 2 * BYTES_OUT;
