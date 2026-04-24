@@ -57,8 +57,8 @@ package Common is
   constant CO_CQ_WIDTH                   : natural := 8;
   -- Initialization
   constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
-  constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD); -- number of bits to represent RANGE (ceil(log2(RANGE)))
-  constant CO_BPP_STD   : natural := math_max(2, log2ceil(CO_MAX_VAL_STD + 1)); -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
+  constant CO_QBPP_STD  : natural := log2(CO_RANGE_STD);                         -- number of bits to represent RANGE (ceil(log2(RANGE)))
+  constant CO_BPP_STD   : natural := math_max(2, log2ceil(CO_MAX_VAL_STD + 1));  -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
   constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + math_max(8, CO_BPP_STD)); -- math_max length of the limited Golomb code
 
   type j_table_array is array (0 to 31) of natural;
@@ -113,7 +113,7 @@ package Common is
   --   raw    = (mode = TOKEN_RUN_INTERRUPTION or mode = TOKEN_RAW)
   --   Golomb = (mode = TOKEN_RUN_INTERRUPTION or mode = TOKEN_REGULAR)
   -- ---------------------------------------------------------------------------
-  type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
+  type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
 
   type t_pipeline_token is record
     mode : t_token_mode;
@@ -210,10 +210,13 @@ package body Common is
 
   function std_to_int(s : in std_logic) return integer is
   begin
-    if s = '0' then
-      return 0;
-    else
+    -- Return 1 only for an explicit '1'; treat '0', 'U', 'X', 'Z', 'W', 'L',
+    -- 'H', '-' as 0. Avoids spurious-1 during sim startup when a combinational
+    -- path's source hasn't evaluated yet. Hardware has no 'U'.
+    if s = '1' then
       return 1;
+    else
+      return 0;
     end if;
   end function;
 
