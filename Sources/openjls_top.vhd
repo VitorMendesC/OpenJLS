@@ -64,9 +64,29 @@ end openjls_top;
 
 architecture rtl of openjls_top is
 
+  -- =================================== PARAMETERS ==================================
   -- Derived constants
-  constant MAX_VAL   : natural := 2 ** BITNESS - 1;
-  constant CTX_RANGE : natural := MAX_VAL + 1;
+  constant MAX_VAL : natural := 2 ** BITNESS - 1;
+  constant RANGE_P : natural := MAX_VAL + 1;
+  constant QBPP    : natural := log2ceil(CO_RANGE_STD);
+  constant BPP     : natural := math_max(2, log2ceil(MAX_VAL + 1));
+  constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
+
+  -- Widths
+  constant K_WIDTH                : natural := CO_K_WIDTH_STD;
+  constant UNARY_WIDTH            : natural := CO_UNARY_WIDTH_STD;
+  constant SUFFIX_WIDTH           : natural := CO_SUFFIX_WIDTH_STD;
+  constant SUFFIXLEN_WIDTH        : natural := CO_SUFFIXLEN_WIDTH_STD;
+  constant MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
+  constant A_WIDTH                : natural := CO_AQ_WIDTH_STD;
+  constant B_WIDTH                : natural := CO_BQ_WIDTH_STD;
+  constant C_WIDTH                : natural := CO_CQ_WIDTH;
+  constant N_WIDTH                : natural := CO_NQ_WIDTH_STD;
+  constant NN_WIDTH               : natural := CO_NNQ_WIDTH_STD;
+  constant TOTAL_WIDTH            : natural := CO_TOTAL_WIDTH_STD;
+  constant BYTE_STUFFER_IN_WIDTH  : natural := CO_BYTE_STUFFER_IN_WIDTH;
+  constant BUFFER_WIDTH           : natural := CO_BUFFER_WIDTH_STD;
+  -- =================================================================================
 
   -- Packed context word slicing (A | B | C | N), matching context_ram layout.
   -- For RI contexts (Q=365,366) Nn overlays the LSBs of the B slot.
@@ -465,7 +485,13 @@ begin
 
   u_ctx_ram : entity work.context_ram
     generic map(
-      RANGE_P => CTX_RANGE
+      RANGE_P     => RANGE_P,
+      A_WIDTH     => A_WIDTH,
+      B_WIDTH     => B_WIDTH,
+      C_WIDTH     => C_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      NN_WIDTH    => NN_WIDTH,
+      TOTAL_WIDTH => TOTAL_WIDTH
     )
     port map
     (
@@ -476,7 +502,7 @@ begin
       iWrData => sCtxWrData,
       iRdAddr => std_logic_vector(sS2Q),
       iRdEn   => sReg1V and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
-                             bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
+      bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
       oRdData => sCtxRdData
     );
 
@@ -890,6 +916,15 @@ begin
     sS5RiEMErrval;
 
   u_a11_1 : entity work.A11_1_golomb_encoder
+    generic map(
+      K_WIDTH                => K_WIDTH,
+      QBPP                   => QBPP,
+      LIMIT                  => LIMIT,
+      UNARY_WIDTH            => UNARY_WIDTH,
+      SUFFIX_WIDTH           => SUFFIX_WIDTH,
+      SUFFIXLEN_WIDTH        => SUFFIXLEN_WIDTH,
+      MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
+    )
     port map
     (
       iK              => sReg4.k,
@@ -912,6 +947,14 @@ begin
     '0';
 
   u_bit_packer : entity work.A11_2_bit_packer
+    generic map(
+      LIMIT           => LIMIT,
+      OUT_WIDTH       => BYTE_STUFFER_IN_WIDTH,
+      BUFFER_WIDTH    => BUFFER_WIDTH,
+      UNARY_WIDTH     => UNARY_WIDTH,
+      SUFFIX_WIDTH    => SUFFIX_WIDTH,
+      SUFFIXLEN_WIDTH => SUFFIXLEN_WIDTH
+    )
     port map
     (
       iClk            => iClk,
@@ -931,6 +974,11 @@ begin
     );
 
   u_byte_stuffer : entity work.byte_stuffer
+    generic map(
+      IN_WIDTH     => BYTE_STUFFER_IN_WIDTH,
+      OUT_WIDTH    => BYTE_STUFFER_IN_WIDTH,
+      BUFFER_WIDTH => 2 * CO_BYTE_STUFFER_IN_WIDTH + CO_BYTE_STUFFER_IN_WIDTH / 8 -- worst case expansion
+    )
     port map
     (
       iClk        => iClk,
@@ -948,6 +996,7 @@ begin
   u_framer : entity work.jls_framer
     generic map(
       BITNESS          => BITNESS,
+      IN_WIDTH         => BYTE_STUFFER_IN_WIDTH,
       OUT_WIDTH        => OUT_WIDTH,
       MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
       MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT
@@ -1011,5 +1060,50 @@ begin
   end process;
 
   sFramerStart <= sReady and sValid and not sImageActive;
+
+  -- DEBUG: per-valid-token trace at Reg4 boundary
+  dbg_probe : process (iClk)
+  begin
+    if rising_edge(iClk) and iRst = '0' and sReg4V = '1' then
+      case sReg4.mode is
+        when TOKEN_REGULAR =>
+          report "REG  Ix=" & integer'image(to_integer(sReg4.Ix)) &
+            " Ra=" & integer'image(to_integer(sReg4.Ra)) &
+            " Rb=" & integer'image(to_integer(sReg4.Rb)) &
+            " Q=" & integer'image(to_integer(sReg4.Q)) &
+            " Sign=" & std_logic'image(sReg4.Sign) &
+            " Errval=" & integer'image(to_integer(sReg4.Errval)) &
+            " Aq=" & integer'image(to_integer(sReg4.Aq)) &
+            " Bq=" & integer'image(to_integer(sReg4.Bq)) &
+            " Nq=" & integer'image(to_integer(sReg4.Nq)) &
+            " k=" & integer'image(to_integer(sReg4.k)) &
+            " MErr=" & integer'image(to_integer(sS5GolMErr)) &
+            " unary=" & integer'image(to_integer(sS5Unary)) &
+            " sufL=" & integer'image(to_integer(sS5SufLen)) &
+            " sufV=" & integer'image(to_integer(sS5SufVal));
+        when TOKEN_RUN_INTERRUPTION =>
+          report "RI   Ix=" & integer'image(to_integer(sReg4.Ix)) &
+            " Ra=" & integer'image(to_integer(sReg4.Ra)) &
+            " Rb=" & integer'image(to_integer(sReg4.Rb)) &
+            " Q=" & integer'image(to_integer(sReg4.Q)) &
+            " RItype=" & std_logic'image(sReg4.RItype) &
+            " Errval=" & integer'image(to_integer(sReg4.Errval)) &
+            " Aq=" & integer'image(to_integer(sReg4.Aq)) &
+            " Nq=" & integer'image(to_integer(sReg4.Nq)) &
+            " Nn=" & integer'image(to_integer(sReg4.Nn)) &
+            " k=" & integer'image(to_integer(sReg4.k)) &
+            " EMErr=" & integer'image(to_integer(sS5GolMErr)) &
+            " unary=" & integer'image(to_integer(sS5Unary)) &
+            " sufL=" & integer'image(to_integer(sS5SufLen)) &
+            " sufV=" & integer'image(to_integer(sS5SufVal)) &
+            " rawL=" & integer'image(to_integer(sReg4.RawLen)) &
+            " rawV=" & integer'image(to_integer(sReg4.RawVal));
+        when TOKEN_RAW =>
+          report "RAW  rawL=" & integer'image(to_integer(sReg4.RawLen)) &
+            " rawV=" & integer'image(to_integer(sReg4.RawVal));
+        when others => null;
+      end case;
+    end if;
+  end process;
 
 end rtl;
