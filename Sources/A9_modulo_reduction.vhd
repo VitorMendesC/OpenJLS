@@ -28,7 +28,7 @@ use IEEE.NUMERIC_STD.all;
 entity A9_modulo_reduction is
   generic (
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    MAX_VAL : natural               := CO_MAX_VAL_STD
+    RANGE_P : natural               := CO_RANGE_STD
   );
   port (
     iErrorVal : in signed (BITNESS downto 0);
@@ -37,16 +37,15 @@ entity A9_modulo_reduction is
 end A9_modulo_reduction;
 
 architecture Behavioral of A9_modulo_reduction is
-  constant C_RANGE : natural := MAX_VAL + 1;
-  signal sErrAdj   : signed (BITNESS downto 0);
+  signal sErrAdj : signed (BITNESS downto 0);
 begin
 
   -- First stage: if negative, add RANGE
-  sErrAdj <= iErrorVal + C_RANGE when iErrorVal < 0 else
+  sErrAdj <= iErrorVal + RANGE_P when iErrorVal < 0 else
     iErrorVal;
 
   -- Second stage: if >= (RANGE + 1)/2, subtract RANGE
-  oErrorVal <= sErrAdj - C_RANGE when sErrAdj >= (C_RANGE + 1) / 2 else
+  oErrorVal <= sErrAdj - RANGE_P when sErrAdj >= (RANGE_P + 1) / 2 else
     sErrAdj;
 
 end Behavioral;
