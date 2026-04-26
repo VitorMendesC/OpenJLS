@@ -41,10 +41,10 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity openjls_top is
   generic (
-    BITNESS          : natural range 8 to 16 := CO_BITNESS_STD;
-    MAX_IMAGE_WIDTH  : positive              := 4096;
-    MAX_IMAGE_HEIGHT : positive              := 4096;
-    OUT_WIDTH        : natural               := CO_OUT_WIDTH_STD
+    BITNESS          : positive range 8 to 16    := 8;
+    MAX_IMAGE_WIDTH  : positive range 4 to 32768 := 4096;
+    MAX_IMAGE_HEIGHT : positive range 1 to 32768 := 4096;
+    OUT_WIDTH        : positive range 32 to 1024 := 64
   );
   port (
     iClk         : in std_logic;
@@ -64,19 +64,24 @@ end openjls_top;
 
 architecture rtl of openjls_top is
 
-  -- =================================== PARAMETERS ==================================
+  -- =================================== PARAMETERS =======================================================
   -- Derived constants
   constant MAX_VAL : natural := 2 ** BITNESS - 1;
   constant RANGE_P : natural := MAX_VAL + 1;
-  constant QBPP    : natural := log2ceil(CO_RANGE_STD);
+  constant QBPP    : natural := log2ceil(RANGE_P);
   constant BPP     : natural := math_max(2, log2ceil(MAX_VAL + 1));
   constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
 
   -- Widths
-  -- TODO: Widths need to be calculated given the generic parameters, so we don't oversize them
+  -- TODO: Widths need to be calculated given the generic parameters, so we don't oversize them, or
+  --       grabbed from the standard
+  constant ERROR_WIDTH            : natural  := BITNESS + 1; -- BITNESS + sign bit
   constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
-  constant RUN_CNT_WIDTH          : natural  := 16;
+  constant RESET                  : natural  := 64; -- T.87
+  constant MAX_C                  : integer  := 127; -- T.87
+  constant MIN_C                  : integer  := - 128; -- T.87
   constant K_WIDTH                : natural  := CO_K_WIDTH_STD;
+  constant RUN_CNT_WIDTH          : natural  := 16;
   constant UNARY_WIDTH            : natural  := CO_UNARY_WIDTH_STD;
   constant SUFFIX_WIDTH           : natural  := CO_SUFFIX_WIDTH_STD;
   constant SUFFIXLEN_WIDTH        : natural  := CO_SUFFIXLEN_WIDTH_STD;
@@ -87,9 +92,14 @@ architecture rtl of openjls_top is
   constant N_WIDTH                : natural  := CO_NQ_WIDTH_STD;
   constant NN_WIDTH               : natural  := CO_NNQ_WIDTH_STD;
   constant TOTAL_WIDTH            : natural  := CO_TOTAL_WIDTH_STD;
-  constant BYTE_STUFFER_IN_WIDTH  : natural  := CO_BYTE_STUFFER_IN_WIDTH;
-  constant BUFFER_WIDTH           : natural  := CO_BUFFER_WIDTH_STD;
-  -- =================================================================================
+  -- Bit packer / byte stuffer / framer interface widths.
+  -- Per-cycle worst-case bit_packer emit is bounded by LIMIT in all modes
+  -- (T.87 sets glimit = LIMIT - J[RUNindex] - 1 so RI raw + Golomb <= LIMIT).
+  -- Byte stuffer per-cycle emit: residue (<=7b) + IN + stuffing (IN/8) bits.
+  constant BYTE_STUFFER_OUT_WIDTH  : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
+  constant BYTE_STUFFER_BUFF_WIDTH : natural := 2 * LIMIT + LIMIT / 8;
+  constant FRAMER_BUFFER_BYTES     : natural := 48;
+  -- ========================================================================================================
 
   -- Packed context word slicing (A | B | C | N), matching context_ram layout.
   -- For RI contexts (Q=365,366) Nn overlays the LSBs of the B slot.
@@ -147,6 +157,7 @@ architecture rtl of openjls_top is
   signal sS2RIIx        : unsigned(BITNESS - 1 downto 0);
   signal sS2RIRa        : unsigned(BITNESS - 1 downto 0);
   signal sS2RIRb        : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiRunIndex  : unsigned(4 downto 0);
 
   -- Stage 2 — muxed
   signal sS2Q         : unsigned(8 downto 0);
@@ -210,7 +221,7 @@ architecture rtl of openjls_top is
   -- the combinational arithmetic never produces a negative value. Also kills
   -- the delta-cycle race where a token transition momentarily pairs a stale
   -- sS5RiMap with a fresh sReg4.Errval.
-  signal sA22Errval : signed(CO_ERROR_VALUE_WIDTH_STD - 1 downto 0);
+  signal sA22Errval : signed(ERROR_WIDTH - 1 downto 0);
   signal sA22RItype : std_logic;
   signal sA22Map    : std_logic;
   signal sS5Unary   : unsigned(CO_UNARY_WIDTH_STD - 1 downto 0);
@@ -219,19 +230,22 @@ architecture rtl of openjls_top is
 
   -- Output
   signal sBpRawV, sBpGolV : std_logic;
-  signal sBpWord          : std_logic_vector(CO_BYTE_STUFFER_IN_WIDTH - 1 downto 0);
+  signal sBpWord          : std_logic_vector(LIMIT - 1 downto 0);
   signal sBpWordV         : std_logic;
-  signal sBpOverflow      : std_logic;
+  signal sBpValidLen      : unsigned(log2ceil(LIMIT + 1) - 1 downto 0);
   signal sBsReady         : std_logic;
-  signal sBsWord          : std_logic_vector(CO_BYTE_STUFFER_IN_WIDTH - 1 downto 0);
+  signal sBsWord          : std_logic_vector(BYTE_STUFFER_OUT_WIDTH - 1 downto 0);
   signal sBsWordV         : std_logic;
-  signal sBsValidB        : unsigned(log2ceil(CO_BYTE_STUFFER_IN_WIDTH / 8) downto 0);
+  signal sBsValidB        : unsigned(log2ceil(BYTE_STUFFER_OUT_WIDTH / 8 + 1) - 1 downto 0);
   signal sFramerBsRdy     : std_logic;
-  signal sFramerVBytes    : unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
+  signal sFramerVBytes    : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
   -- Flush / framer control
-  signal sEoiPipe     : std_logic_vector(4 downto 0) := (others => '0');
-  signal sBpFlush     : std_logic;
+  -- Bit packer is purely combinational + 1 register; it has no flush signal.
+  -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees
+  -- (1 cycle after sReg4EOI). The framer needs iEOI aligned with the byte
+  -- stuffer's flushed last word (1 more cycle after that).
+  signal sEoiPipe     : std_logic_vector(2 downto 0) := (others => '0');
   signal sBsFlush     : std_logic;
   signal sFramerEOI   : std_logic;
   signal sImageActive : std_logic := '0';
@@ -239,15 +253,21 @@ architecture rtl of openjls_top is
 
 begin
 
-  -- ========================== ASSERTIONS ==============================
+  -- =========================================== ASSERTIONS ===============================================
 
-  assert B_WIDTH >= BITNESS + 1
+  assert B_WIDTH >= BITNESS + 1 -- for a single sum
   report "A12: B_WIDTH must be >= BITNESS + 1 to avoid truncation"
     severity failure;
-  assert A_WIDTH >= BITNESS + 1
+
+  assert A_WIDTH >= BITNESS + 1 -- for a single sum
   report "A12: A_WIDTH must be >= BITNESS + 1 to avoid truncation"
     severity failure;
-  -- ===================================================================
+
+  assert B_WIDTH >= N_WIDTH
+  report "A11 & A13: B_WIDTH must be >= N_WIDTH to avoid truncation"
+    severity failure;
+
+  -- ========================================================================================================
 
   -- Ready: asserted one cycle after iRst deasserts.
   process (iClk)
@@ -440,7 +460,8 @@ begin
       oRIValid      => sS2RIValid,
       oRIIx         => sS2RIIx,
       oRIRa         => sS2RIRa,
-      oRIRb         => sS2RIRb
+      oRIRb         => sS2RIRb,
+      oRiRunIndex   => sS2RiRunIndex
     );
 
   u_a17 : entity work.A17_run_interruption_index
@@ -582,12 +603,13 @@ begin
             v.Sign := sS2MSign;
 
           when TOKEN_RUN_INTERRUPTION =>
-            v.Ix     := resize(sS2RIIx, CO_BITNESS_MAX_WIDTH);
-            v.Ra     := resize(sS2RIRa, CO_BITNESS_MAX_WIDTH);
-            v.Rb     := resize(sS2RIRb, CO_BITNESS_MAX_WIDTH);
-            v.RItype := sS2RItype;
-            v.RawLen := resize(sS2RawLen, v.RawLen'length);
-            v.RawVal := resize(sS2RawVal, v.RawVal'length);
+            v.Ix         := resize(sS2RIIx, CO_BITNESS_MAX_WIDTH);
+            v.Ra         := resize(sS2RIRa, CO_BITNESS_MAX_WIDTH);
+            v.Rb         := resize(sS2RIRb, CO_BITNESS_MAX_WIDTH);
+            v.RItype     := sS2RItype;
+            v.RawLen     := resize(sS2RawLen, v.RawLen'length);
+            v.RawVal     := resize(sS2RawVal, v.RawVal'length);
+            v.RiRunIndex := sS2RiRunIndex;
 
           when TOKEN_RAW =>
             v.RawLen := resize(sS2RawLen, v.RawLen'length);
@@ -838,7 +860,13 @@ begin
     );
 
   u_a12 : entity work.A12_variables_update
-    generic map(BITNESS => BITNESS)
+    generic map(
+      ERROR_WIDTH => ERROR_WIDTH,
+      A_WIDTH     => A_WIDTH,
+      B_WIDTH     => B_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      RESET       => RESET
+    )
     port map
     (
       iErrorVal => sReg3.Errval(BITNESS downto 0),
@@ -851,6 +879,13 @@ begin
     );
 
   u_a13 : entity work.A13_update_bias
+    generic map(
+      B_WIDTH => B_WIDTH,
+      N_WIDTH => N_WIDTH,
+      C_WIDTH => C_WIDTH,
+      MIN_C   => MIN_C,
+      MAX_C   => MAX_C
+    )
     port map
     (
       iBq => sS4BqMid,
@@ -862,11 +897,15 @@ begin
 
   u_a23 : entity work.A23_run_interruption_update
     generic map(
-      ERR_WIDTH => BITNESS + 1
+      A_WIDTH     => A_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      NN_WIDTH    => NN_WIDTH,
+      ERROR_WIDTH => ERROR_WIDTH,
+      RESET       => RESET
     )
     port map
     (
-      iErrval => sReg3.Errval(BITNESS downto 0),
+      iErrVal => sReg3.Errval(BITNESS downto 0),
       iRItype => sReg3.RItype,
       iAq     => sReg3.Aq,
       iNq     => sReg3.Nq,
@@ -904,20 +943,32 @@ begin
   -- Stage 5 — Regular: A.11; RI: A.21 + A.22; shared: A.11.1
   -- ═══════════════════════════════════════════════════════════════════
   u_a11 : entity work.A11_error_mapping
+    generic map(
+      N_WIDTH                => N_WIDTH,
+      B_WIDTH                => B_WIDTH,
+      K_WIDTH                => K_WIDTH,
+      ERROR_WIDTH            => ERROR_WIDTH,
+      MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
+    )
     port map
     (
       iK              => sReg4.k,
       iBq             => sReg4.Bq,
       iNq             => sReg4.Nq,
-      iErrorVal       => sReg4.Errval,
+      iErrorVal       => sReg4.Errval(BITNESS downto 0),
       oMappedErrorVal => sS5MErrval
     );
 
   u_a21 : entity work.A21_compute_map
+    generic map(
+      K_WIDTH     => K_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      ERROR_WIDTH => ERROR_WIDTH
+    )
     port map
     (
       iK      => sReg4.k,
-      iErrval => sReg4.Errval,
+      iErrval => sReg4.Errval(BITNESS downto 0),
       iNn     => sReg4.Nn,
       iNq     => sReg4.Nq,
       oMap    => sS5RiMap
@@ -926,7 +977,7 @@ begin
   -- Gate A.22's inputs on RI mode. Non-RI tokens drive zeros so the
   -- combinational `2*|Errval| - RItype - Map` never goes negative, even
   -- across delta-cycle transitions when sS5RiMap lags sReg4.
-  sA22Errval <= sReg4.Errval when sReg4.mode = TOKEN_RUN_INTERRUPTION
+  sA22Errval <= sReg4.Errval(BITNESS downto 0) when sReg4.mode = TOKEN_RUN_INTERRUPTION
     else
     (others => '0');
   sA22RItype <= sReg4.RItype when sReg4.mode = TOKEN_RUN_INTERRUPTION
@@ -937,6 +988,10 @@ begin
     '0';
 
   u_a22 : entity work.A22_errval_mapping
+    generic map(
+      ERROR_WIDTH         => ERROR_WIDTH,
+      MAPPED_ERRVAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
+    )
     port map
     (
       iErrval   => sA22Errval,
@@ -962,6 +1017,8 @@ begin
     (
       iK              => sReg4.k,
       iMappedErrorVal => sS5GolMErr,
+      iRiMode         => bool2bit(sReg4.mode = TOKEN_RUN_INTERRUPTION),
+      iRunIndex       => sReg4.RiRunIndex,
       oUnaryZeros     => sS5Unary,
       oSuffixLen      => sS5SufLen,
       oSuffixVal      => sS5SufVal
@@ -982,42 +1039,40 @@ begin
   u_bit_packer : entity work.A11_2_bit_packer
     generic map(
       LIMIT           => LIMIT,
-      OUT_WIDTH       => BYTE_STUFFER_IN_WIDTH,
-      BUFFER_WIDTH    => BUFFER_WIDTH,
+      OUT_WIDTH       => LIMIT,
       UNARY_WIDTH     => UNARY_WIDTH,
       SUFFIX_WIDTH    => SUFFIX_WIDTH,
       SUFFIXLEN_WIDTH => SUFFIXLEN_WIDTH
     )
     port map
     (
-      iClk            => iClk,
-      iRst            => iRst,
-      iFlush          => sBpFlush,
-      iRawValid       => sBpRawV,
-      iRawLen         => sReg4.RawLen,
-      iRawVal         => sReg4.RawVal,
-      iGolombValid    => sBpGolV,
-      iUnaryZeros     => sS5Unary,
-      iSuffixLen      => sS5SufLen,
-      iSuffixVal      => sS5SufVal,
-      iReady          => sBsReady,
-      oWord           => sBpWord,
-      oWordValid      => sBpWordV,
-      oBufferOverflow => sBpOverflow
+      iClk         => iClk,
+      iRst         => iRst,
+      iRawValid    => sBpRawV,
+      iRawLen      => sReg4.RawLen,
+      iRawVal      => sReg4.RawVal,
+      iGolombValid => sBpGolV,
+      iUnaryZeros  => sS5Unary,
+      iSuffixLen   => sS5SufLen,
+      iSuffixVal   => sS5SufVal,
+      oWord        => sBpWord,
+      oWordValid   => sBpWordV,
+      oValidLen    => sBpValidLen
     );
 
   u_byte_stuffer : entity work.byte_stuffer
     generic map(
-      IN_WIDTH     => BYTE_STUFFER_IN_WIDTH,
-      OUT_WIDTH    => BYTE_STUFFER_IN_WIDTH,
-      BUFFER_WIDTH => 2 * CO_BYTE_STUFFER_IN_WIDTH + CO_BYTE_STUFFER_IN_WIDTH / 8 -- worst case expansion
+      IN_WIDTH     => LIMIT,
+      OUT_WIDTH    => BYTE_STUFFER_OUT_WIDTH,
+      BUFFER_WIDTH => BYTE_STUFFER_BUFF_WIDTH
     )
     port map
     (
       iClk        => iClk,
       iRst        => iRst,
-      iValid      => sBpWordV,
       iWord       => sBpWord,
+      iWordValid  => sBpWordV,
+      iValidLen   => sBpValidLen,
       iFlush      => sBsFlush,
       oReady      => sBsReady,
       oWord       => sBsWord,
@@ -1029,10 +1084,11 @@ begin
   u_framer : entity work.jls_framer
     generic map(
       BITNESS          => BITNESS,
-      IN_WIDTH         => BYTE_STUFFER_IN_WIDTH,
+      IN_WIDTH         => BYTE_STUFFER_OUT_WIDTH,
       OUT_WIDTH        => OUT_WIDTH,
       MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
-      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT
+      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
+      BUFFER_BYTES     => FRAMER_BUFFER_BYTES
     )
     port map
     (
@@ -1063,6 +1119,15 @@ begin
 
   -- ═══════════════════════════════════════════════════════════════════
   -- Flush / framer control
+  --
+  -- Timing (T = cycle when sReg4EOI is sampled high, i.e. Stage 4 register
+  -- holds the image's last token):
+  --   T+1: bit_packer's registered output presents the last bit-packed word
+  --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
+  --        zero-pads its sub-byte residue and emits the trailing bytes.
+  --   T+2: byte_stuffer's registered output presents the (flushed) last word
+  --        for image N. framer sees iEOI='1' and pushes FF D9 into the FIFO
+  --        right after these bytes, latching sEndOfImage.
   -- ═══════════════════════════════════════════════════════════════════
   process (iClk)
   begin
@@ -1070,14 +1135,13 @@ begin
       if iRst = '1' then
         sEoiPipe <= (others => '0');
       else
-        sEoiPipe <= sEoiPipe(3 downto 0) & sReg4EOI;
+        sEoiPipe <= sEoiPipe(1 downto 0) & sReg4EOI;
       end if;
     end if;
   end process;
 
-  sBpFlush   <= sEoiPipe(1);
-  sBsFlush   <= sEoiPipe(2);
-  sFramerEOI <= sEoiPipe(3);
+  sBsFlush   <= sEoiPipe(0);
+  sFramerEOI <= sEoiPipe(1);
 
   process (iClk)
   begin
@@ -1086,7 +1150,7 @@ begin
         sImageActive <= '0';
       elsif sValid = '1' and sImageActive = '0' then
         sImageActive <= '1';
-      elsif sEoiPipe(4) = '1' then
+      elsif sEoiPipe(2) = '1' then
         sImageActive <= '0';
       end if;
     end if;
