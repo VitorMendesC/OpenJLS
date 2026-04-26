@@ -27,13 +27,13 @@ use IEEE.NUMERIC_STD.all;
 
 entity A21_compute_map is
   generic (
-    K_WIDTH   : natural := CO_K_WIDTH_STD;
-    N_WIDTH   : natural := CO_NQ_WIDTH_STD;
-    ERR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD
+    K_WIDTH     : natural := CO_K_WIDTH_STD;
+    N_WIDTH     : natural := CO_NQ_WIDTH_STD;
+    ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD
   );
   port (
     iK      : in unsigned (K_WIDTH - 1 downto 0);
-    iErrval : in signed (ERR_WIDTH - 1 downto 0);
+    iErrval : in signed (ERROR_WIDTH - 1 downto 0);
     iNn     : in unsigned (N_WIDTH - 1 downto 0);
     iNq     : in unsigned (N_WIDTH - 1 downto 0);
     oMap    : out std_logic
