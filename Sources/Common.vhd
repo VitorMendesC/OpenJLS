@@ -45,9 +45,8 @@ package Common is
   -- Project's standard reference values ----------------------------------------------
   constant CO_BITNESS_STD           : natural := 12;
   constant CO_NEAR_STD              : natural := 0;
-  constant CO_BYTE_STUFFER_IN_WIDTH : natural := 24; -- Bit packer output / byte stuffer input (3 bytes)
-  constant CO_OUT_WIDTH_STD         : natural := 72; -- Final IP AXI-Stream output word width
-  constant CO_BUFFER_WIDTH_STD      : natural := 96; -- Bit packer internal buffer width
+  constant CO_OUT_WIDTH_STD         : natural := 64;  -- Final IP AXI-Stream output word width
+                                                      -- Min sustainable: BITNESS=12 -> 56b, BITNESS=16 -> 72b
 
   -- Defined values from T.87 ----------------------------------------------------------
   constant CO_BITNESS_MAX_WIDTH          : natural := 16;
@@ -97,6 +96,18 @@ package Common is
   constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
   constant CO_TOTAL_WIDTH_STD     : natural := CO_AQ_WIDTH_STD + CO_BQ_WIDTH_STD + CO_CQ_WIDTH + CO_NQ_WIDTH_STD;
 
+  -- Bit-packer / byte-stuffer / framer interface widths -------------------------
+  -- Per-cycle worst-case bit_packer emit is bounded by LIMIT in all modes:
+  --   * regular mode: Golomb code <= LIMIT
+  --   * RI break:     run-length raw (J[RUNindex]+1) + RI Golomb (glimit) <= LIMIT
+  --                   (T.87 sets glimit = LIMIT - J[RUNindex] - 1 so the sum is bounded)
+  -- So the bit_packer bus is sized to LIMIT, not LIMIT + qbpp.
+  constant CO_BIT_PACKER_OUT_WIDTH    : natural := CO_LIMIT_STD;
+  -- Byte stuffer output / framer input: ceil((residue 7 + IN + stuffing IN/8) / 8) * 8
+  constant CO_BYTE_STUFFER_OUT_WIDTH  : natural := math_ceil_div(CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8 + 7, 8) * 8;
+  -- Byte stuffer internal buffer: residue + worst-case input + stuffing.
+  constant CO_BYTE_STUFFER_BUFF_WIDTH : natural := 2 * CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8;
+
   -- Pipeline token record -------------------------------------------------------
   --
   -- Fields that cross an inter-stage register boundary. Intermediate
@@ -140,6 +151,8 @@ package Common is
     -- Raw-bit fields (Stage 2 → Stage 5 bit packer)
     RawLen : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
     RawVal : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+    -- A.22.1 glimit lookup: RUNindex before A.16 decrement. RI only.
+    RiRunIndex : unsigned(4 downto 0);
   end record;
 
   constant CO_TOKEN_NONE : t_pipeline_token := (
@@ -159,8 +172,9 @@ package Common is
   Temp   => to_unsigned(0, CO_AQ_WIDTH_STD),
   Errval => to_signed(0, CO_ERROR_VALUE_WIDTH_STD),
   k      => to_unsigned(0, CO_K_WIDTH_STD),
-  RawLen => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
-  RawVal => to_unsigned(0, CO_SUFFIX_WIDTH_STD)
+  RawLen     => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
+  RawVal     => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
+  RiRunIndex => to_unsigned(0, 5)
   );
 
 end package;
