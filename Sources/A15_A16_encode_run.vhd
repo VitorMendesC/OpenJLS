@@ -59,11 +59,14 @@ entity A15_A16_encode_run is
     oRawSuffixLen : out unsigned(4 downto 0);
     oRawSuffixVal : out unsigned(RUN_CNT_WIDTH - 1 downto 0);
 
-    -- Run-interruption token (break case only); carries Ix/Ra/Rb for Golomb path
-    oRIValid : out std_logic;
-    oRIIx    : out unsigned(BITNESS - 1 downto 0);
-    oRIRa    : out unsigned(BITNESS - 1 downto 0);
-    oRIRb    : out unsigned(BITNESS - 1 downto 0)
+    -- Run-interruption token (break case only); carries Ix/Ra/Rb for Golomb path.
+    -- oRiRunIndex is RUNindex before the A.16 decrement, used by A.22.1 to
+    -- compute glimit = LIMIT - J[RUNindex] - 1.
+    oRIValid    : out std_logic;
+    oRIIx       : out unsigned(BITNESS - 1 downto 0);
+    oRIRa       : out unsigned(BITNESS - 1 downto 0);
+    oRIRb       : out unsigned(BITNESS - 1 downto 0);
+    oRiRunIndex : out unsigned(4 downto 0)
   );
 end A15_A16_encode_run;
 
@@ -98,10 +101,11 @@ begin
     oRawValid     <= '0';
     oRawSuffixLen <= to_unsigned(1, 5);
     oRawSuffixVal <= to_unsigned(1, RUN_CNT_WIDTH);
-    oRIValid <= '0';
-    oRIIx    <= iIx;
-    oRIRa    <= iRa;
-    oRIRb    <= iRb;
+    oRIValid    <= '0';
+    oRIIx       <= iIx;
+    oRIRa       <= iRa;
+    oRIRb       <= iRb;
+    oRiRunIndex <= sRUNindex;
 
     -- Next-state defaults: hold current
     sRUNindexNext  <= sRUNindex;
