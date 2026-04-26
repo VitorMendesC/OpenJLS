@@ -27,20 +27,21 @@ use IEEE.NUMERIC_STD.all;
 
 entity A23_run_interruption_update is
   generic (
-    A_WIDTH   : natural := CO_AQ_WIDTH_STD;
-    N_WIDTH   : natural := CO_NQ_WIDTH_STD;
-    ERR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
-    RESET     : natural := CO_RESET_STD
+    A_WIDTH     : natural := CO_AQ_WIDTH_STD;
+    N_WIDTH     : natural := CO_NQ_WIDTH_STD;
+    NN_WIDTH    : natural := CO_NNQ_WIDTH_STD;
+    ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
+    RESET       : natural := CO_RESET_STD
   );
   port (
-    iErrval : in signed (ERR_WIDTH - 1 downto 0);
+    iErrval : in signed (ERROR_WIDTH - 1 downto 0);
     iRItype : in std_logic;
     iAq     : in unsigned (A_WIDTH - 1 downto 0);
     iNq     : in unsigned (N_WIDTH - 1 downto 0);
-    iNn     : in unsigned (N_WIDTH - 1 downto 0);
+    iNn     : in unsigned (NN_WIDTH - 1 downto 0);
     oAq     : out unsigned (A_WIDTH - 1 downto 0);
     oNq     : out unsigned (N_WIDTH - 1 downto 0);
-    oNn     : out unsigned (N_WIDTH - 1 downto 0)
+    oNn     : out unsigned (NN_WIDTH - 1 downto 0)
   );
 end A23_run_interruption_update;
 
