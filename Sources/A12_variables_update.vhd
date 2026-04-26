@@ -17,8 +17,8 @@
 -- Additional Comments:
 --
 -- Assumptions:
---                 B_WIDTH  >=  C_ERR_IN_WIDTH
---                 A_WIDTH  >=  C_ERR_IN_WIDTH
+--                 B_WIDTH  >=  ERROR_WIDTH
+--                 A_WIDTH  >=  ERROR_WIDTH
 -- 
 ----------------------------------------------------------------------------------
 use work.Common.all;
@@ -29,19 +29,19 @@ use IEEE.NUMERIC_STD.all;
 
 entity A12_variables_update is
   generic (
-    BITNESS : natural := CO_BITNESS_STD;
-    A_WIDTH : natural := CO_AQ_WIDTH_STD;
-    B_WIDTH : natural := CO_BQ_WIDTH_STD;
-    N_WIDTH : natural := CO_NQ_WIDTH_STD;
-    RESET   : natural := CO_RESET_STD
+    ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
+    A_WIDTH     : natural := CO_AQ_WIDTH_STD;
+    B_WIDTH     : natural := CO_BQ_WIDTH_STD;
+    N_WIDTH     : natural := CO_NQ_WIDTH_STD;
+    RESET       : natural := CO_RESET_STD
   );
   port (
-    iErrorVal : in signed (BITNESS downto 0);       -- Errval after correction & clamp
-    iAq       : in unsigned (A_WIDTH - 1 downto 0); -- context RAM (registered)
+    iErrorVal : in signed (ERROR_WIDTH - 1 downto 0);
+    iAq       : in unsigned (A_WIDTH - 1 downto 0);
     iBq       : in signed (B_WIDTH - 1 downto 0);
     iNq       : in unsigned (N_WIDTH - 1 downto 0);
 
-    oAq : out unsigned (A_WIDTH - 1 downto 0); -- to context RAM (register outside)
+    oAq : out unsigned (A_WIDTH - 1 downto 0);
     oBq : out signed (B_WIDTH - 1 downto 0);
     oNq : out unsigned (N_WIDTH - 1 downto 0)
   );
