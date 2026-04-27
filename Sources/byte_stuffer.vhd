@@ -47,9 +47,9 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity byte_stuffer is
   generic (
-    IN_WIDTH     : natural := CO_LIMIT_STD + CO_SUFFIX_WIDTH_STD;
-    OUT_WIDTH    : natural := math_ceil_div(CO_LIMIT_STD + CO_SUFFIX_WIDTH_STD + (CO_LIMIT_STD + CO_SUFFIX_WIDTH_STD) / 8 + 7, 8) * 8;
-    BUFFER_WIDTH : natural := 2 * (CO_LIMIT_STD + CO_SUFFIX_WIDTH_STD) + (CO_LIMIT_STD + CO_SUFFIX_WIDTH_STD) / 8
+    IN_WIDTH     : natural := CO_LIMIT_STD;
+    OUT_WIDTH    : natural := math_ceil_div(CO_LIMIT_STD + CO_LIMIT_STD / 8 + 7, 8) * 8;
+    BUFFER_WIDTH : natural := 2 * CO_LIMIT_STD + CO_LIMIT_STD / 8
   );
   port (
     iClk        : in std_logic;
@@ -58,11 +58,9 @@ entity byte_stuffer is
     iWordValid  : in std_logic;
     iValidLen   : in unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
     iFlush      : in std_logic;
-    oReady      : out std_logic;
     oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oWordValid  : out std_logic;
-    oValidBytes : out unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
-    iReady      : in std_logic
+    oValidBytes : out unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0)
   );
 end entity byte_stuffer;
 
@@ -75,7 +73,6 @@ architecture Behavioral of byte_stuffer is
   signal sWordValidBuffer : std_logic;
   signal sOutWordBuffer   : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal sValidBytes      : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
-  signal sAxiHandshake    : boolean;
 
 begin
 
@@ -83,18 +80,13 @@ begin
   report "byte_stuffer: OUT_WIDTH must be a multiple of 8"
     severity failure;
 
-  assert BUFFER_WIDTH >= IN_WIDTH + IN_WIDTH / 8 + 7
+  assert BUFFER_WIDTH >= IN_WIDTH + math_ceil_div(IN_WIDTH, 8) + 7
   report "byte_stuffer: BUFFER_WIDTH too small for one-cycle worst case (residue + input + stuffing)"
     severity failure;
-
-  sAxiHandshake <= (iReady and sWordValidBuffer) = '1';
 
   oWordValid  <= sWordValidBuffer;
   oWord       <= sOutWordBuffer;
   oValidBytes <= sValidBytes;
-
-  oReady <= '1' when to_integer(sCount) + IN_WIDTH + IN_WIDTH / 8 <= BUFFER_WIDTH else
-    '0';
 
   process (iClk)
     variable vBuf       : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
@@ -130,7 +122,7 @@ begin
         -- stuffing bit after every completed 0xFF byte.
         ------------------------------------------------------------------------------------------------------------
 
-        if iWordValid = '1' and to_integer(sCount) + IN_WIDTH + IN_WIDTH / 8 <= BUFFER_WIDTH then
+        if iWordValid = '1' then
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLen then
               vBitVal                         := iWord(IN_WIDTH - 1 - i);
@@ -143,6 +135,8 @@ begin
                 if vByteReg = "11111111" then
                   vBuf(BUFFER_WIDTH - 1 - vCount) := '0';
                   vCount                          := vCount + 1;
+                  vByteReg                        := vByteReg(6 downto 0) & '0';
+                  vBPos                           := 1;
                 end if;
               end if;
             end if;
@@ -155,29 +149,27 @@ begin
         -- the byte tracker so the next image starts on a fresh boundary.
         ------------------------------------------------------------------------------------------------------------
 
-        if (sAxiHandshake or sWordValidBuffer = '0') then
-          if iFlush = '1' and vCount > 0 then
-            vBytesOut        := math_ceil_div(vCount, 8);
-            sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
-            sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
-            sWordValidBuffer <= '1';
-            vBuf     := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-            vCount   := 0;
-            vBPos    := 0;
-            vByteReg := (others => '0');
-          elsif vCount >= 8 then
-            vBytesOut := vCount / 8;
-            if vBytesOut > OUT_WIDTH / 8 then
-              vBytesOut := OUT_WIDTH / 8;
-            end if;
-            sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
-            sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
-            sWordValidBuffer <= '1';
-            vBuf   := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-            vCount := vCount - vBytesOut * 8;
-          elsif sAxiHandshake then
-            sWordValidBuffer <= '0';
+        if iFlush = '1' and vCount > 0 then
+          vBytesOut        := math_ceil_div(vCount, 8);
+          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
+          sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
+          sWordValidBuffer <= '1';
+          vBuf     := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
+          vCount   := 0;
+          vBPos    := 0;
+          vByteReg := (others => '0');
+        elsif vCount >= 8 then
+          vBytesOut := vCount / 8;
+          if vBytesOut > OUT_WIDTH / 8 then
+            vBytesOut := OUT_WIDTH / 8;
           end if;
+          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
+          sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
+          sWordValidBuffer <= '1';
+          vBuf   := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
+          vCount := vCount - vBytesOut * 8;
+        else
+          sWordValidBuffer <= '0';
         end if;
 
         sBuffer  <= vBuf;
