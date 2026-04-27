@@ -226,17 +226,17 @@ begin
         -- section sees post-pop vCount/vEndOfImage and can place new bytes
         -- (and the footer) at the correct offset.
         ------------------------------------------------------------------------
-        -- Defaults
-        sOutValid <= '0';
-        sOutLast  <= '0';
+        -- "Beat was consumed" guard: clear valid/last only after AXI handshake.
+        -- Holds the beat under backpressure (iReady='0'); emit paths below
+        -- override these when a new beat is produced.
+        if sAxiHandshake then
+          sOutValid <= '0';
+          sOutLast  <= '0';
+        end if;
 
         case sFsmState is
 
           when IDLE =>
-            if sAxiHandshake then
-              sOutValid <= '0';
-              sOutLast  <= '0';
-            end if;
             if iStart = '1' or sNextPending = '1' then
               sFsmState      <= HEADER;
               sHeaderByteIdx <= 0;
