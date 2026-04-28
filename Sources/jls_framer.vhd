@@ -13,12 +13,13 @@
 --       the FIFO right after byte_stuffer's last word on iEOI, so the output
 --       side sees footer bytes as ordinary data and oLast falls out naturally.
 --     - Header bytes come from a combinational ROM (get_header_byte). The
---       FIFO never stores header bytes.
+--       FIFO never stores header bytes since there are too many of them and
+--       we need the FIFO to store new data as the HEADER is being sent.
 --     - Output FSM (IDLE / HEADER / DATA) selects header ROM vs FIFO per beat.
 --       Splicing handles the partial last header beat (filled from the FIFO)
 --       and the partial last data beat (cut at sEndOfImage with oLast).
---     - byte_stuffer is never back-pressured. oBsReady is advisory; the FIFO
---       is sized so that pushes always fit under correct upstream behaviour.
+--     - byte_stuffer is never back-pressured. The FIFO is sized so that
+--       pushes always fit under correct upstream behavior.
 --
 --   iEOI (1-cycle pulse): asserts on byte_stuffer's last word for the image.
 --   That cycle the framer pushes (iBsValidBytes byte_stuffer bytes) followed
@@ -37,6 +38,52 @@
 --   IN_WIDTH     : word width from byte_stuffer  (CO_BYTE_STUFFER_OUT_WIDTH)
 --   OUT_WIDTH    : final output word width        (CO_OUT_WIDTH_STD)
 --   BUFFER_BYTES : payload FIFO depth in bytes
+--
+---------------------------------------------------------------------------
+-- BUFFER_BYTES sizing (worst-case occupancy)
+---------------------------------------------------------------------------
+--   Two regimes contribute to peak FIFO occupancy:
+--
+--   1) iEOI cycle (single-image worst case):
+--        DATA pop fires only when vCount >= BYTES_OUT, so vCount_pre at iEOI
+--        can sit at BYTES_OUT - 1 without triggering a pop. The iEOI cycle
+--        then pushes (iBsValidBytes <= BYTES_IN) plus the 2 footer bytes:
+--          vCount_iEOI_max = BYTES_OUT - 1 + BYTES_IN + 2
+--
+--   2) Back-to-back images (image N+1 starts pushing while N drains):
+--        From iEOI cycle T, the FF D9 marker takes
+--          D = ceil(vCount_iEOI_max / BYTES_OUT)
+--        cycles to reach the FIFO head and emit (oLast fires on the D9 beat).
+--        After that, the framer transits to HEADER and emits the 25-byte
+--        marker block over
+--          N_h = ceil(HEADER_LEN / BYTES_OUT)
+--        beats. The first (N_h - 1) HEADER beats pull bytes from the ROM and
+--        do not pop the FIFO; the final mixed beat splices ROM + FIFO bytes
+--        and pops (BYTES_OUT - HEADER_LEN mod BYTES_OUT) data bytes.
+--
+--        Worst case: byte_stuffer begins pushing image N+1 the cycle after
+--        iEOI and continues at BYTES_IN/cycle throughout. Since BYTES_OUT is
+--        normally >= BYTES_IN, image N drains faster than N+1 accumulates,
+--        so by the time the mixed HEADER beat fires N's bytes are gone and
+--        only N+1's bytes occupy the FIFO. Peak N+1 bytes (after the mixed
+--        beat's net push):
+--          PEAK_N1 = (D + N_h) * BYTES_IN
+--                  - (BYTES_OUT - HEADER_LEN mod BYTES_OUT)
+--
+--   BUFFER_BYTES_min = max(vCount_iEOI_max, PEAK_N1)
+--
+--   Standard config (BYTES_IN=8, BYTES_OUT=9, HEADER_LEN=25):
+--     vCount_iEOI_max = 9 - 1 + 8 + 2 = 18
+--     D = ceil(18/9) = 2,  N_h = ceil(25/9) = 3
+--     PEAK_N1 = (2 + 3) * 8 - (9 - 7) = 38
+--     BUFFER_BYTES_min = max(18, 38) = 38
+--
+--   This also implies that outputting the last bytes after EOI can take several
+--   cycles, the image last byte needs to be tracked to assert oLast, padding and
+--   oKeep on the correct beat.
+--
+--   Caveat: the analysis assumes iReady = '1' steady-state. With sustained
+--   downstream backpressure the FIFO has no bound (no upstream stall path).
 ----------------------------------------------------------------------------------
 use work.Common.all;
 
@@ -68,7 +115,6 @@ entity jls_framer is
     iBsWord       : in std_logic_vector(IN_WIDTH - 1 downto 0);
     iBsWordValid  : in std_logic;
     iBsValidBytes : in unsigned(log2ceil(IN_WIDTH / 8 + 1) - 1 downto 0);
-    oBsReady      : out std_logic;
     -- Output (OUT_WIDTH wide, AXI-Stream)
     oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oWordValid  : out std_logic;
@@ -159,8 +205,10 @@ begin
 
   assert IN_WIDTH mod 8 = 0
   report "jls_framer: IN_WIDTH must be a multiple of 8" severity failure;
+
   assert OUT_WIDTH mod 8 = 0
   report "jls_framer: OUT_WIDTH must be a multiple of 8" severity failure;
+
   assert BUFFER_BYTES >= BYTES_OUT + BYTES_IN + 2
   report "jls_framer: BUFFER_BYTES too small for one-cycle worst-case push (iBsValidBytes + footer)"
     severity failure;
@@ -172,12 +220,10 @@ begin
   oValidBytes <= sValidBytes;
   oLast       <= sOutLast;
 
-  -- Advisory only: byte_stuffer cannot stall. With proper buffer sizing this
-  -- always holds; deasserts as a defensive flag if buffer is near-full.
-  oBsReady <= '1' when sByteCount + BYTES_IN + 2 <= BUFFER_BYTES else
-    '0';
-
-  process (iClk)
+  -------------------------------------------------------------------------------------------------------------------------
+  -- SYNCHRONOUS PROCESS 
+  -------------------------------------------------------------------------------------------------------------------------
+  sync_proc : process (iClk)
     variable vBuf           : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
     variable vCount         : natural range 0 to BUFFER_BYTES;
     variable vEndOfImage    : natural range 0 to BUFFER_BYTES;
@@ -191,6 +237,7 @@ begin
     variable vCanEmit       : boolean;
     variable vEoiInBeat     : boolean;
   begin
+
     if rising_edge(iClk) then
       if iRst = '1' then
         sFsmState      <= IDLE;
@@ -391,6 +438,6 @@ begin
 
       end if;
     end if;
-  end process;
+  end process sync_proc;
 
 end Behavioral;
