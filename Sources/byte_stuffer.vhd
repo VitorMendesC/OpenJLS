@@ -160,7 +160,7 @@ begin
 
         if iFlush = '1' and vCountInt > 0 then
           vBytesOut := math_ceil_div(vCountInt, 8);
-          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
+          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH); -- buffer is filled with zeros in the vacated bits, auto zero padding
           sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
           sWordValidBuffer <= '1';
           vBuf        := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
