@@ -15,7 +15,7 @@
 --                [raw bits (rawLen)][unary zeros (unaryZeros)]['1'][suffix (suffixLen)]
 --
 --              When only one of raw/Golomb fires, the corresponding portion is
---              omitted. Both fire simultaneously in run-interruption mode.
+--              omitted. Both fire simultaneously in RI (run-interruption) mode.
 --
 --              No internal buffer. Concat is combinational on the inputs;
 --              outputs are registered to break the comb chain into byte_stuffer.
@@ -41,11 +41,11 @@ entity A11_2_bit_packer is
   port (
     iClk : in std_logic;
     iRst : in std_logic;
-    -- Raw bits interface (A.15 boundary bits, A.16 break residual)
+    -- Raw bits interface - A.15 boundary bits, A.16 break residual (Sporadic raws & RI)
     iRawValid : in std_logic;
     iRawLen   : in unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
     iRawVal   : in unsigned(SUFFIX_WIDTH - 1 downto 0);
-    -- Golomb interface (regular mode, run-interruption)
+    -- Golomb interface (regular mode & RI)
     iGolombValid : in std_logic;
     iUnaryZeros  : in unsigned(UNARY_WIDTH - 1 downto 0);
     iSuffixLen   : in unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
@@ -65,15 +65,18 @@ architecture Behavioral of A11_2_bit_packer is
 
 begin
 
-  -- Per T.87: regular mode emits <= LIMIT bits, RI emits raw (J[RUNindex]+1)
-  -- + Golomb (glimit = LIMIT - J[RUNindex] - 1), summing to <= LIMIT total.
-  -- The upstream A11_1_golomb_encoder applies glimit for the RI Golomb code,
-  -- so OUT_WIDTH = LIMIT is sufficient.
+  -- Per T.87:  
+  -- regular mode emits Golomb code <= LIMIT bits
+  -- RI emits raw (J[RUNindex]+1) bits + Golomb code (glimit = LIMIT - J[RUNindex] - 1) bits,
+  -- summing to <= LIMIT total bits, so OUT_WIDTH = LIMIT is sufficient for both modes.
   assert OUT_WIDTH >= LIMIT
   report "A11_2_bit_packer: OUT_WIDTH must be >= LIMIT (per-cycle worst case)"
     severity failure;
 
-  process (iRawValid, iRawLen, iRawVal, iGolombValid, iUnaryZeros, iSuffixLen, iSuffixVal)
+  -------------------------------------------------------------------------------------------------------------------------
+  -- COMBINATORIAL PROCESS 
+  -------------------------------------------------------------------------------------------------------------------------
+  comb_proc : process (iRawValid, iRawLen, iRawVal, iGolombValid, iUnaryZeros, iSuffixLen, iSuffixVal)
     variable vWord       : std_logic_vector(OUT_WIDTH - 1 downto 0);
     variable vGolombWord : std_logic_vector(LIMIT - 1 downto 0);
     variable vRawLen     : natural;
@@ -81,6 +84,7 @@ begin
     variable vGolombLen  : natural;
     variable vTotal      : natural;
   begin
+
     vWord       := (others => '0');
     vGolombWord := (others => '0');
     vRawLen     := to_integer(iRawLen);
@@ -88,25 +92,26 @@ begin
     vTotal      := 0;
 
     if iRawValid = '1' and vRawLen > 0 then
-      vWord(OUT_WIDTH - 1 downto OUT_WIDTH - vRawLen) :=
-      std_logic_vector(iRawVal(vRawLen - 1 downto 0));
-      vTotal := vRawLen;
+      vWord(OUT_WIDTH - 1 downto OUT_WIDTH - vRawLen) := std_logic_vector(iRawVal(vRawLen - 1 downto 0));
+      vTotal                                          := vRawLen;
     end if;
 
     if iGolombValid = '1' then
       vGolombLen                                                           := to_integer(iUnaryZeros) + 1 + vSufLen;
       vGolombWord(vSufLen downto 0)                                        := '1' & std_logic_vector(resize(iSuffixVal, vSufLen));
-      vWord(OUT_WIDTH - 1 - vTotal downto OUT_WIDTH - vTotal - vGolombLen) :=
-      vGolombWord(vGolombLen - 1 downto 0);
-      vTotal := vTotal + vGolombLen;
+      vWord(OUT_WIDTH - 1 - vTotal downto OUT_WIDTH - vTotal - vGolombLen) := vGolombWord(vGolombLen - 1 downto 0);
+      vTotal                                                               := vTotal + vGolombLen;
     end if;
 
     sCombWord  <= vWord;
     sCombLen   <= to_unsigned(vTotal, sCombLen'length);
     sCombValid <= iRawValid or iGolombValid;
-  end process;
+  end process comb_proc;
 
-  process (iClk)
+  -------------------------------------------------------------------------------------------------------------------------
+  -- SYNCHRONOUS PROCESS 
+  -------------------------------------------------------------------------------------------------------------------------
+  sync_proc : process (iClk)
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
@@ -119,6 +124,6 @@ begin
         oValidLen  <= sCombLen;
       end if;
     end if;
-  end process;
+  end process sync_proc;
 
 end architecture Behavioral;
