@@ -88,6 +88,7 @@ begin
   report "byte_stuffer: OUT_WIDTH too small to drain worst-case input in one cycle (residue invariant)"
     severity failure;
 
+  -- Comb. output
   oWordValid  <= sWordValidBuffer;
   oWord       <= sOutWordBuffer;
   oValidBytes <= sValidBytes;
@@ -137,12 +138,13 @@ begin
               vCountInt                          := vCountInt + 1;
               vByteReg                           := vByteReg(6 downto 0) & vBitVal;
               vBytePosInt                        := vBytePosInt + 1;
+
               if vBytePosInt = 8 then
                 vBytePosInt := 0;
                 if vByteReg = "11111111" then
                   vBuf(BUFFER_WIDTH - 1 - vCountInt) := '0';
                   vCountInt                          := vCountInt + 1;
-                  vByteReg                           := vByteReg(6 downto 0) & '0';
+                  vByteReg                           := vByteReg(6 downto 0) & '0'; -- accounts for the stuffed bit in the byte tracker
                   vBytePosInt                        := 1;
                 end if;
               end if;
@@ -165,20 +167,25 @@ begin
           vCountInt   := 0;
           vBytePosInt := 0;
           vByteReg    := (others => '0');
+
         elsif vCountInt >= 8 then
+
           vBytesOut := vCountInt / 8;
           if vBytesOut > OUT_WIDTH / 8 then
             vBytesOut := OUT_WIDTH / 8;
           end if;
+
           sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
           sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
           sWordValidBuffer <= '1';
           vBuf      := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
           vCountInt := vCountInt - vBytesOut * 8;
+
         else
           sWordValidBuffer <= '0';
         end if;
 
+        -- Registers
         sBuffer  <= vBuf;
         sCount   <= to_unsigned(vCountInt, sCount'length);
         sByteReg <= vByteReg;
