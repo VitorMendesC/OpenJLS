@@ -84,18 +84,25 @@ begin
   report "byte_stuffer: BUFFER_WIDTH too small for one-cycle worst case (residue + input + stuffing)"
     severity failure;
 
+  assert OUT_WIDTH >= math_ceil_div(IN_WIDTH + math_ceil_div(IN_WIDTH, 8) + 7, 8) * 8
+  report "byte_stuffer: OUT_WIDTH too small to drain worst-case input in one cycle (residue invariant)"
+    severity failure;
+
   oWordValid  <= sWordValidBuffer;
   oWord       <= sOutWordBuffer;
   oValidBytes <= sValidBytes;
 
-  process (iClk)
-    variable vBuf       : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
-    variable vCount     : natural;
-    variable vByteReg   : std_logic_vector(7 downto 0);
-    variable vBPos      : natural range 0 to 8;
-    variable vBytesOut  : natural;
-    variable vValidLen  : natural;
-    variable vBitVal    : std_logic;
+  -------------------------------------------------------------------------------------------------------------------------
+  -- SYNCHRONOUS PROCESS 
+  -------------------------------------------------------------------------------------------------------------------------
+  sync_proc : process (iClk)
+    variable vBuf         : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
+    variable vCountInt    : natural;
+    variable vByteReg     : std_logic_vector(7 downto 0);
+    variable vBytePosInt  : natural range 0 to 8;
+    variable vBytesOut    : natural;
+    variable vValidLenInt : natural;
+    variable vBitVal      : std_logic;
   begin
 
     if rising_edge(iClk) then
@@ -111,11 +118,11 @@ begin
 
       else
 
-        vBuf      := sBuffer;
-        vCount    := to_integer(sCount);
-        vByteReg  := sByteReg;
-        vBPos     := to_integer(sBytePos);
-        vValidLen := to_integer(iValidLen);
+        vBuf         := sBuffer;
+        vCountInt    := to_integer(sCount);
+        vByteReg     := sByteReg;
+        vBytePosInt  := to_integer(sBytePos);
+        vValidLenInt := to_integer(iValidLen);
 
         ------------------------------------------------------------------------------------------------------------
         -- Input: append top vValidLen bits of iWord (MSB-first), inserting a '0'
@@ -124,19 +131,19 @@ begin
 
         if iWordValid = '1' then
           for i in 0 to IN_WIDTH - 1 loop
-            if i < vValidLen then
-              vBitVal                         := iWord(IN_WIDTH - 1 - i);
-              vBuf(BUFFER_WIDTH - 1 - vCount) := vBitVal;
-              vCount                          := vCount + 1;
-              vByteReg                        := vByteReg(6 downto 0) & vBitVal;
-              vBPos                           := vBPos + 1;
-              if vBPos = 8 then
-                vBPos := 0;
+            if i < vValidLenInt then
+              vBitVal                            := iWord(IN_WIDTH - 1 - i);
+              vBuf(BUFFER_WIDTH - 1 - vCountInt) := vBitVal;
+              vCountInt                          := vCountInt + 1;
+              vByteReg                           := vByteReg(6 downto 0) & vBitVal;
+              vBytePosInt                        := vBytePosInt + 1;
+              if vBytePosInt = 8 then
+                vBytePosInt := 0;
                 if vByteReg = "11111111" then
-                  vBuf(BUFFER_WIDTH - 1 - vCount) := '0';
-                  vCount                          := vCount + 1;
-                  vByteReg                        := vByteReg(6 downto 0) & '0';
-                  vBPos                           := 1;
+                  vBuf(BUFFER_WIDTH - 1 - vCountInt) := '0';
+                  vCountInt                          := vCountInt + 1;
+                  vByteReg                           := vByteReg(6 downto 0) & '0';
+                  vBytePosInt                        := 1;
                 end if;
               end if;
             end if;
@@ -149,36 +156,36 @@ begin
         -- the byte tracker so the next image starts on a fresh boundary.
         ------------------------------------------------------------------------------------------------------------
 
-        if iFlush = '1' and vCount > 0 then
-          vBytesOut        := math_ceil_div(vCount, 8);
+        if iFlush = '1' and vCountInt > 0 then
+          vBytesOut := math_ceil_div(vCountInt, 8);
           sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
           sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
           sWordValidBuffer <= '1';
-          vBuf     := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-          vCount   := 0;
-          vBPos    := 0;
-          vByteReg := (others => '0');
-        elsif vCount >= 8 then
-          vBytesOut := vCount / 8;
+          vBuf        := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
+          vCountInt   := 0;
+          vBytePosInt := 0;
+          vByteReg    := (others => '0');
+        elsif vCountInt >= 8 then
+          vBytesOut := vCountInt / 8;
           if vBytesOut > OUT_WIDTH / 8 then
             vBytesOut := OUT_WIDTH / 8;
           end if;
           sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
           sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
           sWordValidBuffer <= '1';
-          vBuf   := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-          vCount := vCount - vBytesOut * 8;
+          vBuf      := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
+          vCountInt := vCountInt - vBytesOut * 8;
         else
           sWordValidBuffer <= '0';
         end if;
 
         sBuffer  <= vBuf;
-        sCount   <= to_unsigned(vCount, sCount'length);
+        sCount   <= to_unsigned(vCountInt, sCount'length);
         sByteReg <= vByteReg;
-        sBytePos <= to_unsigned(vBPos, sBytePos'length);
+        sBytePos <= to_unsigned(vBytePosInt, sBytePos'length);
 
       end if;
     end if;
-  end process;
+  end process sync_proc;
 
 end architecture Behavioral;
