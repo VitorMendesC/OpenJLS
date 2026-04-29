@@ -28,7 +28,7 @@ use work.Common.all;
 
 entity context_ram is
   generic (
-    RANGE_P      : positive := CO_RANGE_STD;
+    RANGE_P     : positive := CO_RANGE_STD;
     RAM_DEPTH   : positive := 367;
     A_WIDTH     : positive := CO_AQ_WIDTH_STD;
     B_WIDTH     : positive := CO_BQ_WIDTH_STD;
@@ -39,14 +39,15 @@ entity context_ram is
   );
 
   port (
-    iClk    : in std_logic;
-    iRst    : in std_logic;
-    iWrAddr : in std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
-    iWrEn   : in std_logic;
-    iWrData : in std_logic_vector(TOTAL_WIDTH - 1 downto 0);
-    iRdAddr : in std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
-    iRdEn   : in std_logic;
-    oRdData : out std_logic_vector(TOTAL_WIDTH - 1 downto 0)
+    iClk        : in std_logic;
+    iRst        : in std_logic;
+    iWrAddr     : in std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
+    iWrEn       : in std_logic;
+    iWrData     : in std_logic_vector(TOTAL_WIDTH - 1 downto 0);
+    iRdAddr     : in std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
+    iRdEn       : in std_logic;
+    iEndOfImage : in std_logic;
+    oRdData     : out std_logic_vector(TOTAL_WIDTH - 1 downto 0)
   );
 end context_ram;
 
@@ -102,7 +103,7 @@ begin
     if rising_edge(iClk) then
       sUseInitReg <= sUseInitValue(to_integer(unsigned(iRdAddr)));
 
-      if iRst = '1' then
+      if iRst = '1' or iEndOfImage = '1' then
         sUseInitValue <= (others => '1');
       elsif iRdEn = '1' then
         sUseInitValue(to_integer(unsigned(iRdAddr))) <= '0';
