@@ -31,7 +31,8 @@ architecture bench of tb_openjls_top is
   constant BITNESS          : natural  := 8;
   constant MAX_IMAGE_WIDTH  : positive := 16;
   constant MAX_IMAGE_HEIGHT : positive := 16;
-  constant OUT_WIDTH        : natural  := CO_OUT_WIDTH_STD;
+  -- Derived locally from BITNESS (mirrors openjls_top default formula).
+  constant OUT_WIDTH        : natural  := math_ceil_div(4 * BITNESS + 4 * BITNESS / 8 + 7, 8) * 8 + 8;
   constant BYTES_PER_WORD   : natural  := OUT_WIDTH / 8;
 
   constant IMG_W : natural := 4;
@@ -84,11 +85,10 @@ architecture bench of tb_openjls_top is
   signal oLast        : std_logic;
   signal iReady       : std_logic := '1';
 
-  signal sDone : std_logic := '0';
-
   -- Collection
-  shared variable collected       : byte_array_t(0 to 127) := (others => (others => '0'));
+  shared variable collected       : byte_array_t(0 to 255) := (others => (others => '0'));
   shared variable collected_count : natural                := 0;
+  shared variable last_count      : natural                := 0;  -- # of oLast pulses seen
 
   shared variable err_count : natural := 0;
 
@@ -147,7 +147,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         collected_count := 0;
-        sDone <= '0';
+        last_count      := 0;
       elsif oValid = '1' and iReady = '1' then
         for i in 0 to BYTES_PER_WORD - 1 loop
           if oKeep(BYTES_PER_WORD - 1 - i) = '1' then
@@ -159,7 +159,7 @@ begin
           end if;
         end loop;
         if oLast = '1' then
-          sDone <= '1';
+          last_count := last_count + 1;
         end if;
       end if;
     end if;
@@ -167,51 +167,94 @@ begin
 
   -- Stimulus
   stim : process
+    procedure do_reset is
+    begin
+      iRst   <= '1';
+      iValid <= '0';
+      iReady <= '1';
+      for i in 0 to 4 loop
+        wait until rising_edge(iClk);
+      end loop;
+      iRst <= '0';
+      wait until rising_edge(iClk);
+      while oReady /= '1' loop
+        wait until rising_edge(iClk);
+      end loop;
+    end procedure;
+
+    procedure feed_image is
+    begin
+      for i in PIXELS'range loop
+        iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
+        iValid <= '1';
+        wait until rising_edge(iClk);
+      end loop;
+      iValid <= '0';
+    end procedure;
+
+    procedure wait_n_images(n : natural) is
+    begin
+      for i in 0 to 9999 loop
+        exit when last_count >= n;
+        wait until rising_edge(iClk);
+      end loop;
+    end procedure;
   begin
-    -- Hold reset for several clocks; iImageWidth/Height already stable.
-    iRst   <= '1';
-    iValid <= '0';
-    iReady <= '1';
-    for i in 0 to 4 loop
-      wait until rising_edge(iClk);
-    end loop;
 
-    iRst <= '0';
-    wait until rising_edge(iClk);
+    -- =========================================================================
+    -- Test 1: single image
+    -- =========================================================================
+    report "Test 1: single image";
+    do_reset;
+    feed_image;
+    wait_n_images(1);
 
-    -- Wait for the encoder to come ready.
-    while oReady /= '1' loop
-      wait until rising_edge(iClk);
-    end loop;
-
-    -- Feed all 16 pixels, one per clock. Handshake: top latches on
-    -- (iValid and sReady). oReady stays high throughout.
-    for i in PIXELS'range loop
-      iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
-      iValid <= '1';
-      wait until rising_edge(iClk);
-    end loop;
-    iValid <= '0';
-
-    -- Drain: wait for the framer to emit the full stream (header + payload +
-    -- footer), signalled by oLast. Generous timeout for the flush FSM.
-    for i in 0 to 999 loop
-      exit when sDone = '1';
-      wait until rising_edge(iClk);
-    end loop;
-
-    -- Comparison
     check(collected_count = EXPECTED_BYTES,
-    "Byte count mismatch: got " & integer'image(collected_count) &
+    "Test 1 byte count mismatch: got " & integer'image(collected_count) &
     " expected " & integer'image(EXPECTED_BYTES));
 
     for i in 0 to EXPECTED_BYTES - 1 loop
       if i < collected_count then
         check(collected(i) = EXPECTED(i),
-        "Byte " & integer'image(i) &
+        "Test 1 byte " & integer'image(i) &
         " mismatch: exp=" & hex2(EXPECTED(i)) &
         " got=" & hex2(collected(i)));
       end if;
+    end loop;
+    report "Test 1 done";
+
+    -- =========================================================================
+    -- Test 2: two back-to-back images (reset between to clear pipeline state,
+    -- then feed both image 1 and image 2 with no gap in pixel valid). Output
+    -- must be EXPECTED concatenated with itself, two full frames separated by
+    -- header+footer markers.
+    -- =========================================================================
+    do_reset;
+    wait for CLK_PERIOD * 5;
+    wait until rising_edge(iClk);
+    report "Test 2: back-to-back images";
+
+    feed_image;
+    feed_image;
+    wait_n_images(2);
+
+    check(collected_count = 2 * EXPECTED_BYTES,
+    "Test 2 byte count mismatch: got " & integer'image(collected_count) &
+    " expected " & integer'image(2 * EXPECTED_BYTES));
+
+    for i in 0 to 2 * EXPECTED_BYTES - 1 loop
+      if i < collected_count then
+        check(collected(i) = EXPECTED(i mod EXPECTED_BYTES),
+        "Test 2 byte " & integer'image(i) &
+        " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
+        " got=" & hex2(collected(i)));
+      end if;
+    end loop;
+    report "Test 2 done";
+
+    -- Dump collected bytes for diagnosis
+    for i in 0 to collected_count - 1 loop
+      report "got[" & integer'image(i) & "]=" & hex2(collected(i));
     end loop;
 
     if err_count > 0 then
