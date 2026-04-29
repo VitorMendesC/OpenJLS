@@ -44,7 +44,10 @@ entity openjls_top is
     BITNESS          : positive range 8 to 16    := 8;
     MAX_IMAGE_WIDTH  : positive range 4 to 32768 := 4096;
     MAX_IMAGE_HEIGHT : positive range 1 to 32768 := 4096;
-    OUT_WIDTH        : positive range 32 to 1024 := 64
+    -- Default sized for the chosen BITNESS: byte_stuffer worst-case output
+    -- (LIMIT bits + stuffing) plus one byte (jls_framer stability margin).
+    -- LIMIT = 4*BITNESS for BITNESS in [8..16]; byte_stuffer expansion = LIMIT/8.
+    OUT_WIDTH : positive range 32 to 1024 := 56
   );
   port (
     iClk         : in std_logic;
@@ -72,46 +75,52 @@ architecture rtl of openjls_top is
   constant BPP     : natural := math_max(2, log2ceil(MAX_VAL + 1));
   constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
 
-  -- Widths
-  -- TODO: Widths need to be calculated given the generic parameters, so we don't oversize them, or
-  --       grabbed from the standard
-  constant ERROR_WIDTH            : natural  := BITNESS + 1; -- BITNESS + sign bit
+  -- Widths (computed locally from generics; no dependency on Common's CO_*_STD).
+  --
+  -- Token-tied widths (Aq/Bq/Cq/Nq/Errval/k) must match t_pipeline_token's
+  -- max-bitness sizing in Common.vhd. Use BITNESS_MAX_LOCAL (= entity generic
+  -- upper bound) so any in-range BITNESS produces compatible widths.
+  -- Standalone widths (LIMIT-derived, byte-stuffer, framer) are BITNESS-derived.
+  constant BITNESS_MAX_LOCAL : natural := 16;
+
+  -- BITNESS-derived (token Errval is wider; top slices it down to ERROR_WIDTH).
+  constant ERROR_WIDTH            : natural  := BITNESS + 1;
+  constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
   constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
   constant RESET                  : natural  := 64; -- T.87
   constant MAX_C                  : integer  := 127; -- T.87
-  constant MIN_C                  : integer  := - 128; -- T.87
-  constant K_WIDTH                : natural  := CO_K_WIDTH_STD;
+  constant MIN_C                  : integer  := - 128;-- T.87
+  constant A_WIDTH                : natural  := 2 * BITNESS_MAX_LOCAL;
+  constant B_WIDTH                : natural  := 2 * BITNESS_MAX_LOCAL;
+  constant C_WIDTH                : natural  := 8; -- T.87
+  constant N_WIDTH                : natural  := log2ceil(RESET) + 1;
+  constant NN_WIDTH               : natural  := log2ceil(RESET) + 1;
+  constant K_WIDTH                : natural  := log2ceil(A_WIDTH) + 1;
+  constant TOTAL_WIDTH            : natural  := A_WIDTH + B_WIDTH + C_WIDTH + N_WIDTH;
+  constant UNARY_WIDTH            : natural  := 16;
+  constant SUFFIX_WIDTH           : natural  := 16;
+  constant SUFFIXLEN_WIDTH        : natural  := 16;
   constant RUN_CNT_WIDTH          : natural  := 16;
-  constant UNARY_WIDTH            : natural  := CO_UNARY_WIDTH_STD;
-  constant SUFFIX_WIDTH           : natural  := CO_SUFFIX_WIDTH_STD;
-  constant SUFFIXLEN_WIDTH        : natural  := CO_SUFFIXLEN_WIDTH_STD;
-  constant MAPPED_ERROR_VAL_WIDTH : natural  := CO_MAPPED_ERROR_VAL_WIDTH_STD;
-  constant A_WIDTH                : natural  := CO_AQ_WIDTH_STD;
-  constant B_WIDTH                : natural  := CO_BQ_WIDTH_STD;
-  constant C_WIDTH                : natural  := CO_CQ_WIDTH;
-  constant N_WIDTH                : natural  := CO_NQ_WIDTH_STD;
-  constant NN_WIDTH               : natural  := CO_NNQ_WIDTH_STD;
-  constant TOTAL_WIDTH            : natural  := CO_TOTAL_WIDTH_STD;
   -- Bit packer / byte stuffer / framer interface widths.
   -- Per-cycle worst-case bit_packer emit is bounded by LIMIT in all modes
   -- (T.87 sets glimit = LIMIT - J[RUNindex] - 1 so RI raw + Golomb <= LIMIT).
   -- Byte stuffer per-cycle emit: residue (<=7b) + IN + stuffing (IN/8) bits.
-  constant BYTE_STUFFER_OUT_WIDTH  : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
-  constant BYTE_STUFFER_BUFF_WIDTH : natural := 2 * LIMIT + LIMIT / 8;
-  constant FRAMER_BUFFER_BYTES     : natural := 48;
+  constant BYTE_STUFFER_OUT_WIDTH   : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
+  constant BYTE_STUFFER_BUFF_WIDTH  : natural := 2 * LIMIT + LIMIT / 8;
+  constant MIN_OUT_WIDTH_WORST_CASE : natural := BYTE_STUFFER_OUT_WIDTH + 8;
   -- ========================================================================================================
 
   -- Packed context word slicing (A | B | C | N), matching context_ram layout.
   -- For RI contexts (Q=365,366) Nn overlays the LSBs of the B slot.
-  constant CTX_A_HI  : natural := CO_TOTAL_WIDTH_STD - 1;
-  constant CTX_A_LO  : natural := CO_TOTAL_WIDTH_STD - CO_AQ_WIDTH_STD;
+  constant CTX_A_HI  : natural := TOTAL_WIDTH - 1;
+  constant CTX_A_LO  : natural := TOTAL_WIDTH - A_WIDTH;
   constant CTX_B_HI  : natural := CTX_A_LO - 1;
-  constant CTX_B_LO  : natural := CTX_A_LO - CO_BQ_WIDTH_STD;
+  constant CTX_B_LO  : natural := CTX_A_LO - B_WIDTH;
   constant CTX_C_HI  : natural := CTX_B_LO - 1;
-  constant CTX_C_LO  : natural := CTX_B_LO - CO_CQ_WIDTH;
+  constant CTX_C_LO  : natural := CTX_B_LO - C_WIDTH;
   constant CTX_N_HI  : natural := CTX_C_LO - 1;
   constant CTX_N_LO  : natural := 0;
-  constant CTX_NN_HI : natural := CTX_B_LO + CO_NNQ_WIDTH_STD - 1;
+  constant CTX_NN_HI : natural := CTX_B_LO + NN_WIDTH - 1;
   constant CTX_NN_LO : natural := CTX_B_LO;
 
   -- Ready flag: asserts one cycle after iRst deasserts. context_ram's bit-vector
@@ -164,20 +173,20 @@ architecture rtl of openjls_top is
   signal sS2TokenMode : t_token_mode;
 
   -- context_ram packed I/O
-  signal sCtxRdData : std_logic_vector(CO_TOTAL_WIDTH_STD - 1 downto 0);
-  signal sCtxWrData : std_logic_vector(CO_TOTAL_WIDTH_STD - 1 downto 0);
+  signal sCtxRdData : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
+  signal sCtxWrData : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
   signal sCtxWrEn   : std_logic;
 
   -- Stage 3 context (mux between BRAM regular read and RI cluster read)
-  signal sS3Aq : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
-  signal sS3Bq : signed(CO_BQ_WIDTH_STD - 1 downto 0);
-  signal sS3Cq : signed(CO_CQ_WIDTH - 1 downto 0);
-  signal sS3Nq : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
-  signal sS3Nn : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
+  signal sS3Aq : unsigned(A_WIDTH - 1 downto 0);
+  signal sS3Bq : signed(B_WIDTH - 1 downto 0);
+  signal sS3Cq : signed(C_WIDTH - 1 downto 0);
+  signal sS3Nq : unsigned(N_WIDTH - 1 downto 0);
+  signal sS3Nn : unsigned(N_WIDTH - 1 downto 0);
 
   -- Stage 3 — regular prediction (speculative 3-chain)
   signal sS3Px                        : unsigned(BITNESS - 1 downto 0);
-  signal sS3CqBase, sS3CqP1, sS3CqM1  : signed(CO_CQ_WIDTH - 1 downto 0);
+  signal sS3CqBase, sS3CqP1, sS3CqM1  : signed(C_WIDTH - 1 downto 0);
   signal sS3PxC, sS3PxP, sS3PxM       : unsigned(BITNESS - 1 downto 0);
   signal sS3Err7C, sS3Err7P, sS3Err7M : signed(BITNESS downto 0);
   signal sS3Err9C, sS3Err9P, sS3Err9M : signed(BITNESS downto 0);
@@ -190,32 +199,32 @@ architecture rtl of openjls_top is
   signal sFwdRiHit  : std_logic;
 
   -- Speculation control (Cq only)
-  signal sDeltaCq  : signed(CO_CQ_WIDTH - 1 downto 0);
+  signal sDeltaCq  : signed(C_WIDTH - 1 downto 0);
   signal sSpecUseM : std_logic;
   signal sSpecUseP : std_logic;
 
   -- Stage 3 — RI path
   signal sS3RiSign              : std_logic;
   signal sS3RiErr18, sS3RiErr19 : signed(BITNESS downto 0);
-  signal sS3RiTemp              : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
+  signal sS3RiTemp              : unsigned(A_WIDTH - 1 downto 0);
 
   -- Stage 4
-  signal sS4K       : unsigned(CO_K_WIDTH_STD - 1 downto 0);
-  signal sS4AqSel   : unsigned(CO_AQ_WIDTH_STD - 1 downto 0); -- iAq mux for shared A.10
-  signal sS4AqNew   : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
-  signal sS4BqMid   : signed(CO_BQ_WIDTH_STD - 1 downto 0);
-  signal sS4NqNew   : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
-  signal sS4BqNew   : signed(CO_BQ_WIDTH_STD - 1 downto 0);
-  signal sS4CqNew   : signed(CO_CQ_WIDTH - 1 downto 0);
-  signal sS4RiAqNew : unsigned(CO_AQ_WIDTH_STD - 1 downto 0);
-  signal sS4RiNqNew : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
-  signal sS4RiNnNew : unsigned(CO_NQ_WIDTH_STD - 1 downto 0);
+  signal sS4K       : unsigned(K_WIDTH - 1 downto 0);
+  signal sS4AqSel   : unsigned(A_WIDTH - 1 downto 0); -- iAq mux for shared A.10
+  signal sS4AqNew   : unsigned(A_WIDTH - 1 downto 0);
+  signal sS4BqMid   : signed(B_WIDTH - 1 downto 0);
+  signal sS4NqNew   : unsigned(N_WIDTH - 1 downto 0);
+  signal sS4BqNew   : signed(B_WIDTH - 1 downto 0);
+  signal sS4CqNew   : signed(C_WIDTH - 1 downto 0);
+  signal sS4RiAqNew : unsigned(A_WIDTH - 1 downto 0);
+  signal sS4RiNqNew : unsigned(N_WIDTH - 1 downto 0);
+  signal sS4RiNnNew : unsigned(N_WIDTH - 1 downto 0);
 
   -- Stage 5
-  signal sS5MErrval    : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
+  signal sS5MErrval    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
   signal sS5RiMap      : std_logic := '0';
-  signal sS5RiEMErrval : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
-  signal sS5GolMErr    : unsigned(CO_MAPPED_ERROR_VAL_WIDTH_STD - 1 downto 0);
+  signal sS5RiEMErrval : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal sS5GolMErr    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
   -- A.22 is RI-only. Gate its inputs on mode so non-RI tokens drive zeros and
   -- the combinational arithmetic never produces a negative value. Also kills
@@ -224,20 +233,18 @@ architecture rtl of openjls_top is
   signal sA22Errval : signed(ERROR_WIDTH - 1 downto 0);
   signal sA22RItype : std_logic;
   signal sA22Map    : std_logic;
-  signal sS5Unary   : unsigned(CO_UNARY_WIDTH_STD - 1 downto 0);
-  signal sS5SufLen  : unsigned(CO_SUFFIXLEN_WIDTH_STD - 1 downto 0);
-  signal sS5SufVal  : unsigned(CO_SUFFIX_WIDTH_STD - 1 downto 0);
+  signal sS5Unary   : unsigned(UNARY_WIDTH - 1 downto 0);
+  signal sS5SufLen  : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+  signal sS5SufVal  : unsigned(SUFFIX_WIDTH - 1 downto 0);
 
   -- Output
   signal sBpRawV, sBpGolV : std_logic;
   signal sBpWord          : std_logic_vector(LIMIT - 1 downto 0);
   signal sBpWordV         : std_logic;
   signal sBpValidLen      : unsigned(log2ceil(LIMIT + 1) - 1 downto 0);
-  signal sBsReady         : std_logic;
   signal sBsWord          : std_logic_vector(BYTE_STUFFER_OUT_WIDTH - 1 downto 0);
   signal sBsWordV         : std_logic;
   signal sBsValidB        : unsigned(log2ceil(BYTE_STUFFER_OUT_WIDTH / 8 + 1) - 1 downto 0);
-  signal sFramerBsRdy     : std_logic;
   signal sFramerVBytes    : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
   -- Flush / framer control
@@ -265,6 +272,10 @@ begin
 
   assert B_WIDTH >= N_WIDTH
   report "A11 & A13: B_WIDTH must be >= N_WIDTH to avoid truncation"
+    severity failure;
+
+  assert OUT_WIDTH >= MIN_OUT_WIDTH_WORST_CASE
+  report "OUT_WIDTH must be large enough for the worst-case byte_stuffer output: LIMIT + stuffing + 1 byte = " & integer'image(MIN_OUT_WIDTH_WORST_CASE)
     severity failure;
 
   -- ========================================================================================================
@@ -370,10 +381,10 @@ begin
         end if;
 
         if sLbValid = '1' then
-          v.Ix := resize(sPixel, CO_BITNESS_MAX_WIDTH);
-          v.Ra := resize(sLbRa, CO_BITNESS_MAX_WIDTH);
-          v.Rb := resize(sLbRb, CO_BITNESS_MAX_WIDTH);
-          v.Rc := resize(sLbRc, CO_BITNESS_MAX_WIDTH);
+          v.Ix := resize(sPixel, BITNESS_MAX_LOCAL);
+          v.Ra := resize(sLbRa, BITNESS_MAX_LOCAL);
+          v.Rb := resize(sLbRb, BITNESS_MAX_LOCAL);
+          v.Rc := resize(sLbRc, BITNESS_MAX_LOCAL);
         end if;
 
         sReg1    <= v;
@@ -520,9 +531,9 @@ begin
     std_logic_vector(sS4NqNew)
     when sReg3.mode = TOKEN_REGULAR else
     std_logic_vector(sS4RiAqNew) &
-    std_logic_vector(to_unsigned(0, CO_BQ_WIDTH_STD - CO_NNQ_WIDTH_STD)) &
+    std_logic_vector(to_unsigned(0, B_WIDTH - NN_WIDTH)) &
     std_logic_vector(sS4RiNnNew) &
-    std_logic_vector(to_signed(0, CO_CQ_WIDTH)) &
+    std_logic_vector(to_signed(0, C_WIDTH)) &
     std_logic_vector(sS4RiNqNew);
 
   u_ctx_ram : entity work.context_ram
@@ -546,7 +557,8 @@ begin
       iRdAddr => std_logic_vector(sS2Q),
       iRdEn   => sReg1V and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
       bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
-      oRdData => sCtxRdData
+      iEndOfImage => sReg1EOI,
+      oRdData     => sCtxRdData
     );
 
   -- Unpack read port (BRAM RdLatency=1 → valid at Stage 3), with Q3==Q4
@@ -603,9 +615,9 @@ begin
             v.Sign := sS2MSign;
 
           when TOKEN_RUN_INTERRUPTION =>
-            v.Ix         := resize(sS2RIIx, CO_BITNESS_MAX_WIDTH);
-            v.Ra         := resize(sS2RIRa, CO_BITNESS_MAX_WIDTH);
-            v.Rb         := resize(sS2RIRb, CO_BITNESS_MAX_WIDTH);
+            v.Ix         := resize(sS2RIIx, BITNESS_MAX_LOCAL);
+            v.Ra         := resize(sS2RIRa, BITNESS_MAX_LOCAL);
+            v.Rb         := resize(sS2RIRb, BITNESS_MAX_LOCAL);
             v.RItype     := sS2RItype;
             v.RawLen     := resize(sS2RawLen, v.RawLen'length);
             v.RawVal     := resize(sS2RawVal, v.RawVal'length);
@@ -664,10 +676,10 @@ begin
     sS3Cq;
 
   -- Clamped ±1 variants
-  sS3CqP1 <= to_signed(CO_MAX_CQ, CO_CQ_WIDTH) when sS3CqBase = to_signed(CO_MAX_CQ, CO_CQ_WIDTH)
+  sS3CqP1 <= to_signed(MAX_C, C_WIDTH) when sS3CqBase = to_signed(MAX_C, C_WIDTH)
     else
     sS3CqBase + 1;
-  sS3CqM1 <= to_signed(CO_MIN_CQ, CO_CQ_WIDTH) when sS3CqBase = to_signed(CO_MIN_CQ, CO_CQ_WIDTH)
+  sS3CqM1 <= to_signed(MIN_C, C_WIDTH) when sS3CqBase = to_signed(MIN_C, C_WIDTH)
     else
     sS3CqBase - 1;
 
@@ -821,9 +833,9 @@ begin
         v.Temp := (others => '0');
         case sReg2.mode is
           when TOKEN_REGULAR =>
-            v.Errval := resize(sS3Err9Sel, CO_ERROR_VALUE_WIDTH_STD);
+            v.Errval := resize(sS3Err9Sel, v.Errval'length);
           when TOKEN_RUN_INTERRUPTION =>
-            v.Errval := resize(sS3RiErr19, CO_ERROR_VALUE_WIDTH_STD);
+            v.Errval := resize(sS3RiErr19, v.Errval'length);
             v.Sign   := sS3RiSign;
             v.Temp   := sS3RiTemp;
           when others =>
@@ -928,7 +940,7 @@ begin
         sReg4EOI <= '0';
       else
         v   := sReg3;
-        v.k := resize(sS4K, CO_K_WIDTH_STD);
+        v.k := resize(sS4K, K_WIDTH);
         if sReg3V = '0' then
           v := CO_TOKEN_NONE;
         end if;
@@ -1074,11 +1086,9 @@ begin
       iWordValid  => sBpWordV,
       iValidLen   => sBpValidLen,
       iFlush      => sBsFlush,
-      oReady      => sBsReady,
       oWord       => sBsWord,
       oWordValid  => sBsWordV,
-      oValidBytes => sBsValidB,
-      iReady      => sFramerBsRdy
+      oValidBytes => sBsValidB
     );
 
   u_framer : entity work.jls_framer
@@ -1087,8 +1097,7 @@ begin
       IN_WIDTH         => BYTE_STUFFER_OUT_WIDTH,
       OUT_WIDTH        => OUT_WIDTH,
       MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
-      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
-      BUFFER_BYTES     => FRAMER_BUFFER_BYTES
+      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT
     )
     port map
     (
@@ -1101,7 +1110,6 @@ begin
       iBsWord       => sBsWord,
       iBsWordValid  => sBsWordV,
       iBsValidBytes => sBsValidB,
-      oBsReady      => sFramerBsRdy,
       oWord         => oData,
       oWordValid    => oValid,
       oValidBytes   => sFramerVBytes,
