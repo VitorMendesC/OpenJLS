@@ -37,7 +37,7 @@
 --
 --   IN_WIDTH     : word width from byte_stuffer  (CO_BYTE_STUFFER_OUT_WIDTH)
 --   OUT_WIDTH    : final output word width        (CO_OUT_WIDTH_STD)
---   BUFFER_BYTES : payload FIFO depth in bytes
+--   BUFFER_BYTES : payload FIFO depth in bytes (auto-derived; see below)
 --
 ---------------------------------------------------------------------------
 -- BUFFER_BYTES sizing (worst-case occupancy)
@@ -70,13 +70,25 @@
 --          PEAK_N1 = (D + N_h) * BYTES_IN
 --                  - (BYTES_OUT - HEADER_LEN mod BYTES_OUT)
 --
---   BUFFER_BYTES_min = max(vCount_iEOI_max, PEAK_N1)
+--   General formula (peak FIFO occupancy across all phases):
+--
+--     V_iEOI  = BYTES_OUT + BYTES_IN + 1
+--     D       = ceil(V_iEOI    / BYTES_OUT)
+--     N_h     = ceil(HEADER_LEN / BYTES_OUT)
+--
+--     BUFFER_BYTES = max(
+--       V_iEOI,                                              (a) iEOI cycle
+--       D * BYTES_IN,                                        (b) end of N drain
+--       (D + N_h - 1) * BYTES_IN,                            (c) last full hdr beat
+--       (D + N_h) * BYTES_IN - (N_h*BYTES_OUT - HEADER_LEN)  (d) after mixed beat
+--     )
+--
+--   For typical configs with BYTES_IN <= BYTES_OUT, term (d) dominates.
 --
 --   Standard config (BYTES_IN=8, BYTES_OUT=9, HEADER_LEN=25):
---     vCount_iEOI_max = 9 - 1 + 8 + 2 = 18
---     D = ceil(18/9) = 2,  N_h = ceil(25/9) = 3
---     PEAK_N1 = (2 + 3) * 8 - (9 - 7) = 38
---     BUFFER_BYTES_min = max(18, 38) = 38
+--     V_iEOI = 18, D = 2, N_h = 3
+--     (a)=18, (b)=16, (c)=32, (d)=(5*8) - (3*9 - 25) = 40 - 2 = 38
+--     BUFFER_BYTES = 38
 --
 --   This also implies that outputting the last bytes after EOI can take several
 --   cycles, the image last byte needs to be tracked to assert oLast, padding and
@@ -100,8 +112,7 @@ entity jls_framer is
     IN_WIDTH         : natural := CO_BYTE_STUFFER_OUT_WIDTH;
     OUT_WIDTH        : natural := CO_OUT_WIDTH_STD;
     MAX_IMAGE_WIDTH  : natural := 4096;
-    MAX_IMAGE_HEIGHT : natural := 4096;
-    BUFFER_BYTES     : natural := 48
+    MAX_IMAGE_HEIGHT : natural := 4096
   );
   port (
     iClk : in std_logic;
@@ -126,19 +137,34 @@ end jls_framer;
 
 architecture Behavioral of jls_framer is
 
-  constant NEAR         : natural := 0;
-  constant BYTES_IN     : natural := IN_WIDTH / 8;
-  constant BYTES_OUT    : natural := OUT_WIDTH / 8;
+  constant NEAR       : natural := 0;
+  constant BYTES_IN   : natural := IN_WIDTH / 8;
+  constant BYTES_OUT  : natural := OUT_WIDTH / 8;
+  constant HEADER_LEN : natural := 25;
+
+  -- Auto-derived FIFO depth (worst-case occupancy; see file header).
+  constant V_IEOI       : natural := BYTES_OUT + BYTES_IN + 1;
+  constant D_DRAIN      : natural := math_ceil_div(V_IEOI, BYTES_OUT);
+  constant N_H          : natural := math_ceil_div(HEADER_LEN, BYTES_OUT);
+  constant BUFFER_BYTES : natural := math_max(
+    math_max(V_IEOI, D_DRAIN * BYTES_IN),
+    math_max((D_DRAIN + N_H - 1) * BYTES_IN,
+             (D_DRAIN + N_H) * BYTES_IN - (N_H * BYTES_OUT - HEADER_LEN)));
   constant BUFFER_WIDTH : natural := BUFFER_BYTES * 8;
-  constant HEADER_LEN   : natural := 25;
 
   type fsm_t is (IDLE, HEADER, DATA);
   signal sFsmState : fsm_t := IDLE;
 
-  signal sBuffer        : std_logic_vector(BUFFER_WIDTH - 1 downto 0) := (others => '0');
-  signal sByteCount     : natural range 0 to BUFFER_BYTES             := 0;
-  signal sEndOfImage    : natural range 0 to BUFFER_BYTES             := 0;
-  signal sHasEndOfImage : std_logic                                   := '0';
+  -- EoI tracker: queue of D9 byte offsets (from FIFO head) for in-flight images.
+  -- Depth 3 covers back-to-back tiny images (smallest line_buffer-supported size
+  -- is 3x1; even 4x1 only requires depth 2 in steady state, depth 3 is margin).
+  constant EOI_FIFO_DEPTH : natural := 3;
+  type eoi_offsets_t is array(natural range <>) of natural range 0 to BUFFER_BYTES;
+
+  signal sBuffer    : std_logic_vector(BUFFER_WIDTH - 1 downto 0) := (others => '0');
+  signal sByteCount : natural range 0 to BUFFER_BYTES             := 0;
+  signal sEoiFifo   : eoi_offsets_t(0 to EOI_FIFO_DEPTH - 1)      := (others => 0);
+  signal sEoiCount  : natural range 0 to EOI_FIFO_DEPTH           := 0;
 
   signal sOutWord    : std_logic_vector(OUT_WIDTH - 1 downto 0)           := (others => '0');
   signal sOutValid   : std_logic                                          := '0';
@@ -209,8 +235,8 @@ begin
   assert OUT_WIDTH mod 8 = 0
   report "jls_framer: OUT_WIDTH must be a multiple of 8" severity failure;
 
-  assert BUFFER_BYTES >= BYTES_OUT + BYTES_IN + 2
-  report "jls_framer: BUFFER_BYTES too small for one-cycle worst-case push (iBsValidBytes + footer)"
+  assert BYTES_OUT >= BYTES_IN + 1
+  report "jls_framer: OUT_WIDTH must be at least one byte wider than IN_WIDTH for FIFO stability under absolute worst-case scenario (sustained max-rate input across back-to-back images)"
     severity failure;
 
   sAxiHandshake <= (iReady and sOutValid) = '1';
@@ -224,18 +250,18 @@ begin
   -- SYNCHRONOUS PROCESS 
   -------------------------------------------------------------------------------------------------------------------------
   sync_proc : process (iClk)
-    variable vBuf           : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
-    variable vCount         : natural range 0 to BUFFER_BYTES;
-    variable vEndOfImage    : natural range 0 to BUFFER_BYTES;
-    variable vHasEndOfImage : std_logic;
-    variable vWidth         : unsigned(15 downto 0);
-    variable vHeight        : unsigned(15 downto 0);
-    variable vHeaderRemain  : natural range 0 to HEADER_LEN;
-    variable vDataNeeded    : natural range 0 to BYTES_OUT;
-    variable vEmitData      : natural range 0 to BYTES_OUT;
-    variable vEmitBytes     : natural range 0 to BYTES_OUT;
-    variable vCanEmit       : boolean;
-    variable vEoiInBeat     : boolean;
+    variable vBuf          : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
+    variable vCount        : natural range 0 to BUFFER_BYTES;
+    variable vEoiFifo      : eoi_offsets_t(0 to EOI_FIFO_DEPTH - 1);
+    variable vEoiCount     : natural range 0 to EOI_FIFO_DEPTH;
+    variable vWidth        : unsigned(15 downto 0);
+    variable vHeight       : unsigned(15 downto 0);
+    variable vHeaderRemain : natural range 0 to HEADER_LEN;
+    variable vDataNeeded   : natural range 0 to BYTES_OUT;
+    variable vEmitData     : natural range 0 to BYTES_OUT;
+    variable vEmitBytes    : natural range 0 to BYTES_OUT;
+    variable vCanEmit      : boolean;
+    variable vEoiInBeat    : boolean;
   begin
 
     if rising_edge(iClk) then
@@ -243,8 +269,8 @@ begin
         sFsmState      <= IDLE;
         sBuffer        <= (others => '0');
         sByteCount     <= 0;
-        sEndOfImage    <= 0;
-        sHasEndOfImage <= '0';
+        sEoiFifo       <= (others => 0);
+        sEoiCount      <= 0;
         sOutWord       <= (others => '0');
         sOutValid      <= '0';
         sOutLast       <= '0';
@@ -253,13 +279,13 @@ begin
         sNextPending   <= '0';
       else
 
-        vBuf           := sBuffer;
-        vCount         := sByteCount;
-        vEndOfImage    := sEndOfImage;
-        vHasEndOfImage := sHasEndOfImage;
-        vWidth         := resize(iImageWidth, 16);
-        vHeight        := resize(iImageHeight, 16);
-        vCanEmit       := sAxiHandshake or sOutValid = '0';
+        vBuf      := sBuffer;
+        vCount    := sByteCount;
+        vEoiFifo  := sEoiFifo;
+        vEoiCount := sEoiCount;
+        vWidth    := resize(iImageWidth, 16);
+        vHeight   := resize(iImageHeight, 16);
+        vCanEmit  := sAxiHandshake or sOutValid = '0';
 
         ------------------------------------------------------------------------
         -- iStart latching (skipped if state=IDLE; IDLE handles iStart inline)
@@ -311,9 +337,9 @@ begin
               else
                 -- Last header beat: fill remaining lanes from the FIFO
                 vDataNeeded := BYTES_OUT - vHeaderRemain;
-                vEoiInBeat  := vHasEndOfImage = '1' and vEndOfImage < vDataNeeded;
+                vEoiInBeat  := vEoiCount > 0 and vEoiFifo(0) < vDataNeeded;
                 if vEoiInBeat then
-                  vEmitData := vEndOfImage + 1;
+                  vEmitData := vEoiFifo(0) + 1;
                 else
                   vEmitData := vDataNeeded;
                 end if;
@@ -339,7 +365,17 @@ begin
 
                   if vEoiInBeat then
                     sOutLast <= '1';
-                    vHasEndOfImage := '0';
+                    -- Pop head EoI; shift remaining entries down and decrement
+                    -- their offsets by the bytes popped.
+                    for k in 0 to EOI_FIFO_DEPTH - 2 loop
+                      if k + 1 < vEoiCount then
+                        vEoiFifo(k) := vEoiFifo(k + 1) - vEmitData;
+                      else
+                        vEoiFifo(k) := 0;
+                      end if;
+                    end loop;
+                    vEoiFifo(EOI_FIFO_DEPTH - 1) := 0;
+                    vEoiCount                    := vEoiCount - 1;
                     if sNextPending = '1' or iStart = '1' then
                       sFsmState      <= HEADER;
                       sHeaderByteIdx <= 0;
@@ -349,9 +385,12 @@ begin
                     end if;
                   else
                     sOutLast <= '0';
-                    if vHasEndOfImage = '1' then
-                      vEndOfImage := vEndOfImage - vDataNeeded;
-                    end if;
+                    -- Decrement all live EoI offsets by bytes popped.
+                    for k in 0 to EOI_FIFO_DEPTH - 1 loop
+                      if k < vEoiCount then
+                        vEoiFifo(k) := vEoiFifo(k) - vEmitData;
+                      end if;
+                    end loop;
                     sFsmState <= DATA;
                   end if;
                 end if;
@@ -361,9 +400,9 @@ begin
 
           when DATA =>
             if vCanEmit then
-              vEoiInBeat := vHasEndOfImage = '1' and vEndOfImage < BYTES_OUT;
+              vEoiInBeat := vEoiCount > 0 and vEoiFifo(0) < BYTES_OUT;
               if vEoiInBeat then
-                vEmitBytes := vEndOfImage + 1;
+                vEmitBytes := vEoiFifo(0) + 1;
               else
                 vEmitBytes := BYTES_OUT;
               end if;
@@ -385,7 +424,15 @@ begin
 
                 if vEoiInBeat then
                   sOutLast <= '1';
-                  vHasEndOfImage := '0';
+                  for k in 0 to EOI_FIFO_DEPTH - 2 loop
+                    if k + 1 < vEoiCount then
+                      vEoiFifo(k) := vEoiFifo(k + 1) - vEmitBytes;
+                    else
+                      vEoiFifo(k) := 0;
+                    end if;
+                  end loop;
+                  vEoiFifo(EOI_FIFO_DEPTH - 1) := 0;
+                  vEoiCount                    := vEoiCount - 1;
                   if sNextPending = '1' or iStart = '1' then
                     sFsmState      <= HEADER;
                     sHeaderByteIdx <= 0;
@@ -395,9 +442,11 @@ begin
                   end if;
                 else
                   sOutLast <= '0';
-                  if vHasEndOfImage = '1' then
-                    vEndOfImage := vEndOfImage - BYTES_OUT;
-                  end if;
+                  for k in 0 to EOI_FIFO_DEPTH - 1 loop
+                    if k < vEoiCount then
+                      vEoiFifo(k) := vEoiFifo(k) - vEmitBytes;
+                    end if;
+                  end loop;
                 end if;
               end if;
               -- else: stall (FIFO underrun)
@@ -426,15 +475,18 @@ begin
           BUFFER_WIDTH - (vCount + 1) * 8) := x"FF";
           vBuf(BUFFER_WIDTH - 1 - (vCount + 1) * 8 downto
           BUFFER_WIDTH - (vCount + 2) * 8) := x"D9";
-          vCount                           := vCount + 2;
-          vEndOfImage                      := vCount - 1;
-          vHasEndOfImage                   := '1';
+          vCount := vCount + 2;
+          assert vEoiCount < EOI_FIFO_DEPTH
+          report "jls_framer: EoI FIFO overflow; back-to-back images closer than depth allows"
+            severity failure;
+          vEoiFifo(vEoiCount) := vCount - 1;
+          vEoiCount           := vEoiCount + 1;
         end if;
 
-        sBuffer        <= vBuf;
-        sByteCount     <= vCount;
-        sEndOfImage    <= vEndOfImage;
-        sHasEndOfImage <= vHasEndOfImage;
+        sBuffer    <= vBuf;
+        sByteCount <= vCount;
+        sEoiFifo   <= vEoiFifo;
+        sEoiCount  <= vEoiCount;
 
       end if;
     end if;
