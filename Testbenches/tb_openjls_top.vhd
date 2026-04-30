@@ -32,8 +32,8 @@ architecture bench of tb_openjls_top is
   constant MAX_IMAGE_WIDTH  : positive := 16;
   constant MAX_IMAGE_HEIGHT : positive := 16;
   -- Derived locally from BITNESS (mirrors openjls_top default formula).
-  constant OUT_WIDTH        : natural  := math_ceil_div(4 * BITNESS + 4 * BITNESS / 8 + 7, 8) * 8 + 8;
-  constant BYTES_PER_WORD   : natural  := OUT_WIDTH / 8;
+  constant OUT_WIDTH      : natural := math_ceil_div(4 * BITNESS + 4 * BITNESS / 8 + 7, 8) * 8 + 8;
+  constant BYTES_PER_WORD : natural := OUT_WIDTH / 8;
 
   constant IMG_W : natural := 4;
   constant IMG_H : natural := 4;
@@ -88,7 +88,7 @@ architecture bench of tb_openjls_top is
   -- Collection
   shared variable collected       : byte_array_t(0 to 255) := (others => (others => '0'));
   shared variable collected_count : natural                := 0;
-  shared variable last_count      : natural                := 0;  -- # of oLast pulses seen
+  shared variable last_count      : natural                := 0; -- # of oLast pulses seen
 
   shared variable err_count : natural := 0;
 
@@ -167,6 +167,8 @@ begin
 
   -- Stimulus
   stim : process
+    variable base_collected : natural := 0;
+    variable base_last      : natural := 0;
     procedure do_reset is
     begin
       iRst   <= '1';
@@ -195,7 +197,7 @@ begin
     procedure wait_n_images(n : natural) is
     begin
       for i in 0 to 9999 loop
-        exit when last_count >= n;
+        exit when last_count >= base_last + n;
         wait until rising_edge(iClk);
       end loop;
     end procedure;
@@ -206,30 +208,31 @@ begin
     -- =========================================================================
     report "Test 1: single image";
     do_reset;
+    base_collected := collected_count;
+    base_last      := last_count;
     feed_image;
     wait_n_images(1);
 
-    check(collected_count = EXPECTED_BYTES,
-    "Test 1 byte count mismatch: got " & integer'image(collected_count) &
+    check(collected_count - base_collected = EXPECTED_BYTES,
+    "Test 1 byte count mismatch: got " & integer'image(collected_count - base_collected) &
     " expected " & integer'image(EXPECTED_BYTES));
 
     for i in 0 to EXPECTED_BYTES - 1 loop
-      if i < collected_count then
-        check(collected(i) = EXPECTED(i),
+      if base_collected + i < collected_count then
+        check(collected(base_collected + i) = EXPECTED(i),
         "Test 1 byte " & integer'image(i) &
         " mismatch: exp=" & hex2(EXPECTED(i)) &
-        " got=" & hex2(collected(i)));
+        " got=" & hex2(collected(base_collected + i)));
       end if;
     end loop;
     report "Test 1 done";
 
     -- =========================================================================
-    -- Test 2: two back-to-back images (reset between to clear pipeline state,
-    -- then feed both image 1 and image 2 with no gap in pixel valid). Output
-    -- must be EXPECTED concatenated with itself, two full frames separated by
-    -- header+footer markers.
+    -- Test 2: two back-to-back images, no reset between Test 1 and Test 2.
+    -- Output must be EXPECTED concatenated with itself.
     -- =========================================================================
-    do_reset;
+    base_collected := collected_count;
+    base_last      := last_count;
     wait for CLK_PERIOD * 5;
     wait until rising_edge(iClk);
     report "Test 2: back-to-back images";
@@ -238,16 +241,16 @@ begin
     feed_image;
     wait_n_images(2);
 
-    check(collected_count = 2 * EXPECTED_BYTES,
-    "Test 2 byte count mismatch: got " & integer'image(collected_count) &
+    check(collected_count - base_collected = 2 * EXPECTED_BYTES,
+    "Test 2 byte count mismatch: got " & integer'image(collected_count - base_collected) &
     " expected " & integer'image(2 * EXPECTED_BYTES));
 
     for i in 0 to 2 * EXPECTED_BYTES - 1 loop
-      if i < collected_count then
-        check(collected(i) = EXPECTED(i mod EXPECTED_BYTES),
+      if base_collected + i < collected_count then
+        check(collected(base_collected + i) = EXPECTED(i mod EXPECTED_BYTES),
         "Test 2 byte " & integer'image(i) &
         " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
-        " got=" & hex2(collected(i)));
+        " got=" & hex2(collected(base_collected + i)));
       end if;
     end loop;
     report "Test 2 done";
