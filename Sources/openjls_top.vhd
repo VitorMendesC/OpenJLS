@@ -8,17 +8,21 @@
 --   Input Stage : line_buffer → {Ra, Rb, Rc, Rd, EOL, EOI}
 --   Stage 1     : A.1 gradients + A.3 mode select
 --     Reg1 ──►
---   Stage 2     : regular {A.4, A.4.1, A.4.2} | run {A.14, A.15/16, A.17}
+--   Stage 2     : regular {A.4, A.4.1, A.4.2} | run {A.14, A.15/16, A.17, A.18}
 --                 context_ram read starts here (address = sS2Q).
 --     Reg2 ──►   (BRAM RdLatency=1 is the Stage 2→3 boundary for ctx bits)
---   Stage 3     : regular {A.5, speculative 3×{A.6..A.9}} | RI {A.18, A.19, A.20}
+--   Stage 3     : regular {A.5, speculative 3×{A.6..A.9}} | RI {A.19, A.20}
 --                 context_ram delivers BRAM (Q<365) / cluster (365/366); internal
 --                 1-deep writeback forwarding covers the Q3==Q4 hazard.
 --     Reg3 ──►
 --   Stage 4     : shared {A.10} | regular {A.12, A.13} | RI {A.23}; ctx writeback.
 --     Reg4 ──►
---   Stage 5     : regular {A.11} | RI {A.21, A.22}; A.11.1 shared.
---   Output      : bit_packer (raw+Golomb concurrent) → byte_stuffer → jls_framer.
+--   Stage 5     : regular {A.11} | RI {A.21, A.22}; mux → mapped errval.
+--     Reg5a ──►
+--   Stage 5a    : A.11.1 Golomb encoder (unary + suffix).
+--     Reg5b ──►
+--   Stage 5b    : bit_packer (raw+Golomb concurrent).
+--   Output      : byte_stuffer → jls_framer.
 --
 -- Speculative Cq chain: regular A.6..A.9 runs three times in parallel using
 -- {Cq_base − 1, Cq_base, Cq_base + 1}, where Cq_base = sReg3.Cq on a
@@ -214,6 +218,7 @@ architecture rtl of openjls_top is
   signal sS2RIRa        : unsigned(BITNESS - 1 downto 0);
   signal sS2RIRb        : unsigned(BITNESS - 1 downto 0);
   signal sS2RiRunIndex  : unsigned(4 downto 0);
+  signal sS2RiErr18     : signed(BITNESS downto 0);
 
   -- Stage 2 — muxed
   signal sS2Q         : unsigned(8 downto 0);
@@ -251,9 +256,9 @@ architecture rtl of openjls_top is
   signal sSpecUseP : std_logic;
 
   -- Stage 3 — RI path
-  signal sS3RiSign              : std_logic;
-  signal sS3RiErr18, sS3RiErr19 : signed(BITNESS downto 0);
-  signal sS3RiTemp              : unsigned(A_WIDTH - 1 downto 0);
+  signal sS3RiSign  : std_logic;
+  signal sS3RiErr19 : signed(BITNESS downto 0);
+  signal sS3RiTemp  : unsigned(A_WIDTH - 1 downto 0);
 
   -- Stage 4
   signal sS4K       : unsigned(K_WIDTH - 1 downto 0);
@@ -283,6 +288,15 @@ architecture rtl of openjls_top is
   signal sS5Unary   : unsigned(UNARY_WIDTH - 1 downto 0);
   signal sS5SufLen  : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
   signal sS5SufVal  : unsigned(SUFFIX_WIDTH - 1 downto 0);
+
+  -- Stage 5 inter-stage registers: Reg5a in front of A.11_1, Reg5b after.
+  signal sReg5a, sReg5b       : t_pipeline_token                              := CO_TOKEN_NONE;
+  signal sReg5aV, sReg5bV     : std_logic                                     := '0';
+  signal sReg5aEOI, sReg5bEOI : std_logic                                     := '0';
+  signal sReg5aGolMErr        : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0) := (others => '0');
+  signal sReg5bUnary          : unsigned(UNARY_WIDTH - 1 downto 0)            := (others => '0');
+  signal sReg5bSufLen         : unsigned(SUFFIXLEN_WIDTH - 1 downto 0)        := (others => '0');
+  signal sReg5bSufVal         : unsigned(SUFFIX_WIDTH - 1 downto 0)           := (others => '0');
 
   -- Output
   signal sBpRawV, sBpGolV : std_logic;
@@ -532,6 +546,17 @@ begin
       oRItype => sS2RItype
     );
 
+  u_a18 : entity work.A18_run_interruption_prediction_error
+    generic map(BITNESS => BITNESS)
+    port map
+    (
+      iRItype => sS2RItype,
+      iRa     => sS2RIRa,
+      iRb     => sS2RIRb,
+      iIx     => sS2RIIx,
+      oErrval => sS2RiErr18
+    );
+
   -- Run counter register
   process (iClk)
   begin
@@ -555,6 +580,7 @@ begin
     TOKEN_RAW when sS2RawValid = '1' else
     TOKEN_NONE;
 
+  -- A20_1
   -- A.20.1 inline: regular Q from A.4.2; run Q = 366 if RItype else 365
   sS2Q <=
     sS2QReg when sReg1.mode = TOKEN_REGULAR else
@@ -667,6 +693,7 @@ begin
             v.Ra         := sS2RIRa;
             v.Rb         := sS2RIRb;
             v.RItype     := sS2RItype;
+            v.Errval     := resize(sS2RiErr18, v.Errval'length);
             v.RawLen     := resize(sS2RawLen, v.RawLen'length);
             v.RawVal     := resize(sS2RawVal, v.RawVal'length);
             v.RiRunIndex := sS2RiRunIndex;
@@ -819,26 +846,15 @@ begin
     sS3Err9C;
 
   -------------------------------------------------------------------------------------------------------------
-  -- Stage 3 — RI: A.18 → A.19, A.20
+  -- Stage 3 — RI: A.19, A.20
   -------------------------------------------------------------------------------------------------------------
-  u_a18 : entity work.A18_run_interruption_prediction_error
-    generic map(BITNESS => BITNESS)
-    port map
-    (
-      iRItype => sReg2.RItype,
-      iRa     => sReg2.Ra(BITNESS - 1 downto 0),
-      iRb     => sReg2.Rb(BITNESS - 1 downto 0),
-      iIx     => sReg2.Ix(BITNESS - 1 downto 0),
-      oErrval => sS3RiErr18
-    );
-
   u_a19 : entity work.A19_run_interruption_error
     generic map(
       BITNESS => BITNESS,
       RANGE_P => RANGE_P)
     port map
     (
-      iErrval => sS3RiErr18,
+      iErrval => sReg2.Errval(BITNESS downto 0),
       iRItype => sReg2.RItype,
       iRa     => sReg2.Ra(BITNESS - 1 downto 0),
       iRb     => sReg2.Rb(BITNESS - 1 downto 0),
@@ -1063,6 +1079,31 @@ begin
   sS5GolMErr <= sS5MErrval when sReg4.mode = TOKEN_REGULAR else
     sS5RiEMErrval;
 
+  -------------------------------------------------------------------------------------------------------------
+  -- Register 5a (Stage 5 mapping → A.11_1 golomb encoder)
+  -------------------------------------------------------------------------------------------------------------
+  process (iClk)
+    variable v : t_pipeline_token;
+  begin
+    if rising_edge(iClk) then
+      if iRst = '1' then
+        sReg5a        <= CO_TOKEN_NONE;
+        sReg5aV       <= '0';
+        sReg5aEOI     <= '0';
+        sReg5aGolMErr <= (others => '0');
+      else
+        v := sReg4;
+        if sReg4V = '0' then
+          v := CO_TOKEN_NONE;
+        end if;
+        sReg5a        <= v;
+        sReg5aV       <= sReg4V;
+        sReg5aEOI     <= sReg4EOI;
+        sReg5aGolMErr <= sS5GolMErr;
+      end if;
+    end if;
+  end process;
+
   u_a11_1 : entity work.A11_1_golomb_encoder
     generic map(
       K_WIDTH                => K_WIDTH,
@@ -1075,24 +1116,53 @@ begin
     )
     port map
     (
-      iK              => sReg4.k,
-      iMappedErrorVal => sS5GolMErr,
-      iRiMode         => bool2bit(sReg4.mode = TOKEN_RUN_INTERRUPTION),
-      iRunIndex       => sReg4.RiRunIndex,
+      iK              => sReg5a.k,
+      iMappedErrorVal => sReg5aGolMErr,
+      iRiMode         => bool2bit(sReg5a.mode = TOKEN_RUN_INTERRUPTION),
+      iRunIndex       => sReg5a.RiRunIndex,
       oUnaryZeros     => sS5Unary,
       oSuffixLen      => sS5SufLen,
       oSuffixVal      => sS5SufVal
     );
 
   -------------------------------------------------------------------------------------------------------------
+  -- Register 5b (golomb encoder → bit packer)
+  -------------------------------------------------------------------------------------------------------------
+  process (iClk)
+    variable v : t_pipeline_token;
+  begin
+    if rising_edge(iClk) then
+      if iRst = '1' then
+        sReg5b       <= CO_TOKEN_NONE;
+        sReg5bV      <= '0';
+        sReg5bEOI    <= '0';
+        sReg5bUnary  <= (others => '0');
+        sReg5bSufLen <= (others => '0');
+        sReg5bSufVal <= (others => '0');
+      else
+        v := sReg5a;
+        if sReg5aV = '0' then
+          v := CO_TOKEN_NONE;
+        end if;
+        sReg5b       <= v;
+        sReg5bV      <= sReg5aV;
+        sReg5bEOI    <= sReg5aEOI;
+        sReg5bUnary  <= sS5Unary;
+        sReg5bSufLen <= sS5SufLen;
+        sReg5bSufVal <= sS5SufVal;
+      end if;
+    end if;
+  end process;
+
+  -------------------------------------------------------------------------------------------------------------
   -- Output — bit packer → byte stuffer → framer
   -------------------------------------------------------------------------------------------------------------
-  sBpRawV <= '1' when sReg4V = '1'
-    and (sReg4.mode = TOKEN_RUN_INTERRUPTION or sReg4.mode = TOKEN_RAW)
+  sBpRawV <= '1' when sReg5bV = '1'
+    and (sReg5b.mode = TOKEN_RUN_INTERRUPTION or sReg5b.mode = TOKEN_RAW)
     else
     '0';
-  sBpGolV <= '1' when sReg4V = '1'
-    and (sReg4.mode = TOKEN_REGULAR or sReg4.mode = TOKEN_RUN_INTERRUPTION)
+  sBpGolV <= '1' when sReg5bV = '1'
+    and (sReg5b.mode = TOKEN_REGULAR or sReg5b.mode = TOKEN_RUN_INTERRUPTION)
     else
     '0';
 
@@ -1109,12 +1179,12 @@ begin
       iClk         => iClk,
       iRst         => iRst,
       iRawValid    => sBpRawV,
-      iRawLen      => sReg4.RawLen,
-      iRawVal      => sReg4.RawVal,
+      iRawLen      => sReg5b.RawLen,
+      iRawVal      => sReg5b.RawVal,
       iGolombValid => sBpGolV,
-      iUnaryZeros  => sS5Unary,
-      iSuffixLen   => sS5SufLen,
-      iSuffixVal   => sS5SufVal,
+      iUnaryZeros  => sReg5bUnary,
+      iSuffixLen   => sReg5bSufLen,
+      iSuffixVal   => sReg5bSufVal,
       oWord        => sBpWord,
       oWordValid   => sBpWordV,
       oValidLen    => sBpValidLen
@@ -1176,8 +1246,8 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Flush / framer control
   --
-  -- Timing (T = cycle when sReg4EOI is sampled high, i.e. Stage 4 register
-  -- holds the image's last token):
+  -- Timing (T = cycle when sReg5bEOI is sampled high, i.e. Reg5b holds the
+  -- image's last token, which is the cycle bit_packer consumes it):
   --   T+1: bit_packer's registered output presents the last bit-packed word
   --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
   --        zero-pads its sub-byte residue and emits the trailing bytes.
@@ -1191,7 +1261,7 @@ begin
       if iRst = '1' then
         sEoiPipe <= (others => '0');
       else
-        sEoiPipe <= sEoiPipe(1 downto 0) & sReg4EOI;
+        sEoiPipe <= sEoiPipe(1 downto 0) & sReg5bEOI;
       end if;
     end if;
   end process;
@@ -1214,46 +1284,44 @@ begin
 
   sFramerStart <= sReady and sValid and not sImageActive;
 
-  -- DEBUG: per-valid-token trace at Reg4 boundary
+  -- DEBUG: per-valid-token trace at Reg5b boundary
   dbg_probe : process (iClk)
   begin
-    if rising_edge(iClk) and iRst = '0' and sReg4V = '1' then
-      case sReg4.mode is
+    if rising_edge(iClk) and iRst = '0' and sReg5bV = '1' then
+      case sReg5b.mode is
         when TOKEN_REGULAR =>
-          report "REG  Ix=" & integer'image(to_integer(sReg4.Ix)) &
-            " Ra=" & integer'image(to_integer(sReg4.Ra)) &
-            " Rb=" & integer'image(to_integer(sReg4.Rb)) &
-            " Q=" & integer'image(to_integer(sReg4.Q)) &
-            " Sign=" & std_logic'image(sReg4.Sign) &
-            " Errval=" & integer'image(to_integer(sReg4.Errval)) &
-            " Aq=" & integer'image(to_integer(sReg4.Aq)) &
-            " Bq=" & integer'image(to_integer(sReg4.Bq)) &
-            " Nq=" & integer'image(to_integer(sReg4.Nq)) &
-            " k=" & integer'image(to_integer(sReg4.k)) &
-            " MErr=" & integer'image(to_integer(sS5GolMErr)) &
-            " unary=" & integer'image(to_integer(sS5Unary)) &
-            " sufL=" & integer'image(to_integer(sS5SufLen)) &
-            " sufV=" & integer'image(to_integer(sS5SufVal));
+          report "REG  Ix=" & integer'image(to_integer(sReg5b.Ix)) &
+            " Ra=" & integer'image(to_integer(sReg5b.Ra)) &
+            " Rb=" & integer'image(to_integer(sReg5b.Rb)) &
+            " Q=" & integer'image(to_integer(sReg5b.Q)) &
+            " Sign=" & std_logic'image(sReg5b.Sign) &
+            " Errval=" & integer'image(to_integer(sReg5b.Errval)) &
+            " Aq=" & integer'image(to_integer(sReg5b.Aq)) &
+            " Bq=" & integer'image(to_integer(sReg5b.Bq)) &
+            " Nq=" & integer'image(to_integer(sReg5b.Nq)) &
+            " k=" & integer'image(to_integer(sReg5b.k)) &
+            " unary=" & integer'image(to_integer(sReg5bUnary)) &
+            " sufL=" & integer'image(to_integer(sReg5bSufLen)) &
+            " sufV=" & integer'image(to_integer(sReg5bSufVal));
         when TOKEN_RUN_INTERRUPTION =>
-          report "RI   Ix=" & integer'image(to_integer(sReg4.Ix)) &
-            " Ra=" & integer'image(to_integer(sReg4.Ra)) &
-            " Rb=" & integer'image(to_integer(sReg4.Rb)) &
-            " Q=" & integer'image(to_integer(sReg4.Q)) &
-            " RItype=" & std_logic'image(sReg4.RItype) &
-            " Errval=" & integer'image(to_integer(sReg4.Errval)) &
-            " Aq=" & integer'image(to_integer(sReg4.Aq)) &
-            " Nq=" & integer'image(to_integer(sReg4.Nq)) &
-            " Nn=" & integer'image(to_integer(sReg4.Nn)) &
-            " k=" & integer'image(to_integer(sReg4.k)) &
-            " EMErr=" & integer'image(to_integer(sS5GolMErr)) &
-            " unary=" & integer'image(to_integer(sS5Unary)) &
-            " sufL=" & integer'image(to_integer(sS5SufLen)) &
-            " sufV=" & integer'image(to_integer(sS5SufVal)) &
-            " rawL=" & integer'image(to_integer(sReg4.RawLen)) &
-            " rawV=" & integer'image(to_integer(sReg4.RawVal));
+          report "RI   Ix=" & integer'image(to_integer(sReg5b.Ix)) &
+            " Ra=" & integer'image(to_integer(sReg5b.Ra)) &
+            " Rb=" & integer'image(to_integer(sReg5b.Rb)) &
+            " Q=" & integer'image(to_integer(sReg5b.Q)) &
+            " RItype=" & std_logic'image(sReg5b.RItype) &
+            " Errval=" & integer'image(to_integer(sReg5b.Errval)) &
+            " Aq=" & integer'image(to_integer(sReg5b.Aq)) &
+            " Nq=" & integer'image(to_integer(sReg5b.Nq)) &
+            " Nn=" & integer'image(to_integer(sReg5b.Nn)) &
+            " k=" & integer'image(to_integer(sReg5b.k)) &
+            " unary=" & integer'image(to_integer(sReg5bUnary)) &
+            " sufL=" & integer'image(to_integer(sReg5bSufLen)) &
+            " sufV=" & integer'image(to_integer(sReg5bSufVal)) &
+            " rawL=" & integer'image(to_integer(sReg5b.RawLen)) &
+            " rawV=" & integer'image(to_integer(sReg5b.RawVal));
         when TOKEN_RAW =>
-          report "RAW  rawL=" & integer'image(to_integer(sReg4.RawLen)) &
-            " rawV=" & integer'image(to_integer(sReg4.RawVal));
+          report "RAW  rawL=" & integer'image(to_integer(sReg5b.RawLen)) &
+            " rawV=" & integer'image(to_integer(sReg5b.RawVal));
         when others => null;
       end case;
     end if;
