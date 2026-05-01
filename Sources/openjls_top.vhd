@@ -42,12 +42,9 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 entity openjls_top is
   generic (
     BITNESS          : positive range 8 to 16    := 8;
-    MAX_IMAGE_WIDTH  : positive range 4 to 32768 := 4096;
-    MAX_IMAGE_HEIGHT : positive range 1 to 32768 := 4096;
-    -- Default sized for the chosen BITNESS: byte_stuffer worst-case output
-    -- (LIMIT bits + stuffing) plus one byte (jls_framer stability margin).
-    -- LIMIT = 4*BITNESS for BITNESS in [8..16]; byte_stuffer expansion = LIMIT/8.
-    OUT_WIDTH : positive range 32 to 1024 := 56
+    MAX_IMAGE_WIDTH  : positive range 4 to 65536 := 4096;
+    MAX_IMAGE_HEIGHT : positive range 1 to 65536 := 4096;
+    OUT_WIDTH        : positive range 32 to 1024 := 56
   );
   port (
     iClk         : in std_logic;
@@ -67,7 +64,9 @@ end openjls_top;
 
 architecture rtl of openjls_top is
 
-  -- =================================== PARAMETERS =======================================================
+  -------------------------------------------------------------------------------------------------------------
+  -- ENCODER PARAMETERS
+  -------------------------------------------------------------------------------------------------------------
   -- Derived constants
   constant MAX_VAL : natural := 2 ** BITNESS - 1;
   constant RANGE_P : natural := MAX_VAL + 1;
@@ -87,7 +86,7 @@ architecture rtl of openjls_top is
   constant ERROR_WIDTH            : natural  := BITNESS + 1;
   constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
   constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
-  constant RESET                  : natural  := 64; -- T.87
+  constant RESET                  : natural  := 64;  -- T.87
   constant MAX_C                  : integer  := 127; -- T.87
   constant MIN_C                  : integer  := - 128;-- T.87
   constant A_WIDTH                : natural  := 2 * BITNESS_MAX_LOCAL;
@@ -102,13 +101,10 @@ architecture rtl of openjls_top is
   constant SUFFIXLEN_WIDTH        : natural  := 16;
   constant RUN_CNT_WIDTH          : natural  := 16;
   -- Bit packer / byte stuffer / framer interface widths.
-  -- Per-cycle worst-case bit_packer emit is bounded by LIMIT in all modes
-  -- (T.87 sets glimit = LIMIT - J[RUNindex] - 1 so RI raw + Golomb <= LIMIT).
-  -- Byte stuffer per-cycle emit: residue (<=7b) + IN + stuffing (IN/8) bits.
   constant BYTE_STUFFER_OUT_WIDTH   : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
   constant BYTE_STUFFER_BUFF_WIDTH  : natural := 2 * LIMIT + LIMIT / 8;
   constant MIN_OUT_WIDTH_WORST_CASE : natural := BYTE_STUFFER_OUT_WIDTH + 8;
-  -- ========================================================================================================
+  -------------------------------------------------------------------------------------------------------------
 
   -- Packed context word slicing (A | B | C | N), matching context_ram layout.
   -- For RI contexts (Q=365,366) Nn overlays the LSBs of the B slot.
@@ -1101,20 +1097,20 @@ begin
     )
     port map
     (
-      iClk          => iClk,
-      iRst          => iRst,
-      iStart        => sFramerStart,
-      iImageWidth   => sImageWidth,
-      iImageHeight  => sImageHeight,
-      iEOI          => sFramerEOI,
-      iBsWord       => sBsWord,
-      iBsWordValid  => sBsWordV,
-      iBsValidBytes => sBsValidB,
-      oWord         => oData,
-      oWordValid    => oValid,
-      oValidBytes   => sFramerVBytes,
-      oLast         => oLast,
-      iReady        => iReady
+      iClk         => iClk,
+      iRst         => iRst,
+      iStart       => sFramerStart,
+      iImageWidth  => sImageWidth,
+      iImageHeight => sImageHeight,
+      iEOI         => sFramerEOI,
+      iWord        => sBsWord,
+      iValid       => sBsWordV,
+      iByteEnable  => sBsValidB,
+      oWord        => oData,
+      oValid       => oValid,
+      oByteEnable  => sFramerVBytes,
+      oLast        => oLast,
+      iReady       => iReady
     );
 
   -- AXI-Stream tkeep: one bit per byte, MSB = first byte transmitted.
