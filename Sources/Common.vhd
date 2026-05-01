@@ -43,10 +43,9 @@ package Common is
   function bool2bit(b         : in boolean) return std_logic;
 
   -- Project's standard reference values ----------------------------------------------
-  constant CO_BITNESS_STD           : natural := 12;
-  constant CO_NEAR_STD              : natural := 0;
-  constant CO_OUT_WIDTH_STD         : natural := 64;  -- Final IP AXI-Stream output word width
-                                                      -- Min sustainable: BITNESS=12 -> 56b, BITNESS=16 -> 72b
+  constant CO_BITNESS_STD   : natural := 12;
+  constant CO_NEAR_STD      : natural := 0;
+  constant CO_OUT_WIDTH_STD : natural := 72;
 
   -- Defined values from T.87 ----------------------------------------------------------
   constant CO_BITNESS_MAX_WIDTH          : natural := 16;
@@ -92,19 +91,15 @@ package Common is
   constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
-  constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
+  constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET 
   constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
   constant CO_TOTAL_WIDTH_STD     : natural := CO_AQ_WIDTH_STD + CO_BQ_WIDTH_STD + CO_CQ_WIDTH + CO_NQ_WIDTH_STD;
 
   -- Bit-packer / byte-stuffer / framer interface widths -------------------------
   -- Per-cycle worst-case bit_packer emit is bounded by LIMIT in all modes:
-  --   * regular mode: Golomb code <= LIMIT
-  --   * RI break:     run-length raw (J[RUNindex]+1) + RI Golomb (glimit) <= LIMIT
-  --                   (T.87 sets glimit = LIMIT - J[RUNindex] - 1 so the sum is bounded)
-  -- So the bit_packer bus is sized to LIMIT, not LIMIT + qbpp.
-  constant CO_BIT_PACKER_OUT_WIDTH    : natural := CO_LIMIT_STD;
+  constant CO_BIT_PACKER_OUT_WIDTH : natural := CO_LIMIT_STD;
   -- Byte stuffer output / framer input: ceil((residue 7 + IN + stuffing IN/8) / 8) * 8
-  constant CO_BYTE_STUFFER_OUT_WIDTH  : natural := math_ceil_div(CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8 + 7, 8) * 8;
+  constant CO_BYTE_STUFFER_OUT_WIDTH : natural := math_ceil_div(CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8 + 7, 8) * 8;
   -- Byte stuffer internal buffer: residue + worst-case input + stuffing.
   constant CO_BYTE_STUFFER_BUFF_WIDTH : natural := 2 * CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8;
 
@@ -156,22 +151,22 @@ package Common is
   end record;
 
   constant CO_TOKEN_NONE : t_pipeline_token := (
-  mode   => TOKEN_NONE,
-  Ix     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-  Ra     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-  Rb     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-  Rc     => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
-  Q      => to_unsigned(0, 9),
-  Sign   => '0',
-  RItype => '0',
-  Aq     => to_unsigned(0, CO_AQ_WIDTH_STD),
-  Bq     => to_signed(0, CO_BQ_WIDTH_STD),
-  Cq     => to_signed(0, CO_CQ_WIDTH),
-  Nq     => to_unsigned(0, CO_NQ_WIDTH_STD),
-  Nn     => to_unsigned(0, CO_NQ_WIDTH_STD),
-  Temp   => to_unsigned(0, CO_AQ_WIDTH_STD),
-  Errval => to_signed(0, CO_ERROR_VALUE_WIDTH_STD),
-  k      => to_unsigned(0, CO_K_WIDTH_STD),
+  mode       => TOKEN_NONE,
+  Ix         => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Ra         => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Rb         => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Rc         => to_unsigned(0, CO_BITNESS_MAX_WIDTH),
+  Q          => to_unsigned(0, 9),
+  Sign       => '0',
+  RItype     => '0',
+  Aq         => to_unsigned(0, CO_AQ_WIDTH_STD),
+  Bq         => to_signed(0, CO_BQ_WIDTH_STD),
+  Cq         => to_signed(0, CO_CQ_WIDTH),
+  Nq         => to_unsigned(0, CO_NQ_WIDTH_STD),
+  Nn         => to_unsigned(0, CO_NQ_WIDTH_STD),
+  Temp       => to_unsigned(0, CO_AQ_WIDTH_STD),
+  Errval     => to_signed(0, CO_ERROR_VALUE_WIDTH_STD),
+  k          => to_unsigned(0, CO_K_WIDTH_STD),
   RawLen     => to_unsigned(0, CO_SUFFIXLEN_WIDTH_STD),
   RawVal     => to_unsigned(0, CO_SUFFIX_WIDTH_STD),
   RiRunIndex => to_unsigned(0, 5)
