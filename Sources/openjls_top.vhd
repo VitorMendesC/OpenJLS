@@ -74,23 +74,16 @@ architecture rtl of openjls_top is
   constant BPP     : natural := math_max(2, log2ceil(MAX_VAL + 1));
   constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
 
-  -- Widths (computed locally from generics; no dependency on Common's CO_*_STD).
-  --
-  -- Token-tied widths (Aq/Bq/Cq/Nq/Errval/k) must match t_pipeline_token's
-  -- max-bitness sizing in Common.vhd. Use BITNESS_MAX_LOCAL (= entity generic
-  -- upper bound) so any in-range BITNESS produces compatible widths.
-  -- Standalone widths (LIMIT-derived, byte-stuffer, framer) are BITNESS-derived.
-  constant BITNESS_MAX_LOCAL : natural := 16;
-
-  -- BITNESS-derived (token Errval is wider; top slices it down to ERROR_WIDTH).
+  -- Widths computed locally from generics. Pipeline token type is defined
+  -- inside this architecture (below) so all token-tied widths track BITNESS.
   constant ERROR_WIDTH            : natural  := BITNESS + 1;
   constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
   constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
   constant RESET                  : natural  := 64;  -- T.87
   constant MAX_C                  : integer  := 127; -- T.87
   constant MIN_C                  : integer  := - 128;-- T.87
-  constant A_WIDTH                : natural  := 2 * BITNESS_MAX_LOCAL;
-  constant B_WIDTH                : natural  := 2 * BITNESS_MAX_LOCAL;
+  constant A_WIDTH                : natural  := 2 * BITNESS;
+  constant B_WIDTH                : natural  := 2 * BITNESS;
   constant C_WIDTH                : natural  := 8; -- T.87
   constant N_WIDTH                : natural  := log2ceil(RESET) + 1;
   constant NN_WIDTH               : natural  := log2ceil(RESET) + 1;
@@ -100,10 +93,68 @@ architecture rtl of openjls_top is
   constant SUFFIX_WIDTH           : natural  := 16;
   constant SUFFIXLEN_WIDTH        : natural  := 16;
   constant RUN_CNT_WIDTH          : natural  := 16;
+
   -- Bit packer / byte stuffer / framer interface widths.
   constant BYTE_STUFFER_OUT_WIDTH   : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
   constant BYTE_STUFFER_BUFF_WIDTH  : natural := 2 * LIMIT + LIMIT / 8;
   constant MIN_OUT_WIDTH_WORST_CASE : natural := BYTE_STUFFER_OUT_WIDTH + 8;
+
+  -------------------------------------------------------------------------------------------------------------
+  -- PIPELINE TOKEN RECORD
+  -------------------------------------------------------------------------------------------------------------
+  -- Fields cross inter-stage register boundaries;
+  -- combinational stage-local wires are NOT in the record.
+  --
+  -- Mode tag:
+  --   TOKEN_NONE             : pipeline bubble — downstream stages NOP
+  --   TOKEN_REGULAR          : regular-mode sample (Golomb only)
+  --   TOKEN_RUN_INTERRUPTION : run break (Golomb + A.16 raw prefix)
+  --   TOKEN_RAW              : mid-run boundary emit (raw only)
+  type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
+
+  type t_pipeline_token is record
+    mode       : t_token_mode;
+    Ix         : unsigned(BITNESS - 1 downto 0);
+    Ra         : unsigned(BITNESS - 1 downto 0);
+    Rb         : unsigned(BITNESS - 1 downto 0);
+    Rc         : unsigned(BITNESS - 1 downto 0);
+    Q          : unsigned(8 downto 0);
+    Sign       : std_logic;
+    RItype     : std_logic;
+    Aq         : unsigned(A_WIDTH - 1 downto 0);
+    Bq         : signed(B_WIDTH - 1 downto 0);
+    Cq         : signed(C_WIDTH - 1 downto 0);
+    Nq         : unsigned(N_WIDTH - 1 downto 0);
+    Nn         : unsigned(N_WIDTH - 1 downto 0);
+    Temp       : unsigned(A_WIDTH - 1 downto 0);
+    Errval     : signed(ERROR_WIDTH - 1 downto 0);
+    k          : unsigned(K_WIDTH - 1 downto 0);
+    RawLen     : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+    RawVal     : unsigned(SUFFIX_WIDTH - 1 downto 0);
+    RiRunIndex : unsigned(4 downto 0);
+  end record;
+
+  constant CO_TOKEN_NONE : t_pipeline_token := (
+  mode   => TOKEN_NONE,
+  Ix => (others => '0'),
+  Ra => (others => '0'),
+  Rb => (others => '0'),
+  Rc => (others => '0'),
+  Q => (others => '0'),
+  Sign   => '0',
+  RItype => '0',
+  Aq => (others => '0'),
+  Bq => (others => '0'),
+  Cq => (others => '0'),
+  Nq => (others => '0'),
+  Nn => (others => '0'),
+  Temp => (others => '0'),
+  Errval => (others => '0'),
+  k => (others => '0'),
+  RawLen => (others => '0'),
+  RawVal => (others => '0'),
+  RiRunIndex => (others => '0')
+  );
   -------------------------------------------------------------------------------------------------------------
 
   -- Packed context word slicing (A | B | C | N), matching context_ram layout.
@@ -377,10 +428,10 @@ begin
         end if;
 
         if sLbValid = '1' then
-          v.Ix := resize(sPixel, BITNESS_MAX_LOCAL);
-          v.Ra := resize(sLbRa, BITNESS_MAX_LOCAL);
-          v.Rb := resize(sLbRb, BITNESS_MAX_LOCAL);
-          v.Rc := resize(sLbRc, BITNESS_MAX_LOCAL);
+          v.Ix := sPixel;
+          v.Ra := sLbRa;
+          v.Rb := sLbRb;
+          v.Rc := sLbRc;
         end if;
 
         sReg1    <= v;
@@ -611,9 +662,9 @@ begin
             v.Sign := sS2MSign;
 
           when TOKEN_RUN_INTERRUPTION =>
-            v.Ix         := resize(sS2RIIx, BITNESS_MAX_LOCAL);
-            v.Ra         := resize(sS2RIRa, BITNESS_MAX_LOCAL);
-            v.Rb         := resize(sS2RIRb, BITNESS_MAX_LOCAL);
+            v.Ix         := sS2RIIx;
+            v.Ra         := sS2RIRa;
+            v.Rb         := sS2RIRb;
             v.RItype     := sS2RItype;
             v.RawLen     := resize(sS2RawLen, v.RawLen'length);
             v.RawVal     := resize(sS2RawVal, v.RawVal'length);
