@@ -123,6 +123,7 @@ entity jls_framer is
     iImageWidth  : in unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
     iImageHeight : in unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
     iEOI         : in std_logic;
+    iStall       : in std_logic; -- backpressure from downstream, only used on the write side, since read side already check for iReady
     -- Byte stuffer interface
     iWord       : in std_logic_vector(IN_WIDTH - 1 downto 0);
     iValid      : in std_logic;
@@ -470,7 +471,7 @@ begin
         -----------------------------------------------------------------------------------------------------
         -- WRITE
         -----------------------------------------------------------------------------------------------------
-        if iValid = '1' then
+        if iValid = '1' and iStall = '0' then
 
           for i in 0 to BYTES_IN - 1 loop
             if i < to_integer(iByteEnable) then
@@ -479,20 +480,20 @@ begin
           end loop;
 
           vFifoByteCount := vFifoByteCount + to_integer(iByteEnable);
-        end if;
 
-        if iEOI = '1' then
-          -- Push FOOTER into the FIFO right after the last data byte
-          vBuffer(BUFFER_WIDTH - 1 - vFifoByteCount * 8 downto BUFFER_WIDTH - (vFifoByteCount + 1) * 8)       := x"FF";
-          vBuffer(BUFFER_WIDTH - 1 - (vFifoByteCount + 1) * 8 downto BUFFER_WIDTH - (vFifoByteCount + 2) * 8) := x"D9";
-          vFifoByteCount                                                                                      := vFifoByteCount + 2;
+          if iEOI = '1' then
+            -- Push FOOTER into the FIFO right after the last data byte
+            vBuffer(BUFFER_WIDTH - 1 - vFifoByteCount * 8 downto BUFFER_WIDTH - (vFifoByteCount + 1) * 8)       := x"FF";
+            vBuffer(BUFFER_WIDTH - 1 - (vFifoByteCount + 1) * 8 downto BUFFER_WIDTH - (vFifoByteCount + 2) * 8) := x"D9";
+            vFifoByteCount                                                                                      := vFifoByteCount + 2;
 
-          assert vEoiCount < EOI_FIFO_DEPTH
-          report "jls_framer: EoI FIFO overflow; back-to-back images closer than depth allows"
-            severity failure;
+            assert vEoiCount < EOI_FIFO_DEPTH
+            report "jls_framer: EoI FIFO overflow; back-to-back images closer than depth allows"
+              severity failure;
 
-          vEoiIdxFifo(vEoiCount) := vFifoByteCount - 1;
-          vEoiCount              := vEoiCount + 1;
+            vEoiIdxFifo(vEoiCount) := vFifoByteCount - 1;
+            vEoiCount              := vEoiCount + 1;
+          end if;
         end if;
 
         assert vFifoByteCount <= BUFFER_BYTES
