@@ -39,8 +39,9 @@ entity A11_2_bit_packer is
     OUT_WIDTH       : natural := CO_LIMIT_STD
   );
   port (
-    iClk : in std_logic;
-    iRst : in std_logic;
+    iClk   : in std_logic;
+    iRst   : in std_logic;
+    iStall : in std_logic;
     -- Raw bits interface - A.15 boundary bits, A.16 break residual (Sporadic raws & RI)
     iRawValid : in std_logic;
     iRawLen   : in unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
@@ -118,7 +119,7 @@ begin
         oWord      <= (others => '0');
         oWordValid <= '0';
         oValidLen  <= (others => '0');
-      else
+      elsif iStall = '0' then
         oWord      <= sCombWord;
         oWordValid <= sCombValid;
         oValidLen  <= sCombLen;
