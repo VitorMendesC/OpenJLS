@@ -85,8 +85,11 @@ architecture bench of tb_openjls_top is
   signal oLast        : std_logic;
   signal iReady       : std_logic := '1';
 
+  -- Internal signals
+  signal sPulseIReady : std_logic := '0';
+
   -- Collection
-  shared variable collected       : byte_array_t(0 to 255) := (others => (others => '0'));
+  shared variable collected       : byte_array_t(0 to 511) := (others => (others => '0'));
   shared variable collected_count : natural                := 0;
   shared variable last_count      : natural                := 0; -- # of oLast pulses seen
 
@@ -165,6 +168,28 @@ begin
     end if;
   end process;
 
+  pulse_iReady : process (iClk)
+    variable vCount : integer := 0;
+  begin
+    if rising_edge(iClk) then
+
+      if sPulseIReady = '1' then
+
+        vCount := vCount + 1;
+        if vCount = 5 then
+          iReady <= '1';
+          vCount := 0;
+        else
+          iReady <= '0';
+        end if;
+
+      else
+        iReady <= '1';
+      end if;
+
+    end if;
+  end process;
+
   -- Stimulus
   stim : process
     variable base_collected : natural := 0;
@@ -173,7 +198,6 @@ begin
     begin
       iRst   <= '1';
       iValid <= '0';
-      iReady <= '1';
       for i in 0 to 4 loop
         wait until rising_edge(iClk);
       end loop;
@@ -190,6 +214,16 @@ begin
         iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
         iValid <= '1';
         wait until rising_edge(iClk);
+      end loop;
+      iValid <= '0';
+    end procedure;
+
+    procedure feed_image_bp is
+    begin
+      for i in PIXELS'range loop
+        iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
+        iValid <= '1';
+        wait until oReady = '1' and rising_edge(iClk);
       end loop;
       iValid <= '0';
     end procedure;
@@ -254,6 +288,43 @@ begin
       end if;
     end loop;
     report "Test 2 done";
+
+    -- =========================================================================
+    -- Test 3: downstream backpressure during a 3-image stream.
+    -- iReady held low between handshakes; pulsed high to drain only when the
+    -- pipeline backpressures upstream (oReady=0). Forces the framer FIFO to
+    -- repeatedly cross oAlmostFull and exercises the stall propagation,
+    -- per-stage CE, and recovery on stall release. Output stream must equal
+    -- EXPECTED concatenated three times.
+    -- =========================================================================
+    base_collected := collected_count;
+    base_last      := last_count;
+    wait for CLK_PERIOD * 5;
+    wait until rising_edge(iClk);
+    report "Test 3: downstream backpressure";
+
+    sPulseIReady <= '1';
+
+    feed_image_bp;
+    feed_image_bp;
+    feed_image_bp;
+    wait_n_images(3);
+
+    sPulseIReady <= '0';
+
+    check(collected_count - base_collected = 3 * EXPECTED_BYTES,
+    "Test 3 byte count mismatch: got " & integer'image(collected_count - base_collected) &
+    " expected " & integer'image(3 * EXPECTED_BYTES));
+
+    for i in 0 to 3 * EXPECTED_BYTES - 1 loop
+      if base_collected + i < collected_count then
+        check(collected(base_collected + i) = EXPECTED(i mod EXPECTED_BYTES),
+        "Test 3 byte " & integer'image(i) &
+        " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
+        " got=" & hex2(collected(base_collected + i)));
+      end if;
+    end loop;
+    report "Test 3 done";
 
     -- Dump collected bytes for diagnosis
     for i in 0 to collected_count - 1 loop
