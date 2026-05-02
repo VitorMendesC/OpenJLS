@@ -68,6 +68,8 @@ end openjls_top;
 
 architecture rtl of openjls_top is
 
+  constant DEBUG_MODE : boolean := false;
+
   -------------------------------------------------------------------------------------------------------------
   -- ENCODER PARAMETERS
   -------------------------------------------------------------------------------------------------------------
@@ -178,8 +180,16 @@ architecture rtl of openjls_top is
   -- init makes the first read valid from the first post-reset cycle anyway.
   signal sReady : std_logic := '0';
 
+  -- Backpressure / clock-enable. sStall drives a single coarse pipeline freeze
+  -- when the framer FIFO is approaching its nominal capacity. It also doubles
+  -- as the idle-power gate together with each stage's valid bits: a register
+  -- only updates when (NOT sStall) AND (current_valid OR upstream_valid), so a
+  -- bubble propagates exactly once and then the register stops toggling.
+  signal sFramerAlmostFull      : std_logic;
   signal sStall                 : std_logic := '0';
-  signal sNotStall              : std_logic;
+  signal sStallDelay            : std_logic := '0';
+  signal sStallUpstream         : std_logic := '0';
+  signal sStallLogic            : std_logic := '0';
   signal sCE1, sCE2, sCE3, sCE4 : std_logic;
   signal sCE5a, sCE5b           : std_logic;
 
@@ -345,40 +355,58 @@ begin
   assert OUT_WIDTH >= MIN_OUT_WIDTH_WORST_CASE
   report "OUT_WIDTH must be large enough for the worst-case byte_stuffer output: LIMIT + stuffing + 1 byte = " & integer'image(MIN_OUT_WIDTH_WORST_CASE)
     severity failure;
-  -------------------------------------------------------------------------------------------------------------
 
-  -- Ready: asserted one cycle after iRst deasserts.
+  -------------------------------------------------------------------------------------------------------------
+  -- STALL, CLOCK-ENABLE, AND READY LOGIC
+  -------------------------------------------------------------------------------------------------------------
   process (iClk)
   begin
     if rising_edge(iClk) then
-      sReady <= not iRst and not sStall;
+      sStallDelay <= sStall;
     end if;
   end process;
 
-  sStall    <= not iReady;
-  sNotStall <= not sStall;
-  oReady    <= sReady and not sStall;
+  sStall         <= sFramerAlmostFull;
+  sStallUpstream <= sStall;
+  sStallLogic    <= '1' when sStallDelay = '1' and sStall = '1' else
+    '0'; -- 1 cycle delay to stall logic, so we don't lose the in-flight pixel, deasert immediately
 
   -- Per-stage clock-enable: update register only when not stalled AND there
   -- is a real token to load OR a real token to retire (transition to bubble).
   -- Once the register is sitting on a bubble with no upstream valid, CE=0
   -- holds it frozen so its combinational fan-out stops toggling.
-  sCE1 <= '1' when sStall = '0' and (sReg1V = '1' or sLbValid = '1') else
+
+  sCE1 <= '1' when sStallLogic = '0' and (sReg1V = '1' or sValid = '1') else
     '0';
-  sCE2 <= '1' when sStall = '0' and (sReg2V = '1' or sReg1V = '1') else
+  sCE2 <= '1' when sStallLogic = '0' and (sReg2V = '1' or sReg1V = '1') else
     '0';
-  sCE3 <= '1' when sStall = '0' and (sReg3V = '1' or sReg2V = '1') else
+  sCE3 <= '1' when sStallLogic = '0' and (sReg3V = '1' or sReg2V = '1') else
     '0';
-  sCE4 <= '1' when sStall = '0' and (sReg4V = '1' or sReg3V = '1') else
+  sCE4 <= '1' when sStallLogic = '0' and (sReg4V = '1' or sReg3V = '1') else
     '0';
-  sCE5a <= '1' when sStall = '0' and (sReg5aV = '1' or sReg4V = '1') else
+  sCE5a <= '1' when sStallLogic = '0' and (sReg5aV = '1' or sReg4V = '1') else
     '0';
-  sCE5b <= '1' when sStall = '0' and (sReg5bV = '1' or sReg5aV = '1') else
+  sCE5b <= '1' when sStallLogic = '0' and (sReg5bV = '1' or sReg5aV = '1') else
     '0';
+  -- process (iClk)
+  -- begin
+  --   if rising_edge(iClk) then
+  --     sCE1  <= not sStall and (sReg1V or sValid);
+  --     sCE2  <= not sStall and (sReg2V or sReg1V);
+  --     sCE3  <= not sStall and (sReg3V or sReg2V);
+  --     sCE4  <= not sStall and (sReg4V or sReg3V);
+  --     sCE5a <= not sStall and (sReg5aV or sReg4V);
+  --     sCE5b <= not sStall and (sReg5bV or sReg5aV);
+  --   end if;
+  -- end process;
+
+  sReady <= not iRst and not sStallUpstream; -- Stalls upstream
+  oReady <= sReady;
 
   -------------------------------------------------------------------------------------------------------------
   -- Input Stage — Input register + line buffer
   -------------------------------------------------------------------------------------------------------------
+
   process (iClk)
   begin
     if rising_edge(iClk) then
@@ -386,7 +414,7 @@ begin
         sImageWidth  <= unsigned(iImageWidth);
         sImageHeight <= unsigned(iImageHeight);
         sValid       <= '0';
-      elsif iValid = '1' and sReady = '1' and sStall = '0' then -- handshake
+      elsif iValid = '1' and sReady = '1' and sStallLogic = '0' then -- handshake
         sPixel <= unsigned(iPixel);
         sValid <= '1';
       else
@@ -470,7 +498,7 @@ begin
         end if;
 
         sReg1    <= v;
-        sReg1V   <= sLbValid;
+        sReg1V   <= sValid;
         sReg1EOL <= sLbValid and sLbEOL;
         sReg1EOI <= sLbValid and sLbEOI;
         sReg1D1  <= sS1D1;
@@ -539,7 +567,7 @@ begin
     (
       iClk          => iClk,
       iRst          => iRst,
-      iCE           => sNotStall,
+      iCE           => not sStallLogic, -- TODO: Test was passing with "not sStall" too, which is weird, investigate if correct
       iEOI          => sReg1EOI,
       iRunCnt       => sS2RunCnt,
       iRunHit       => sS2RunHit,
@@ -584,7 +612,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sRunCntReg <= (others => '0');
-      elsif sStall = '0' and sReg1.mode = TOKEN_RUN then
+      elsif sStallLogic = '0' and sReg1.mode = TOKEN_RUN then
         if sS2RunContinue = '1' then
           sRunCntReg <= sS2RunCnt;
         else
@@ -614,7 +642,7 @@ begin
   -- (Q=365,366) Nn is packed into the LSBs of the B slot; C slot is
   -- unused for RI (written as zeros).
   -------------------------------------------------------------------------------------------------------------
-  sCtxWrEn <= sReg3V and sNotStall and
+  sCtxWrEn <= sReg3V and
     (bool2bit(sReg3.mode = TOKEN_REGULAR) or
     bool2bit(sReg3.mode = TOKEN_RUN_INTERRUPTION));
 
@@ -647,10 +675,10 @@ begin
       iClk    => iClk,
       iRst    => iRst,
       iWrAddr => std_logic_vector(sReg3.Q),
-      iWrEn   => sCtxWrEn,
+      iWrEn   => sCtxWrEn and sCE1,
       iWrData => sCtxWrData,
       iRdAddr => std_logic_vector(sS2Q),
-      iRdEn   => sReg1V and sNotStall and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
+      iRdEn   => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
       bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
       iEndOfImage => sReg1EOI,
       oRdData     => sCtxRdData
@@ -1178,11 +1206,11 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Output — bit packer → byte stuffer → framer
   -------------------------------------------------------------------------------------------------------------
-  sBpRawV <= '1' when sReg5bV = '1' and sStall = '0'
+  sBpRawV <= '1' when sReg5bV = '1' and sStallLogic = '0'
     and (sReg5b.mode = TOKEN_RUN_INTERRUPTION or sReg5b.mode = TOKEN_RAW)
     else
     '0';
-  sBpGolV <= '1' when sReg5bV = '1' and sStall = '0'
+  sBpGolV <= '1' when sReg5bV = '1' and sStallLogic = '0'
     and (sReg5b.mode = TOKEN_REGULAR or sReg5b.mode = TOKEN_RUN_INTERRUPTION)
     else
     '0';
@@ -1199,6 +1227,7 @@ begin
     (
       iClk         => iClk,
       iRst         => iRst,
+      iStall       => sStallLogic,
       iRawValid    => sBpRawV,
       iRawLen      => sReg5b.RawLen,
       iRawVal      => sReg5b.RawVal,
@@ -1221,6 +1250,7 @@ begin
     (
       iClk        => iClk,
       iRst        => iRst,
+      iStall      => sStallLogic,
       iWord       => sBpWord,
       iWordValid  => sBpWordV,
       iValidLen   => sBpValidLen,
@@ -1242,6 +1272,7 @@ begin
     (
       iClk         => iClk,
       iRst         => iRst,
+      iStall       => sStallLogic,
       iStart       => sFramerStart,
       iImageWidth  => sImageWidth,
       iImageHeight => sImageHeight,
@@ -1249,12 +1280,12 @@ begin
       iWord        => sBsWord,
       iValid       => sBsWordV,
       iByteEnable  => sBsValidB,
-      iStall       => sStall,
+      iReady       => iReady,
+      oAlmostFull  => sFramerAlmostFull,
       oWord        => oData,
       oValid       => oValid,
       oByteEnable  => sFramerVBytes,
-      oLast        => oLast,
-      iReady       => iReady
+      oLast        => oLast
     );
 
   -- AXI-Stream tkeep: one bit per byte, MSB = first byte transmitted.
@@ -1282,7 +1313,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sEoiPipe <= (others => '0');
-      elsif sStall = '0' then
+      elsif sStallLogic = '0' then
         sEoiPipe <= sEoiPipe(1 downto 0) & sReg5bEOI;
       end if;
     end if;
@@ -1296,7 +1327,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sImageActive <= '0';
-      elsif sStall = '0' then
+      elsif sStallLogic = '0' then
         if sValid = '1' and sImageActive = '0' then
           sImageActive <= '1';
         elsif sEoiPipe(2) = '1' then
@@ -1311,7 +1342,7 @@ begin
   -- DEBUG: per-valid-token trace at Reg5b boundary
   dbg_probe : process (iClk)
   begin
-    if rising_edge(iClk) and iRst = '0' and sReg5bV = '1' then
+    if rising_edge(iClk) and iRst = '0' and sReg5bV = '1' and DEBUG_MODE = true then
       case sReg5b.mode is
         when TOKEN_REGULAR =>
           report "REG  Ix=" & integer'image(to_integer(sReg5b.Ix)) &
