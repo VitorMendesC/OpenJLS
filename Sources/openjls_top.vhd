@@ -83,7 +83,7 @@ architecture rtl of openjls_top is
   constant ERROR_WIDTH            : natural  := BITNESS + 1;
   constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
   constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
-  constant RESET                  : natural  := 64;  -- T.87
+  constant RESET                  : natural  := 64; -- T.87
   constant MAX_C                  : integer  := 127; -- T.87
   constant MIN_C                  : integer  := - 128;-- T.87
   constant A_WIDTH                : natural  := 2 * BITNESS;
@@ -177,6 +177,11 @@ architecture rtl of openjls_top is
   -- Ready flag: asserts one cycle after iRst deasserts. context_ram's bit-vector
   -- init makes the first read valid from the first post-reset cycle anyway.
   signal sReady : std_logic := '0';
+
+  signal sStall                 : std_logic := '0';
+  signal sNotStall              : std_logic;
+  signal sCE1, sCE2, sCE3, sCE4 : std_logic;
+  signal sCE5a, sCE5b           : std_logic;
 
   -- Pipeline tokens + sideband
   signal sReg1, sReg2, sReg3, sReg4             : t_pipeline_token         := CO_TOKEN_NONE;
@@ -346,15 +351,30 @@ begin
   process (iClk)
   begin
     if rising_edge(iClk) then
-      if iRst = '1' then
-        sReady <= '0';
-      else
-        sReady <= '1';
-      end if;
+      sReady <= not iRst and not sStall;
     end if;
   end process;
 
-  oReady <= sReady;
+  sStall    <= not iReady;
+  sNotStall <= not sStall;
+  oReady    <= sReady and not sStall;
+
+  -- Per-stage clock-enable: update register only when not stalled AND there
+  -- is a real token to load OR a real token to retire (transition to bubble).
+  -- Once the register is sitting on a bubble with no upstream valid, CE=0
+  -- holds it frozen so its combinational fan-out stops toggling.
+  sCE1 <= '1' when sStall = '0' and (sReg1V = '1' or sLbValid = '1') else
+    '0';
+  sCE2 <= '1' when sStall = '0' and (sReg2V = '1' or sReg1V = '1') else
+    '0';
+  sCE3 <= '1' when sStall = '0' and (sReg3V = '1' or sReg2V = '1') else
+    '0';
+  sCE4 <= '1' when sStall = '0' and (sReg4V = '1' or sReg3V = '1') else
+    '0';
+  sCE5a <= '1' when sStall = '0' and (sReg5aV = '1' or sReg4V = '1') else
+    '0';
+  sCE5b <= '1' when sStall = '0' and (sReg5bV = '1' or sReg5aV = '1') else
+    '0';
 
   -------------------------------------------------------------------------------------------------------------
   -- Input Stage — Input register + line buffer
@@ -366,7 +386,7 @@ begin
         sImageWidth  <= unsigned(iImageWidth);
         sImageHeight <= unsigned(iImageHeight);
         sValid       <= '0';
-      elsif iValid = '1' and sReady = '1' then -- handshake
+      elsif iValid = '1' and sReady = '1' and sStall = '0' then -- handshake
         sPixel <= unsigned(iPixel);
         sValid <= '1';
       else
@@ -432,7 +452,7 @@ begin
         sReg1D1  <= (others => '0');
         sReg1D2  <= (others => '0');
         sReg1D3  <= (others => '0');
-      else
+      elsif sCE1 = '1' then
 
         if sLbValid = '1' and sS1ModeRun = '1' then
           v.mode := TOKEN_RUN;
@@ -519,6 +539,7 @@ begin
     (
       iClk          => iClk,
       iRst          => iRst,
+      iCE           => sNotStall,
       iEOI          => sReg1EOI,
       iRunCnt       => sS2RunCnt,
       iRunHit       => sS2RunHit,
@@ -563,7 +584,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sRunCntReg <= (others => '0');
-      elsif sReg1.mode = TOKEN_RUN then
+      elsif sStall = '0' and sReg1.mode = TOKEN_RUN then
         if sS2RunContinue = '1' then
           sRunCntReg <= sS2RunCnt;
         else
@@ -593,7 +614,7 @@ begin
   -- (Q=365,366) Nn is packed into the LSBs of the B slot; C slot is
   -- unused for RI (written as zeros).
   -------------------------------------------------------------------------------------------------------------
-  sCtxWrEn <= sReg3V and
+  sCtxWrEn <= sReg3V and sNotStall and
     (bool2bit(sReg3.mode = TOKEN_REGULAR) or
     bool2bit(sReg3.mode = TOKEN_RUN_INTERRUPTION));
 
@@ -629,7 +650,7 @@ begin
       iWrEn   => sCtxWrEn,
       iWrData => sCtxWrData,
       iRdAddr => std_logic_vector(sS2Q),
-      iRdEn   => sReg1V and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
+      iRdEn   => sReg1V and sNotStall and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
       bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
       iEndOfImage => sReg1EOI,
       oRdData     => sCtxRdData
@@ -671,7 +692,7 @@ begin
         sReg2    <= CO_TOKEN_NONE;
         sReg2V   <= '0';
         sReg2EOI <= '0';
-      else
+      elsif sCE2 = '1' then
         -- Build Reg2 per mode. Fields not meaningful for the current mode
         -- stay at CO_TOKEN_NONE defaults so downstream mode-specific logic
         -- (A.22, A.21, …) never sees stale values that could drive invalid
@@ -887,7 +908,7 @@ begin
         sReg3    <= CO_TOKEN_NONE;
         sReg3V   <= '0';
         sReg3EOI <= '0';
-      else
+      elsif sCE3 = '1' then
         v      := sReg2;
         v.Aq   := sS3Aq;
         v.Bq   := sS3Bq;
@@ -1002,7 +1023,7 @@ begin
         sReg4    <= CO_TOKEN_NONE;
         sReg4V   <= '0';
         sReg4EOI <= '0';
-      else
+      elsif sCE4 = '1' then
         v   := sReg3;
         v.k := resize(sS4K, K_WIDTH);
         if sReg3V = '0' then
@@ -1091,7 +1112,7 @@ begin
         sReg5aV       <= '0';
         sReg5aEOI     <= '0';
         sReg5aGolMErr <= (others => '0');
-      else
+      elsif sCE5a = '1' then
         v := sReg4;
         if sReg4V = '0' then
           v := CO_TOKEN_NONE;
@@ -1139,7 +1160,7 @@ begin
         sReg5bUnary  <= (others => '0');
         sReg5bSufLen <= (others => '0');
         sReg5bSufVal <= (others => '0');
-      else
+      elsif sCE5b = '1' then
         v := sReg5a;
         if sReg5aV = '0' then
           v := CO_TOKEN_NONE;
@@ -1157,11 +1178,11 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Output — bit packer → byte stuffer → framer
   -------------------------------------------------------------------------------------------------------------
-  sBpRawV <= '1' when sReg5bV = '1'
+  sBpRawV <= '1' when sReg5bV = '1' and sStall = '0'
     and (sReg5b.mode = TOKEN_RUN_INTERRUPTION or sReg5b.mode = TOKEN_RAW)
     else
     '0';
-  sBpGolV <= '1' when sReg5bV = '1'
+  sBpGolV <= '1' when sReg5bV = '1' and sStall = '0'
     and (sReg5b.mode = TOKEN_REGULAR or sReg5b.mode = TOKEN_RUN_INTERRUPTION)
     else
     '0';
@@ -1228,6 +1249,7 @@ begin
       iWord        => sBsWord,
       iValid       => sBsWordV,
       iByteEnable  => sBsValidB,
+      iStall       => sStall,
       oWord        => oData,
       oValid       => oValid,
       oByteEnable  => sFramerVBytes,
@@ -1260,7 +1282,7 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sEoiPipe <= (others => '0');
-      else
+      elsif sStall = '0' then
         sEoiPipe <= sEoiPipe(1 downto 0) & sReg5bEOI;
       end if;
     end if;
@@ -1274,10 +1296,12 @@ begin
     if rising_edge(iClk) then
       if iRst = '1' then
         sImageActive <= '0';
-      elsif sValid = '1' and sImageActive = '0' then
-        sImageActive <= '1';
-      elsif sEoiPipe(2) = '1' then
-        sImageActive <= '0';
+      elsif sStall = '0' then
+        if sValid = '1' and sImageActive = '0' then
+          sImageActive <= '1';
+        elsif sEoiPipe(2) = '1' then
+          sImageActive <= '0';
+        end if;
       end if;
     end if;
   end process;
