@@ -54,6 +54,7 @@ entity byte_stuffer is
   port (
     iClk        : in std_logic;
     iRst        : in std_logic;
+    iStall      : in std_logic;
     iWord       : in std_logic_vector(IN_WIDTH - 1 downto 0);
     iWordValid  : in std_logic;
     iValidLen   : in unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
@@ -130,7 +131,7 @@ begin
         -- stuffing bit after every completed 0xFF byte.
         ------------------------------------------------------------------------------------------------------------
 
-        if iWordValid = '1' then
+        if iWordValid = '1' and iStall = '0' then
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLenInt then
               vBitVal                            := iWord(IN_WIDTH - 1 - i);
@@ -158,31 +159,33 @@ begin
         -- the byte tracker so the next image starts on a fresh boundary.
         ------------------------------------------------------------------------------------------------------------
 
-        if iFlush = '1' and vCountInt > 0 then
-          vBytesOut := math_ceil_div(vCountInt, 8);
-          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH); -- buffer is filled with zeros in the vacated bits, auto zero padding
-          sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
-          sWordValidBuffer <= '1';
-          vBuf        := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-          vCountInt   := 0;
-          vBytePosInt := 0;
-          vByteReg    := (others => '0');
+        if iStall = '0' then
+          if iFlush = '1' and vCountInt > 0 then
+            vBytesOut := math_ceil_div(vCountInt, 8);
+            sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH); -- buffer is filled with zeros in the vacated bits, auto zero padding
+            sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
+            sWordValidBuffer <= '1';
+            vBuf        := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
+            vCountInt   := 0;
+            vBytePosInt := 0;
+            vByteReg    := (others => '0');
 
-        elsif vCountInt >= 8 then
+          elsif vCountInt >= 8 then
 
-          vBytesOut := vCountInt / 8;
-          if vBytesOut > OUT_WIDTH / 8 then
-            vBytesOut := OUT_WIDTH / 8;
+            vBytesOut := vCountInt / 8;
+            if vBytesOut > OUT_WIDTH / 8 then
+              vBytesOut := OUT_WIDTH / 8;
+            end if;
+
+            sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
+            sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
+            sWordValidBuffer <= '1';
+            vBuf      := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
+            vCountInt := vCountInt - vBytesOut * 8;
+
+          else
+            sWordValidBuffer <= '0';
           end if;
-
-          sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
-          sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
-          sWordValidBuffer <= '1';
-          vBuf      := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-          vCountInt := vCountInt - vBytesOut * 8;
-
-        else
-          sWordValidBuffer <= '0';
         end if;
 
         -- Registers
