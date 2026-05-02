@@ -109,11 +109,12 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity jls_framer is
   generic (
-    BITNESS          : natural := CO_BITNESS_STD;
-    IN_WIDTH         : natural := CO_BYTE_STUFFER_OUT_WIDTH;
-    OUT_WIDTH        : natural := CO_OUT_WIDTH_STD;
-    MAX_IMAGE_WIDTH  : natural := 4096;
-    MAX_IMAGE_HEIGHT : natural := 4096
+    BITNESS            : natural := CO_BITNESS_STD;
+    IN_WIDTH           : natural := CO_BYTE_STUFFER_OUT_WIDTH;
+    OUT_WIDTH          : natural := CO_OUT_WIDTH_STD;
+    MAX_IMAGE_WIDTH    : natural := 4096;
+    MAX_IMAGE_HEIGHT   : natural := 4096;
+    STALL_MARGIN_BYTES : natural := CO_BYTE_STUFFER_OUT_WIDTH -- supposed to handle the in-flight bytes only
   );
   port (
     iClk : in std_logic;
@@ -123,11 +124,13 @@ entity jls_framer is
     iImageWidth  : in unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
     iImageHeight : in unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
     iEOI         : in std_logic;
-    iStall       : in std_logic; -- backpressure from downstream, only used on the write side, since read side already check for iReady
     -- Byte stuffer interface
     iWord       : in std_logic_vector(IN_WIDTH - 1 downto 0);
     iValid      : in std_logic;
     iByteEnable : in unsigned(log2ceil(IN_WIDTH / 8 + 1) - 1 downto 0);
+    -- Backpressure
+    oAlmostFull : out std_logic;
+    iStall      : in std_logic;
     -- Output AXI stream interface
     oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oValid      : out std_logic;
@@ -145,13 +148,18 @@ architecture Behavioral of jls_framer is
   constant HEADER_LEN : natural := 25;
 
   -- Auto-derived FIFO depth (worst-case occupancy; see file header).
-  constant V_IEOI       : natural := BYTES_OUT + BYTES_IN + 1;
-  constant D_DRAIN      : natural := math_ceil_div(V_IEOI, BYTES_OUT);
-  constant N_H          : natural := math_ceil_div(HEADER_LEN, BYTES_OUT);
-  constant BUFFER_BYTES : natural := math_max(
+  -- BUFFER_BYTES_NOMINAL handles steady-state (iReady='1') traffic.
+  -- STALL_MARGIN_BYTES extends the FIFO so oAlmostFull can assert at the
+  -- nominal threshold and still absorb in-flight bytes from the upstream
+  -- pipeline (Reg5b → bit_packer → byte_stuffer) before the stall reaches.
+  constant V_IEOI               : natural := BYTES_OUT + BYTES_IN + 1;
+  constant D_DRAIN              : natural := math_ceil_div(V_IEOI, BYTES_OUT);
+  constant N_H                  : natural := math_ceil_div(HEADER_LEN, BYTES_OUT);
+  constant BUFFER_BYTES_NOMINAL : natural := math_max(
   math_max(V_IEOI, D_DRAIN * BYTES_IN),
   math_max((D_DRAIN + N_H - 1) * BYTES_IN,
   (D_DRAIN + N_H) * BYTES_IN - (N_H * BYTES_OUT - HEADER_LEN)));
+  constant BUFFER_BYTES : natural := BUFFER_BYTES_NOMINAL + STALL_MARGIN_BYTES;
   constant BUFFER_WIDTH : natural := BUFFER_BYTES * 8;
 
   type fsm_t is (IDLE, HEADER, DATA);
@@ -279,6 +287,12 @@ begin
   oValid      <= sOutValid;
   oByteEnable <= sValidBytes;
   oLast       <= sOutLast;
+
+  -- Backpressure: high when FIFO occupancy reaches the nominal sizing
+  -- threshold, leaving STALL_MARGIN_BYTES headroom for the in-flight
+  -- bytes only
+  oAlmostFull <= '1' when sFifoByteCount >= BUFFER_BYTES_NOMINAL else
+    '0';
 
   -------------------------------------------------------------------------------------------------------------
   -- SYNCHRONOUS PROCESS 
