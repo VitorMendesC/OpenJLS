@@ -26,6 +26,8 @@ end;
 
 architecture bench of tb_openjls_top is
 
+  constant PRINT_BYTES : boolean := false;
+
   -- Test configuration
   constant CLK_PERIOD       : time     := 10 ns;
   constant BITNESS          : natural  := 8;
@@ -327,9 +329,11 @@ begin
     report "Test 3 done";
 
     -- Dump collected bytes for diagnosis
-    for i in 0 to collected_count - 1 loop
-      report "got[" & integer'image(i) & "]=" & hex2(collected(i));
-    end loop;
+    if PRINT_BYTES = true then
+      for i in 0 to collected_count - 1 loop
+        report "got[" & integer'image(i) & "]=" & hex2(collected(i));
+      end loop;
+    end if;
 
     if err_count > 0 then
       report "tb_openjls_top RESULT: FAIL (" &
