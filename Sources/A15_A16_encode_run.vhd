@@ -37,6 +37,7 @@ entity A15_A16_encode_run is
   port (
     iClk : in std_logic;
     iRst : in std_logic;
+    iCE  : in std_logic;
     iEOI : in std_logic;
 
     -- From A14 (combinational — no register between A14 and this stage)
@@ -192,7 +193,7 @@ begin
         sRUNindex  <= (others => '0');
         sNextBound <= to_unsigned(1, C_BOUND_WIDTH);
         sInRun     <= '0';
-      else
+      elsif iCE = '1' then
         sRUNindex  <= sRUNindexNext;
         sNextBound <= sNextBoundNext;
         sInRun     <= sInRunNext;
