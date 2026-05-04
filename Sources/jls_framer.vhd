@@ -114,7 +114,7 @@ entity jls_framer is
     OUT_WIDTH          : natural := CO_OUT_WIDTH_STD;
     MAX_IMAGE_WIDTH    : natural := 4096;
     MAX_IMAGE_HEIGHT   : natural := 4096;
-    STALL_MARGIN_BYTES : natural := CO_BYTE_STUFFER_OUT_WIDTH -- supposed to handle the in-flight bytes only
+    STALL_MARGIN_BYTES : natural := math_ceil_div(CO_BYTE_STUFFER_OUT_WIDTH, 8) -- supposed to handle the in-flight bytes only
   );
   port (
     iClk : in std_logic;
