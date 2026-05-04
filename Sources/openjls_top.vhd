@@ -1,39 +1,59 @@
-----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
 -- Engineer:    Vitor Mendes Camilo
 --
 -- Module Name: openjls_top - rtl
 -- Description: JPEG-LS T.87 lossless encoder top level.
---              5-stage pipeline (Stage1..Stage5) + input/output stages.
+--              
+--          The architecture is a 10 stage pipeline with:
+--          1 input stage + 6 processing stages + 3 output stages.
+--          The output stages are internally registered in the IPs, while the processing 
+--          stages are purely combinational and the inter-stage registers are placed in 
+--          this top-level wrapper
 --
---   Input Stage : line_buffer → {Ra, Rb, Rc, Rd, EOL, EOI}
+--------------------------------------------------------------------------------------------
+-- PIPELINE
+--------------------------------------------------------------------------------------------
+--
+--   Input Stage : Wire
+--
+-- RegInput -------
+--
 --   Stage 1     : A.1 gradients + A.3 mode select
---     Reg1 ──►
+--                 line_buffer
+--
+-- Reg1 -----------
+--
 --   Stage 2     : regular {A.4, A.4.1, A.4.2} | run {A.14, A.15/16, A.17, A.18}
---                 context_ram read starts here (address = sS2Q).
---     Reg2 ──►   (BRAM RdLatency=1 is the Stage 2→3 boundary for ctx bits)
+--                 context_ram
+--
+-- Reg2 ----------- 
+--   
 --   Stage 3     : regular {A.5, speculative 3×{A.6..A.9}} | RI {A.19, A.20}
---                 context_ram delivers BRAM (Q<365) / cluster (365/366); internal
---                 1-deep writeback forwarding covers the Q3==Q4 hazard.
---     Reg3 ──►
---   Stage 4     : shared {A.10} | regular {A.12, A.13} | RI {A.23}; ctx writeback.
---     Reg4 ──►
---   Stage 5     : regular {A.11} | RI {A.21, A.22}; mux → mapped errval.
---     Reg5 ──►
---   Stage 5    : A.11.1 Golomb encoder (unary + suffix).
---     Reg6 ──►
---   Stage 6    : bit_packer (raw+Golomb concurrent).
---   Output      : byte_stuffer → jls_framer.
+--                 feed-forward logic for speculation and Q3==Q4 forwarding
+--     
+-- Reg3 -----------
 --
--- Speculative Cq chain: regular A.6..A.9 runs three times in parallel using
--- {Cq_base − 1, Cq_base, Cq_base + 1}, where Cq_base = sReg3.Cq on a
--- forwarding hit (Q at Stage 3 == Q at Stage 4, both regular) and the
--- context_ram-delivered sS3Cq otherwise. The chosen chain is selected late
--- by ΔCq = sS4CqNew − sReg3.Cq from live A.13, breaking the long
--- A.13 → A.6..A.9 combinational path.
+--   Stage 4     : shared {A.10} | regular {A.12, A.13} | RI {A.23};
+--                 context writeback
+--     
+-- Reg4 -----------
 --
--- Shared A.10 lives in Stage 4 and consumes sReg3.Aq (regular) or
--- sReg3.Temp (RI A.20 result carried through Reg3) via a 2:1 mux.
-----------------------------------------------------------------------------------
+--   Stage 5     : regular {A.11} | RI {A.21, A.22}; 
+--                 mux select mapped errval
+--     
+-- Reg5 -----------
+--
+--   Stage 6    : A.11.1 Golomb encoder
+--     
+-- Reg6 -----------
+--
+--   Output Stages (internally registered):
+--
+--                bit_packer
+--                byte_stuffer
+--                jls_framer
+--
+-------------------------------------------------------------------------------------------------------------
 use work.Common.all;
 
 library IEEE;
@@ -146,7 +166,7 @@ architecture rtl of openjls_top is
   constant MIN_OUT_WIDTH_WORST_CASE : natural := BYTE_STUFFER_OUT_WIDTH + 8;
 
   --------------------------------------------------------------------------------------------
-  -- Packed context word slicing
+  -- Packed context RAM word slicing
   --------------------------------------------------------------------------------------------
   -- Regular mode:  (A | B  | C | N)
   -- Run mode:      (A | NN | 0 | N)
@@ -435,9 +455,8 @@ begin
   oReady    <= sReadyOut;
 
   -------------------------------------------------------------------------------------------------------------
-  -- Input Stage — Input register + line buffer
+  -- Input Stage — Input register
   -------------------------------------------------------------------------------------------------------------
-
   process (iClk)
   begin
     if rising_edge(iClk) then
@@ -454,6 +473,9 @@ begin
     end if;
   end process;
 
+  -------------------------------------------------------------------------------------------------------------
+  -- Stage 1 — Line buffer + A.1 gradients + A.3 mode selection
+  -------------------------------------------------------------------------------------------------------------
   u_line_buffer : entity work.line_buffer
     generic map(
       MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
@@ -477,9 +499,6 @@ begin
       oEOI         => sLbEOI
     );
 
-  -------------------------------------------------------------------------------------------------------------
-  -- Stage 1 — A.1 gradients + A.3 mode selection
-  -------------------------------------------------------------------------------------------------------------
   u_a1 : entity work.A1_gradient_comp
     generic map(BITNESS => BITNESS)
     port map
@@ -667,12 +686,6 @@ begin
     to_unsigned(366, 9) when sS2RItype = '1' else
     to_unsigned(365, 9);
 
-  -------------------------------------------------------------------------------------------------------------
-  -- Context store: single packed BRAM, Q = 0..366. Init via bit-vector
-  -- flag inside context_ram (first-read-returns-init). For RI contexts
-  -- (Q=365,366) Nn is packed into the LSBs of the B slot; C slot is
-  -- unused for RI (written as zeros).
-  -------------------------------------------------------------------------------------------------------------
   sCtxWrEn <= sReg3V and
     (bool2bit(sReg3.mode = TOKEN_REGULAR) or
     bool2bit(sReg3.mode = TOKEN_RUN_INTERRUPTION));
@@ -1011,7 +1024,7 @@ begin
 
   -------------------------------------------------------------------------------------------------------------
   -- Stage 4 — Shared A.10; regular A.12 + A.13; RI A.23
-  -- A.10's iAq is muxed: regular → Aq, RI → Temp (from A.20 via Reg3).
+  --           A.10's iAq is muxed: regular → Aq, RI → Temp.
   -------------------------------------------------------------------------------------------------------------
   sS4AqSel <= sReg3.Temp when sReg3.mode = TOKEN_RUN_INTERRUPTION else
     sReg3.Aq;
@@ -1110,7 +1123,7 @@ begin
   end process;
 
   -------------------------------------------------------------------------------------------------------------
-  -- Stage 5 — Regular: A.11; RI: A.21 + A.22; shared: A.11.1
+  -- Stage 5 — Regular: A.11; RI: A.21 + A.22;
   -------------------------------------------------------------------------------------------------------------
   u_a11 : entity work.A11_error_mapping
     generic map(
@@ -1250,6 +1263,7 @@ begin
 
   -------------------------------------------------------------------------------------------------------------
   -- Output — bit packer → byte stuffer → framer
+  --          internally registered in the IPs
   -------------------------------------------------------------------------------------------------------------
   sBpRawV <= '1' when sReg6V = '1' and sStallLogic = '0'
     and (sReg6.mode = TOKEN_RUN_INTERRUPTION or sReg6.mode = TOKEN_RAW)
@@ -1343,7 +1357,7 @@ begin
 
   -------------------------------------------------------------------------------------------------------------
   -- Flush / framer control
-  --
+  -------------------------------------------------------------------------------------------------------------
   -- Timing (T = cycle when sReg6EOI is sampled high, i.e. Reg6 holds the
   -- image's last token, which is the cycle bit_packer consumes it):
   --   T+1: bit_packer's registered output presents the last bit-packed word
@@ -1384,7 +1398,9 @@ begin
 
   sFramerStart <= sReadyOut and sValid and not sImageActive;
 
+  -------------------------------------------------------------------------------------------------------------
   -- DEBUG: per-valid-token trace at Reg6 boundary
+  -------------------------------------------------------------------------------------------------------------
   dbg_probe : process (iClk)
   begin
     if rising_edge(iClk) and iRst = '0' and sReg6V = '1' and DEBUG_MODE = true then
