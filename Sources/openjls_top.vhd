@@ -80,30 +80,86 @@ architecture rtl of openjls_top is
   constant BPP     : natural := math_max(2, log2ceil(MAX_VAL + 1));
   constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
 
-  -- Widths computed locally from generics. Pipeline token type is defined
-  -- inside this architecture (below) so all token-tied widths track BITNESS.
+  -- Widths computed locally from generics
   constant ERROR_WIDTH            : natural  := BITNESS + 1;
   constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
-  constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
-  constant RESET                  : natural  := 64; -- T.87
-  constant MAX_C                  : integer  := 127; -- T.87
-  constant MIN_C                  : integer  := - 128;-- T.87
-  constant A_WIDTH                : natural  := 2 * BITNESS;
-  constant B_WIDTH                : natural  := 2 * BITNESS;
-  constant C_WIDTH                : natural  := 8; -- T.87
-  constant N_WIDTH                : natural  := log2ceil(RESET) + 1;
-  constant NN_WIDTH               : natural  := log2ceil(RESET) + 1;
-  constant K_WIDTH                : natural  := log2ceil(A_WIDTH) + 1;
-  constant TOTAL_WIDTH            : natural  := A_WIDTH + B_WIDTH + C_WIDTH + N_WIDTH;
-  constant UNARY_WIDTH            : natural  := 16;
-  constant SUFFIX_WIDTH           : natural  := 16;
-  constant SUFFIXLEN_WIDTH        : natural  := 16;
-  constant RUN_CNT_WIDTH          : natural  := 16;
+  constant RAM_DEPTH              : positive := 367;   -- 365 contexts + 2 RI-specific contexts
+  constant RESET                  : natural  := 64;    -- T.87
+  constant MAX_C                  : integer  := 127;   -- T.87
+  constant MIN_C                  : integer  := - 128; -- T.87
+  constant ABS_MIN_C              : natural  := - MIN_C;
+  constant ABS_MAX_C              : natural  := MAX_C;
 
+  --------------------------------------------------------------------------------------------
+  -- Context-variable widths. 
+  --------------------------------------------------------------------------------------------
+  -- Two tiers:
+  --   _STORED : packed BRAM width (Murat 2018 Table I, "Optimal Bits to
+  --             Represent"). Encoding tricks applied at the BRAM boundary.
+  --   _WIDTH  : pipeline arithmetic width (mid-update headroom for A.12/A.13).
+  --             Needed to compute intermediary values without overflow.
+  --
+  --------------------------------------------------------------------------------------------
+  --   Var    Stored                          Encoding @ BRAM           Pipeline width
+  --------------------------------------------------------------------------------------------
+  --   A      bpp - 1 + ⌈log2(RESET)⌉         zero-extend on read       _STORED + 1
+  --   B      ⌈log2(RESET)⌉ (mag only)        B = -unsigned(stored)     BPP + 1 (signed)
+  --   C      ⌈log2(max|MIN_C|,|MAX_C|)⌉+1    signed cast               = _STORED
+  --   N      ⌈log2(RESET)⌉ (RESET↦0)         0 ⇒ RESET                 log2ceil(RESET+1)
+  --   Nn     ⌈log2(RESET)⌉                   direct                    = _STORED
+
+  constant A_STORED    : natural := BPP - 1 + log2ceil(RESET);
+  constant B_STORED    : natural := log2ceil(RESET);
+  constant C_STORED    : natural := log2ceil(math_max(ABS_MIN_C, ABS_MAX_C)) + 1;
+  constant N_STORED    : natural := log2ceil(RESET);
+  constant NN_STORED   : natural := log2ceil(RESET);
+  constant A_WIDTH     : natural := A_STORED + 1;
+  constant B_WIDTH     : natural := BPP + 1;
+  constant C_WIDTH     : natural := C_STORED;
+  constant N_WIDTH     : natural := log2ceil(RESET + 1);
+  constant NN_WIDTH    : natural := NN_STORED;
+  constant K_WIDTH     : natural := log2ceil(BPP + log2ceil(RESET));
+  constant TOTAL_WIDTH : natural := A_STORED + B_STORED + C_STORED + N_STORED;
+
+  --------------------------------------------------------------------------------------------
+  -- Golomb / Raw suffix output widths. 
+  --------------------------------------------------------------------------------------------
+  --   Raw  : oRawSuffixVal up to RUN_CNT_WIDTH bits, oRawSuffixLen up to
+  --          J_MAX+1 = 16 distinct values (vJ+1, vJ ∈ [0..15] from T.87 J).
+  --   Gol. : suffix up to max(k_max, qbpp) = BPP + log2ceil(RESET) - 1 bits;
+  --          length ≤ k_max + 1, fits in K_WIDTH.
+  -- Unary capped by LIMIT (T.87 escape rule).
+
+  -- Run length bounded by image width (run cannot cross EOL).
+  constant RUN_CNT_WIDTH : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
+  -- TODO: Verify this, maybe make them all LIMIT to simplify
+  constant J_MAX_BITS      : natural := 15; -- T.87 A.2.1, J[31] = 15
+  constant UNARY_WIDTH     : natural := log2ceil(LIMIT + 1);
+  constant SUFFIX_WIDTH    : natural := math_max(BPP + log2ceil(RESET), RUN_CNT_WIDTH);
+  constant SUFFIXLEN_WIDTH : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2));
+
+  --------------------------------------------------------------------------------------------
   -- Bit packer / byte stuffer / framer interface widths.
+  --------------------------------------------------------------------------------------------
   constant BYTE_STUFFER_OUT_WIDTH   : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
   constant BYTE_STUFFER_BUFF_WIDTH  : natural := 2 * LIMIT + LIMIT / 8;
   constant MIN_OUT_WIDTH_WORST_CASE : natural := BYTE_STUFFER_OUT_WIDTH + 8;
+
+  --------------------------------------------------------------------------------------------
+  -- Packed context word slicing
+  --------------------------------------------------------------------------------------------
+  -- Regular mode:  (A | B  | C | N)
+  -- Run mode:      (A | NN | 0 | N)
+  constant CTX_A_HI  : natural := TOTAL_WIDTH - 1;
+  constant CTX_A_LO  : natural := TOTAL_WIDTH - A_STORED;
+  constant CTX_B_HI  : natural := CTX_A_LO - 1;
+  constant CTX_B_LO  : natural := CTX_A_LO - B_STORED;
+  constant CTX_C_HI  : natural := CTX_B_LO - 1;
+  constant CTX_C_LO  : natural := CTX_B_LO - C_STORED;
+  constant CTX_N_HI  : natural := CTX_C_LO - 1;
+  constant CTX_N_LO  : natural := 0;
+  constant CTX_NN_HI : natural := CTX_B_LO + NN_STORED - 1;
+  constant CTX_NN_LO : natural := CTX_B_LO;
 
   -------------------------------------------------------------------------------------------------------------
   -- PIPELINE TOKEN RECORD
@@ -116,6 +172,7 @@ architecture rtl of openjls_top is
   --   TOKEN_REGULAR          : regular-mode sample (Golomb only)
   --   TOKEN_RUN_INTERRUPTION : run break (Golomb + A.16 raw prefix)
   --   TOKEN_RAW              : mid-run boundary emit (raw only)
+
   type t_token_mode is (TOKEN_NONE, TOKEN_REGULAR, TOKEN_RUN, TOKEN_RUN_INTERRUPTION, TOKEN_RAW);
 
   type t_pipeline_token is record
@@ -131,7 +188,7 @@ architecture rtl of openjls_top is
     Bq         : signed(B_WIDTH - 1 downto 0);
     Cq         : signed(C_WIDTH - 1 downto 0);
     Nq         : unsigned(N_WIDTH - 1 downto 0);
-    Nn         : unsigned(N_WIDTH - 1 downto 0);
+    Nn         : unsigned(NN_WIDTH - 1 downto 0);
     Temp       : unsigned(A_WIDTH - 1 downto 0);
     Errval     : signed(ERROR_WIDTH - 1 downto 0);
     k          : unsigned(K_WIDTH - 1 downto 0);
@@ -162,23 +219,6 @@ architecture rtl of openjls_top is
   RiRunIndex => (others => '0')
   );
   -------------------------------------------------------------------------------------------------------------
-
-  -- Packed context word slicing (A | B | C | N), matching context_ram layout.
-  -- For RI contexts (Q=365,366) Nn overlays the LSBs of the B slot.
-  constant CTX_A_HI  : natural := TOTAL_WIDTH - 1;
-  constant CTX_A_LO  : natural := TOTAL_WIDTH - A_WIDTH;
-  constant CTX_B_HI  : natural := CTX_A_LO - 1;
-  constant CTX_B_LO  : natural := CTX_A_LO - B_WIDTH;
-  constant CTX_C_HI  : natural := CTX_B_LO - 1;
-  constant CTX_C_LO  : natural := CTX_B_LO - C_WIDTH;
-  constant CTX_N_HI  : natural := CTX_C_LO - 1;
-  constant CTX_N_LO  : natural := 0;
-  constant CTX_NN_HI : natural := CTX_B_LO + NN_WIDTH - 1;
-  constant CTX_NN_LO : natural := CTX_B_LO;
-
-  -- Ready flag: asserts one cycle after iRst deasserts. context_ram's bit-vector
-  -- init makes the first read valid from the first post-reset cycle anyway.
-  signal sReady : std_logic := '0';
 
   -- Backpressure / clock-enable. sStall drives a single coarse pipeline freeze
   -- when the framer FIFO is approaching its nominal capacity. It also doubles
@@ -220,14 +260,14 @@ architecture rtl of openjls_top is
   signal sS2QReg                : unsigned(8 downto 0);
 
   -- Stage 2 — run
-  signal sRunCntReg     : unsigned(15 downto 0) := (others => '0');
-  signal sS2RunCnt      : unsigned(15 downto 0);
+  signal sRunCntReg     : unsigned(RUN_CNT_WIDTH - 1 downto 0) := (others => '0');
+  signal sS2RunCnt      : unsigned(RUN_CNT_WIDTH - 1 downto 0);
   signal sS2RunHit      : std_logic;
   signal sS2RunContinue : std_logic;
   signal sS2RItype      : std_logic;
   signal sS2RawValid    : std_logic;
   signal sS2RawLen      : unsigned(4 downto 0);
-  signal sS2RawVal      : unsigned(15 downto 0);
+  signal sS2RawVal      : unsigned(RUN_CNT_WIDTH - 1 downto 0);
   signal sS2RIValid     : std_logic;
   signal sS2RIIx        : unsigned(BITNESS - 1 downto 0);
   signal sS2RIRa        : unsigned(BITNESS - 1 downto 0);
@@ -249,7 +289,7 @@ architecture rtl of openjls_top is
   signal sS3Bq : signed(B_WIDTH - 1 downto 0);
   signal sS3Cq : signed(C_WIDTH - 1 downto 0);
   signal sS3Nq : unsigned(N_WIDTH - 1 downto 0);
-  signal sS3Nn : unsigned(N_WIDTH - 1 downto 0);
+  signal sS3Nn : unsigned(NN_WIDTH - 1 downto 0);
 
   -- Stage 3 — regular prediction (speculative 3-chain)
   signal sS3Px                        : unsigned(BITNESS - 1 downto 0);
@@ -285,7 +325,10 @@ architecture rtl of openjls_top is
   signal sS4CqNew   : signed(C_WIDTH - 1 downto 0);
   signal sS4RiAqNew : unsigned(A_WIDTH - 1 downto 0);
   signal sS4RiNqNew : unsigned(N_WIDTH - 1 downto 0);
-  signal sS4RiNnNew : unsigned(N_WIDTH - 1 downto 0);
+  signal sS4RiNnNew : unsigned(NN_WIDTH - 1 downto 0);
+  -- BRAM-side encode helpers for the N 0↔RESET trick.
+  signal sNqEncReg : unsigned(N_STORED - 1 downto 0);
+  signal sNqEncRi  : unsigned(N_STORED - 1 downto 0);
 
   -- Stage 5
   signal sS5MErrval    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
@@ -294,9 +337,8 @@ architecture rtl of openjls_top is
   signal sS5GolMErr    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
   -- A.22 is RI-only. Gate its inputs on mode so non-RI tokens drive zeros and
-  -- the combinational arithmetic never produces a negative value. Also kills
-  -- the delta-cycle race where a token transition momentarily pairs a stale
-  -- sS5RiMap with a fresh sReg4.Errval.
+  -- the combinational arithmetic never produces a negative value.
+  -- TODO: I don't like this, it's better to not drive this logic at all instead add logic gating
   signal sA22Errval : signed(ERROR_WIDTH - 1 downto 0);
   signal sA22RItype : std_logic;
   signal sA22Map    : std_logic;
@@ -325,14 +367,14 @@ architecture rtl of openjls_top is
 
   -- Flush / framer control
   -- Bit packer is purely combinational + 1 register; it has no flush signal.
-  -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees
-  -- (1 cycle after sReg4EOI). The framer needs iEOI aligned with the byte
-  -- stuffer's flushed last word (1 more cycle after that).
+  -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees. 
+  -- The framer needs iEOI aligned with the byte stuffer's flushed last word
   signal sEoiPipe     : std_logic_vector(2 downto 0) := (others => '0');
-  signal sBsFlush     : std_logic;
-  signal sFramerEOI   : std_logic;
-  signal sImageActive : std_logic := '0';
-  signal sFramerStart : std_logic;
+  signal sBsFlush     : std_logic                    := '0';
+  signal sFramerEOI   : std_logic                    := '0';
+  signal sImageActive : std_logic                    := '0';
+  signal sFramerStart : std_logic                    := '0';
+  signal sReadyOut    : std_logic                    := '0';
 
 begin
 
@@ -389,8 +431,8 @@ begin
   sCE6 <= '1' when sStallLogic = '0' and (sReg6V = '1' or sReg5V = '1') else
     '0';
 
-  sReady <= not iRst and not sStallUpstream; -- Stalls upstream
-  oReady <= sReady;
+  sReadyOut <= not iRst and not sStallUpstream; -- Stalls upstream
+  oReady    <= sReadyOut;
 
   -------------------------------------------------------------------------------------------------------------
   -- Input Stage — Input register + line buffer
@@ -403,7 +445,7 @@ begin
         sImageWidth  <= unsigned(iImageWidth);
         sImageHeight <= unsigned(iImageHeight);
         sValid       <= '0';
-      elsif iValid = '1' and sReady = '1' and sStallLogic = '0' then -- handshake
+      elsif iValid = '1' and sReadyOut = '1' and sStallLogic = '0' then -- handshake
         sPixel <= unsigned(iPixel);
         sValid <= '1';
       else
@@ -635,28 +677,38 @@ begin
     (bool2bit(sReg3.mode = TOKEN_REGULAR) or
     bool2bit(sReg3.mode = TOKEN_RUN_INTERRUPTION));
 
-  -- Pack writeback word by mode.
+  -- Pack writeback word by mode. Murat encoding at the BRAM boundary:
+  --   A : narrow A_WIDTH → A_STORED (oAq from A.12 is bounded by
+  --       (RESET-1)*RANGE/2 + |Errval|max, which fits A_STORED bits since the
+  --       only iNq=RESET-1 → RESET transition halves before storing).
+  --   B : write magnitude only (Bq always ≤ 0 after A.13 clamp).
+  --   N : 0 ⇔ RESET (power-of-2 RESET trick).
   sCtxWrData <=
-    std_logic_vector(sS4AqNew) &
-    std_logic_vector(sS4BqNew) &
+    std_logic_vector(resize(sS4AqNew, A_STORED)) &
+    std_logic_vector(resize(unsigned(-sS4BqNew), B_STORED)) &
     std_logic_vector(sS4CqNew) &
-    std_logic_vector(sS4NqNew)
+    std_logic_vector(sNqEncReg)
     when sReg3.mode = TOKEN_REGULAR else
-    std_logic_vector(sS4RiAqNew) &
-    std_logic_vector(to_unsigned(0, B_WIDTH - NN_WIDTH)) &
+    std_logic_vector(resize(sS4RiAqNew, A_STORED)) &
     std_logic_vector(sS4RiNnNew) &
-    std_logic_vector(to_signed(0, C_WIDTH)) &
-    std_logic_vector(sS4RiNqNew);
+    std_logic_vector(to_signed(0, C_STORED)) &
+    std_logic_vector(sNqEncRi);
+
+  sNqEncReg <= (others => '0') when sS4NqNew = to_unsigned(RESET, N_WIDTH) else
+    resize(sS4NqNew, N_STORED);
+
+  sNqEncRi <= (others => '0') when sS4RiNqNew = to_unsigned(RESET, N_WIDTH) else
+    resize(sS4RiNqNew, N_STORED);
 
   u_ctx_ram : entity work.context_ram
     generic map(
       RANGE_P     => RANGE_P,
       RAM_DEPTH   => RAM_DEPTH,
-      A_WIDTH     => A_WIDTH,
-      B_WIDTH     => B_WIDTH,
-      C_WIDTH     => C_WIDTH,
-      N_WIDTH     => N_WIDTH,
-      NN_WIDTH    => NN_WIDTH,
+      A_WIDTH     => A_STORED,
+      B_WIDTH     => B_STORED,
+      C_WIDTH     => C_STORED,
+      N_WIDTH     => N_STORED,
+      NN_WIDTH    => NN_STORED,
       TOTAL_WIDTH => TOTAL_WIDTH
     )
     port map
@@ -676,21 +728,23 @@ begin
   -- Unpack read port (BRAM RdLatency=1 → valid at Stage 3), with Q3==Q4
   -- forwarding: when Stage 4 is writing back to the Q that Stage 3 is
   -- reading, forward the live Stage-4 update outputs instead of the BRAM
-  -- read (which would be stale by one cycle).
+  -- read (which would be stale by one cycle). Murat decoding mirrors the
+  -- write encoding: A zero-extend, B = -unsigned(stored), N 0 ⇒ RESET.
   sS3Aq <= sS4AqNew when sFwdRegHit = '1' else
     sS4RiAqNew when sFwdRiHit = '1' else
-    unsigned(sCtxRdData(CTX_A_HI downto CTX_A_LO));
+    resize(unsigned(sCtxRdData(CTX_A_HI downto CTX_A_LO)), A_WIDTH);
 
   -- Bq is regular-only (the B slot carries Nn for RI, handled below).
   sS3Bq <= sS4BqNew when sFwdRegHit = '1' else
-    signed(sCtxRdData(CTX_B_HI downto CTX_B_LO));
+    - signed(resize(unsigned(sCtxRdData(CTX_B_HI downto CTX_B_LO)), B_WIDTH));
 
   -- Cq forwarding is handled by the speculative 3-chain via sS3CqBase.
   sS3Cq <= signed(sCtxRdData(CTX_C_HI downto CTX_C_LO));
 
   sS3Nq <= sS4NqNew when sFwdRegHit = '1' else
     sS4RiNqNew when sFwdRiHit = '1' else
-    unsigned(sCtxRdData(CTX_N_HI downto CTX_N_LO));
+    to_unsigned(RESET, N_WIDTH) when unsigned(sCtxRdData(CTX_N_HI downto CTX_N_LO)) = 0 else
+    resize(unsigned(sCtxRdData(CTX_N_HI downto CTX_N_LO)), N_WIDTH);
 
   -- Nn is only meaningful for RI; mask to zero for regular so downstream
   -- doesn't see Bq LSBs misinterpreted as Nn.
@@ -758,6 +812,8 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 3 — Regular: A.5 + speculative 3-chain A.6..A.9
   -------------------------------------------------------------------------------------------------------------
+  -- TODO: Add logic gating on the speculative paths to only run on context hit
+
   u_a5 : entity work.A5_edge_detecting_predictor
     generic map(BITNESS => BITNESS)
     port map
@@ -1083,7 +1139,7 @@ begin
     (
       iK      => sReg4.k,
       iErrval => sReg4.Errval(BITNESS downto 0),
-      iNn     => sReg4.Nn,
+      iNn     => resize(sReg4.Nn, N_WIDTH),
       iNq     => sReg4.Nq,
       oMap    => sS5RiMap
     );
@@ -1326,7 +1382,7 @@ begin
     end if;
   end process;
 
-  sFramerStart <= sReady and sValid and not sImageActive;
+  sFramerStart <= sReadyOut and sValid and not sImageActive;
 
   -- DEBUG: per-valid-token trace at Reg6 boundary
   dbg_probe : process (iClk)
