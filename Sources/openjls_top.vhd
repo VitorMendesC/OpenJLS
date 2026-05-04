@@ -18,10 +18,10 @@
 --   Stage 4     : shared {A.10} | regular {A.12, A.13} | RI {A.23}; ctx writeback.
 --     Reg4 ──►
 --   Stage 5     : regular {A.11} | RI {A.21, A.22}; mux → mapped errval.
---     Reg5a ──►
---   Stage 5a    : A.11.1 Golomb encoder (unary + suffix).
---     Reg5b ──►
---   Stage 5b    : bit_packer (raw+Golomb concurrent).
+--     Reg5 ──►
+--   Stage 5    : A.11.1 Golomb encoder (unary + suffix).
+--     Reg6 ──►
+--   Stage 6    : bit_packer (raw+Golomb concurrent).
 --   Output      : byte_stuffer → jls_framer.
 --
 -- Speculative Cq chain: regular A.6..A.9 runs three times in parallel using
@@ -191,7 +191,7 @@ architecture rtl of openjls_top is
   signal sStallUpstream         : std_logic := '0';
   signal sStallLogic            : std_logic := '0';
   signal sCE1, sCE2, sCE3, sCE4 : std_logic;
-  signal sCE5a, sCE5b           : std_logic;
+  signal sCE5, sCE6             : std_logic;
 
   -- Pipeline tokens + sideband
   signal sReg1, sReg2, sReg3, sReg4             : t_pipeline_token         := CO_TOKEN_NONE;
@@ -304,14 +304,14 @@ architecture rtl of openjls_top is
   signal sS5SufLen  : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
   signal sS5SufVal  : unsigned(SUFFIX_WIDTH - 1 downto 0);
 
-  -- Stage 5 inter-stage registers: Reg5a in front of A.11_1, Reg5b after.
-  signal sReg5a, sReg5b       : t_pipeline_token                              := CO_TOKEN_NONE;
-  signal sReg5aV, sReg5bV     : std_logic                                     := '0';
-  signal sReg5aEOI, sReg5bEOI : std_logic                                     := '0';
-  signal sReg5aGolMErr        : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0) := (others => '0');
-  signal sReg5bUnary          : unsigned(UNARY_WIDTH - 1 downto 0)            := (others => '0');
-  signal sReg5bSufLen         : unsigned(SUFFIXLEN_WIDTH - 1 downto 0)        := (others => '0');
-  signal sReg5bSufVal         : unsigned(SUFFIX_WIDTH - 1 downto 0)           := (others => '0');
+  -- Stage 5 inter-stage registers: Reg5 in front of A.11_1, Reg6 after.
+  signal sReg5, sReg6       : t_pipeline_token                              := CO_TOKEN_NONE;
+  signal sReg5V, sReg6V     : std_logic                                     := '0';
+  signal sReg5EOI, sReg6EOI : std_logic                                     := '0';
+  signal sReg5GolMErr       : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0) := (others => '0');
+  signal sReg6Unary         : unsigned(UNARY_WIDTH - 1 downto 0)            := (others => '0');
+  signal sReg6SufLen        : unsigned(SUFFIXLEN_WIDTH - 1 downto 0)        := (others => '0');
+  signal sReg6SufVal        : unsigned(SUFFIX_WIDTH - 1 downto 0)           := (others => '0');
 
   -- Output
   signal sBpRawV, sBpGolV : std_logic;
@@ -384,21 +384,10 @@ begin
     '0';
   sCE4 <= '1' when sStallLogic = '0' and (sReg4V = '1' or sReg3V = '1') else
     '0';
-  sCE5a <= '1' when sStallLogic = '0' and (sReg5aV = '1' or sReg4V = '1') else
+  sCE5 <= '1' when sStallLogic = '0' and (sReg5V = '1' or sReg4V = '1') else
     '0';
-  sCE5b <= '1' when sStallLogic = '0' and (sReg5bV = '1' or sReg5aV = '1') else
+  sCE6 <= '1' when sStallLogic = '0' and (sReg6V = '1' or sReg5V = '1') else
     '0';
-  -- process (iClk)
-  -- begin
-  --   if rising_edge(iClk) then
-  --     sCE1  <= not sStall and (sReg1V or sValid);
-  --     sCE2  <= not sStall and (sReg2V or sReg1V);
-  --     sCE3  <= not sStall and (sReg3V or sReg2V);
-  --     sCE4  <= not sStall and (sReg4V or sReg3V);
-  --     sCE5a <= not sStall and (sReg5aV or sReg4V);
-  --     sCE5b <= not sStall and (sReg5bV or sReg5aV);
-  --   end if;
-  -- end process;
 
   sReady <= not iRst and not sStallUpstream; -- Stalls upstream
   oReady <= sReady;
@@ -567,7 +556,7 @@ begin
     (
       iClk          => iClk,
       iRst          => iRst,
-      iCE           => not sStallLogic, -- TODO: Test was passing with "not sStall" too, which is weird, investigate if correct
+      iCE           => not sStallLogic,
       iEOI          => sReg1EOI,
       iRunCnt       => sS2RunCnt,
       iRunHit       => sS2RunHit,
@@ -1129,26 +1118,26 @@ begin
     sS5RiEMErrval;
 
   -------------------------------------------------------------------------------------------------------------
-  -- Register 5a (Stage 5 mapping → A.11_1 golomb encoder)
+  -- Register 5 (Stage 5 mapping → A.11_1 golomb encoder)
   -------------------------------------------------------------------------------------------------------------
   process (iClk)
     variable v : t_pipeline_token;
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
-        sReg5a        <= CO_TOKEN_NONE;
-        sReg5aV       <= '0';
-        sReg5aEOI     <= '0';
-        sReg5aGolMErr <= (others => '0');
-      elsif sCE5a = '1' then
+        sReg5        <= CO_TOKEN_NONE;
+        sReg5V       <= '0';
+        sReg5EOI     <= '0';
+        sReg5GolMErr <= (others => '0');
+      elsif sCE5 = '1' then
         v := sReg4;
         if sReg4V = '0' then
           v := CO_TOKEN_NONE;
         end if;
-        sReg5a        <= v;
-        sReg5aV       <= sReg4V;
-        sReg5aEOI     <= sReg4EOI;
-        sReg5aGolMErr <= sS5GolMErr;
+        sReg5        <= v;
+        sReg5V       <= sReg4V;
+        sReg5EOI     <= sReg4EOI;
+        sReg5GolMErr <= sS5GolMErr;
       end if;
     end if;
   end process;
@@ -1165,40 +1154,40 @@ begin
     )
     port map
     (
-      iK              => sReg5a.k,
-      iMappedErrorVal => sReg5aGolMErr,
-      iRiMode         => bool2bit(sReg5a.mode = TOKEN_RUN_INTERRUPTION),
-      iRunIndex       => sReg5a.RiRunIndex,
+      iK              => sReg5.k,
+      iMappedErrorVal => sReg5GolMErr,
+      iRiMode         => bool2bit(sReg5.mode = TOKEN_RUN_INTERRUPTION),
+      iRunIndex       => sReg5.RiRunIndex,
       oUnaryZeros     => sS5Unary,
       oSuffixLen      => sS5SufLen,
       oSuffixVal      => sS5SufVal
     );
 
   -------------------------------------------------------------------------------------------------------------
-  -- Register 5b (golomb encoder → bit packer)
+  -- Register 6 (golomb encoder → bit packer)
   -------------------------------------------------------------------------------------------------------------
   process (iClk)
     variable v : t_pipeline_token;
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
-        sReg5b       <= CO_TOKEN_NONE;
-        sReg5bV      <= '0';
-        sReg5bEOI    <= '0';
-        sReg5bUnary  <= (others => '0');
-        sReg5bSufLen <= (others => '0');
-        sReg5bSufVal <= (others => '0');
-      elsif sCE5b = '1' then
-        v := sReg5a;
-        if sReg5aV = '0' then
+        sReg6       <= CO_TOKEN_NONE;
+        sReg6V      <= '0';
+        sReg6EOI    <= '0';
+        sReg6Unary  <= (others => '0');
+        sReg6SufLen <= (others => '0');
+        sReg6SufVal <= (others => '0');
+      elsif sCE6 = '1' then
+        v := sReg5;
+        if sReg5V = '0' then
           v := CO_TOKEN_NONE;
         end if;
-        sReg5b       <= v;
-        sReg5bV      <= sReg5aV;
-        sReg5bEOI    <= sReg5aEOI;
-        sReg5bUnary  <= sS5Unary;
-        sReg5bSufLen <= sS5SufLen;
-        sReg5bSufVal <= sS5SufVal;
+        sReg6       <= v;
+        sReg6V      <= sReg5V;
+        sReg6EOI    <= sReg5EOI;
+        sReg6Unary  <= sS5Unary;
+        sReg6SufLen <= sS5SufLen;
+        sReg6SufVal <= sS5SufVal;
       end if;
     end if;
   end process;
@@ -1206,12 +1195,12 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Output — bit packer → byte stuffer → framer
   -------------------------------------------------------------------------------------------------------------
-  sBpRawV <= '1' when sReg5bV = '1' and sStallLogic = '0'
-    and (sReg5b.mode = TOKEN_RUN_INTERRUPTION or sReg5b.mode = TOKEN_RAW)
+  sBpRawV <= '1' when sReg6V = '1' and sStallLogic = '0'
+    and (sReg6.mode = TOKEN_RUN_INTERRUPTION or sReg6.mode = TOKEN_RAW)
     else
     '0';
-  sBpGolV <= '1' when sReg5bV = '1' and sStallLogic = '0'
-    and (sReg5b.mode = TOKEN_REGULAR or sReg5b.mode = TOKEN_RUN_INTERRUPTION)
+  sBpGolV <= '1' when sReg6V = '1' and sStallLogic = '0'
+    and (sReg6.mode = TOKEN_REGULAR or sReg6.mode = TOKEN_RUN_INTERRUPTION)
     else
     '0';
 
@@ -1229,12 +1218,12 @@ begin
       iRst         => iRst,
       iStall       => sStallLogic,
       iRawValid    => sBpRawV,
-      iRawLen      => sReg5b.RawLen,
-      iRawVal      => sReg5b.RawVal,
+      iRawLen      => sReg6.RawLen,
+      iRawVal      => sReg6.RawVal,
       iGolombValid => sBpGolV,
-      iUnaryZeros  => sReg5bUnary,
-      iSuffixLen   => sReg5bSufLen,
-      iSuffixVal   => sReg5bSufVal,
+      iUnaryZeros  => sReg6Unary,
+      iSuffixLen   => sReg6SufLen,
+      iSuffixVal   => sReg6SufVal,
       oWord        => sBpWord,
       oWordValid   => sBpWordV,
       oValidLen    => sBpValidLen
@@ -1299,7 +1288,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Flush / framer control
   --
-  -- Timing (T = cycle when sReg5bEOI is sampled high, i.e. Reg5b holds the
+  -- Timing (T = cycle when sReg6EOI is sampled high, i.e. Reg6 holds the
   -- image's last token, which is the cycle bit_packer consumes it):
   --   T+1: bit_packer's registered output presents the last bit-packed word
   --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
@@ -1314,7 +1303,7 @@ begin
       if iRst = '1' then
         sEoiPipe <= (others => '0');
       elsif sStallLogic = '0' then
-        sEoiPipe <= sEoiPipe(1 downto 0) & sReg5bEOI;
+        sEoiPipe <= sEoiPipe(1 downto 0) & sReg6EOI;
       end if;
     end if;
   end process;
@@ -1339,44 +1328,44 @@ begin
 
   sFramerStart <= sReady and sValid and not sImageActive;
 
-  -- DEBUG: per-valid-token trace at Reg5b boundary
+  -- DEBUG: per-valid-token trace at Reg6 boundary
   dbg_probe : process (iClk)
   begin
-    if rising_edge(iClk) and iRst = '0' and sReg5bV = '1' and DEBUG_MODE = true then
-      case sReg5b.mode is
+    if rising_edge(iClk) and iRst = '0' and sReg6V = '1' and DEBUG_MODE = true then
+      case sReg6.mode is
         when TOKEN_REGULAR =>
-          report "REG  Ix=" & integer'image(to_integer(sReg5b.Ix)) &
-            " Ra=" & integer'image(to_integer(sReg5b.Ra)) &
-            " Rb=" & integer'image(to_integer(sReg5b.Rb)) &
-            " Q=" & integer'image(to_integer(sReg5b.Q)) &
-            " Sign=" & std_logic'image(sReg5b.Sign) &
-            " Errval=" & integer'image(to_integer(sReg5b.Errval)) &
-            " Aq=" & integer'image(to_integer(sReg5b.Aq)) &
-            " Bq=" & integer'image(to_integer(sReg5b.Bq)) &
-            " Nq=" & integer'image(to_integer(sReg5b.Nq)) &
-            " k=" & integer'image(to_integer(sReg5b.k)) &
-            " unary=" & integer'image(to_integer(sReg5bUnary)) &
-            " sufL=" & integer'image(to_integer(sReg5bSufLen)) &
-            " sufV=" & integer'image(to_integer(sReg5bSufVal));
+          report "REG  Ix=" & integer'image(to_integer(sReg6.Ix)) &
+            " Ra=" & integer'image(to_integer(sReg6.Ra)) &
+            " Rb=" & integer'image(to_integer(sReg6.Rb)) &
+            " Q=" & integer'image(to_integer(sReg6.Q)) &
+            " Sign=" & std_logic'image(sReg6.Sign) &
+            " Errval=" & integer'image(to_integer(sReg6.Errval)) &
+            " Aq=" & integer'image(to_integer(sReg6.Aq)) &
+            " Bq=" & integer'image(to_integer(sReg6.Bq)) &
+            " Nq=" & integer'image(to_integer(sReg6.Nq)) &
+            " k=" & integer'image(to_integer(sReg6.k)) &
+            " unary=" & integer'image(to_integer(sReg6Unary)) &
+            " sufL=" & integer'image(to_integer(sReg6SufLen)) &
+            " sufV=" & integer'image(to_integer(sReg6SufVal));
         when TOKEN_RUN_INTERRUPTION =>
-          report "RI   Ix=" & integer'image(to_integer(sReg5b.Ix)) &
-            " Ra=" & integer'image(to_integer(sReg5b.Ra)) &
-            " Rb=" & integer'image(to_integer(sReg5b.Rb)) &
-            " Q=" & integer'image(to_integer(sReg5b.Q)) &
-            " RItype=" & std_logic'image(sReg5b.RItype) &
-            " Errval=" & integer'image(to_integer(sReg5b.Errval)) &
-            " Aq=" & integer'image(to_integer(sReg5b.Aq)) &
-            " Nq=" & integer'image(to_integer(sReg5b.Nq)) &
-            " Nn=" & integer'image(to_integer(sReg5b.Nn)) &
-            " k=" & integer'image(to_integer(sReg5b.k)) &
-            " unary=" & integer'image(to_integer(sReg5bUnary)) &
-            " sufL=" & integer'image(to_integer(sReg5bSufLen)) &
-            " sufV=" & integer'image(to_integer(sReg5bSufVal)) &
-            " rawL=" & integer'image(to_integer(sReg5b.RawLen)) &
-            " rawV=" & integer'image(to_integer(sReg5b.RawVal));
+          report "RI   Ix=" & integer'image(to_integer(sReg6.Ix)) &
+            " Ra=" & integer'image(to_integer(sReg6.Ra)) &
+            " Rb=" & integer'image(to_integer(sReg6.Rb)) &
+            " Q=" & integer'image(to_integer(sReg6.Q)) &
+            " RItype=" & std_logic'image(sReg6.RItype) &
+            " Errval=" & integer'image(to_integer(sReg6.Errval)) &
+            " Aq=" & integer'image(to_integer(sReg6.Aq)) &
+            " Nq=" & integer'image(to_integer(sReg6.Nq)) &
+            " Nn=" & integer'image(to_integer(sReg6.Nn)) &
+            " k=" & integer'image(to_integer(sReg6.k)) &
+            " unary=" & integer'image(to_integer(sReg6Unary)) &
+            " sufL=" & integer'image(to_integer(sReg6SufLen)) &
+            " sufV=" & integer'image(to_integer(sReg6SufVal)) &
+            " rawL=" & integer'image(to_integer(sReg6.RawLen)) &
+            " rawV=" & integer'image(to_integer(sReg6.RawVal));
         when TOKEN_RAW =>
-          report "RAW  rawL=" & integer'image(to_integer(sReg5b.RawLen)) &
-            " rawV=" & integer'image(to_integer(sReg5b.RawVal));
+          report "RAW  rawL=" & integer'image(to_integer(sReg6.RawLen)) &
+            " rawV=" & integer'image(to_integer(sReg6.RawVal));
         when others => null;
       end case;
     end if;
