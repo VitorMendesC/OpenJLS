@@ -101,11 +101,11 @@ begin
   process (iClk)
   begin
     if rising_edge(iClk) then
-      sUseInitReg <= sUseInitValue(to_integer(unsigned(iRdAddr)));
 
       if iRst = '1' or iEndOfImage = '1' then
         sUseInitValue <= (others => '1');
       elsif iRdEn = '1' then
+        sUseInitReg                                  <= sUseInitValue(to_integer(unsigned(iRdAddr)));
         sUseInitValue(to_integer(unsigned(iRdAddr))) <= '0';
       end if;
     end if;
