@@ -66,10 +66,6 @@ architecture Behavioral of A11_2_bit_packer is
 
 begin
 
-  -- Per T.87:  
-  -- regular mode emits Golomb code <= LIMIT bits
-  -- RI emits raw (J[RUNindex]+1) bits + Golomb code (glimit = LIMIT - J[RUNindex] - 1) bits,
-  -- summing to <= LIMIT total bits, so OUT_WIDTH = LIMIT is sufficient for both modes.
   assert OUT_WIDTH >= LIMIT
   report "A11_2_bit_packer: OUT_WIDTH must be >= LIMIT (per-cycle worst case)"
     severity failure;
@@ -78,33 +74,41 @@ begin
   -- COMBINATORIAL PROCESS 
   -------------------------------------------------------------------------------------------------------------------------
   comb_proc : process (iRawValid, iRawLen, iRawVal, iGolombValid, iUnaryZeros, iSuffixLen, iSuffixVal)
-    variable vWord       : std_logic_vector(OUT_WIDTH - 1 downto 0);
-    variable vGolombWord : std_logic_vector(LIMIT - 1 downto 0);
-    variable vRawLen     : natural;
-    variable vSufLen     : natural;
-    variable vGolombLen  : natural;
-    variable vTotal      : natural;
+    constant GOLOMB_WIDTH : natural := LIMIT;
+    variable vWord        : unsigned(OUT_WIDTH - 1 downto 0);
+    variable vMarker      : unsigned(GOLOMB_WIDTH - 1 downto 0);
+    variable vGolombWord  : unsigned(GOLOMB_WIDTH - 1 downto 0);
+    variable vGolombShift : unsigned(OUT_WIDTH - 1 downto 0);
+    variable vRawShift    : unsigned(OUT_WIDTH - 1 downto 0);
+    variable vRawLen      : natural;
+    variable vSufLen      : natural;
+    variable vGolombLen   : natural;
+    variable vTotal       : natural;
   begin
 
-    vWord       := (others => '0');
-    vGolombWord := (others => '0');
-    vRawLen     := to_integer(iRawLen);
-    vSufLen     := to_integer(iSuffixLen);
-    vTotal      := 0;
+    vWord   := (others => '0');
+    vRawLen := to_integer(iRawLen);
+    vSufLen := to_integer(iSuffixLen);
+    vTotal  := 0;
 
     if iRawValid = '1' and vRawLen > 0 then
-      vWord(OUT_WIDTH - 1 downto OUT_WIDTH - vRawLen) := std_logic_vector(iRawVal(vRawLen - 1 downto 0));
-      vTotal                                          := vRawLen;
+      vRawShift := shift_left(resize(iRawVal, OUT_WIDTH), OUT_WIDTH - vRawLen);
+      vWord     := vRawShift;
+      vTotal    := vRawLen;
     end if;
 
     if iGolombValid = '1' then
-      vGolombLen                                                           := to_integer(iUnaryZeros) + 1 + vSufLen;
-      vGolombWord(vSufLen downto 0)                                        := '1' & std_logic_vector(resize(iSuffixVal, vSufLen));
-      vWord(OUT_WIDTH - 1 - vTotal downto OUT_WIDTH - vTotal - vGolombLen) := vGolombWord(vGolombLen - 1 downto 0);
-      vTotal                                                               := vTotal + vGolombLen;
+      vMarker     := shift_left(to_unsigned(1, GOLOMB_WIDTH), vSufLen);
+      vGolombWord := vMarker or (resize(iSuffixVal, GOLOMB_WIDTH) and (vMarker - 1)); -- Masks the desired suffix bits and adds to marker
+
+      vGolombLen   := to_integer(iUnaryZeros) + 1 + vSufLen;
+      vGolombShift := shift_left(resize(vGolombWord, OUT_WIDTH), OUT_WIDTH - vTotal - vGolombLen);
+
+      vWord  := vWord or vGolombShift;
+      vTotal := vTotal + vGolombLen;
     end if;
 
-    sCombWord  <= vWord;
+    sCombWord  <= std_logic_vector(vWord);
     sCombLen   <= to_unsigned(vTotal, sCombLen'length);
     sCombValid <= iRawValid or iGolombValid;
   end process comb_proc;
