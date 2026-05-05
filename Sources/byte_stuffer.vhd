@@ -10,26 +10,23 @@
 --              data from markers (0xFF followed by a non-zero byte).
 --
 --              Sits downstream of A11_2_bit_packer, which emits a variable-
---              length word per cycle: (iWord, iWordValid, iValidLen) — top
+--              length word per cycle: (iWord, iWordValid, iValidLen) - top
 --              iValidLen bits of iWord are meaningful, MSB-first.
 --
---              Byte_stuffer accumulates input bits, scans for 0xFF byte
---              boundaries, inserts a single '0' after each one, and emits
---              every complete byte the same cycle. Sub-byte residue (0..7
---              bits) carries to the next cycle. Output word is OUT_WIDTH bits
---              wide; oValidBytes (1..OUT_WIDTH/8) reports how many top bytes
---              are meaningful.
+--              Two-stage internal pipeline (latency = 2 cycles input -> output):
+--                Stage 1 - bit_accumulator:
+--                  Concatenates sub-byte residue with iWord's valid bits.
+--                  Extracts complete bytes; new residue (0..7 bits) carries.
+--                  No FF logic - keeps comb depth shallow (one barrel shift).
+--                Stage 2 - ff_stuffer:
+--                  Receives byte stream from stage 1. Detects 0xFF bytes in
+--                  parallel and inserts a single '0' bit immediately after
+--                  each one via prefix-sum positioning + parallel barrel-OR.
+--                  Output is byte-aligned modulo a sub-byte residue.
 --
---              Byte boundary tracking (sBytePos / sByteReg) persists across
---              word boundaries so that a byte spanning two input words is
---              detected correctly.
---
---              iFlush: zero-pad the residue up to a byte boundary, emit the
---                      remaining bytes (full + padded), reset the byte
---                      tracker for the next image. Single-cycle pulse.
---                      Per the design contract, vCount at flush must fit in
---                      one OUT_WIDTH word (steady-state pipeline guarantees
---                      this — no downstream stall during flush).
+--              iFlush: zero-pad the residue up to a byte boundary across both
+--                      stages, emit remaining bytes, reset trackers for the
+--                      next image. Single-cycle pulse.
 --
 -- Assumptions:
 --              OUT_WIDTH must be a multiple of 8.
@@ -67,13 +64,32 @@ end entity byte_stuffer;
 
 architecture Behavioral of byte_stuffer is
 
-  signal sBuffer          : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
-  signal sCount           : unsigned(log2ceil(BUFFER_WIDTH + 1) - 1 downto 0);
-  signal sByteReg         : std_logic_vector(7 downto 0);
-  signal sBytePos         : unsigned(2 downto 0);
-  signal sWordValidBuffer : std_logic;
-  signal sOutWordBuffer   : std_logic_vector(OUT_WIDTH - 1 downto 0);
-  signal sValidBytes      : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
+  -- Stage 1 internal sizing
+  constant S1_MAX_BYTES : natural := math_ceil_div(IN_WIDTH + 7, 8);
+  constant S1_BYTES_W   : natural := S1_MAX_BYTES * 8;
+  constant CAT_WIDTH    : natural := 8 + IN_WIDTH;
+
+  -- Stage 1 state (sub-byte residue from accumulator)
+  signal sResidue    : std_logic_vector(7 downto 0);
+  signal sResidueLen : unsigned(2 downto 0);
+
+  -- Stage 1 -> Stage 2 pipeline registers
+  signal s1Bytes : std_logic_vector(S1_BYTES_W - 1 downto 0);
+  signal s1Count : unsigned(log2ceil(S1_MAX_BYTES + 2) - 1 downto 0);
+  signal s1Valid : std_logic;
+  signal s1Flush : std_logic;
+
+  -- Stage 2 state (sub-byte residue from stuffer + bit buffer)
+  signal sBitBuf    : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
+  signal sBitBufLen : unsigned(log2ceil(BUFFER_WIDTH + 1) - 1 downto 0);
+
+  -- Output regs
+  signal sOutWordBuffer : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal sValidBytes    : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
+  signal sWordValidBuf  : std_logic;
+
+  type byte_array_t is array(0 to S1_MAX_BYTES - 1) of std_logic_vector(7 downto 0);
+  type pos_array_t is array(0 to S1_MAX_BYTES) of natural range 0 to BUFFER_WIDTH;
 
 begin
 
@@ -89,113 +105,183 @@ begin
   report "byte_stuffer: OUT_WIDTH too small to drain worst-case input in one cycle (residue invariant)"
     severity failure;
 
-  -- Comb. output
-  oWordValid  <= sWordValidBuffer;
   oWord       <= sOutWordBuffer;
+  oWordValid  <= sWordValidBuf;
   oValidBytes <= sValidBytes;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- SYNCHRONOUS PROCESS 
+  -- STAGE 1: BIT ACCUMULATOR (no FF logic)
   -------------------------------------------------------------------------------------------------------------------------
-  sync_proc : process (iClk)
-    variable vBuf         : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
-    variable vCountInt    : natural;
-    variable vByteReg     : std_logic_vector(7 downto 0);
-    variable vBytePosInt  : natural range 0 to 8;
-    variable vBytesOut    : natural;
+  stage1_proc : process (iClk)
+    variable vCat         : unsigned(CAT_WIDTH - 1 downto 0);
+    variable vIWordPos    : unsigned(CAT_WIDTH - 1 downto 0);
+    variable vResPos      : unsigned(CAT_WIDTH - 1 downto 0);
+    variable vCatShifted  : unsigned(CAT_WIDTH - 1 downto 0);
+    variable vTotal       : natural;
+    variable vBytes       : natural;
+    variable vNewResLen   : natural;
     variable vValidLenInt : natural;
-    variable vBitVal      : std_logic;
+    variable vS1Bytes     : std_logic_vector(S1_BYTES_W - 1 downto 0);
   begin
-
     if rising_edge(iClk) then
-
       if iRst = '1' then
-        sBuffer          <= (others => '0');
-        sCount           <= (others => '0');
-        sByteReg         <= (others => '0');
-        sBytePos         <= (others => '0');
-        sWordValidBuffer <= '0';
-        sOutWordBuffer   <= (others => '0');
-        sValidBytes      <= (others => '0');
+        sResidue    <= (others => '0');
+        sResidueLen <= (others => '0');
+        s1Bytes     <= (others => '0');
+        s1Count     <= (others => '0');
+        s1Valid     <= '0';
+        s1Flush     <= '0';
+      elsif iStall = '0' then
+        s1Valid <= '0';
+        s1Flush <= '0';
 
-      else
-
-        vBuf         := sBuffer;
-        vCountInt    := to_integer(sCount);
-        vByteReg     := sByteReg;
-        vBytePosInt  := to_integer(sBytePos);
-        vValidLenInt := to_integer(iValidLen);
-
-        ------------------------------------------------------------------------------------------------------------
-        -- Input: append top vValidLen bits of iWord (MSB-first), inserting a '0'
-        -- stuffing bit after every completed 0xFF byte.
-        ------------------------------------------------------------------------------------------------------------
-
-        if iWordValid = '1' and iStall = '0' then
-          for i in 0 to IN_WIDTH - 1 loop
-            if i < vValidLenInt then
-              vBitVal                            := iWord(IN_WIDTH - 1 - i);
-              vBuf(BUFFER_WIDTH - 1 - vCountInt) := vBitVal;
-              vCountInt                          := vCountInt + 1;
-              vByteReg                           := vByteReg(6 downto 0) & vBitVal;
-              vBytePosInt                        := vBytePosInt + 1;
-
-              if vBytePosInt = 8 then
-                vBytePosInt := 0;
-                if vByteReg = "11111111" then
-                  vBuf(BUFFER_WIDTH - 1 - vCountInt) := '0';
-                  vCountInt                          := vCountInt + 1;
-                  vByteReg                           := vByteReg(6 downto 0) & '0'; -- accounts for the stuffed bit in the byte tracker
-                  vBytePosInt                        := 1;
-                end if;
-              end if;
-            end if;
-          end loop;
-        end if;
-
-        ------------------------------------------------------------------------------------------------------------
-        -- Output: emit complete bytes (variable count). On iFlush, also drain
-        -- the sub-byte residue zero-padded to the next byte boundary and reset
-        -- the byte tracker so the next image starts on a fresh boundary.
-        ------------------------------------------------------------------------------------------------------------
-
-        if iStall = '0' then
-          if iFlush = '1' and vCountInt > 0 then
-            vBytesOut := math_ceil_div(vCountInt, 8);
-            sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH); -- buffer is filled with zeros in the vacated bits, auto zero padding
-            sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
-            sWordValidBuffer <= '1';
-            vBuf        := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-            vCountInt   := 0;
-            vBytePosInt := 0;
-            vByteReg    := (others => '0');
-
-          elsif vCountInt >= 8 then
-
-            vBytesOut := vCountInt / 8;
-            if vBytesOut > OUT_WIDTH / 8 then
-              vBytesOut := OUT_WIDTH / 8;
-            end if;
-
-            sOutWordBuffer   <= vBuf(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH);
-            sValidBytes      <= to_unsigned(vBytesOut, sValidBytes'length);
-            sWordValidBuffer <= '1';
-            vBuf      := std_logic_vector(shift_left(unsigned(vBuf), vBytesOut * 8));
-            vCountInt := vCountInt - vBytesOut * 8;
-
+        if iWordValid = '1' or iFlush = '1' then
+          if iWordValid = '1' then
+            vValidLenInt := to_integer(iValidLen);
           else
-            sWordValidBuffer <= '0';
+            vValidLenInt := 0;
+          end if;
+
+          -- Residue at top 8 bits of CAT, MSB-aligned.
+          vResPos := shift_left(resize(unsigned(sResidue), CAT_WIDTH), IN_WIDTH);
+
+          -- iWord MSB-aligned in CAT, then shift down by sResidueLen so its
+          -- valid bits start right after residue's valid bits.
+          vIWordPos := shift_right(
+            shift_left(resize(unsigned(iWord), CAT_WIDTH), CAT_WIDTH - IN_WIDTH),
+            to_integer(sResidueLen));
+
+          vCat := vResPos or vIWordPos;
+
+          vTotal     := to_integer(sResidueLen) + vValidLenInt;
+          vBytes     := vTotal / 8;
+          vNewResLen := vTotal mod 8;
+
+          -- Flush: pad residue out as one extra byte (low bits already 0).
+          if iFlush = '1' and vNewResLen > 0 then
+            vBytes     := vBytes + 1;
+            vNewResLen := 0;
+          end if;
+
+          if CAT_WIDTH >= S1_BYTES_W then
+            vS1Bytes := std_logic_vector(vCat(CAT_WIDTH - 1 downto CAT_WIDTH - S1_BYTES_W));
+          else
+            vS1Bytes                                               := (others => '0');
+            vS1Bytes(S1_BYTES_W - 1 downto S1_BYTES_W - CAT_WIDTH) := std_logic_vector(vCat);
+          end if;
+
+          s1Bytes <= vS1Bytes;
+          s1Count <= to_unsigned(vBytes, s1Count'length);
+          s1Valid <= iWordValid;
+          s1Flush <= iFlush;
+
+          if iFlush = '1' then
+            sResidue    <= (others => '0');
+            sResidueLen <= (others => '0');
+          else
+            vCatShifted := shift_left(vCat, vBytes * 8);
+            sResidue    <= std_logic_vector(vCatShifted(CAT_WIDTH - 1 downto CAT_WIDTH - 8));
+            sResidueLen <= to_unsigned(vNewResLen, sResidueLen'length);
           end if;
         end if;
-
-        -- Registers
-        sBuffer  <= vBuf;
-        sCount   <= to_unsigned(vCountInt, sCount'length);
-        sByteReg <= vByteReg;
-        sBytePos <= to_unsigned(vBytePosInt, sBytePos'length);
-
       end if;
     end if;
-  end process sync_proc;
+  end process stage1_proc;
+
+  -------------------------------------------------------------------------------------------------------------------------
+  -- STAGE 2: FF STUFFER (parallel detect + prefix-sum positioning)
+  -------------------------------------------------------------------------------------------------------------------------
+  stage2_proc : process (iClk)
+    variable vBytes_arr      : byte_array_t;
+    variable vFF             : std_logic_vector(S1_MAX_BYTES - 1 downto 0);
+    variable vPos            : pos_array_t;
+    variable vS1CountInt     : natural;
+    variable vBitBufNew      : unsigned(BUFFER_WIDTH - 1 downto 0);
+    variable vAdded          : unsigned(BUFFER_WIDTH - 1 downto 0);
+    variable vBitBufLenInt   : natural;
+    variable vBitBufFinalLen : natural;
+    variable vBytesOut       : natural;
+    variable vShiftAmt       : natural;
+  begin
+    if rising_edge(iClk) then
+      if iRst = '1' then
+        sBitBuf        <= (others => '0');
+        sBitBufLen     <= (others => '0');
+        sOutWordBuffer <= (others => '0');
+        sValidBytes    <= (others => '0');
+        sWordValidBuf  <= '0';
+      elsif iStall = '0' then
+        sWordValidBuf <= '0';
+
+        if s1Valid = '1' or s1Flush = '1' then
+          vS1CountInt   := to_integer(s1Count);
+          vBitBufLenInt := to_integer(sBitBufLen);
+          vBitBufNew    := unsigned(sBitBuf);
+
+          for k in 0 to S1_MAX_BYTES - 1 loop
+            vBytes_arr(k) := s1Bytes(S1_BYTES_W - 1 - k * 8 downto S1_BYTES_W - (k + 1) * 8);
+          end loop;
+
+          for k in 0 to S1_MAX_BYTES - 1 loop
+            if k < vS1CountInt and vBytes_arr(k) = "11111111" then
+              vFF(k) := '1';
+            else
+              vFF(k) := '0';
+            end if;
+          end loop;
+
+          vPos(0) := vBitBufLenInt;
+          for k in 0 to S1_MAX_BYTES - 1 loop
+            if k < vS1CountInt then
+              if vFF(k) = '1' then
+                vPos(k + 1) := vPos(k) + 9;
+              else
+                vPos(k + 1) := vPos(k) + 8;
+              end if;
+            else
+              vPos(k + 1) := vPos(k);
+            end if;
+          end loop;
+
+          for k in 0 to S1_MAX_BYTES - 1 loop
+            if k < vS1CountInt then
+              vShiftAmt  := BUFFER_WIDTH - 8 - vPos(k);
+              vAdded     := shift_left(resize(unsigned(vBytes_arr(k)), BUFFER_WIDTH), vShiftAmt);
+              vBitBufNew := vBitBufNew or vAdded;
+            end if;
+          end loop;
+
+          vBitBufFinalLen := vPos(S1_MAX_BYTES);
+
+          if s1Flush = '1' and (vBitBufFinalLen mod 8) /= 0 then
+            vBitBufFinalLen := ((vBitBufFinalLen + 7) / 8) * 8;
+          end if;
+
+          vBytesOut := vBitBufFinalLen / 8;
+          if vBytesOut > OUT_WIDTH / 8 then
+            vBytesOut := OUT_WIDTH / 8;
+          end if;
+
+          sOutWordBuffer <= std_logic_vector(vBitBufNew(BUFFER_WIDTH - 1 downto BUFFER_WIDTH - OUT_WIDTH));
+          sValidBytes    <= to_unsigned(vBytesOut, sValidBytes'length);
+
+          if vBytesOut > 0 then
+            sWordValidBuf <= '1';
+          else
+            sWordValidBuf <= '0';
+          end if;
+
+          if s1Flush = '1' then
+            sBitBuf    <= (others => '0');
+            sBitBufLen <= (others => '0');
+          else
+            vBitBufNew := shift_left(vBitBufNew, vBytesOut * 8);
+            sBitBuf    <= std_logic_vector(vBitBufNew);
+            sBitBufLen <= to_unsigned(vBitBufFinalLen - vBytesOut * 8, sBitBufLen'length);
+          end if;
+        end if;
+      end if;
+    end if;
+  end process stage2_proc;
 
 end architecture Behavioral;
