@@ -389,7 +389,7 @@ architecture rtl of openjls_top is
   -- Bit packer is purely combinational + 1 register; it has no flush signal.
   -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees. 
   -- The framer needs iEOI aligned with the byte stuffer's flushed last word
-  signal sEoiPipe     : std_logic_vector(2 downto 0) := (others => '0');
+  signal sEoiPipe     : std_logic_vector(3 downto 0) := (others => '0');
   signal sBsFlush     : std_logic                    := '0';
   signal sFramerEOI   : std_logic                    := '0';
   signal sImageActive : std_logic                    := '0';
@@ -1361,9 +1361,11 @@ begin
   -- Timing (T = cycle when sReg6EOI is sampled high, i.e. Reg6 holds the
   -- image's last token, which is the cycle bit_packer consumes it):
   --   T+1: bit_packer's registered output presents the last bit-packed word
-  --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
-  --        zero-pads its sub-byte residue and emits the trailing bytes.
-  --   T+2: byte_stuffer's registered output presents the (flushed) last word
+  --        for image N. byte_stuffer (stage 1) must see iFlush='1' on this
+  --        cycle so it zero-pads its sub-byte residue and propagates flush.
+  --   T+2: byte_stuffer stage 2 receives the flushed byte stream; produces
+  --        the final padded output the same cycle (registered).
+  --   T+3: byte_stuffer's registered output presents the (flushed) last word
   --        for image N. framer sees iEOI='1' and pushes FF D9 into the FIFO
   --        right after these bytes, latching sEndOfImage.
   -------------------------------------------------------------------------------------------------------------
@@ -1373,13 +1375,13 @@ begin
       if iRst = '1' then
         sEoiPipe <= (others => '0');
       elsif sStallLogic = '0' then
-        sEoiPipe <= sEoiPipe(1 downto 0) & sReg6EOI;
+        sEoiPipe <= sEoiPipe(2 downto 0) & sReg6EOI;
       end if;
     end if;
   end process;
 
   sBsFlush   <= sEoiPipe(0);
-  sFramerEOI <= sEoiPipe(1);
+  sFramerEOI <= sEoiPipe(2);
 
   process (iClk)
   begin
@@ -1389,7 +1391,7 @@ begin
       elsif sStallLogic = '0' then
         if sValid = '1' and sImageActive = '0' then
           sImageActive <= '1';
-        elsif sEoiPipe(2) = '1' then
+        elsif sEoiPipe(3) = '1' then
           sImageActive <= '0';
         end if;
       end if;
