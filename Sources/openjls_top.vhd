@@ -385,6 +385,107 @@ architecture rtl of openjls_top is
   signal sBsValidB        : unsigned(log2ceil(BYTE_STUFFER_OUT_WIDTH / 8 + 1) - 1 downto 0);
   signal sFramerVBytes    : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
+  attribute keep       : string;
+  attribute mark_debug : string;
+
+  -- Pipeline control
+  attribute keep of sValid         : signal is "true"; attribute mark_debug of sValid         : signal is "true";
+  attribute keep of sStallLogic    : signal is "true"; attribute mark_debug of sStallLogic    : signal is "true";
+  attribute keep of sStall         : signal is "true"; attribute mark_debug of sStall         : signal is "true";
+  attribute keep of sStallUpstream : signal is "true"; attribute mark_debug of sStallUpstream : signal is "true";
+  attribute keep of sStallDelay    : signal is "true"; attribute mark_debug of sStallDelay    : signal is "true";
+  attribute keep of sCE1           : signal is "true"; attribute mark_debug of sCE1           : signal is "true";
+  attribute keep of sCE2           : signal is "true"; attribute mark_debug of sCE2           : signal is "true";
+  attribute keep of sCE3           : signal is "true"; attribute mark_debug of sCE3           : signal is "true";
+  attribute keep of sCE4           : signal is "true"; attribute mark_debug of sCE4           : signal is "true";
+  attribute keep of sCE5           : signal is "true"; attribute mark_debug of sCE5           : signal is "true";
+  attribute keep of sCE6           : signal is "true"; attribute mark_debug of sCE6           : signal is "true";
+
+  -- Pipeline V/EOI flags
+  attribute keep of sReg1V         : signal is "true"; attribute mark_debug of sReg1V         : signal is "true";
+  attribute keep of sReg2V         : signal is "true"; attribute mark_debug of sReg2V         : signal is "true";
+  attribute keep of sReg3V         : signal is "true"; attribute mark_debug of sReg3V         : signal is "true";
+  attribute keep of sReg4V         : signal is "true"; attribute mark_debug of sReg4V         : signal is "true";
+  attribute keep of sReg5V         : signal is "true"; attribute mark_debug of sReg5V         : signal is "true";
+  attribute keep of sReg6V         : signal is "true"; attribute mark_debug of sReg6V         : signal is "true";
+  attribute keep of sReg1EOL       : signal is "true"; attribute mark_debug of sReg1EOL       : signal is "true";
+  attribute keep of sReg1EOI       : signal is "true"; attribute mark_debug of sReg1EOI       : signal is "true";
+  attribute keep of sReg2EOI       : signal is "true"; attribute mark_debug of sReg2EOI       : signal is "true";
+  attribute keep of sReg3EOI       : signal is "true"; attribute mark_debug of sReg3EOI       : signal is "true";
+  attribute keep of sReg4EOI       : signal is "true"; attribute mark_debug of sReg4EOI       : signal is "true";
+  attribute keep of sReg5EOI       : signal is "true"; attribute mark_debug of sReg5EOI       : signal is "true";
+  attribute keep of sReg6EOI       : signal is "true"; attribute mark_debug of sReg6EOI       : signal is "true";
+
+  -- Input + line buffer outputs
+  attribute keep of sPixel         : signal is "true"; attribute mark_debug of sPixel         : signal is "true";
+  attribute keep of sLbRa          : signal is "true"; attribute mark_debug of sLbRa          : signal is "true";
+  attribute keep of sLbRb          : signal is "true"; attribute mark_debug of sLbRb          : signal is "true";
+  attribute keep of sLbRc          : signal is "true"; attribute mark_debug of sLbRc          : signal is "true";
+  attribute keep of sLbRd          : signal is "true"; attribute mark_debug of sLbRd          : signal is "true";
+  attribute keep of sLbValid       : signal is "true"; attribute mark_debug of sLbValid       : signal is "true";
+  attribute keep of sLbEOL         : signal is "true"; attribute mark_debug of sLbEOL         : signal is "true";
+  attribute keep of sLbEOI         : signal is "true"; attribute mark_debug of sLbEOI         : signal is "true";
+
+  -- Stage 1 outputs (gradients / mode)
+  attribute keep of sS1D1          : signal is "true"; attribute mark_debug of sS1D1          : signal is "true";
+  attribute keep of sS1D2          : signal is "true"; attribute mark_debug of sS1D2          : signal is "true";
+  attribute keep of sS1D3          : signal is "true"; attribute mark_debug of sS1D3          : signal is "true";
+  attribute keep of sS1ModeRun     : signal is "true"; attribute mark_debug of sS1ModeRun     : signal is "true";
+
+  -- Reg1 fanout (record fields surface as named signals)
+  attribute keep of sReg1ModeRun   : signal is "true"; attribute mark_debug of sReg1ModeRun   : signal is "true";
+  attribute keep of sReg1D1        : signal is "true"; attribute mark_debug of sReg1D1        : signal is "true";
+  attribute keep of sReg1D2        : signal is "true"; attribute mark_debug of sReg1D2        : signal is "true";
+  attribute keep of sReg1D3        : signal is "true"; attribute mark_debug of sReg1D3        : signal is "true";
+
+  -- Stage 2 outputs (Q index, mode, run)
+  attribute keep of sS2Q           : signal is "true"; attribute mark_debug of sS2Q           : signal is "true";
+  attribute keep of sS2RunCnt      : signal is "true"; attribute mark_debug of sS2RunCnt      : signal is "true";
+  attribute keep of sS2RunHit      : signal is "true"; attribute mark_debug of sS2RunHit      : signal is "true";
+  attribute keep of sS2RawValid    : signal is "true"; attribute mark_debug of sS2RawValid    : signal is "true";
+  attribute keep of sS2RIValid     : signal is "true"; attribute mark_debug of sS2RIValid     : signal is "true";
+  attribute keep of sS2RawLen      : signal is "true"; attribute mark_debug of sS2RawLen      : signal is "true";
+  attribute keep of sS2RawVal      : signal is "true"; attribute mark_debug of sS2RawVal      : signal is "true";
+
+  -- Context RAM
+  attribute keep of sCtxRdData     : signal is "true"; attribute mark_debug of sCtxRdData     : signal is "true";
+  attribute keep of sCtxWrData     : signal is "true"; attribute mark_debug of sCtxWrData     : signal is "true";
+  attribute keep of sCtxWrEn       : signal is "true"; attribute mark_debug of sCtxWrEn       : signal is "true";
+
+  -- Stage 3 (predictor / err)
+  attribute keep of sS3Aq          : signal is "true"; attribute mark_debug of sS3Aq          : signal is "true";
+  attribute keep of sS3Bq          : signal is "true"; attribute mark_debug of sS3Bq          : signal is "true";
+  attribute keep of sS3Cq          : signal is "true"; attribute mark_debug of sS3Cq          : signal is "true";
+  attribute keep of sS3Nq          : signal is "true"; attribute mark_debug of sS3Nq          : signal is "true";
+  attribute keep of sS3Px          : signal is "true"; attribute mark_debug of sS3Px          : signal is "true";
+  attribute keep of sS3Err9Sel     : signal is "true"; attribute mark_debug of sS3Err9Sel     : signal is "true";
+
+  -- Stage 4 (variables update / k)
+  attribute keep of sS4K           : signal is "true"; attribute mark_debug of sS4K           : signal is "true";
+  attribute keep of sS4AqNew       : signal is "true"; attribute mark_debug of sS4AqNew       : signal is "true";
+  attribute keep of sS4NqNew       : signal is "true"; attribute mark_debug of sS4NqNew       : signal is "true";
+
+  -- Stage 5 (mapped err / Golomb encoder)
+  attribute keep of sS5MErrval     : signal is "true"; attribute mark_debug of sS5MErrval     : signal is "true";
+  attribute keep of sS5GolMErr     : signal is "true"; attribute mark_debug of sS5GolMErr     : signal is "true";
+  attribute keep of sS5Unary       : signal is "true"; attribute mark_debug of sS5Unary       : signal is "true";
+  attribute keep of sS5SufLen      : signal is "true"; attribute mark_debug of sS5SufLen      : signal is "true";
+  attribute keep of sS5SufVal      : signal is "true"; attribute mark_debug of sS5SufVal      : signal is "true";
+  attribute keep of sReg5GolMErr   : signal is "true"; attribute mark_debug of sReg5GolMErr   : signal is "true";
+
+  -- Reg6 + bit_packer
+  attribute keep of sReg6Unary     : signal is "true"; attribute mark_debug of sReg6Unary     : signal is "true";
+  attribute keep of sReg6SufLen    : signal is "true"; attribute mark_debug of sReg6SufLen    : signal is "true";
+  attribute keep of sReg6SufVal    : signal is "true"; attribute mark_debug of sReg6SufVal    : signal is "true";
+  attribute keep of sBpRawV        : signal is "true"; attribute mark_debug of sBpRawV        : signal is "true";
+  attribute keep of sBpGolV        : signal is "true"; attribute mark_debug of sBpGolV        : signal is "true";
+  attribute keep of sBpWord        : signal is "true"; attribute mark_debug of sBpWord        : signal is "true";
+  attribute keep of sBpWordV       : signal is "true"; attribute mark_debug of sBpWordV       : signal is "true";
+  attribute keep of sBpValidLen    : signal is "true"; attribute mark_debug of sBpValidLen    : signal is "true";
+  attribute keep of sBsWord        : signal is "true"; attribute mark_debug of sBsWord        : signal is "true";
+  attribute keep of sBsWordV       : signal is "true"; attribute mark_debug of sBsWordV       : signal is "true";
+  attribute keep of sBsValidB      : signal is "true"; attribute mark_debug of sBsValidB      : signal is "true";
+
   -- Flush / framer control
   -- Bit packer is purely combinational + 1 register; it has no flush signal.
   -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees. 
@@ -1405,43 +1506,45 @@ begin
   -------------------------------------------------------------------------------------------------------------
   dbg_probe : process (iClk)
   begin
-    if rising_edge(iClk) and iRst = '0' and sReg6V = '1' and DEBUG_MODE = true then
-      case sReg6.mode is
-        when TOKEN_REGULAR =>
-          report "REG  Ix=" & integer'image(to_integer(sReg6.Ix)) &
-            " Ra=" & integer'image(to_integer(sReg6.Ra)) &
-            " Rb=" & integer'image(to_integer(sReg6.Rb)) &
-            " Q=" & integer'image(to_integer(sReg6.Q)) &
-            " Sign=" & std_logic'image(sReg6.Sign) &
-            " Errval=" & integer'image(to_integer(sReg6.Errval)) &
-            " Aq=" & integer'image(to_integer(sReg6.Aq)) &
-            " Bq=" & integer'image(to_integer(sReg6.Bq)) &
-            " Nq=" & integer'image(to_integer(sReg6.Nq)) &
-            " k=" & integer'image(to_integer(sReg6.k)) &
-            " unary=" & integer'image(to_integer(sReg6Unary)) &
-            " sufL=" & integer'image(to_integer(sReg6SufLen)) &
-            " sufV=" & integer'image(to_integer(sReg6SufVal));
-        when TOKEN_RUN_INTERRUPTION =>
-          report "RI   Ix=" & integer'image(to_integer(sReg6.Ix)) &
-            " Ra=" & integer'image(to_integer(sReg6.Ra)) &
-            " Rb=" & integer'image(to_integer(sReg6.Rb)) &
-            " Q=" & integer'image(to_integer(sReg6.Q)) &
-            " RItype=" & std_logic'image(sReg6.RItype) &
-            " Errval=" & integer'image(to_integer(sReg6.Errval)) &
-            " Aq=" & integer'image(to_integer(sReg6.Aq)) &
-            " Nq=" & integer'image(to_integer(sReg6.Nq)) &
-            " Nn=" & integer'image(to_integer(sReg6.Nn)) &
-            " k=" & integer'image(to_integer(sReg6.k)) &
-            " unary=" & integer'image(to_integer(sReg6Unary)) &
-            " sufL=" & integer'image(to_integer(sReg6SufLen)) &
-            " sufV=" & integer'image(to_integer(sReg6SufVal)) &
-            " rawL=" & integer'image(to_integer(sReg6.RawLen)) &
-            " rawV=" & integer'image(to_integer(sReg6.RawVal));
-        when TOKEN_RAW =>
-          report "RAW  rawL=" & integer'image(to_integer(sReg6.RawLen)) &
-            " rawV=" & integer'image(to_integer(sReg6.RawVal));
-        when others => null;
-      end case;
+    if rising_edge(iClk) then
+      if iRst = '0' and sReg6V = '1' and DEBUG_MODE = true then
+        case sReg6.mode is
+          when TOKEN_REGULAR =>
+            report "REG  Ix=" & integer'image(to_integer(sReg6.Ix)) &
+              " Ra=" & integer'image(to_integer(sReg6.Ra)) &
+              " Rb=" & integer'image(to_integer(sReg6.Rb)) &
+              " Q=" & integer'image(to_integer(sReg6.Q)) &
+              " Sign=" & std_logic'image(sReg6.Sign) &
+              " Errval=" & integer'image(to_integer(sReg6.Errval)) &
+              " Aq=" & integer'image(to_integer(sReg6.Aq)) &
+              " Bq=" & integer'image(to_integer(sReg6.Bq)) &
+              " Nq=" & integer'image(to_integer(sReg6.Nq)) &
+              " k=" & integer'image(to_integer(sReg6.k)) &
+              " unary=" & integer'image(to_integer(sReg6Unary)) &
+              " sufL=" & integer'image(to_integer(sReg6SufLen)) &
+              " sufV=" & integer'image(to_integer(sReg6SufVal));
+          when TOKEN_RUN_INTERRUPTION =>
+            report "RI   Ix=" & integer'image(to_integer(sReg6.Ix)) &
+              " Ra=" & integer'image(to_integer(sReg6.Ra)) &
+              " Rb=" & integer'image(to_integer(sReg6.Rb)) &
+              " Q=" & integer'image(to_integer(sReg6.Q)) &
+              " RItype=" & std_logic'image(sReg6.RItype) &
+              " Errval=" & integer'image(to_integer(sReg6.Errval)) &
+              " Aq=" & integer'image(to_integer(sReg6.Aq)) &
+              " Nq=" & integer'image(to_integer(sReg6.Nq)) &
+              " Nn=" & integer'image(to_integer(sReg6.Nn)) &
+              " k=" & integer'image(to_integer(sReg6.k)) &
+              " unary=" & integer'image(to_integer(sReg6Unary)) &
+              " sufL=" & integer'image(to_integer(sReg6SufLen)) &
+              " sufV=" & integer'image(to_integer(sReg6SufVal)) &
+              " rawL=" & integer'image(to_integer(sReg6.RawLen)) &
+              " rawV=" & integer'image(to_integer(sReg6.RawVal));
+          when TOKEN_RAW =>
+            report "RAW  rawL=" & integer'image(to_integer(sReg6.RawLen)) &
+              " rawV=" & integer'image(to_integer(sReg6.RawVal));
+          when others => null;
+        end case;
+      end if;
     end if;
   end process;
 
