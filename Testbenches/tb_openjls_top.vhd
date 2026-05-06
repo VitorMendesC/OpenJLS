@@ -25,14 +25,18 @@ entity tb_openjls_top is
 end;
 
 architecture bench of tb_openjls_top is
-
-  constant PRINT_BYTES : boolean := false;
+  -------------------------------------------------------------------------------------------------------------
+  -- TB level controls
+  -------------------------------------------------------------------------------------------------------------
+  constant PRINT_BYTES         : boolean := false;
+  constant POST_SYNTH_FRIENDLY : boolean := true; -- remove generic map
+  -------------------------------------------------------------------------------------------------------------
 
   -- Test configuration
   constant CLK_PERIOD       : time     := 10 ns;
   constant BITNESS          : natural  := 8;
-  constant MAX_IMAGE_WIDTH  : positive := 16;
-  constant MAX_IMAGE_HEIGHT : positive := 16;
+  constant MAX_IMAGE_WIDTH  : positive := 4096;
+  constant MAX_IMAGE_HEIGHT : positive := 4096;
   -- Derived locally from BITNESS (mirrors openjls_top default formula).
   constant OUT_WIDTH      : natural := math_ceil_div(4 * BITNESS + 4 * BITNESS / 8 + 7, 8) * 8 + 8;
   constant BYTES_PER_WORD : natural := OUT_WIDTH / 8;
@@ -123,225 +127,245 @@ begin
   iImageWidth  <= std_logic_vector(to_unsigned(IMG_W, iImageWidth'length));
   iImageHeight <= std_logic_vector(to_unsigned(IMG_H, iImageHeight'length));
 
-  dut : entity work.openjls_top
-    generic map(
-      BITNESS          => BITNESS,
-      MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
-      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
-      OUT_WIDTH        => OUT_WIDTH
-    )
-    port map
-    (
-      iClk         => iClk,
-      iRst         => iRst,
-      iValid       => iValid,
-      iPixel       => iPixel,
-      oReady       => oReady,
-      iImageWidth  => iImageWidth,
-      iImageHeight => iImageHeight,
-      oData        => oData,
-      oValid       => oValid,
-      oKeep        => oKeep,
-      oLast        => oLast,
-      iReady       => iReady
-    );
+  dut : if POST_SYNTH_FRIENDLY generate
+    dut_post_syn : entity work.openjls_top
+      port map
+      (
+        iClk         => iClk,
+        iRst         => iRst,
+        iValid       => iValid,
+        iPixel       => iPixel,
+        oReady       => oReady,
+        iImageWidth  => iImageWidth,
+        iImageHeight => iImageHeight,
+        oData        => oData,
+        oValid       => oValid,
+        oKeep        => oKeep,
+        oLast        => oLast,
+        iReady       => iReady
+      );
+  else
+    generate
+      dut_behav : entity work.openjls_top
+        generic map(
+          BITNESS          => BITNESS,
+          MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
+          MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
+          OUT_WIDTH        => OUT_WIDTH
+        )
+        port map
+        (
+          iClk         => iClk,
+          iRst         => iRst,
+          iValid       => iValid,
+          iPixel       => iPixel,
+          oReady       => oReady,
+          iImageWidth  => iImageWidth,
+          iImageHeight => iImageHeight,
+          oData        => oData,
+          oValid       => oValid,
+          oKeep        => oKeep,
+          oLast        => oLast,
+          iReady       => iReady
+        );
+    end generate;
 
-  -- Output collection: extract bytes per word using oKeep (MSB-first).
-  collect : process (iClk)
-  begin
-    if rising_edge(iClk) then
-      if iRst = '1' then
-        collected_count := 0;
-        last_count      := 0;
-      elsif oValid = '1' and iReady = '1' then
-        for i in 0 to BYTES_PER_WORD - 1 loop
-          if oKeep(BYTES_PER_WORD - 1 - i) = '1' then
-            if collected_count < collected'length then
-              collected(collected_count) :=
-              oData(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
+    -- Output collection: extract bytes per word using oKeep (MSB-first).
+    collect : process (iClk)
+    begin
+      if rising_edge(iClk) then
+        if iRst = '1' then
+          collected_count := 0;
+          last_count      := 0;
+        elsif oValid = '1' and iReady = '1' then
+          for i in 0 to BYTES_PER_WORD - 1 loop
+            if oKeep(BYTES_PER_WORD - 1 - i) = '1' then
+              if collected_count < collected'length then
+                collected(collected_count) :=
+                oData(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
+              end if;
+              collected_count := collected_count + 1;
             end if;
-            collected_count := collected_count + 1;
+          end loop;
+          if oLast = '1' then
+            last_count := last_count + 1;
           end if;
-        end loop;
-        if oLast = '1' then
-          last_count := last_count + 1;
         end if;
       end if;
-    end if;
-  end process;
+    end process;
 
-  pulse_iReady : process (iClk)
-    variable vCount : integer := 0;
-  begin
-    if rising_edge(iClk) then
+    pulse_iReady : process (iClk)
+      variable vCount : integer := 0;
+    begin
+      if rising_edge(iClk) then
 
-      if sPulseIReady = '1' then
+        if sPulseIReady = '1' then
 
-        vCount := vCount + 1;
-        if vCount = 5 then
-          iReady <= '1';
-          vCount := 0;
+          vCount := vCount + 1;
+          if vCount = 5 then
+            iReady <= '1';
+            vCount := 0;
+          else
+            iReady <= '0';
+          end if;
+
         else
-          iReady <= '0';
+          iReady <= '1';
         end if;
 
-      else
-        iReady <= '1';
       end if;
+    end process;
 
-    end if;
-  end process;
-
-  -- Stimulus
-  stim : process
-    variable base_collected : natural := 0;
-    variable base_last      : natural := 0;
-    procedure do_reset is
-    begin
-      iRst   <= '1';
-      iValid <= '0';
-      for i in 0 to 4 loop
+    -- Stimulus
+    stim : process
+      variable base_collected : natural := 0;
+      variable base_last      : natural := 0;
+      procedure do_reset is
+      begin
+        iRst   <= '1';
+        iValid <= '0';
+        for i in 0 to 4 loop
+          wait until rising_edge(iClk);
+        end loop;
+        iRst <= '0';
         wait until rising_edge(iClk);
+        while oReady /= '1' loop
+          wait until rising_edge(iClk);
+        end loop;
+      end procedure;
+
+      procedure feed_image is
+      begin
+        for i in PIXELS'range loop
+          iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
+          iValid <= '1';
+          wait until rising_edge(iClk);
+        end loop;
+        iValid <= '0';
+      end procedure;
+
+      procedure feed_image_bp is
+      begin
+        for i in PIXELS'range loop
+          iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
+          iValid <= '1';
+          wait until oReady = '1' and rising_edge(iClk);
+        end loop;
+        iValid <= '0';
+      end procedure;
+
+      procedure wait_n_images(n : natural) is
+      begin
+        for i in 0 to 9999 loop
+          exit when last_count >= base_last + n;
+          wait until rising_edge(iClk);
+        end loop;
+      end procedure;
+    begin
+
+      -- =========================================================================
+      -- Test 1: single image
+      -- =========================================================================
+      report "Test 1: single image";
+      do_reset;
+      base_collected := collected_count;
+      base_last      := last_count;
+      feed_image;
+      wait_n_images(1);
+
+      check(collected_count - base_collected = EXPECTED_BYTES,
+      "Test 1 byte count mismatch: got " & integer'image(collected_count - base_collected) &
+      " expected " & integer'image(EXPECTED_BYTES));
+
+      for i in 0 to EXPECTED_BYTES - 1 loop
+        if base_collected + i < collected_count then
+          check(collected(base_collected + i) = EXPECTED(i),
+          "Test 1 byte " & integer'image(i) &
+          " mismatch: exp=" & hex2(EXPECTED(i)) &
+          " got=" & hex2(collected(base_collected + i)));
+        end if;
       end loop;
-      iRst <= '0';
+      report "Test 1 done";
+
+      -- =========================================================================
+      -- Test 2: two back-to-back images, no reset between Test 1 and Test 2.
+      -- Output must be EXPECTED concatenated with itself.
+      -- =========================================================================
+      base_collected := collected_count;
+      base_last      := last_count;
+      wait for CLK_PERIOD * 5;
       wait until rising_edge(iClk);
-      while oReady /= '1' loop
-        wait until rising_edge(iClk);
+      report "Test 2: back-to-back images";
+
+      feed_image;
+      feed_image;
+      wait_n_images(2);
+
+      check(collected_count - base_collected = 2 * EXPECTED_BYTES,
+      "Test 2 byte count mismatch: got " & integer'image(collected_count - base_collected) &
+      " expected " & integer'image(2 * EXPECTED_BYTES));
+
+      for i in 0 to 2 * EXPECTED_BYTES - 1 loop
+        if base_collected + i < collected_count then
+          check(collected(base_collected + i) = EXPECTED(i mod EXPECTED_BYTES),
+          "Test 2 byte " & integer'image(i) &
+          " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
+          " got=" & hex2(collected(base_collected + i)));
+        end if;
       end loop;
-    end procedure;
+      report "Test 2 done";
 
-    procedure feed_image is
-    begin
-      for i in PIXELS'range loop
-        iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
-        iValid <= '1';
-        wait until rising_edge(iClk);
+      -- =========================================================================
+      -- Test 3: downstream backpressure during a 3-image stream.
+      -- iReady held low between handshakes; pulsed high to drain only when the
+      -- pipeline backpressures upstream (oReady=0). Forces the framer FIFO to
+      -- repeatedly cross oAlmostFull and exercises the stall propagation,
+      -- per-stage CE, and recovery on stall release. Output stream must equal
+      -- EXPECTED concatenated three times.
+      -- =========================================================================
+      base_collected := collected_count;
+      base_last      := last_count;
+      wait for CLK_PERIOD * 5;
+      wait until rising_edge(iClk);
+      report "Test 3: downstream backpressure";
+
+      sPulseIReady <= '1';
+
+      feed_image_bp;
+      feed_image_bp;
+      feed_image_bp;
+      wait_n_images(3);
+
+      sPulseIReady <= '0';
+
+      check(collected_count - base_collected = 3 * EXPECTED_BYTES,
+      "Test 3 byte count mismatch: got " & integer'image(collected_count - base_collected) &
+      " expected " & integer'image(3 * EXPECTED_BYTES));
+
+      for i in 0 to 3 * EXPECTED_BYTES - 1 loop
+        if base_collected + i < collected_count then
+          check(collected(base_collected + i) = EXPECTED(i mod EXPECTED_BYTES),
+          "Test 3 byte " & integer'image(i) &
+          " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
+          " got=" & hex2(collected(base_collected + i)));
+        end if;
       end loop;
-      iValid <= '0';
-    end procedure;
+      report "Test 3 done";
 
-    procedure feed_image_bp is
-    begin
-      for i in PIXELS'range loop
-        iPixel <= std_logic_vector(to_unsigned(PIXELS(i), BITNESS));
-        iValid <= '1';
-        wait until oReady = '1' and rising_edge(iClk);
-      end loop;
-      iValid <= '0';
-    end procedure;
-
-    procedure wait_n_images(n : natural) is
-    begin
-      for i in 0 to 9999 loop
-        exit when last_count >= base_last + n;
-        wait until rising_edge(iClk);
-      end loop;
-    end procedure;
-  begin
-
-    -- =========================================================================
-    -- Test 1: single image
-    -- =========================================================================
-    report "Test 1: single image";
-    do_reset;
-    base_collected := collected_count;
-    base_last      := last_count;
-    feed_image;
-    wait_n_images(1);
-
-    check(collected_count - base_collected = EXPECTED_BYTES,
-    "Test 1 byte count mismatch: got " & integer'image(collected_count - base_collected) &
-    " expected " & integer'image(EXPECTED_BYTES));
-
-    for i in 0 to EXPECTED_BYTES - 1 loop
-      if base_collected + i < collected_count then
-        check(collected(base_collected + i) = EXPECTED(i),
-        "Test 1 byte " & integer'image(i) &
-        " mismatch: exp=" & hex2(EXPECTED(i)) &
-        " got=" & hex2(collected(base_collected + i)));
+      -- Dump collected bytes for diagnosis
+      if PRINT_BYTES = true then
+        for i in 0 to collected_count - 1 loop
+          report "got[" & integer'image(i) & "]=" & hex2(collected(i));
+        end loop;
       end if;
-    end loop;
-    report "Test 1 done";
 
-    -- =========================================================================
-    -- Test 2: two back-to-back images, no reset between Test 1 and Test 2.
-    -- Output must be EXPECTED concatenated with itself.
-    -- =========================================================================
-    base_collected := collected_count;
-    base_last      := last_count;
-    wait for CLK_PERIOD * 5;
-    wait until rising_edge(iClk);
-    report "Test 2: back-to-back images";
-
-    feed_image;
-    feed_image;
-    wait_n_images(2);
-
-    check(collected_count - base_collected = 2 * EXPECTED_BYTES,
-    "Test 2 byte count mismatch: got " & integer'image(collected_count - base_collected) &
-    " expected " & integer'image(2 * EXPECTED_BYTES));
-
-    for i in 0 to 2 * EXPECTED_BYTES - 1 loop
-      if base_collected + i < collected_count then
-        check(collected(base_collected + i) = EXPECTED(i mod EXPECTED_BYTES),
-        "Test 2 byte " & integer'image(i) &
-        " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
-        " got=" & hex2(collected(base_collected + i)));
+      if err_count > 0 then
+        report "tb_openjls_top RESULT: FAIL (" &
+          integer'image(err_count) & " errors)" severity failure;
+      else
+        report "tb_openjls_top RESULT: PASS" severity note;
       end if;
-    end loop;
-    report "Test 2 done";
+      finish;
+    end process;
 
-    -- =========================================================================
-    -- Test 3: downstream backpressure during a 3-image stream.
-    -- iReady held low between handshakes; pulsed high to drain only when the
-    -- pipeline backpressures upstream (oReady=0). Forces the framer FIFO to
-    -- repeatedly cross oAlmostFull and exercises the stall propagation,
-    -- per-stage CE, and recovery on stall release. Output stream must equal
-    -- EXPECTED concatenated three times.
-    -- =========================================================================
-    base_collected := collected_count;
-    base_last      := last_count;
-    wait for CLK_PERIOD * 5;
-    wait until rising_edge(iClk);
-    report "Test 3: downstream backpressure";
-
-    sPulseIReady <= '1';
-
-    feed_image_bp;
-    feed_image_bp;
-    feed_image_bp;
-    wait_n_images(3);
-
-    sPulseIReady <= '0';
-
-    check(collected_count - base_collected = 3 * EXPECTED_BYTES,
-    "Test 3 byte count mismatch: got " & integer'image(collected_count - base_collected) &
-    " expected " & integer'image(3 * EXPECTED_BYTES));
-
-    for i in 0 to 3 * EXPECTED_BYTES - 1 loop
-      if base_collected + i < collected_count then
-        check(collected(base_collected + i) = EXPECTED(i mod EXPECTED_BYTES),
-        "Test 3 byte " & integer'image(i) &
-        " mismatch: exp=" & hex2(EXPECTED(i mod EXPECTED_BYTES)) &
-        " got=" & hex2(collected(base_collected + i)));
-      end if;
-    end loop;
-    report "Test 3 done";
-
-    -- Dump collected bytes for diagnosis
-    if PRINT_BYTES = true then
-      for i in 0 to collected_count - 1 loop
-        report "got[" & integer'image(i) & "]=" & hex2(collected(i));
-      end loop;
-    end if;
-
-    if err_count > 0 then
-      report "tb_openjls_top RESULT: FAIL (" &
-        integer'image(err_count) & " errors)" severity failure;
-    else
-      report "tb_openjls_top RESULT: PASS" severity note;
-    end if;
-    finish;
-  end process;
-
-end;
+  end;
