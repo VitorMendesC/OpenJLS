@@ -1,0 +1,376 @@
+----------------------------------------------------------------------------------
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Testbench: tb_openjls_conformance
+--
+-- T.87 conformance test. Loads a single-component PGM image, drives the
+-- encoder, collects the produced JLS stream, writes it to disk under
+-- Verification/Output/, then byte-for-byte compares against a golden
+-- reference .jls file.
+--
+-- Behavioral simulation only: BITNESS=12 here does not match the synthesised
+-- netlist (BITNESS=8). Run from the repo root so the relative paths resolve.
+--
+-- Test image: Verification/jlsimgV100/TEST16.PGM (256x256, 12-bit)
+-- Golden JLS: Verification/jlsimgV100/T16E0.JLS  (NEAR=0)
+-- Output    : Verification/Output/TEST16.JLS
+----------------------------------------------------------------------------------
+use work.Common.all;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use std.textio.all;
+use std.env.all;
+
+library openlogic_base;
+use openlogic_base.olo_base_pkg_math.log2ceil;
+
+entity tb_openjls_conformance is
+end;
+
+architecture bench of tb_openjls_conformance is
+  -------------------------------------------------------------------------------------------------------------
+  -- TB level controls
+  -------------------------------------------------------------------------------------------------------------
+  constant DUMP_VCD     : boolean := false; -- waveform dump gated; large for 256x256
+  constant MAX_DIFF_LOG : natural := 16; -- cap on logged byte mismatches before failure
+
+  -- Paths (relative to cwd; run from repo root)
+  constant PGM_PATH : string := "Verification/jlsimgV100/TEST16.PGM";
+  constant JLS_PATH : string := "Verification/jlsimgV100/T16E0.JLS";
+  constant OUT_PATH : string := "Verification/Output/T16E0_OPENJLS.JLS";
+
+  -- Test configuration
+  constant CLK_PERIOD       : time     := 10 ns;
+  constant BITNESS          : natural  := 12;
+  constant MAX_IMAGE_WIDTH  : positive := 4096;
+  constant MAX_IMAGE_HEIGHT : positive := 4096;
+  constant OUT_WIDTH        : natural  := math_ceil_div(4 * BITNESS + 4 * BITNESS / 8 + 7, 8) * 8 + 8;
+  constant BYTES_PER_WORD   : natural  := OUT_WIDTH / 8;
+
+  constant IMG_W : natural := 256;
+  constant IMG_H : natural := 256;
+  constant N_PIX : natural := IMG_W * IMG_H;
+
+  -- Buffers
+  type pixel_array_t is array (natural range <>) of natural;
+  type byte_array_t is array (natural range <>) of std_logic_vector(7 downto 0);
+
+  constant COLLECT_CAP : natural := 262144; -- 256 KB cap, plenty for 256x256 12b
+
+  -- DUT ports
+  signal iClk         : std_logic                              := '0';
+  signal iRst         : std_logic                              := '1';
+  signal iValid       : std_logic                              := '0';
+  signal iPixel       : std_logic_vector(BITNESS - 1 downto 0) := (others => '0');
+  signal oReady       : std_logic;
+  signal iImageWidth  : std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+  signal iImageHeight : std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+  signal oData        : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal oValid       : std_logic;
+  signal oKeep        : std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
+  signal oLast        : std_logic;
+  signal iReady       : std_logic := '1';
+
+  -- Collection
+  shared variable collected       : byte_array_t(0 to COLLECT_CAP - 1) := (others => (others => '0'));
+  shared variable collected_count : natural                            := 0;
+  shared variable last_count      : natural                            := 0;
+
+  shared variable err_count : natural := 0;
+
+  procedure check(cond : boolean; msg : string) is
+  begin
+    if not cond then
+      report msg severity error;
+      err_count := err_count + 1;
+    end if;
+  end procedure;
+
+  function hex2(v : std_logic_vector(7 downto 0)) return string is
+    constant HEX    : string(1 to 16) := "0123456789ABCDEF";
+    variable r      : string(1 to 2);
+  begin
+    r(1) := HEX(to_integer(unsigned(v(7 downto 4))) + 1);
+    r(2) := HEX(to_integer(unsigned(v(3 downto 0))) + 1);
+    return r;
+  end function;
+
+  -------------------------------------------------------------------------------------------------------------
+  -- Binary-byte file I/O (VHDL-2008 file of character)
+  -------------------------------------------------------------------------------------------------------------
+  type char_file_t is file of character;
+
+  -- Read one byte; sets eof when no more data.
+  procedure read_byte(file f : char_file_t; b : out std_logic_vector(7 downto 0); eof : out boolean) is
+    variable c : character;
+  begin
+    if endfile(f) then
+      eof := true;
+      b   := (others => '0');
+    else
+      read(f, c);
+      eof := false;
+      b   := std_logic_vector(to_unsigned(character'pos(c), 8));
+    end if;
+  end procedure;
+
+  procedure write_byte(file f : char_file_t; b : std_logic_vector(7 downto 0)) is
+    variable c : character;
+  begin
+    c := character'val(to_integer(unsigned(b)));
+    write(f, c);
+  end procedure;
+
+  -- Read ASCII unsigned decimal integer from PGM header. Skips leading whitespace
+  -- and comment lines starting with '#'. Stops on first non-digit (which is
+  -- consumed and discarded — the PGM spec says exactly one whitespace separates
+  -- the maxval from the binary body, so callers using this for w/h/maxval read
+  -- their delimiter implicitly).
+  procedure read_pgm_int(file f : char_file_t; v : out natural) is
+    variable c          : character;
+    variable acc        : natural := 0;
+    variable started    : boolean := false;
+    variable in_comment : boolean := false;
+  begin
+    loop
+      assert not endfile(f) report "PGM: unexpected EOF in header" severity failure;
+      read(f, c);
+      if in_comment then
+        if c = LF or c = CR then
+          in_comment := false;
+        end if;
+      elsif not started then
+        if c = '#' then
+          in_comment := true;
+        elsif c >= '0' and c <= '9' then
+          acc     := character'pos(c) - character'pos('0');
+          started := true;
+        end if;
+        -- else: skip whitespace
+      else
+        if c >= '0' and c <= '9' then
+          acc := acc * 10 + character'pos(c) - character'pos('0');
+        else
+          -- delimiter consumed; done
+          v := acc;
+          return;
+        end if;
+      end if;
+    end loop;
+  end procedure;
+
+begin
+
+  -- Clock
+  iClk <= not iClk after CLK_PERIOD / 2;
+
+  -- Image dimensions held stable so the input register latches them during reset.
+  iImageWidth  <= std_logic_vector(to_unsigned(IMG_W, iImageWidth'length));
+  iImageHeight <= std_logic_vector(to_unsigned(IMG_H, iImageHeight'length));
+
+  dut : entity work.openjls_top
+    generic map(
+      BITNESS          => BITNESS,
+      MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
+      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
+      OUT_WIDTH        => OUT_WIDTH
+    )
+    port map
+    (
+      iClk         => iClk,
+      iRst         => iRst,
+      iValid       => iValid,
+      iPixel       => iPixel,
+      oReady       => oReady,
+      iImageWidth  => iImageWidth,
+      iImageHeight => iImageHeight,
+      oData        => oData,
+      oValid       => oValid,
+      oKeep        => oKeep,
+      oLast        => oLast,
+      iReady       => iReady
+    );
+
+  -- Output collection: extract bytes per word using oKeep (MSB-first).
+  collect : process (iClk)
+  begin
+    if rising_edge(iClk) then
+      if iRst = '1' then
+        collected_count := 0;
+        last_count      := 0;
+      elsif oValid = '1' and iReady = '1' then
+        for i in 0 to BYTES_PER_WORD - 1 loop
+          if oKeep(BYTES_PER_WORD - 1 - i) = '1' then
+            if collected_count < collected'length then
+              collected(collected_count) :=
+              oData(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
+            end if;
+            collected_count := collected_count + 1;
+          end if;
+        end loop;
+        if oLast = '1' then
+          last_count := last_count + 1;
+        end if;
+      end if;
+    end if;
+  end process;
+
+  -- Stimulus
+  stim : process
+    variable pixels  : pixel_array_t(0 to N_PIX - 1)      := (others => 0);
+    variable refbuf  : byte_array_t(0 to COLLECT_CAP - 1) := (others => (others => '0'));
+    variable ref_len : natural                            := 0;
+
+    procedure do_reset is
+    begin
+      iRst   <= '1';
+      iValid <= '0';
+      for i in 0 to 4 loop
+        wait until rising_edge(iClk);
+      end loop;
+      iRst <= '0';
+      wait until rising_edge(iClk);
+      while oReady /= '1' loop
+        wait until rising_edge(iClk);
+      end loop;
+    end procedure;
+
+    procedure load_pgm(path : string) is
+      file f                  : char_file_t;
+      variable b_hi           : std_logic_vector(7 downto 0);
+      variable b_lo           : std_logic_vector(7 downto 0);
+      variable eof            : boolean;
+      variable magic0         : std_logic_vector(7 downto 0);
+      variable magic1         : std_logic_vector(7 downto 0);
+      variable w, h, mx       : natural;
+      variable pix            : natural;
+    begin
+      file_open(f, path, read_mode);
+
+      -- Magic "P5"
+      read_byte(f, magic0, eof);
+      read_byte(f, magic1, eof);
+      assert magic0 = x"50" and magic1 = x"35"
+      report "PGM: magic mismatch (expected P5)" severity failure;
+
+      read_pgm_int(f, w);
+      read_pgm_int(f, h);
+      read_pgm_int(f, mx);
+      report "PGM header: w=" & integer'image(w) &
+        " h=" & integer'image(h) &
+        " maxval=" & integer'image(mx);
+
+      assert w = IMG_W and h = IMG_H
+      report "PGM dimensions mismatch" severity failure;
+      assert mx = (2 ** BITNESS) - 1
+      report "PGM maxval does not match BITNESS" severity failure;
+
+      -- Body: 2 bytes per pixel, big-endian (maxval > 255)
+      for i in 0 to N_PIX - 1 loop
+        read_byte(f, b_hi, eof);
+        assert not eof report "PGM: unexpected EOF in body" severity failure;
+        read_byte(f, b_lo, eof);
+        assert not eof report "PGM: unexpected EOF in body" severity failure;
+        pix := to_integer(unsigned(b_hi)) * 256 + to_integer(unsigned(b_lo));
+        assert pix <= mx report "PGM: pixel exceeds maxval" severity failure;
+        pixels(i) := pix;
+      end loop;
+      file_close(f);
+    end procedure;
+
+    procedure load_jls(path : string) is
+      file f                  : char_file_t;
+      variable b              : std_logic_vector(7 downto 0);
+      variable eof            : boolean;
+      variable n              : natural := 0;
+    begin
+      file_open(f, path, read_mode);
+      loop
+        read_byte(f, b, eof);
+        exit when eof;
+        assert n < refbuf'length report "Reference JLS exceeds buffer" severity failure;
+        refbuf(n) := b;
+        n         := n + 1;
+      end loop;
+      ref_len := n;
+      file_close(f);
+      report "Reference JLS bytes=" & integer'image(ref_len);
+    end procedure;
+
+    procedure save_collected(path : string) is
+      file f                        : char_file_t;
+    begin
+      file_open(f, path, write_mode);
+      for i in 0 to collected_count - 1 loop
+        write_byte(f, collected(i));
+      end loop;
+      file_close(f);
+      report "Wrote " & integer'image(collected_count) & " bytes to " & path;
+    end procedure;
+
+    procedure feed_image is
+    begin
+      for i in 0 to N_PIX - 1 loop
+        iPixel <= std_logic_vector(to_unsigned(pixels(i), BITNESS));
+        iValid <= '1';
+        wait until oReady = '1' and rising_edge(iClk);
+      end loop;
+      iValid <= '0';
+    end procedure;
+
+    procedure wait_image is
+    begin
+      for i in 0 to 1000000 loop
+        exit when last_count >= 1;
+        wait until rising_edge(iClk);
+      end loop;
+    end procedure;
+
+    variable diff_logged : natural := 0;
+  begin
+    report "Loading PGM: " & PGM_PATH;
+    load_pgm(PGM_PATH);
+
+    report "Loading reference JLS: " & JLS_PATH;
+    load_jls(JLS_PATH);
+
+    do_reset;
+    report "Feeding " & integer'image(N_PIX) & " pixels";
+    feed_image;
+    wait_image;
+
+    report "Encoder produced " & integer'image(collected_count) & " bytes";
+
+    save_collected(OUT_PATH);
+
+    -- Compare full stream byte-for-byte (header is bit-identical for our framer
+    -- given matching P/Y/X, so no marker-skip needed)
+    check(collected_count = ref_len,
+    "Byte count mismatch: got " & integer'image(collected_count) &
+    " expected " & integer'image(ref_len));
+
+    for i in 0 to math_min(collected_count, ref_len) - 1 loop
+      if collected(i) /= refbuf(i) then
+        if diff_logged < MAX_DIFF_LOG then
+          report "Byte " & integer'image(i) &
+            " mismatch: exp=" & hex2(refbuf(i)) &
+            " got=" & hex2(collected(i)) severity error;
+          diff_logged := diff_logged + 1;
+        end if;
+        err_count := err_count + 1;
+      end if;
+    end loop;
+
+    if err_count > 0 then
+      report "tb_openjls_conformance RESULT: FAIL (" &
+        integer'image(err_count) & " errors)" severity failure;
+    else
+      report "tb_openjls_conformance RESULT: PASS" severity note;
+    end if;
+    finish;
+  end process;
+
+end;
