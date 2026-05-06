@@ -42,8 +42,8 @@ entity A15_A16_encode_run is
 
     -- From A14 (combinational — no register between A14 and this stage)
     iRunCnt      : in unsigned(RUN_CNT_WIDTH - 1 downto 0); -- A14 oRunCnt
-    iRunHit      : in std_logic;                            -- A14 oRunHit
-    iRunContinue : in std_logic;                            -- A14 oRunContinue
+    iRunHit      : in std_logic; -- A14 oRunHit
+    iRunContinue : in std_logic; -- A14 oRunContinue
 
     -- Mode gate: only process when pipeline is in run mode
     iModeIsRun : in std_logic;
@@ -67,7 +67,8 @@ entity A15_A16_encode_run is
     oRIIx       : out unsigned(BITNESS - 1 downto 0);
     oRIRa       : out unsigned(BITNESS - 1 downto 0);
     oRIRb       : out unsigned(BITNESS - 1 downto 0);
-    oRiRunIndex : out unsigned(4 downto 0)
+    oRiRunIndex : out unsigned(4 downto 0);
+    oInRunNext  : out std_logic -- Tells top level we are mid-run
   );
 end A15_A16_encode_run;
 
@@ -89,8 +90,8 @@ begin
 
   -- ── Combinational: outputs and next-state ─────────────────────────────────
   process (sRUNindex, sNextBound, sInRun,
-           iRunCnt, iRunHit, iRunContinue, iModeIsRun, iEOI, iRst,
-           iIx, iRa, iRb)
+    iRunCnt, iRunHit, iRunContinue, iModeIsRun, iEOI, iRst,
+    iIx, iRa, iRb)
     variable vJ        : natural;
     variable vJNext    : natural;
     variable vStep     : unsigned(C_BOUND_WIDTH - 1 downto 0);
@@ -102,11 +103,11 @@ begin
     oRawValid     <= '0';
     oRawSuffixLen <= to_unsigned(1, 5);
     oRawSuffixVal <= to_unsigned(1, RUN_CNT_WIDTH);
-    oRIValid    <= '0';
-    oRIIx       <= iIx;
-    oRIRa       <= iRa;
-    oRIRb       <= iRb;
-    oRiRunIndex <= sRUNindex;
+    oRIValid      <= '0';
+    oRIIx         <= iIx;
+    oRIRa         <= iRa;
+    oRIRb         <= iRb;
+    oRiRunIndex   <= sRUNindex;
 
     -- Next-state defaults: hold current
     sRUNindexNext  <= sRUNindex;
@@ -146,7 +147,7 @@ begin
           end if;
           sRUNindexNext  <= vNewIndex;
           sNextBoundNext <= shift_left(to_unsigned(1, C_BOUND_WIDTH),
-                                       CO_J_TABLE(to_integer(vNewIndex)));
+            CO_J_TABLE(to_integer(vNewIndex)));
         else
           -- Run continues
           sRUNindexNext <= vNewIndex;
@@ -165,10 +166,10 @@ begin
         oRawValid     <= '1';
         oRawSuffixLen <= to_unsigned(vJ + 1, 5);
         oRawSuffixVal <= iRunCnt - resize(sNextBound - vStep, RUN_CNT_WIDTH);
-        oRIValid <= '1';
-        oRIIx    <= iIx;
-        oRIRa    <= iRa;
-        oRIRb    <= iRb;
+        oRIValid      <= '1';
+        oRIIx         <= iIx;
+        oRIRa         <= iRa;
+        oRIRb         <= iRb;
 
         if sRUNindex > 0 then
           vNewIndex := sRUNindex - 1;
@@ -179,11 +180,13 @@ begin
         sInRunNext     <= '0';
         sRUNindexNext  <= vNewIndex;
         sNextBoundNext <= shift_left(to_unsigned(1, C_BOUND_WIDTH),
-                                     CO_J_TABLE(to_integer(vNewIndex)));
+          CO_J_TABLE(to_integer(vNewIndex)));
       end if;
 
     end if;
   end process;
+
+  oInRunNext <= sInRunNext;
 
   -- ── Clocked: state registers ──────────────────────────────────────────────
   process (iClk)
