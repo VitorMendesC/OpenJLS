@@ -28,6 +28,9 @@ library openlogic_base;
 use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity tb_openjls_conformance is
+  generic (
+    REPO_ROOT : string := "/home/v/Repos/OpenJLS/"
+  );
 end;
 
 architecture bench of tb_openjls_conformance is
@@ -37,10 +40,9 @@ architecture bench of tb_openjls_conformance is
   constant DUMP_VCD     : boolean := false; -- waveform dump gated; large for 256x256
   constant MAX_DIFF_LOG : natural := 16; -- cap on logged byte mismatches before failure
 
-  -- Paths (relative to cwd; run from repo root)
-  constant PGM_PATH : string := "Verification/jlsimgV100/TEST16.PGM";
-  constant JLS_PATH : string := "Verification/jlsimgV100/T16E0.JLS";
-  constant OUT_PATH : string := "Verification/Output/T16E0_OPENJLS.JLS";
+  constant PGM_PATH : string := REPO_ROOT & "Verification/jlsimgV100/TEST16.PGM";
+  constant JLS_PATH : string := REPO_ROOT & "Verification/jlsimgV100/T16E0.JLS";
+  constant OUT_PATH : string := REPO_ROOT & "Verification/Output/T16E0_OPENJLS.JLS";
 
   -- Test configuration
   constant CLK_PERIOD       : time     := 10 ns;
