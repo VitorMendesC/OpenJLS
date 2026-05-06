@@ -272,6 +272,11 @@ architecture rtl of openjls_top is
   -- Stage 1 combinational
   signal sS1D1, sS1D2, sS1D3 : signed(BITNESS downto 0);
   signal sS1ModeRun          : std_logic;
+  -- Sticky run flag: A15_16's next-state sInRun, fed back to stage 1 so the
+  -- pixel currently in stage 1 inherits "still in run" from the prior pixel
+  -- in stage 2. Without it, A.3's gradient-based decision can break runs
+  -- silently because the FSM is gated by iModeIsRun.
+  signal sS1InRunNext        : std_logic;
 
   -- Stage 2 — regular
   signal sS2Q1, sS2Q2, sS2Q3    : signed(3 downto 0);
@@ -539,9 +544,9 @@ begin
         sReg1D3  <= (others => '0');
       elsif sCE1 = '1' then
 
-        if sLbValid = '1' and sS1ModeRun = '1' then
+        if sLbValid = '1' and (sS1ModeRun = '1' or sS1InRunNext = '1') then
           v.mode := TOKEN_RUN;
-        elsif sLbValid = '1' and sS1ModeRun = '0' then
+        elsif sLbValid = '1' then
           v.mode := TOKEN_REGULAR;
         else
           v := CO_TOKEN_NONE;
@@ -640,7 +645,8 @@ begin
       oRIIx         => sS2RIIx,
       oRIRa         => sS2RIRa,
       oRIRb         => sS2RIRb,
-      oRiRunIndex   => sS2RiRunIndex
+      oRiRunIndex   => sS2RiRunIndex,
+      oInRunNext    => sS1InRunNext
     );
 
   u_a17 : entity work.A17_run_interruption_index
@@ -860,8 +866,10 @@ begin
     else
     '0';
 
-  -- Cq base: on hit use the register (sReg3.Cq) to stay off the A.13 path;
-  -- otherwise the context_ram-delivered sS3Cq.
+  -- Cq base for the speculative 3-chain: on a forwarding hit use sReg3.Cq
+  -- (pre-update Cq for the pixel currently in Stage 4) and let ΔCq pick the
+  -- ±1/0 candidate so the effective Cq matches sS4CqNew. On a miss, the BRAM
+  -- read (now also forwarded into sS3Cq) is already the correct base.
   sS3CqBase <= sReg3.Cq when sFwdRegHit = '1' else
     sS3Cq;
 
