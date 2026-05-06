@@ -103,9 +103,9 @@ architecture rtl of openjls_top is
   -- Widths computed locally from generics
   constant ERROR_WIDTH            : natural  := BITNESS + 1;
   constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
-  constant RAM_DEPTH              : positive := 367;   -- 365 contexts + 2 RI-specific contexts
-  constant RESET                  : natural  := 64;    -- T.87
-  constant MAX_C                  : integer  := 127;   -- T.87
+  constant RAM_DEPTH              : positive := 367; -- 365 contexts + 2 RI-specific contexts
+  constant RESET                  : natural  := 64; -- T.87
+  constant MAX_C                  : integer  := 127; -- T.87
   constant MIN_C                  : integer  := - 128; -- T.87
   constant ABS_MIN_C              : natural  := - MIN_C;
   constant ABS_MAX_C              : natural  := MAX_C;
@@ -385,12 +385,6 @@ architecture rtl of openjls_top is
   signal sBsValidB        : unsigned(log2ceil(BYTE_STUFFER_OUT_WIDTH / 8 + 1) - 1 downto 0);
   signal sFramerVBytes    : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
-  attribute keep       : string;
-  attribute mark_debug : string;
-
-  -- TODO: Discover a fix so that these attributes aren't necessary
-  attribute keep of sPixel : signal is "true";
-
   -- Flush / framer control
   -- Bit packer is purely combinational + 1 register; it has no flush signal.
   -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees. 
@@ -466,15 +460,22 @@ begin
   process (iClk)
   begin
     if rising_edge(iClk) then
+
       if iRst = '1' then
         sImageWidth  <= unsigned(iImageWidth);
         sImageHeight <= unsigned(iImageHeight);
         sValid       <= '0';
-      elsif iValid = '1' and sReadyOut = '1' and sStallLogic = '0' then -- handshake
-        sPixel <= unsigned(iPixel);
-        sValid <= '1';
+        sPixel       <= (others => '0');
       else
-        sValid <= '0';
+
+        if iValid = '1' and sReadyOut = '1' and sStallLogic = '0' then -- handshake
+          sPixel <= unsigned(iPixel);
+          sValid <= '1';
+        else
+          sPixel <= (others => '0');
+          sValid <= '0';
+
+        end if;
       end if;
     end if;
   end process;
