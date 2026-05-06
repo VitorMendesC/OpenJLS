@@ -37,15 +37,21 @@ entity A9_modulo_reduction is
 end A9_modulo_reduction;
 
 architecture Behavioral of A9_modulo_reduction is
-  signal sErrAdj : signed (BITNESS downto 0);
+  -- Intermediate widened by one bit so RANGE_P fits without sign-bit roll.
+  -- Required for any BITNESS: RANGE_P = 2**BITNESS, so signed(BITNESS+2) gives
+  -- max = 2**(BITNESS+1) - 1 >= RANGE_P.
+  constant RANGE_S : signed(BITNESS + 1 downto 0) := to_signed(RANGE_P, BITNESS + 2);
+
+  signal sExt    : signed(BITNESS + 1 downto 0);
+  signal sErrAdj : signed(BITNESS + 1 downto 0);
 begin
 
-  -- First stage: if negative, add RANGE
-  sErrAdj <= iErrorVal + RANGE_P when iErrorVal < 0 else
-    iErrorVal;
+  sExt <= resize(iErrorVal, BITNESS + 2);
 
-  -- Second stage: if >= (RANGE + 1)/2, subtract RANGE
-  oErrorVal <= sErrAdj - RANGE_P when sErrAdj >= (RANGE_P + 1) / 2 else
-    sErrAdj;
+  sErrAdj <= sExt + RANGE_S when iErrorVal < 0 else
+    sExt;
+
+  oErrorVal <= resize(sErrAdj - RANGE_S, BITNESS + 1) when sErrAdj >= (RANGE_P + 1) / 2 else
+    resize(sErrAdj, BITNESS + 1);
 
 end Behavioral;
