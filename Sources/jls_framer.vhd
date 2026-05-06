@@ -190,8 +190,8 @@ architecture Behavioral of jls_framer is
   --   [0-1]   FF D8              SOI
   --   [2-5]   FF F7 00 0B        SOF55 marker + Lf=11
   --   [6]     P                  precision (BITNESS)
-  --   [7-8]   Y[15:8] Y[7:0]    image height (runtime)
-  --   [9-10]  X[15:8] X[7:0]    image width  (runtime)
+  --   [7-8]   Y[15:8] Y[7:0]     image height (runtime)
+  --   [9-10]  X[15:8] X[7:0]     image width  (runtime)
   --   [11]    01                 Nf=1
   --   [12-14] 01 11 00           C1=1, H1V1=0x11, Tq1=0
   --   [15-16] FF DA              SOS marker
