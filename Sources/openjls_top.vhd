@@ -759,7 +759,8 @@ begin
     - signed(resize(unsigned(sCtxRdData(CTX_B_HI downto CTX_B_LO)), B_WIDTH));
 
   -- Cq forwarding is handled by the speculative 3-chain via sS3CqBase.
-  sS3Cq <= signed(sCtxRdData(CTX_C_HI downto CTX_C_LO));
+  sS3Cq <= sS4CqNew when sFwdRegHit = '1' else
+    signed(sCtxRdData(CTX_C_HI downto CTX_C_LO));
 
   sS3Nq <= sS4NqNew when sFwdRegHit = '1' else
     sS4RiNqNew when sFwdRiHit = '1' else
