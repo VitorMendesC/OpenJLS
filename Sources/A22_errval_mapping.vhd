@@ -52,6 +52,14 @@ begin
 
     vEmErrval := 2 * abs(to_integer(iErrval)) - vRI - vMap;
 
+    -- Clamp to 0 to absorb delta-cycle transients during sReg4 transitions
+    -- (A.21's iNn/iNq go through an extra delta via sNnExt/sNqExt, so iMap
+    -- may briefly trail iErrval/iRItype before A.21's process re-evaluates).
+    -- The settled value is always non-negative when inputs are coherent.
+    if vEmErrval < 0 then
+      vEmErrval := 0;
+    end if;
+
     oEMErrval <= to_unsigned(vEmErrval, oEMErrval'length);
   end process;
 
