@@ -98,10 +98,16 @@ package Common is
   -- Bit-packer / byte-stuffer / framer interface widths -------------------------
   -- Per-cycle worst-case bit_packer emit is bounded by LIMIT in all modes:
   constant CO_BIT_PACKER_OUT_WIDTH : natural := CO_LIMIT_STD;
-  -- Byte stuffer output / framer input: ceil((residue 7 + IN + stuffing IN/8) / 8) * 8
-  constant CO_BYTE_STUFFER_OUT_WIDTH : natural := math_ceil_div(CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8 + 7, 8) * 8;
-  -- Byte stuffer internal buffer: residue + worst-case input + stuffing.
-  constant CO_BYTE_STUFFER_BUFF_WIDTH : natural := 2 * CO_BIT_PACKER_OUT_WIDTH + CO_BIT_PACKER_OUT_WIDTH / 8;
+  -- byte_stuffer output is now sized for *average* rate, not worst case.
+  -- Default: half the worst-case post-stuff byte rate, rounded up. Bursts of
+  -- worst-case input are absorbed by the stuffer's internal buffer; if the
+  -- buffer nears full, the stuffer asserts backpressure to bit_packer.
+  constant CO_BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := math_ceil_div(math_ceil_div(CO_BIT_PACKER_OUT_WIDTH, 8) + 1, 2);
+  constant CO_BYTE_STUFFER_OUT_WIDTH           : natural := CO_BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
+  -- Default depth of the absorption FIFO (in wide words, BRAM-backed). 16
+  -- covers all natural images with comfortable margin; bigger bursts hit
+  -- backpressure (oAlmostFull) and stall bit_packer.
+  constant CO_BYTE_STUFFER_BURST_DEPTH : natural := 16;
 
 end package;
 
