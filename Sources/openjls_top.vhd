@@ -65,10 +65,10 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity openjls_top is
   generic (
-    BITNESS          : positive range 8 to 16    := 8;
+    BITNESS          : positive range 8 to 16    := 12;
     MAX_IMAGE_WIDTH  : positive range 4 to 65536 := 4096;
     MAX_IMAGE_HEIGHT : positive range 1 to 65536 := 4096;
-    OUT_WIDTH        : positive range 32 to 1024 := 56
+    OUT_WIDTH        : positive range 32 to 1024 := 64
   );
   port (
     iClk         : in std_logic;
@@ -160,10 +160,20 @@ architecture rtl of openjls_top is
 
   --------------------------------------------------------------------------------------------
   -- Bit packer / byte stuffer / framer interface widths.
+  --
+  -- byte_stuffer is sized for AVERAGE output rate (not worst-case). Bursts of
+  -- worst-case input words are absorbed by its internal buffer; if the buffer
+  -- nears full, oAlmostFull asserts and stalls the upstream pipeline.
+  --
+  -- BYTE_STUFFER_OUT_BYTES_PER_CYCLE: tune for fmax vs. throughput. Half the
+  -- worst-case post-stuff byte rate is a reasonable default.
+  -- BYTE_STUFFER_BURST_DEPTH: consecutive worst-case words absorbed without
+  -- stalling. 64 covers all natural images plus comfortable margin.
   --------------------------------------------------------------------------------------------
-  constant BYTE_STUFFER_OUT_WIDTH   : natural := math_ceil_div(LIMIT + LIMIT / 8 + 7, 8) * 8;
-  constant BYTE_STUFFER_BUFF_WIDTH  : natural := 2 * LIMIT + LIMIT / 8;
-  constant MIN_OUT_WIDTH_WORST_CASE : natural := BYTE_STUFFER_OUT_WIDTH + 8;
+  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := math_ceil_div(math_ceil_div(LIMIT, 8) + 1, 2);
+  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;
+  constant BYTE_STUFFER_OUT_WIDTH           : natural := BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
+  constant MIN_OUT_WIDTH_WORST_CASE         : natural := BYTE_STUFFER_OUT_WIDTH + 8;
 
   --------------------------------------------------------------------------------------------
   -- Packed context RAM word slicing
@@ -276,7 +286,7 @@ architecture rtl of openjls_top is
   -- pixel currently in stage 1 inherits "still in run" from the prior pixel
   -- in stage 2. Without it, A.3's gradient-based decision can break runs
   -- silently because the FSM is gated by iModeIsRun.
-  signal sS1InRunNext        : std_logic;
+  signal sS1InRunNext : std_logic;
 
   -- Stage 2 — regular
   signal sS2Q1, sS2Q2, sS2Q3    : signed(3 downto 0);
@@ -392,14 +402,18 @@ architecture rtl of openjls_top is
 
   -- Flush / framer control
   -- Bit packer is purely combinational + 1 register; it has no flush signal.
-  -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees. 
-  -- The framer needs iEOI aligned with the byte stuffer's flushed last word
-  signal sEoiPipe     : std_logic_vector(3 downto 0) := (others => '0');
-  signal sBsFlush     : std_logic                    := '0';
-  signal sFramerEOI   : std_logic                    := '0';
-  signal sImageActive : std_logic                    := '0';
-  signal sFramerStart : std_logic                    := '0';
-  signal sReadyOut    : std_logic                    := '0';
+  -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees.
+  -- The framer needs iEOI aligned with the byte stuffer's flushed last word —
+  -- with the narrow-output byte_stuffer, the drain takes a variable number of
+  -- cycles, so framer iEOI is driven by byte_stuffer's oFlushDone pulse
+  -- (asserts on the final drain beat of the image).
+  signal sBsFlush      : std_logic := '0';
+  signal sBsAlmostFull : std_logic := '0';
+  signal sBsFlushDone  : std_logic := '0';
+  signal sFramerEOI    : std_logic := '0';
+  signal sImageActive  : std_logic := '0';
+  signal sFramerStart  : std_logic := '0';
+  signal sReadyOut     : std_logic := '0';
 
 begin
 
@@ -433,7 +447,7 @@ begin
     end if;
   end process;
 
-  sStall         <= sFramerAlmostFull;
+  sStall         <= sFramerAlmostFull or sBsAlmostFull;
   sStallUpstream <= sStall;
   sStallLogic    <= '1' when sStallDelay = '1' and sStall = '1' else
     '0'; -- 1 cycle delay to stall logic, so we don't lose the in-flight pixel, deasert immediately
@@ -1317,9 +1331,9 @@ begin
 
   u_byte_stuffer : entity work.byte_stuffer
     generic map(
-      IN_WIDTH     => LIMIT,
-      OUT_WIDTH    => BYTE_STUFFER_OUT_WIDTH,
-      BUFFER_WIDTH => BYTE_STUFFER_BUFF_WIDTH
+      IN_WIDTH            => LIMIT,
+      OUT_BYTES_PER_CYCLE => BYTE_STUFFER_OUT_BYTES_PER_CYCLE,
+      BURST_DEPTH         => BYTE_STUFFER_BURST_DEPTH
     )
     port map
     (
@@ -1332,7 +1346,9 @@ begin
       iFlush      => sBsFlush,
       oWord       => sBsWord,
       oWordValid  => sBsWordV,
-      oValidBytes => sBsValidB
+      oValidBytes => sBsValidB,
+      oAlmostFull => sBsAlmostFull,
+      oFlushDone  => sBsFlushDone
     );
 
   u_framer : entity work.jls_framer
@@ -1377,27 +1393,26 @@ begin
   -- Timing (T = cycle when sReg6EOI is sampled high, i.e. Reg6 holds the
   -- image's last token, which is the cycle bit_packer consumes it):
   --   T+1: bit_packer's registered output presents the last bit-packed word
-  --        for image N. byte_stuffer (stage 1) must see iFlush='1' on this
-  --        cycle so it zero-pads its sub-byte residue and propagates flush.
-  --   T+2: byte_stuffer stage 2 receives the flushed byte stream; produces
-  --        the final padded output the same cycle (registered).
-  --   T+3: byte_stuffer's registered output presents the (flushed) last word
-  --        for image N. framer sees iEOI='1' and pushes FF D9 into the FIFO
-  --        right after these bytes, latching sEndOfImage.
+  --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
+  --        zero-pads its sub-byte residue and enters the drain state.
+  --   T+1..T+k: byte_stuffer drains its buffer at OUT_BYTES_PER_CYCLE
+  --        bytes/cycle. k depends on buffer occupancy at flush time.
+  --   T+k: byte_stuffer emits the final beat of image N and pulses oFlushDone.
+  --        framer sees iEOI='1' aligned with that beat and pushes FF D9 into
+  --        the FIFO right after, latching sEndOfImage.
   -------------------------------------------------------------------------------------------------------------
   process (iClk)
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
-        sEoiPipe <= (others => '0');
+        sBsFlush <= '0';
       elsif sStallLogic = '0' then
-        sEoiPipe <= sEoiPipe(2 downto 0) & sReg6EOI;
+        sBsFlush <= sReg6EOI;
       end if;
     end if;
   end process;
 
-  sBsFlush   <= sEoiPipe(0);
-  sFramerEOI <= sEoiPipe(2);
+  sFramerEOI <= sBsFlushDone;
 
   process (iClk)
   begin
@@ -1407,7 +1422,7 @@ begin
       elsif sStallLogic = '0' then
         if sValid = '1' and sImageActive = '0' then
           sImageActive <= '1';
-        elsif sEoiPipe(3) = '1' then
+        elsif sBsFlushDone = '1' then
           sImageActive <= '0';
         end if;
       end if;
