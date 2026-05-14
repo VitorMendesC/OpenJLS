@@ -137,6 +137,16 @@ architecture Behavioral of byte_stuffer is
   signal sFifoAlmFull  : std_logic;
 
   ----------------------------------------------------------------------------
+  -- Skid buffer between FIFO output and Stage 3 consume. Breaks the
+  -- BRAM-DOADO -> Stage-3-LUT-cone combinational path (saves the BRAM Tco
+  -- plus the long fanout net at the FIFO output from the Stage 3 critical
+  -- path). Cost: +1 cycle FIFO read latency, hidden by FIFO depth.
+  ----------------------------------------------------------------------------
+  signal sStgData  : std_logic_vector(FIFO_WIDTH - 1 downto 0);
+  signal sStgValid : std_logic;
+  signal sStgTaken : std_logic;
+
+  ----------------------------------------------------------------------------
   -- Stage 3 (FF stuffer + emit) state.
   --
   --   sHold/sHoldBits — bit-level holding buffer for input bits awaiting
@@ -331,9 +341,31 @@ begin
   --   * if prev_FF='1': emit one final 0x00 byte (the stuff '0' + 7-bit pad).
   --   * pulse oFlushDone on the beat that carries the last data byte.
   -------------------------------------------------------------------------------------------------------------------------
-  sFifoOutReady <= '1' when sHoldBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sHoldBits'length)
-                          and iStall = '0'
+  -- Stage 3 drains the skid buffer when it has data and the hold has room.
+  sStgTaken     <= '1' when sStgValid = '1'
+                       and sHoldBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sHoldBits'length)
+                       and iStall = '0'
                    else '0';
+  -- Pop FIFO when the skid buffer is empty or being drained this cycle.
+  sFifoOutReady <= '1' when sStgValid = '0' or sStgTaken = '1' else '0';
+
+  skid_proc : process (iClk)
+  begin
+    if rising_edge(iClk) then
+      if iRst = '1' then
+        sStgValid <= '0';
+        sStgData  <= (others => '0');
+      else
+        if sStgTaken = '1' then
+          sStgValid <= '0';
+        end if;
+        if sFifoOutValid = '1' and sFifoOutReady = '1' then
+          sStgData  <= sFifoOutData;
+          sStgValid <= '1';
+        end if;
+      end if;
+    end if;
+  end process skid_proc;
 
   stage3_proc : process (iClk)
     variable vHold      : std_logic_vector(HOLD_BITS - 1 downto 0);
@@ -377,12 +409,12 @@ begin
         sFlushDone <= '0';
 
         ----------------------------------------------------------------------
-        -- (1) Refill: pop one FIFO word into the holding buffer.
+        -- (1) Refill: drain the skid buffer into the holding buffer.
         ----------------------------------------------------------------------
-        if sFifoOutValid = '1' and sFifoOutReady = '1' then
-          vPopBytes := to_integer(unsigned(sFifoOutData(COUNT_W - 1 downto 0)));
-          vPopLast  := sFifoOutData(LAST_POS);
-          vPopData  := sFifoOutData(FIFO_WIDTH - 1 downto DATA_LSB);
+        if sStgTaken = '1' then
+          vPopBytes := to_integer(unsigned(sStgData(COUNT_W - 1 downto 0)));
+          vPopLast  := sStgData(LAST_POS);
+          vPopData  := sStgData(FIFO_WIDTH - 1 downto DATA_LSB);
           for k in 0 to FIFO_BYTES - 1 loop
             if k < vPopBytes then
               vHold(HOLD_BITS - 1 - vHoldBits - k * 8
