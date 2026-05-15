@@ -131,6 +131,26 @@ architecture Behavioral of byte_stuffer is
   constant HOLD_BITS  : natural := HOLD_BYTES * 8;
 
   ----------------------------------------------------------------------------
+  -- Input shadow registers. Stage 1's wide variable shifter has a large
+  -- cross-module routing footprint when driven directly by the upstream
+  -- bit_packer's output registers (which are physically placed near
+  -- bit_packer, far from byte_stuffer's stage 1 slices). Sampling the
+  -- inputs into local registers here lets the placer co-locate the source
+  -- registers with the stage 1 LUT cone, shortening every routed hop in
+  -- the iValidLen / iWord fanout. Cost: +1 cycle pipeline latency.
+  --
+  -- Stall behaviour: with the shadow, two input words are in flight when
+  -- AlmFull asserts (one already captured in the shadow on the AlmFull
+  -- cycle, plus the one stage 1 is committing). The FIFO's AlmFull margin
+  -- (BURST_DEPTH - ALM_FULL_LEVEL = 2) absorbs both.
+  ----------------------------------------------------------------------------
+  signal sInWord     : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal sInValidLen : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+  signal sInValid    : std_logic;
+  signal sInFlush    : std_logic;
+  signal sInTake     : std_logic;
+
+  ----------------------------------------------------------------------------
   -- Stage 1 (bit packer) state
   ----------------------------------------------------------------------------
   signal sAccum        : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -203,10 +223,45 @@ begin
   oAlmostFull <= sFifoAlmFull;
 
   -------------------------------------------------------------------------------------------------------------------------
+  -- INPUT SHADOW: copy iWord / iValidLen / iWordValid / iFlush into local
+  -- registers so the placer can put them adjacent to the stage 1 LUT cone.
+  -- iStall is intentionally NOT shadowed — keeping it combinational
+  -- preserves single-cycle stall reaction; the captured word simply sits
+  -- in the shadow until iStall releases.
+  -------------------------------------------------------------------------------------------------------------------------
+  -- Shadow doubles as a skid buffer: stage 1's accept-condition is mirrored
+  -- back here so the shadow holds its word whenever stage 1 cannot consume
+  -- (stall, FIFO AlmFull, or pending flush). Without this, the next cycle
+  -- would overwrite the held word with whatever upstream is driving (often
+  -- a cleared bus, since upstream's iWordValid pulse is single-cycle).
+  sInTake <= '1' when sInValid = '1'
+                  and iStall = '0'
+                  and sFlushPending = '0'
+                  and sFifoAlmFull = '0'
+             else '0';
+
+  input_reg_proc : process (iClk)
+  begin
+    if rising_edge(iClk) then
+      if iRst = '1' then
+        sInWord     <= (others => '0');
+        sInValidLen <= (others => '0');
+        sInValid    <= '0';
+        sInFlush    <= '0';
+      elsif sInValid = '0' or sInTake = '1' then
+        sInWord     <= iWord;
+        sInValidLen <= iValidLen;
+        sInValid    <= iWordValid;
+        sInFlush    <= iFlush;
+      end if;
+    end if;
+  end process input_reg_proc;
+
+  -------------------------------------------------------------------------------------------------------------------------
   -- STAGE 1: bit packer
-  -- Append iWord's top iValidLen bits MSB-first into the accumulator; when
-  -- >= FIFO_BYTES whole bytes are present (or any whole bytes under flush),
-  -- pack them into a FIFO word with byte_count + last_flag.
+  -- Append sInWord's top sInValidLen bits MSB-first into the accumulator;
+  -- when >= FIFO_BYTES whole bytes are present (or any whole bytes under
+  -- flush), pack them into a FIFO word with byte_count + last_flag.
   -------------------------------------------------------------------------------------------------------------------------
   stage1_proc : process (iClk)
     variable vAccum       : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -233,24 +288,24 @@ begin
 
         vAccum       := sAccum;
         vBitsInt     := to_integer(sAccumBits);
-        vValidLenInt := to_integer(iValidLen);
+        vValidLenInt := to_integer(sInValidLen);
         vFlushPend   := sFlushPending;
         vAccept      := (sFlushPending = '0') and (sFifoAlmFull = '0');
 
         sFifoInValid <= '0';
 
         -- Append input bits (MSB-first). No FF detect at this stage.
-        if iWordValid = '1' and iStall = '0' and vAccept then
+        if sInValid = '1' and iStall = '0' and vAccept then
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLenInt then
-              vAccum(ACCUM_BITS - 1 - vBitsInt) := iWord(IN_WIDTH - 1 - i);
+              vAccum(ACCUM_BITS - 1 - vBitsInt) := sInWord(IN_WIDTH - 1 - i);
               vBitsInt                          := vBitsInt + 1;
             end if;
           end loop;
         end if;
 
         -- Flush entry: pad sub-byte residue to a byte boundary, mark pending.
-        if iFlush = '1' and iStall = '0' and vAccept then
+        if sInFlush = '1' and iStall = '0' and vAccept then
           if (vBitsInt mod 8) /= 0 then
             vPadBits := 8 - (vBitsInt mod 8);
             for j in 0 to 7 loop
