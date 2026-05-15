@@ -200,11 +200,13 @@ architecture Behavioral of byte_stuffer is
   signal sFlushDone   : std_logic;
 
   -- End-of-image partial-byte drain. When the parallel emit leaves a sub-byte
-  -- residue (or a pending stuff '0' with no follow-up data), the padded final
-  -- byte is latched here and emitted in the next cycle. Keeps the pad-byte
-  -- assembly off the parallel-emit combinational path.
+  -- residue (or a pending stuff '0' with no follow-up data), drain is
+  -- flagged here and the padded final byte is *assembled combinationally
+  -- inside the drain cycle itself* from the still-registered residue in
+  -- sHold/sHoldBits/sPrevFF. This keeps the pad-byte assembly entirely
+  -- off the main-cycle critical path (which would otherwise propagate
+  -- from the 4-slot chain into the pad-byte slicing every cycle).
   signal sDrainPending : std_logic;
-  signal sPadByte      : std_logic_vector(7 downto 0);
 
 begin
 
@@ -489,16 +491,29 @@ begin
         sOutBytesReg  <= (others => '0');
         sFlushDone    <= '0';
         sDrainPending <= '0';
-        sPadByte      <= (others => '0');
 
       elsif sDrainPending = '1' then
-        -- Emit the latched partial-byte (assembled in the previous cycle).
-        -- This cycle also clears the holding buffer state so the residue
-        -- that triggered the drain doesn't leak into the next image. The
-        -- clear is done here (not at drain detection) to keep the
-        -- pad-byte-assembly LUTs off the sHold next-state critical path.
+        -- Assemble the partial pad byte combinationally from the residue
+        -- left in sHold / sHoldBits / sPrevFF by the previous (drain-entry)
+        -- cycle, then emit. The assembly is short (variable shift of at
+        -- most 7 bits + zero pad + optional MSB stuff '0') and runs in
+        -- isolation from the main 4-slot chain, so it does not extend
+        -- the main-cycle critical path.
         if iStall = '0' then
-          sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= sPadByte;
+          vHoldBits := to_integer(sHoldBits);
+          vPadByte  := (others => '0');
+          if sPrevFF = '1' then
+            -- Stuff '0' at MSB, up to 7 real bits below it, zero pad.
+            if vHoldBits > 0 then
+              vPadByte(6 downto 7 - vHoldBits) :=
+                sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
+            end if;
+          else
+            -- Real bits at MSB, zero pad in LSBs.
+            vPadByte(7 downto 8 - vHoldBits) :=
+              sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
+          end if;
+          sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= vPadByte;
           sOutWordReg(OUT_WIDTH - 9 downto 0)             <= (others => '0');
           sOutBytesReg                                    <= to_unsigned(1, sOutBytesReg'length);
           sOutValidReg                                    <= '1';
@@ -522,7 +537,6 @@ begin
         vEmitBytes := 0;
         vEmitData  := (others => '0');
         vConsumed  := 0;
-        vPadByte   := (others => '0');
         sFlushDone <= '0';
 
         ----------------------------------------------------------------------
@@ -732,24 +746,15 @@ begin
           sOutValidReg <= '0';
         end if;
 
-        -- Partial-residue / pending-stuff drain: latch the padded byte and
-        -- emit it on the next cycle via the elsif sDrainPending branch.
+        -- Partial-residue / pending-stuff drain: flag drain and let the
+        -- residue stay in sHold / sHoldBits / sPrevFF. The drain cycle
+        -- reads those regs and assembles the padded byte combinationally
+        -- (see the elsif sDrainPending branch). Keeping the assembly out
+        -- of this cycle removes 4-5 LUT levels from the main critical path.
         if iStall = '0'
           and vHoldLast = '1'
           and vHoldBits < 8
           and (vHoldBits > 0 or vPrevFF = '1') then
-          if vPrevFF = '1' then
-            -- Stuff '0' MSB, then up to 7 real bits, then zero pad.
-            if vHoldBits > 0 then
-              vPadByte(6 downto 7 - vHoldBits) :=
-              vHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
-            end if;
-          else
-            -- Real bits at MSB, zero pad in LSBs.
-            vPadByte(7 downto 8 - vHoldBits) :=
-            vHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
-          end if;
-          sPadByte      <= vPadByte;
           sDrainPending <= '1';
         end if;
 
