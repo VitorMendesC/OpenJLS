@@ -438,6 +438,10 @@ begin
 
       elsif sDrainPending = '1' then
         -- Emit the latched partial-byte (assembled in the previous cycle).
+        -- This cycle also clears the holding buffer state so the residue
+        -- that triggered the drain doesn't leak into the next image. The
+        -- clear is done here (not at drain detection) to keep the
+        -- pad-byte-assembly LUTs off the sHold next-state critical path.
         if iStall = '0' then
           sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= sPadByte;
           sOutWordReg(OUT_WIDTH - 9 downto 0)             <= (others => '0');
@@ -447,6 +451,8 @@ begin
           sDrainPending                                   <= '0';
           sHoldLast                                       <= '0';
           sPrevFF                                         <= '0';
+          sHold                                           <= (others => '0');
+          sHoldBits                                       <= (others => '0');
         else
           sOutValidReg <= '0';
           sFlushDone   <= '0';
@@ -690,9 +696,6 @@ begin
           end if;
           sPadByte      <= vPadByte;
           sDrainPending <= '1';
-          vHold     := (others => '0');
-          vHoldBits := 0;
-          vPrevFF   := '0';
         end if;
 
         sHold     <= vHold;
