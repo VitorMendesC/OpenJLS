@@ -488,6 +488,24 @@ begin
     variable vConsumed   : natural range 0 to 32;
     variable vEmitLastFF : std_logic;
     variable vPadByte    : std_logic_vector(7 downto 0);
+
+    -- Constant-subtract candidates for next-vHoldBits. Each is evaluated
+    -- in parallel by synthesis (the operand is a literal, so each subtract
+    -- collapses to a thin LUT+CARRY4 chain with no variable-side adder
+    -- cone). The final case-mux below picks one by (vEmitBytes, vPrevFF,
+    -- ff*). Replaces `vHoldBits - vConsumed`, where vConsumed was a
+    -- variable derived from cum*/totalCons and pushed the subtract to the
+    -- bottom of the Stage-3 next-state cone.
+    variable hbMinus7  : integer range -32 to HOLD_BITS;
+    variable hbMinus8  : integer range -32 to HOLD_BITS;
+    variable hbMinus15 : integer range -32 to HOLD_BITS;
+    variable hbMinus16 : integer range -32 to HOLD_BITS;
+    variable hbMinus22 : integer range -32 to HOLD_BITS;
+    variable hbMinus23 : integer range -32 to HOLD_BITS;
+    variable hbMinus24 : integer range -32 to HOLD_BITS;
+    variable hbMinus30 : integer range -32 to HOLD_BITS;
+    variable hbMinus31 : integer range -32 to HOLD_BITS;
+    variable hbMinus32 : integer range -32 to HOLD_BITS;
   begin
     if rising_edge(iClk) then
 
@@ -790,6 +808,18 @@ begin
             end if;
         end case;
 
+        -- Parallel constant-subtract candidates (see variable decls).
+        hbMinus7  := vHoldBits - 7;
+        hbMinus8  := vHoldBits - 8;
+        hbMinus15 := vHoldBits - 15;
+        hbMinus16 := vHoldBits - 16;
+        hbMinus22 := vHoldBits - 22;
+        hbMinus23 := vHoldBits - 23;
+        hbMinus24 := vHoldBits - 24;
+        hbMinus30 := vHoldBits - 30;
+        hbMinus31 := vHoldBits - 31;
+        hbMinus32 := vHoldBits - 32;
+
         ----------------------------------------------------------------------
         -- (4) Pick emit count from how much of the chain's consumption is
         --     covered by vHoldBits. This is the *only* place sHoldBits gates
@@ -838,9 +868,70 @@ begin
         end if;
 
         if vEmitBytes > 0 then
-          vHold     := std_logic_vector(shift_left(unsigned(vHold), vConsumed));
-          vHoldBits := vHoldBits - vConsumed;
-          vPrevFF   := vEmitLastFF;
+          vHold := std_logic_vector(shift_left(unsigned(vHold), vConsumed));
+
+          -- Mux precomputed constant subtracts to form next vHoldBits.
+          -- Flag tests below use vPrevFF *before* it is updated to
+          -- vEmitLastFF — same value that drove the cum*/totalCons
+          -- selection above, so the case matches vConsumed exactly.
+          -- The selected branch's value is >= 0 because vEmitBytes was
+          -- only set when vHoldBits crossed the matching threshold.
+          case vEmitBytes is
+            when 1 =>
+              if vPrevFF = '1' then
+                vHoldBits := hbMinus7;
+              else
+                vHoldBits := hbMinus8;
+              end if;
+            when 2 =>
+              if vPrevFF = '1' or ff0 = '1' then
+                vHoldBits := hbMinus15;
+              else
+                vHoldBits := hbMinus16;
+              end if;
+            when 3 =>
+              case vPrevFF is
+                when '1' =>
+                  if ff1a = '1' then
+                    vHoldBits := hbMinus22;
+                  else
+                    vHoldBits := hbMinus23;
+                  end if;
+                when others =>
+                  if ff0 = '1' or ff1b = '1' then
+                    vHoldBits := hbMinus23;
+                  else
+                    vHoldBits := hbMinus24;
+                  end if;
+              end case;
+            when others => -- vEmitBytes = 4
+              case vPrevFF is
+                when '1' =>
+                  if ff1a = '1' or ff2a = '1' then
+                    vHoldBits := hbMinus30;
+                  else
+                    vHoldBits := hbMinus31;
+                  end if;
+                when others =>
+                  if ff0 = '1' then
+                    if ff2a = '1' then
+                      vHoldBits := hbMinus30;
+                    else
+                      vHoldBits := hbMinus31;
+                    end if;
+                  elsif ff1b = '1' then
+                    vHoldBits := hbMinus31;
+                  else
+                    if ff2b = '1' then
+                      vHoldBits := hbMinus31;
+                    else
+                      vHoldBits := hbMinus32;
+                    end if;
+                  end if;
+              end case;
+          end case;
+
+          vPrevFF := vEmitLastFF;
         end if;
 
         ----------------------------------------------------------------------
