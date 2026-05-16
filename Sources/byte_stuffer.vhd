@@ -208,6 +208,16 @@ architecture Behavioral of byte_stuffer is
   -- from the 4-slot chain into the pad-byte slicing every cycle).
   signal sDrainPending : std_logic;
 
+  -- Clean-end finalize. Mirror of sDrainPending for the "no residue, no
+  -- pending stuff" path: when the main emit consumes the last bits cleanly
+  -- (vHoldBits=0 AND vPrevFF=0), we flag finalize instead of clearing
+  -- sHoldLast / pulsing sFlushDone in-cycle. The finalize cycle emits a
+  -- 0-byte beat carrying oFlushDone='1' (framer accepts iValid='1' with
+  -- iByteEnable=0 and pushes FF D9 at the current count). This keeps the
+  -- next-state of sHoldLast / sFlushDone out of the main 4-slot chain's
+  -- post-shift cone, which was the dominant Stage-3 critical path.
+  signal sCleanEndPending : std_logic;
+
 begin
 
   assert OUT_BYTES_PER_CYCLE >= 1
@@ -423,6 +433,7 @@ begin
     and sHoldBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sHoldBits'length)
     and iStall = '0'
     and sDrainPending = '0'
+    and sCleanEndPending = '0'
     else
     '0';
   -- Pop FIFO when the skid buffer is empty or being drained this cycle.
@@ -481,15 +492,32 @@ begin
     if rising_edge(iClk) then
 
       if iRst = '1' then
-        sHold         <= (others => '0');
-        sHoldBits     <= (others => '0');
-        sHoldLast     <= '0';
-        sPrevFF       <= '0';
-        sOutWordReg   <= (others => '0');
-        sOutValidReg  <= '0';
-        sOutBytesReg  <= (others => '0');
-        sFlushDone    <= '0';
-        sDrainPending <= '0';
+        sHold            <= (others => '0');
+        sHoldBits        <= (others => '0');
+        sHoldLast        <= '0';
+        sPrevFF          <= '0';
+        sOutWordReg      <= (others => '0');
+        sOutValidReg     <= '0';
+        sOutBytesReg     <= (others => '0');
+        sFlushDone       <= '0';
+        sDrainPending    <= '0';
+        sCleanEndPending <= '0';
+
+      elsif sCleanEndPending = '1' then
+        -- 0-byte EOI beat: framer (jls_framer.vhd:488-510) treats
+        -- iValid='1' AND iByteEnable=0 AND iEOI='1' as "push FF D9 at
+        -- current count" with no data copy.
+        if iStall = '0' then
+          sOutWordReg      <= (others => '0');
+          sOutBytesReg     <= (others => '0');
+          sOutValidReg     <= '1';
+          sFlushDone       <= '1';
+          sHoldLast        <= '0';
+          sCleanEndPending <= '0';
+        else
+          sOutValidReg <= '0';
+          sFlushDone   <= '0';
+        end if;
 
       elsif sDrainPending = '1' then
         -- Assemble the partial pad byte combinationally from the residue
@@ -824,9 +852,7 @@ begin
           sOutValidReg <= '1';
 
           if vHoldLast = '1' and vHoldBits = 0 and vPrevFF = '0' then
-            -- Clean end: the final data byte was just emitted, no pad needed.
-            sFlushDone <= '1';
-            vHoldLast := '0';
+            sCleanEndPending <= '1';
           end if;
         else
           sOutValidReg <= '0';
