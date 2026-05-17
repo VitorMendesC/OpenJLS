@@ -11,10 +11,13 @@
 --   Three internal stages:
 --
 --     Stage 1 — bit packer:
---       Accumulates input bits MSB-first into a wide accumulator. 
---       When >= FIFO_BYTES whole bytes are present, packs them
---       into a fixed-width FIFO word together with a byte-count and a
---       last_flag. Critical path: one barrel shift over IN_WIDTH bits.
+--       Accumulates input bits MSB-first into a 2*FIFO_BITS accumulator.
+--       Drains a fixed FIFO_BITS-wide word into the FIFO whenever enough
+--       bits are present. On flush the sub-byte residue is padded to a
+--       byte boundary; the final FIFO write is always FIFO_BITS wide
+--       (zero-padded if needed) and carries the count of valid bytes
+--       plus last_flag=1. Non-last writes always carry FIFO_BYTES; the
+--       byte_count field is only consulted on last_flag=1.
 --
 --     Stage 2 — BRAM-backed sync FIFO
 --
@@ -91,16 +94,22 @@ architecture Behavioral of byte_stuffer is
   -- Stage 1 sizing
   constant FIFO_BYTES : natural := math_ceil_div(IN_WIDTH, 8);
   constant FIFO_BITS  : natural := FIFO_BYTES * 8;
-  constant ACCUM_BITS : natural := IN_WIDTH + 7;
+  constant ACCUM_BITS : natural := 2 * FIFO_BITS;
   constant COUNT_W    : natural := log2ceil(FIFO_BYTES + 1);
 
   -- FIFO entry layout (LSB-first):
-  --   bits [0 .. COUNT_W-1]   : byte_count   (0 .. FIFO_BYTES)
-  --   bit  [COUNT_W]          : last_flag
-  --   bits [COUNT_W+1 .. .. ] : data (MSB-first packed bytes)
-  constant LAST_POS   : natural := COUNT_W;
-  constant DATA_LSB   : natural := COUNT_W + 1;
-  constant FIFO_WIDTH : natural := FIFO_BITS + 1 + COUNT_W;
+  --   bit  [0]              : last_flag
+  --   bits [1 .. FIFO_BITS] : data (MSB-first packed bytes; last word is
+  --                           zero-padded below the valid region)
+  --   Valid-byte count for last-flag words lives sideband in sCountQ
+  --   (only written/read on last_flag events).
+  constant LAST_POS   : natural := 0;
+  constant DATA_LSB   : natural := 1;
+  constant FIFO_WIDTH : natural := FIFO_BITS + 1;
+
+  -- Sideband byte-count queue depth: bounds the number of in-flight
+  -- last-flag words allowed in the main FIFO simultaneously.
+  constant CQ_DEPTH : natural := 3;
 
   function almost_full_level(depth : natural) return natural is
   begin
@@ -146,6 +155,14 @@ architecture Behavioral of byte_stuffer is
   signal sStgData  : std_logic_vector(FIFO_WIDTH - 1 downto 0);
   signal sStgValid : std_logic;
   signal sStgTaken : std_logic;
+
+  -- Sideband byte-count queue. Written by Stage 1 when it emits a
+  -- last_flag word, popped by Stage 3 when it pops a last_flag word.
+  -- Head is combinationally available on Out_Data.
+  signal sCountQ_write : std_logic                              := '0';
+  signal sCountQ_wdata : std_logic_vector(COUNT_W - 1 downto 0) := (others => '0');
+  signal sCountQ_pop   : std_logic;
+  signal sCountQ_head  : std_logic_vector(COUNT_W - 1 downto 0);
 
   ----------------------------------------------------------------------------
   -- Stage 3 (FF stuffer + emit) state.
@@ -232,7 +249,6 @@ begin
     variable vFlushPend      : std_logic;
     variable vAccept         : boolean;
     variable vPadBits        : natural;
-    variable vBytesReady     : natural;
     variable vEmitBytes      : natural;
     variable vLastFlag       : std_logic;
     variable vDataWord       : std_logic_vector(FIFO_BITS - 1 downto 0);
@@ -245,6 +261,8 @@ begin
         sFlushPending   <= '0';
         sFifoInValid    <= '0';
         sFifoInData     <= (others => '0');
+        sCountQ_write   <= '0';
+        sCountQ_wdata   <= (others => '0');
 
       else
 
@@ -254,12 +272,14 @@ begin
         vFlushPend      := sFlushPending;
         vAccept         := (sFlushPending = '0') and (sFifoAlmFull = '0');
 
-        sFifoInValid <= '0';
+        sFifoInValid  <= '0';
+        sCountQ_write <= '0';
 
         ---------------------------------------------------------------------------------
         -- WRITE
         ---------------------------------------------------------------------------------
         -- Append input bits (MSB-first)
+
         if sInValid = '1' and iStall = '0' and vAccept then
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLenInt then
@@ -286,40 +306,48 @@ begin
         ---------------------------------------------------------------------------------
         -- READ
         ---------------------------------------------------------------------------------
-        -- Drain FIFO_BYTES bytes into the FIFO when accumulated sufficient data
+        -- Always drain a full FIFO_BITS word when available. On flush, the
+        -- final (sub-FIFO_BITS) residue is zero-padded out to FIFO_BITS and
+        -- emitted with last_flag=1 + valid-byte count.
 
-        vBytesReady := vAccumCountBits / 8;
-        if vBytesReady > FIFO_BYTES then
-          vBytesReady := FIFO_BYTES;
-        end if;
+        if sFifoAlmFull = '0' then
+          if vAccumCountBits >= FIFO_BITS then
+            if vFlushPend = '1' and vAccumCountBits = FIFO_BITS then
+              vLastFlag  := '1';
+              vFlushPend := '0';
+            else
+              vLastFlag := '0';
+            end if;
 
-        if vBytesReady > 0 and sFifoAlmFull = '0' then
+            vDataWord := vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS);
+            sFifoInData  <= vDataWord & vLastFlag;
+            sFifoInValid <= '1';
 
-          vEmitBytes := vBytesReady;
-          if vFlushPend = '1' and (vAccumCountBits - vEmitBytes * 8) = 0 then
-            vLastFlag  := '1';
-            vFlushPend := '0';
-          else
-            vLastFlag := '0';
+            if vLastFlag = '1' then
+              sCountQ_write <= '1';
+              sCountQ_wdata <= std_logic_vector(to_unsigned(FIFO_BYTES, COUNT_W));
+            end if;
+
+            vAccumBuffer    := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
+            vAccumCountBits := vAccumCountBits - FIFO_BITS;
+
+          elsif vFlushPend = '1' then
+            -- Final flush word: 0 <= residue < FIFO_BITS, multiple of 8
+            -- after the pad-to-byte-boundary step. Bits below the valid
+            -- region are already '0' (zero-fill from the prior shift_left),
+            -- so the FIFO_BITS slice is naturally zero-padded.
+            vEmitBytes := vAccumCountBits / 8;
+            vDataWord  := vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS);
+            sFifoInData  <= vDataWord & '1';
+            sFifoInValid <= '1';
+
+            sCountQ_write <= '1';
+            sCountQ_wdata <= std_logic_vector(to_unsigned(vEmitBytes, COUNT_W));
+
+            vAccumBuffer    := (others => '0');
+            vAccumCountBits := 0;
+            vFlushPend      := '0';
           end if;
-
-          vDataWord := vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS);
-          sFifoInData <= vDataWord
-            & vLastFlag
-            & std_logic_vector(to_unsigned(vEmitBytes, COUNT_W));
-          sFifoInValid <= '1';
-
-          vAccumBuffer    := std_logic_vector(shift_left(unsigned(vAccumBuffer), vEmitBytes * 8));
-          vAccumCountBits := vAccumCountBits - vEmitBytes * 8;
-
-        elsif vFlushPend = '1' and vAccumCountBits = 0 and sFifoAlmFull = '0' then
-          -- Edge case: flush latched but accumulator already empty
-          -- (no payload bytes for this image). Emit a count=0 sentinel.
-          sFifoInData <= (FIFO_WIDTH - 1 downto LAST_POS + 1 => '0')
-            & '1'
-            & std_logic_vector(to_unsigned(0, COUNT_W));
-          sFifoInValid <= '1';
-          vFlushPend := '0';
         end if;
 
         sAccumBuffer    <= vAccumBuffer;
@@ -343,7 +371,7 @@ begin
       Depth_g        => BURST_DEPTH,
       AlmFullOn_g    => true,
       AlmFullLevel_g => ALM_FULL_LEVEL,
-      RamStyle_g     => "block",
+      RamStyle_g     => "auto",
       RamBehavior_g  => "RBW"
     )
     port map
@@ -360,6 +388,32 @@ begin
       AlmFull   => sFifoAlmFull,
       Empty     => open,
       AlmEmpty  => open
+    );
+
+  -- Sideband byte-count (byte-valid) queue
+  -- Pop combinationally on the cycle Stage 3 takes a last_flag entry, so
+  -- back-to-back last_flag pops advance the head correctly.
+  sCountQ_pop <= sStgTaken and sStgData(LAST_POS);
+
+  count_fifo_inst : entity openlogic_base.olo_base_fifo_sync
+    generic map(
+      Width_g       => COUNT_W,
+      Depth_g       => CQ_DEPTH,
+      RamStyle_g    => "auto",
+      RamBehavior_g => "RBW"
+    )
+    port map
+    (
+      Clk       => iClk,
+      Rst       => iRst,
+      In_Data   => sCountQ_wdata,
+      In_Valid  => sCountQ_write,
+      In_Ready  => open,
+      Out_Data  => sCountQ_head,
+      Out_Valid => open,
+      Out_Ready => sCountQ_pop,
+      Full      => open,
+      Empty     => open
     );
 
   -------------------------------------------------------------------------------------------------------------------------
@@ -393,7 +447,6 @@ begin
   -- Pop FIFO when the skid buffer is empty or being drained this cycle.
   sFifoOutReady <= '1' when sStgValid = '0' or sStgTaken = '1' else
     '0';
-
   skid_proc : process (iClk)
   begin
     if rising_edge(iClk) then
@@ -540,21 +593,27 @@ begin
 
         ----------------------------------------------------------------------
         -- (1) Refill: drain the skid buffer into the holding buffer.
+        --     Non-last words are always full FIFO_BITS — a single fixed
+        --     copy. Only the final (last_flag=1) word may be partial and
+        --     needs the variable byte-count loop.
         ----------------------------------------------------------------------
         if sStgTaken = '1' then
-          vPopBytes := to_integer(unsigned(sStgData(COUNT_W - 1 downto 0)));
-          vPopLast  := sStgData(LAST_POS);
-          vPopData  := sStgData(FIFO_WIDTH - 1 downto DATA_LSB);
-          for k in 0 to FIFO_BYTES - 1 loop
-            if k < vPopBytes then
-              vHold(HOLD_BITS - 1 - vHoldBits - k * 8
-              downto HOLD_BITS - vHoldBits - (k + 1) * 8)
-              := vPopData(FIFO_BITS - 1 - k * 8
-              downto FIFO_BITS - (k + 1) * 8);
-            end if;
-          end loop;
-          vHoldBits := vHoldBits + vPopBytes * 8;
-          if vPopLast = '1' then
+          vPopLast := sStgData(LAST_POS);
+          vPopData := sStgData(FIFO_WIDTH - 1 downto DATA_LSB);
+          if vPopLast = '0' then
+            vHold(HOLD_BITS - 1 - vHoldBits downto HOLD_BITS - vHoldBits - FIFO_BITS) := vPopData;
+            vHoldBits                                                                 := vHoldBits + FIFO_BITS;
+          else
+            vPopBytes := to_integer(unsigned(sCountQ_head));
+            for k in 0 to FIFO_BYTES - 1 loop
+              if k < vPopBytes then
+                vHold(HOLD_BITS - 1 - vHoldBits - k * 8
+                downto HOLD_BITS - vHoldBits - (k + 1) * 8)
+                := vPopData(FIFO_BITS - 1 - k * 8
+                downto FIFO_BITS - (k + 1) * 8);
+              end if;
+            end loop;
+            vHoldBits := vHoldBits + vPopBytes * 8;
             vHoldLast := '1';
           end if;
         end if;
