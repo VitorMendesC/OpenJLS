@@ -6,7 +6,7 @@ It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — the best-p
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform. It is currently tested on Xilinx Zynq 7020.
 
-> **Status:** Active development. Core building blocks (codec segments, context memory) are implemented and individually verified. Top-level integration with AXI4-Stream interfaces is in progress. Check the [roadmap](Docs/ROADMAP.md) file for more details.
+> **Status:** Active development. Lossless encoder is integrated end-to-end with AXI4-Stream interfaces and verified bit-exact against the ISO/IEC 14495-1 reference (TEST16, 12-bit grayscale). Current focus is timing closure. Check the [roadmap](Docs/ROADMAP.md) file for more details.
 
 ---
 
@@ -19,19 +19,19 @@ JPEG-LS consistently outperforms other lossless compression standards in both co
 ## Features
 
 **Implemented**
-- ISO/IEC 14495-1 compliant JPEG-LS encoding
+- ISO/IEC 14495-1 compliant JPEG-LS lossless encoding
+- End-to-end pipelined top-level (openjls_top) with AXI4-Stream input/output
+- Bit-exact conformance verified against ISO reference (TEST16, 12-bit grayscale)
 - Up to 16-bit per component grayscale
 - One pixel per clock cycle throughput
 - No external memory required — on-chip only
 - Vendor-agnostic VHDL (portable across FPGA families via [open-logic](https://github.com/open-logic/open-logic))
-- Module-level testbenches for all core components
+- Module-level and full-encoder conformance testbenches
 
 **Planned**
-- Lossless and near-lossless (lossy) encoding modes
-- AXI4-Stream input/output interfaces
-- Top-level integration with pipelining
 - Decoder IP core
 - Resource utilization and performance benchmarks
+- Multi-vendor (Intel, Microchip, Lattice) verified configurations
 
 ---
 
@@ -46,27 +46,6 @@ OpenJLS follows the JPEG-LS encoding pipeline:
 3. **Prediction** — MED (Median Edge Detector) with context-based bias cancellation
 4. **Encoding** — adaptive Golomb-Rice coding for regular mode, run-length encoding for uniform regions
 5. **Bitstream packing** — ISO/IEC 14495-1 compliant JPEG-LS output stream
-
-**Key design decisions:**
-- One pixel per clock cycle, fully pipelined datapath
-- On-chip context memory — no external DRAM access
-- Vendor-agnostic memories and FIFOs via open-logic
-- AXI4-Stream interfaces for straightforward SoC integration
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Xilinx Vivado (tested; other vendor tools should work with open-logic compatibility)
-- VHDL-2008 capable simulator
-
-### Running Simulations
-
-```bash
-vivado -mode batch -notrace -source Tcl/run_all_testbenches.tcl -tclargs -runtime all
-```
 
 ---
 
