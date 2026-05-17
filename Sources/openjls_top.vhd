@@ -170,7 +170,7 @@ architecture rtl of openjls_top is
   -- BYTE_STUFFER_BURST_DEPTH: consecutive worst-case words absorbed without
   -- stalling. 64 covers all natural images plus comfortable margin.
   --------------------------------------------------------------------------------------------
-  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := math_ceil_div(math_ceil_div(LIMIT, 8) + 1, 2);
+  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := math_ceil_div(LIMIT, 8);
   constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;
   constant BYTE_STUFFER_OUT_WIDTH           : natural := BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
   constant MIN_OUT_WIDTH_WORST_CASE         : natural := BYTE_STUFFER_OUT_WIDTH + 8;
@@ -313,6 +313,9 @@ architecture rtl of openjls_top is
   -- Stage 2 — muxed
   signal sS2Q         : unsigned(8 downto 0);
   signal sS2TokenMode : t_token_mode;
+
+  signal sS2Px   : unsigned(BITNESS - 1 downto 0);
+  signal sReg2Px : unsigned(BITNESS - 1 downto 0) := (others => '0');
 
   -- context_ram packed I/O
   signal sCtxRdData : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
@@ -793,6 +796,16 @@ begin
     (others => '0') when sReg2.mode = TOKEN_REGULAR else
     unsigned(sCtxRdData(CTX_NN_HI downto CTX_NN_LO));
 
+  u_a5 : entity work.A5_edge_detecting_predictor
+    generic map(BITNESS => BITNESS)
+    port map
+    (
+      iA  => sReg1.Ra(BITNESS - 1 downto 0),
+      iB  => sReg1.Rb(BITNESS - 1 downto 0),
+      iC  => sReg1.Rc(BITNESS - 1 downto 0),
+      oPx => sS2Px
+    );
+
   -------------------------------------------------------------------------------------------------------------
   -- Register 2 (Stage 2 → Stage 3)
   -------------------------------------------------------------------------------------------------------------
@@ -804,6 +817,7 @@ begin
         sReg2    <= CO_TOKEN_NONE;
         sReg2V   <= '0';
         sReg2EOI <= '0';
+        sReg2Px  <= (others => '0');
       elsif sCE2 = '1' then
         -- Build Reg2 per mode. Fields not meaningful for the current mode
         -- stay at CO_TOKEN_NONE defaults so downstream mode-specific logic
@@ -846,6 +860,7 @@ begin
         sReg2    <= v;
         sReg2V   <= sReg1V and bool2bit(sS2TokenMode /= TOKEN_NONE);
         sReg2EOI <= sReg1EOI;
+        sReg2Px  <= sS2Px;
       end if;
     end if;
   end process;
@@ -855,15 +870,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- TODO: Add logic gating on the speculative paths to only run on context hit
 
-  u_a5 : entity work.A5_edge_detecting_predictor
-    generic map(BITNESS => BITNESS)
-    port map
-    (
-      iA  => sReg2.Ra(BITNESS - 1 downto 0),
-      iB  => sReg2.Rb(BITNESS - 1 downto 0),
-      iC  => sReg2.Rc(BITNESS - 1 downto 0),
-      oPx => sS3Px
-    );
+  sS3Px <= sReg2Px;
 
   -- Forwarding hits: Stage 2 read Q matches Stage 4 writeback Q.
   -- Stage-4 mode selects which update output to forward; Stage-2 mode is
