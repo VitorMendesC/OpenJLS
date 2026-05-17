@@ -4,21 +4,20 @@
 -- Module Name: A11_2_bit_packer - Behavioral
 -- Description:
 --
--- Notes:
---              Concatenates this cycle's raw + Golomb fields into a single
---              variable-length word. Output is (oWord, oValidLen): MSB-aligned
---              bitstream in oWord, oValidLen counts how many top bits are
---              meaningful. Downstream byte_stuffer accumulates these
---              variable-length words and produces byte-aligned output.
+--    Concatenates this cycle's raw + Golomb fields into a single
+--    variable-length word. Output is (oWord, oValidLen): MSB-aligned
+--    bitstream in oWord, oValidLen counts how many top bits are
+--    meaningful. Downstream byte_stuffer accumulates these
+--    variable-length words and produces byte-aligned output.
 --
---              Word layout (MSB → LSB):
---                [raw bits (rawLen)][unary zeros (unaryZeros)]['1'][suffix (suffixLen)]
+--    Word layout (MSB → LSB):
+--      [raw bits (rawLen)][unary zeros (unaryZeros)]['1'][suffix (suffixLen)]
 --
---              When only one of raw/Golomb fires, the corresponding portion is
---              omitted. Both fire simultaneously in RI (run-interruption) mode.
+--    When only one of raw/Golomb fires, the corresponding portion is
+--    omitted. Both fire simultaneously in RI (run-interruption) mode.
 --
---              No internal buffer. Concat is combinational on the inputs;
---              outputs are registered to break the comb chain into byte_stuffer.
+--    No internal buffer. Concat is combinational on the inputs;
+--    outputs are registered to break the comb chain into byte_stuffer.
 --
 ----------------------------------------------------------------------------------
 use work.Common.all;
