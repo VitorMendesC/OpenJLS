@@ -10,25 +10,19 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 - [x] Golomb-Rice encoder
 - [x] Run-length encoding mode
 - [x] Context memory (vendor-agnostic via open-logic)
-- [ ] Top-level integration with pipelining and registers
-- [ ] Lossless mode — fully functional end-to-end encoder
-- [ ] AXI4-Stream input/output interfaces
+- [x] Top-level integration with pipelining and registers
+- [x] Lossless mode — fully functional end-to-end encoder
+- [x] AXI4-Stream input/output interfaces
 
 ## Phase 2 — Verification
 
 - [x] Module-level testbenches for all blocks
-- [ ] Bitstream compliance verification against reference software (ISO 14495-1)
+- [x] Bitstream compliance verification against reference software (ISO 14495-1)
 - [ ] Full compliance test suite with standard test images
 - [ ] Resource utilization and timing benchmarks (published in README)
 - [ ] Bit-accurate software reference model
 
-## Phase 3 — Near-Lossless
-
-- [ ] Near-lossless encoding mode (configurable NEAR parameter)
-- [ ] Near-lossless compliance verification
-- [ ] Updated benchmarks for near-lossless configurations
-
-## Phase 4 — Platform Expansion
+## Phase 3 — Platform Expansion
 
 - [ ] Verified configurations for Intel/Altera devices
 - [ ] Verified configurations for Microchip (Microsemi) devices
@@ -36,4 +30,4 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 
 ---
 
-*Last updated: March 2026*
+*Last updated: May 2026*
