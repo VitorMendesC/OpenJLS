@@ -8,35 +8,25 @@
 --   stuffed '0' bit so decoders can distinguish payload from markers (an FF
 --   followed by a non-zero byte = marker).
 --
---   Sits downstream of A11_2_bit_packer: input is a variable-length MSB-
---   aligned word (iWord, iWordValid, iValidLen). Output is a byte-aligned
---   stream up to OUT_BYTES_PER_CYCLE bytes per beat.
---
 --   Three internal stages:
 --
 --     Stage 1 — bit packer:
---       Accumulates input bits MSB-first into a wide accumulator (no FF
---       logic). When >= FIFO_BYTES whole bytes are present, packs them
+--       Accumulates input bits MSB-first into a wide accumulator. 
+--       When >= FIFO_BYTES whole bytes are present, packs them
 --       into a fixed-width FIFO word together with a byte-count and a
 --       last_flag. Critical path: one barrel shift over IN_WIDTH bits.
 --
---     Stage 2 — BRAM-backed sync FIFO:
---       olo_base_fifo_sync, decouples Stage 1 (bursts at LIMIT bits/cycle)
---       from Stage 3 (drains at OUT_BYTES_PER_CYCLE bytes/cycle post-stuff).
---       AlmFull -> oAlmostFull (backpressure to bit_packer / pipeline).
+--     Stage 2 — BRAM-backed sync FIFO
 --
 --     Stage 3 — FF stuffer + output emit:
 --       Refills a holding register from FIFO pops. Each cycle forms up to
 --       OUT_BYTES_PER_CYCLE output bytes via:
 --         (a) a parallel pre-compute of FF-equality flags over the 8 fixed
 --             candidate byte windows that any of the 4 slots could ever
---             read from (offsets 0, 7, 8, 15, 16, 22, 23, 24); and
+--             read from (offsets 0, 7, 8, 15, 16, 22, 23, 24);
 --         (b) a 4-step chain over the slots that resolves each slot's input
 --             prev_FF and selects the correct candidate flag/bits via a
---             small mux. Each step is one mux + 1-LUT update, far shallower
---             than the original per-step variable-shift chain.
---       Holds shifts once at the end by the chain's total bit consumption
---       (28..32 bits per cycle when all 4 slots fire).
+--             small mux.
 --
 --       End-of-image partial-byte drain (sub-byte residue, or a pending
 --       stuff bit with no follow-up data) is split into its own cycle via
@@ -98,7 +88,7 @@ architecture Behavioral of byte_stuffer is
 
   constant OUT_WIDTH : natural := OUT_BYTES_PER_CYCLE * 8;
 
-  -- Stage 1 sizing (no FF stuff at this stage).
+  -- Stage 1 sizing
   constant FIFO_BYTES : natural := math_ceil_div(IN_WIDTH, 8);
   constant FIFO_BITS  : natural := FIFO_BYTES * 8;
   constant ACCUM_BITS : natural := IN_WIDTH + 7;
@@ -112,7 +102,7 @@ architecture Behavioral of byte_stuffer is
   constant DATA_LSB   : natural := COUNT_W + 1;
   constant FIFO_WIDTH : natural := FIFO_BITS + 1 + COUNT_W;
 
-  function almfull_level(depth : natural) return natural is
+  function almost_full_level(depth : natural) return natural is
   begin
     if depth >= 4 then
       return depth - 2;
@@ -122,7 +112,7 @@ architecture Behavioral of byte_stuffer is
       return depth;
     end if;
   end function;
-  constant ALM_FULL_LEVEL : natural := almfull_level(BURST_DEPTH);
+  constant ALM_FULL_LEVEL : natural := almost_full_level(BURST_DEPTH);
 
   -- Stage 3 holding register: room for at least one full FIFO pop on top of
   -- any leftover bits from the previous consume. Bits are stored MSB-first
@@ -130,36 +120,19 @@ architecture Behavioral of byte_stuffer is
   constant HOLD_BYTES : natural := 2 * FIFO_BYTES;
   constant HOLD_BITS  : natural := HOLD_BYTES * 8;
 
-  ----------------------------------------------------------------------------
-  -- Input shadow registers. Stage 1's wide variable shifter has a large
-  -- cross-module routing footprint when driven directly by the upstream
-  -- bit_packer's output registers (which are physically placed near
-  -- bit_packer, far from byte_stuffer's stage 1 slices). Sampling the
-  -- inputs into local registers here lets the placer co-locate the source
-  -- registers with the stage 1 LUT cone, shortening every routed hop in
-  -- the iValidLen / iWord fanout. Cost: +1 cycle pipeline latency.
-  --
-  -- Stall behaviour: with the shadow, two input words are in flight when
-  -- AlmFull asserts (one already captured in the shadow on the AlmFull
-  -- cycle, plus the one stage 1 is committing). The FIFO's AlmFull margin
-  -- (BURST_DEPTH - ALM_FULL_LEVEL = 2) absorbs both.
-  ----------------------------------------------------------------------------
+  -- Input registers
   signal sInWord     : std_logic_vector(IN_WIDTH - 1 downto 0);
   signal sInValidLen : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
   signal sInValid    : std_logic;
   signal sInFlush    : std_logic;
   signal sInTake     : std_logic;
 
-  ----------------------------------------------------------------------------
-  -- Stage 1 (bit packer) state
-  ----------------------------------------------------------------------------
-  signal sAccum        : std_logic_vector(ACCUM_BITS - 1 downto 0);
-  signal sAccumBits    : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
-  signal sFlushPending : std_logic;
+  -- Stage 1 accumulator
+  signal sAccumBuffer    : std_logic_vector(ACCUM_BITS - 1 downto 0);
+  signal sAccumCountBits : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
+  signal sFlushPending   : std_logic;
 
-  ----------------------------------------------------------------------------
   -- FIFO interface
-  ----------------------------------------------------------------------------
   signal sFifoInData   : std_logic_vector(FIFO_WIDTH - 1 downto 0);
   signal sFifoInValid  : std_logic;
   signal sFifoInReady  : std_logic;
@@ -168,12 +141,8 @@ architecture Behavioral of byte_stuffer is
   signal sFifoOutReady : std_logic;
   signal sFifoAlmFull  : std_logic;
 
-  ----------------------------------------------------------------------------
-  -- Skid buffer between FIFO output and Stage 3 consume. Breaks the
-  -- BRAM-DOADO -> Stage-3-LUT-cone combinational path (saves the BRAM Tco
-  -- plus the long fanout net at the FIFO output from the Stage 3 critical
-  -- path). Cost: +1 cycle FIFO read latency, hidden by FIFO depth.
-  ----------------------------------------------------------------------------
+  -- Skid buffer between FIFO output and Stage 3 consume
+  -- Helps timing
   signal sStgData  : std_logic_vector(FIFO_WIDTH - 1 downto 0);
   signal sStgValid : std_logic;
   signal sStgTaken : std_logic;
@@ -199,23 +168,10 @@ architecture Behavioral of byte_stuffer is
   signal sOutBytesReg : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
   signal sFlushDone   : std_logic;
 
-  -- End-of-image partial-byte drain. When the parallel emit leaves a sub-byte
-  -- residue (or a pending stuff '0' with no follow-up data), drain is
-  -- flagged here and the padded final byte is *assembled combinationally
-  -- inside the drain cycle itself* from the still-registered residue in
-  -- sHold/sHoldBits/sPrevFF. This keeps the pad-byte assembly entirely
-  -- off the main-cycle critical path (which would otherwise propagate
-  -- from the 4-slot chain into the pad-byte slicing every cycle).
+  -- End-of-image partial-byte drain
   signal sDrainPending : std_logic;
 
-  -- Clean-end finalize. Mirror of sDrainPending for the "no residue, no
-  -- pending stuff" path: when the main emit consumes the last bits cleanly
-  -- (vHoldBits=0 AND vPrevFF=0), we flag finalize instead of clearing
-  -- sHoldLast / pulsing sFlushDone in-cycle. The finalize cycle emits a
-  -- 0-byte beat carrying oFlushDone='1' (framer accepts iValid='1' with
-  -- iByteEnable=0 and pushes FF D9 at the current count). This keeps the
-  -- next-state of sHoldLast / sFlushDone out of the main 4-slot chain's
-  -- post-shift cone, which was the dominant Stage-3 critical path.
+  -- End-of-image clean-end 
   signal sCleanEndPending : std_logic;
 
 begin
@@ -235,22 +191,16 @@ begin
   oAlmostFull <= sFifoAlmFull;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- INPUT SHADOW: copy iWord / iValidLen / iWordValid / iFlush into local
-  -- registers so the placer can put them adjacent to the stage 1 LUT cone.
-  -- iStall is intentionally NOT shadowed — keeping it combinational
-  -- preserves single-cycle stall reaction; the captured word simply sits
-  -- in the shadow until iStall releases.
+  -- INPUT REGISTERS
   -------------------------------------------------------------------------------------------------------------------------
-  -- Shadow doubles as a skid buffer: stage 1's accept-condition is mirrored
-  -- back here so the shadow holds its word whenever stage 1 cannot consume
-  -- (stall, FIFO AlmFull, or pending flush). Without this, the next cycle
-  -- would overwrite the held word with whatever upstream is driving (often
-  -- a cleared bus, since upstream's iWordValid pulse is single-cycle).
+  -- Helps timing; iStall is intentionally NOT registered; Works as a skid buffer
+
   sInTake <= '1' when sInValid = '1'
-                  and iStall = '0'
-                  and sFlushPending = '0'
-                  and sFifoAlmFull = '0'
-             else '0';
+    and iStall = '0'
+    and sFlushPending = '0'
+    and sFifoAlmFull = '0'
+    else
+    '0';
 
   input_reg_proc : process (iClk)
   begin
@@ -270,71 +220,75 @@ begin
   end process input_reg_proc;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- STAGE 1: bit packer
-  -- Append sInWord's top sInValidLen bits MSB-first into the accumulator;
-  -- when >= FIFO_BYTES whole bytes are present (or any whole bytes under
-  -- flush), pack them into a FIFO word with byte_count + last_flag.
+  -- STAGE 1: Accumulator
   -------------------------------------------------------------------------------------------------------------------------
+  -- Accumulates the variable length word from bit packer until its wide enough to fit
+  -- in the FIFO, pack them as byte_count + last_flag.
+
   stage1_proc : process (iClk)
-    variable vAccum       : std_logic_vector(ACCUM_BITS - 1 downto 0);
-    variable vBitsInt     : natural range 0 to ACCUM_BITS;
-    variable vValidLenInt : natural;
-    variable vFlushPend   : std_logic;
-    variable vAccept      : boolean;
-    variable vPadBits     : natural;
-    variable vBytesReady  : natural;
-    variable vEmitBytes   : natural;
-    variable vLastFlag    : std_logic;
-    variable vDataWord    : std_logic_vector(FIFO_BITS - 1 downto 0);
+    variable vAccumBuffer    : std_logic_vector(ACCUM_BITS - 1 downto 0);
+    variable vAccumCountBits : natural range 0 to ACCUM_BITS;
+    variable vValidLenInt    : natural;
+    variable vFlushPend      : std_logic;
+    variable vAccept         : boolean;
+    variable vPadBits        : natural;
+    variable vBytesReady     : natural;
+    variable vEmitBytes      : natural;
+    variable vLastFlag       : std_logic;
+    variable vDataWord       : std_logic_vector(FIFO_BITS - 1 downto 0);
   begin
     if rising_edge(iClk) then
 
       if iRst = '1' then
-        sAccum        <= (others => '0');
-        sAccumBits    <= (others => '0');
-        sFlushPending <= '0';
-        sFifoInValid  <= '0';
-        sFifoInData   <= (others => '0');
+        sAccumBuffer    <= (others => '0');
+        sAccumCountBits <= (others => '0');
+        sFlushPending   <= '0';
+        sFifoInValid    <= '0';
+        sFifoInData     <= (others => '0');
 
       else
 
-        vAccum       := sAccum;
-        vBitsInt     := to_integer(sAccumBits);
-        vValidLenInt := to_integer(sInValidLen);
-        vFlushPend   := sFlushPending;
-        vAccept      := (sFlushPending = '0') and (sFifoAlmFull = '0');
+        vAccumBuffer    := sAccumBuffer;
+        vAccumCountBits := to_integer(sAccumCountBits);
+        vValidLenInt    := to_integer(sInValidLen);
+        vFlushPend      := sFlushPending;
+        vAccept         := (sFlushPending = '0') and (sFifoAlmFull = '0');
 
         sFifoInValid <= '0';
 
-        -- Append input bits (MSB-first). No FF detect at this stage.
+        ---------------------------------------------------------------------------------
+        -- WRITE
+        ---------------------------------------------------------------------------------
+        -- Append input bits (MSB-first)
         if sInValid = '1' and iStall = '0' and vAccept then
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLenInt then
-              vAccum(ACCUM_BITS - 1 - vBitsInt) := sInWord(IN_WIDTH - 1 - i);
-              vBitsInt                          := vBitsInt + 1;
+              vAccumBuffer(ACCUM_BITS - 1 - vAccumCountBits) := sInWord(IN_WIDTH - 1 - i);
+              vAccumCountBits                                := vAccumCountBits + 1;
             end if;
           end loop;
         end if;
 
         -- Flush entry: pad sub-byte residue to a byte boundary, mark pending.
         if sInFlush = '1' and iStall = '0' and vAccept then
-          if (vBitsInt mod 8) /= 0 then
-            vPadBits := 8 - (vBitsInt mod 8);
+          if (vAccumCountBits mod 8) /= 0 then
+            vPadBits := 8 - (vAccumCountBits mod 8);
             for j in 0 to 7 loop
               if j < vPadBits then
-                vAccum(ACCUM_BITS - 1 - vBitsInt) := '0';
-                vBitsInt                          := vBitsInt + 1;
+                vAccumBuffer(ACCUM_BITS - 1 - vAccumCountBits) := '0';
+                vAccumCountBits                                := vAccumCountBits + 1;
               end if;
             end loop;
           end if;
           vFlushPend := '1';
         end if;
 
-        -- Drain whole bytes to the FIFO. FIFO word carries variable count
-        -- (1..FIFO_BYTES) so we can push any whole-byte residue; this keeps
-        -- the accumulator bounded under sustained IN_WIDTH-bit input where
-        -- a small residue would otherwise grow past FIFO_BITS.
-        vBytesReady := vBitsInt / 8;
+        ---------------------------------------------------------------------------------
+        -- READ
+        ---------------------------------------------------------------------------------
+        -- Drain FIFO_BYTES bytes into the FIFO when accumulated sufficient data
+
+        vBytesReady := vAccumCountBits / 8;
         if vBytesReady > FIFO_BYTES then
           vBytesReady := FIFO_BYTES;
         end if;
@@ -342,23 +296,23 @@ begin
         if vBytesReady > 0 and sFifoAlmFull = '0' then
 
           vEmitBytes := vBytesReady;
-          if vFlushPend = '1' and (vBitsInt - vEmitBytes * 8) = 0 then
+          if vFlushPend = '1' and (vAccumCountBits - vEmitBytes * 8) = 0 then
             vLastFlag  := '1';
             vFlushPend := '0';
           else
             vLastFlag := '0';
           end if;
 
-          vDataWord := vAccum(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS);
+          vDataWord := vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS);
           sFifoInData <= vDataWord
             & vLastFlag
             & std_logic_vector(to_unsigned(vEmitBytes, COUNT_W));
           sFifoInValid <= '1';
 
-          vAccum   := std_logic_vector(shift_left(unsigned(vAccum), vEmitBytes * 8));
-          vBitsInt := vBitsInt - vEmitBytes * 8;
+          vAccumBuffer    := std_logic_vector(shift_left(unsigned(vAccumBuffer), vEmitBytes * 8));
+          vAccumCountBits := vAccumCountBits - vEmitBytes * 8;
 
-        elsif vFlushPend = '1' and vBitsInt = 0 and sFifoAlmFull = '0' then
+        elsif vFlushPend = '1' and vAccumCountBits = 0 and sFifoAlmFull = '0' then
           -- Edge case: flush latched but accumulator already empty
           -- (no payload bytes for this image). Emit a count=0 sentinel.
           sFifoInData <= (FIFO_WIDTH - 1 downto LAST_POS + 1 => '0')
@@ -368,11 +322,11 @@ begin
           vFlushPend := '0';
         end if;
 
-        sAccum        <= vAccum;
-        sAccumBits    <= to_unsigned(vBitsInt, sAccumBits'length);
-        sFlushPending <= vFlushPend;
+        sAccumBuffer    <= vAccumBuffer;
+        sAccumCountBits <= to_unsigned(vAccumCountBits, sAccumCountBits'length);
+        sFlushPending   <= vFlushPend;
 
-        assert vBitsInt <= ACCUM_BITS
+        assert vAccumCountBits <= ACCUM_BITS
         report "byte_stuffer: stage 1 accumulator overflow"
           severity failure;
 
@@ -381,7 +335,7 @@ begin
   end process stage1_proc;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- STAGE 2: BRAM-backed sync FIFO
+  -- STAGE 2: FIFO
   -------------------------------------------------------------------------------------------------------------------------
   fifo_inst : entity openlogic_base.olo_base_fifo_sync
     generic map(
@@ -551,12 +505,12 @@ begin
             -- Stuff '0' at MSB, up to 7 real bits below it, zero pad.
             if vHoldBits > 0 then
               vPadByte(6 downto 7 - vHoldBits) :=
-                sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
+              sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
             end if;
           else
             -- Real bits at MSB, zero pad in LSBs.
             vPadByte(7 downto 8 - vHoldBits) :=
-              sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
+            sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
           end if;
           sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= vPadByte;
           sOutWordReg(OUT_WIDTH - 9 downto 0)             <= (others => '0');
@@ -723,7 +677,7 @@ begin
 
         -- s2.
         case vPrevFF is
-          when '1' => s2 := ff1a;
+          when '1'    => s2    := ff1a;
           when others => s2 := (not ff0) and ff1b;
         end case;
 
@@ -770,19 +724,27 @@ begin
         --   totalCons = cum3 + cons3
 
         case vPrevFF is
-          when '1' => cum1 := 7;
+          when '1'    => cum1    := 7;
           when others => cum1 := 8;
         end case;
 
         case vPrevFF is
-          when '1' => cum2 := 15;
+          when '1'    => cum2 := 15;
           when others =>
-            if ff0 = '1' then cum2 := 15; else cum2 := 16; end if;
+            if ff0 = '1' then
+              cum2 := 15;
+            else
+              cum2 := 16;
+            end if;
         end case;
 
         case vPrevFF is
           when '1' =>
-            if ff1a = '1' then cum3 := 22; else cum3 := 23; end if;
+            if ff1a = '1' then
+              cum3 := 22;
+            else
+              cum3 := 23;
+            end if;
           when others =>
             if ff0 = '1' or ff1b = '1' then
               cum3 := 23;
@@ -796,15 +758,27 @@ begin
             if ff1a = '1' then
               totalCons := 30;
             else
-              if ff2a = '1' then totalCons := 30; else totalCons := 31; end if;
+              if ff2a = '1' then
+                totalCons := 30;
+              else
+                totalCons := 31;
+              end if;
             end if;
           when others =>
             if ff0 = '1' then
-              if ff2a = '1' then totalCons := 30; else totalCons := 31; end if;
+              if ff2a = '1' then
+                totalCons := 30;
+              else
+                totalCons := 31;
+              end if;
             elsif ff1b = '1' then
               totalCons := 31;
             else
-              if ff2b = '1' then totalCons := 31; else totalCons := 32; end if;
+              if ff2b = '1' then
+                totalCons := 31;
+              else
+                totalCons := 32;
+              end if;
             end if;
         end case;
 
