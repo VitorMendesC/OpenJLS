@@ -15,9 +15,9 @@
 --       Drains a fixed FIFO_BITS-wide word into the FIFO whenever enough
 --       bits are present. On flush the sub-byte residue is padded to a
 --       byte boundary; the final FIFO write is always FIFO_BITS wide
---       (zero-padded if needed) and carries the count of valid bytes
+--       (zero-padded if needed) and carries the byte-valid count
 --       plus last_flag=1. Non-last writes always carry FIFO_BYTES; the
---       byte_count field is only consulted on last_flag=1.
+--       byte-valid field is only consulted on last_flag=1.
 --
 --     Stage 2 — BRAM-backed sync FIFO
 --
@@ -89,28 +89,7 @@ end entity byte_stuffer;
 
 architecture Behavioral of byte_stuffer is
 
-  constant OUT_WIDTH : natural := OUT_BYTES_PER_CYCLE * 8;
-
-  -- Stage 1 sizing
-  constant FIFO_BYTES : natural := math_ceil_div(IN_WIDTH, 8);
-  constant FIFO_BITS  : natural := FIFO_BYTES * 8;
-  constant ACCUM_BITS : natural := 2 * FIFO_BITS;
-  constant COUNT_W    : natural := log2ceil(FIFO_BYTES + 1);
-
-  -- FIFO entry layout (LSB-first):
-  --   bit  [0]              : last_flag
-  --   bits [1 .. FIFO_BITS] : data (MSB-first packed bytes; last word is
-  --                           zero-padded below the valid region)
-  --   Valid-byte count for last-flag words lives sideband in sCountQ
-  --   (only written/read on last_flag events).
-  constant LAST_POS   : natural := 0;
-  constant DATA_LSB   : natural := 1;
-  constant FIFO_WIDTH : natural := FIFO_BITS + 1;
-
-  -- Sideband byte-count queue depth: bounds the number of in-flight
-  -- last-flag words allowed in the main FIFO simultaneously.
-  constant CQ_DEPTH : natural := 3;
-
+  -- Functions ---------------------------------------------------------------
   function almost_full_level(depth : natural) return natural is
   begin
     if depth >= 4 then
@@ -121,7 +100,30 @@ architecture Behavioral of byte_stuffer is
       return depth;
     end if;
   end function;
-  constant ALM_FULL_LEVEL : natural := almost_full_level(BURST_DEPTH);
+
+  -- Constants ----------------------------------------------------------------
+  constant OUT_WIDTH : natural := OUT_BYTES_PER_CYCLE * 8;
+
+  -- Stage 1 sizing
+  constant FIFO_BYTES       : natural := math_ceil_div(IN_WIDTH, 8);
+  constant FIFO_BITS        : natural := FIFO_BYTES * 8;
+  constant ACCUM_BITS       : natural := 2 * FIFO_BITS;
+  constant BYTE_VALID_WIDTH : natural := log2ceil(FIFO_BYTES + 1);
+
+  -- FIFO entry layout (LSB-first):
+  --   bit  [0]              : last_flag
+  --   bits [1 .. FIFO_BITS] : data (MSB-first packed bytes; last word is
+  --                           zero-padded below the valid region)
+  --   Byte-valid count for last-flag words lives sideband in sByteValidQ
+  --   (only written/read on last_flag events).
+  constant LAST_POS   : natural := 0;
+  constant DATA_LSB   : natural := 1;
+  constant FIFO_WIDTH : natural := FIFO_BITS + 1;
+
+  -- Sideband byte-valid queue depth: bounds the number of in-flight
+  -- last-flag words allowed in the main FIFO simultaneously.
+  constant BYTE_VALID_QUEUE_DEPTH : natural := 3;
+  constant ALM_FULL_LEVEL         : natural := almost_full_level(BURST_DEPTH);
 
   -- Stage 3 holding register: room for at least one full FIFO pop on top of
   -- any leftover bits from the previous consume. Bits are stored MSB-first
@@ -129,6 +131,7 @@ architecture Behavioral of byte_stuffer is
   constant HOLD_BYTES : natural := 2 * FIFO_BYTES;
   constant HOLD_BITS  : natural := HOLD_BYTES * 8;
 
+  -- Signals ---------------------------------------------------------------------
   -- Input registers
   signal sInWord     : std_logic_vector(IN_WIDTH - 1 downto 0);
   signal sInValidLen : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
@@ -157,13 +160,11 @@ architecture Behavioral of byte_stuffer is
   signal sStgValid : std_logic;
   signal sStgTaken : std_logic;
 
-  -- Sideband byte-count queue. Written by Stage 1 when it emits a
-  -- last_flag word, popped by Stage 3 when it pops a last_flag word.
-  -- Head is combinationally available on Out_Data.
-  signal sCountQ_write : std_logic                              := '0';
-  signal sCountQ_wdata : std_logic_vector(COUNT_W - 1 downto 0) := (others => '0');
-  signal sCountQ_pop   : std_logic;
-  signal sCountQ_head  : std_logic_vector(COUNT_W - 1 downto 0);
+  -- Byte Valid queue (FIFO) signals
+  signal sBVQueueInValid  : std_logic                                       := '0';
+  signal sBVQueueInData   : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0) := (others => '0');
+  signal sBVQueueOutReady : std_logic;
+  signal sBVQueueOutData  : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0);
 
   ----------------------------------------------------------------------------
   -- Stage 3 (FF stuffer + emit) state.
@@ -176,11 +177,10 @@ architecture Behavioral of byte_stuffer is
   --                     0xFF, meaning the next bit emitted to the output
   --                     stream must be the stuffed '0'.
   ----------------------------------------------------------------------------
-  signal sHold     : std_logic_vector(HOLD_BITS - 1 downto 0);
-  signal sHoldBits : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
-  signal sHoldLast : std_logic;
-  signal sPrevFF   : std_logic;
-
+  signal sHold        : std_logic_vector(HOLD_BITS - 1 downto 0);
+  signal sHoldBits    : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
+  signal sHoldLast    : std_logic;
+  signal sPrevFF      : std_logic;
   signal sOutWordReg  : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal sOutValidReg : std_logic;
   signal sOutBytesReg : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
@@ -241,7 +241,7 @@ begin
   -- STAGE 1: Accumulator
   -------------------------------------------------------------------------------------------------------------------------
   -- Accumulates the variable length word from bit packer until its wide enough to fit
-  -- in the data FIFO, pack them as byte_count + last_flag.
+  -- in the data FIFO, pack them as byte-valid + last_flag.
 
   stage1_proc : process (iClk)
     variable vAccumBuffer         : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -264,8 +264,8 @@ begin
         sFlushPending        <= '0';
         sFifoInValid         <= '0';
         sFifoInData          <= (others => '0');
-        sCountQ_write        <= '0';
-        sCountQ_wdata        <= (others => '0');
+        sBVQueueInValid      <= '0';
+        sBVQueueInData       <= (others => '0');
 
       else
 
@@ -276,8 +276,8 @@ begin
         vFlushPend           := sFlushPending;
         vAccept              := sFifoAlmFull = '0' and iStall = '0';
 
-        sFifoInValid  <= '0';
-        sCountQ_write <= '0';
+        sFifoInValid    <= '0';
+        sBVQueueInValid <= '0';
 
         ---------------------------------------------------------------------------------
         -- WRITE to Accumulator
@@ -320,8 +320,8 @@ begin
         ---------------------------------------------------------------------------------
         -- Always drain a full FIFO_BITS word when available.
         -- Last word flag is appended to the data word and stored on FIFO for simplicity.
-        -- If a flush is pending, the final word may be partial and needs the variable-byte-count
-        -- logic, a second FIFO store the valid bytes for the last word, this allows for multiple
+        -- If a flush is pending, the final word may be partial and needs the variable byte-valid
+        -- logic, a second FIFO store the byte-valid for the last word, this allows for multiple
         -- last words to exist in the data FIFO.
 
         if sFifoAlmFull = '0' then
@@ -341,8 +341,8 @@ begin
             sFifoInValid <= '1';
 
             if vLastFlag = '1' then
-              sCountQ_write <= '1';
-              sCountQ_wdata <= std_logic_vector(to_unsigned(FIFO_BYTES, COUNT_W));
+              sBVQueueInValid <= '1';
+              sBVQueueInData  <= std_logic_vector(to_unsigned(FIFO_BYTES, BYTE_VALID_WIDTH));
             end if;
 
             vAccumBuffer         := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
@@ -358,8 +358,8 @@ begin
             sFifoInData  <= vDataWord & '1';
             sFifoInValid <= '1';
 
-            sCountQ_write <= '1';
-            sCountQ_wdata <= std_logic_vector(to_unsigned(vEmitBytes, COUNT_W));
+            sBVQueueInValid <= '1';
+            sBVQueueInData  <= std_logic_vector(to_unsigned(vEmitBytes, BYTE_VALID_WIDTH));
 
             vAccumBuffer         := std_logic_vector(shift_left(unsigned(vAccumBuffer), vAccumCountBitsFlush));
             vAccumCountBits      := vAccumCountBits - vAccumCountBitsFlush;
@@ -390,7 +390,7 @@ begin
   end process stage1_proc;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- STAGE 2: FIFO
+  -- STAGE 2: FIFOs (Data and byte valid)
   -------------------------------------------------------------------------------------------------------------------------
   fifo_inst : entity openlogic_base.olo_base_fifo_sync
     generic map(
@@ -417,15 +417,15 @@ begin
       AlmEmpty  => open
     );
 
-  -- Sideband byte-count (byte-valid) queue
+  -- Sideband byte-valid queue
   -- Pop combinationally on the cycle Stage 3 takes a last_flag entry, so
   -- back-to-back last_flag pops advance the head correctly.
-  sCountQ_pop <= sStgTaken and sStgData(LAST_POS);
+  sBVQueueOutReady <= sStgTaken and sStgData(LAST_POS);
 
-  count_fifo_inst : entity openlogic_base.olo_base_fifo_sync
+  byte_valid_fifo_inst : entity openlogic_base.olo_base_fifo_sync
     generic map(
-      Width_g       => COUNT_W,
-      Depth_g       => CQ_DEPTH,
+      Width_g       => BYTE_VALID_WIDTH,
+      Depth_g       => BYTE_VALID_QUEUE_DEPTH,
       RamStyle_g    => "auto",
       RamBehavior_g => "RBW"
     )
@@ -433,19 +433,19 @@ begin
     (
       Clk       => iClk,
       Rst       => iRst,
-      In_Data   => sCountQ_wdata,
-      In_Valid  => sCountQ_write,
+      In_Data   => sBVQueueInData,
+      In_Valid  => sBVQueueInValid,
       In_Ready  => open,
-      Out_Data  => sCountQ_head,
+      Out_Data  => sBVQueueOutData,
       Out_Valid => open,
-      Out_Ready => sCountQ_pop,
+      Out_Ready => sBVQueueOutReady,
       Full      => open,
       Empty     => open
     );
 
   -------------------------------------------------------------------------------------------------------------------------
   -- STAGE 3: FF stuffer + output emit
-  --
+  -------------------------------------------------------------------------------------------------------------------------
   -- The stuffer operates on the unstuffed input bitstream and constructs
   -- output bytes one at a time. T.87 requires the stuff '0' bit to follow
   -- every *output* byte whose value is 0xFF, so FF detection is done on the
@@ -462,7 +462,7 @@ begin
   -- Final-flush drain (vHoldLast='1' and vHoldBits=0):
   --   * if prev_FF='1': emit one final 0x00 byte (the stuff '0' + 7-bit pad).
   --   * pulse oFlushDone on the beat that carries the last data byte.
-  -------------------------------------------------------------------------------------------------------------------------
+
   -- Stage 3 drains the skid buffer when it has data and the hold has room.
   sStgTaken     <= '1' when sStgValid = '1'
     and sHoldBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sHoldBits'length)
@@ -474,6 +474,7 @@ begin
   -- Pop FIFO when the skid buffer is empty or being drained this cycle.
   sFifoOutReady <= '1' when sStgValid = '0' or sStgTaken = '1' else
     '0';
+
   skid_proc : process (iClk)
   begin
     if rising_edge(iClk) then
@@ -631,7 +632,7 @@ begin
             vHold(HOLD_BITS - 1 - vHoldBits downto HOLD_BITS - vHoldBits - FIFO_BITS) := vPopData;
             vHoldBits                                                                 := vHoldBits + FIFO_BITS;
           else
-            vPopBytes := to_integer(unsigned(sCountQ_head));
+            vPopBytes := to_integer(unsigned(sBVQueueOutData));
             for k in 0 to FIFO_BYTES - 1 loop
               if k < vPopBytes then
                 vHold(HOLD_BITS - 1 - vHoldBits - k * 8
