@@ -137,9 +137,10 @@ architecture Behavioral of byte_stuffer is
   signal sInTake     : std_logic;
 
   -- Stage 1 accumulator
-  signal sAccumBuffer    : std_logic_vector(ACCUM_BITS - 1 downto 0);
-  signal sAccumCountBits : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
-  signal sFlushPending   : std_logic;
+  signal sAccumBuffer         : std_logic_vector(ACCUM_BITS - 1 downto 0);
+  signal sAccumCountBits      : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
+  signal sAccumCountBitsFlush : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
+  signal sFlushPending        : std_logic;
 
   -- FIFO interface
   signal sFifoInData   : std_logic_vector(FIFO_WIDTH - 1 downto 0);
@@ -240,47 +241,50 @@ begin
   -- STAGE 1: Accumulator
   -------------------------------------------------------------------------------------------------------------------------
   -- Accumulates the variable length word from bit packer until its wide enough to fit
-  -- in the FIFO, pack them as byte_count + last_flag.
+  -- in the data FIFO, pack them as byte_count + last_flag.
 
   stage1_proc : process (iClk)
-    variable vAccumBuffer    : std_logic_vector(ACCUM_BITS - 1 downto 0);
-    variable vAccumCountBits : natural range 0 to ACCUM_BITS;
-    variable vValidLenInt    : natural;
-    variable vFlushPend      : std_logic;
-    variable vAccept         : boolean;
-    variable vPadBits        : natural;
-    variable vEmitBytes      : natural;
-    variable vLastFlag       : std_logic;
-    variable vDataWord       : std_logic_vector(FIFO_BITS - 1 downto 0);
+    variable vAccumBuffer         : std_logic_vector(ACCUM_BITS - 1 downto 0);
+    variable vAccumCountBits      : natural range 0 to ACCUM_BITS;
+    variable vAccumCountBitsFlush : natural range 0 to ACCUM_BITS;
+    variable vValidLenInt         : natural;
+    variable vFlushPend           : std_logic;
+    variable vAccept              : boolean;
+    variable vPadBits             : natural;
+    variable vEmitBytes           : natural;
+    variable vLastFlag            : std_logic;
+    variable vDataWord            : std_logic_vector(FIFO_BITS - 1 downto 0);
   begin
     if rising_edge(iClk) then
 
       if iRst = '1' then
-        sAccumBuffer    <= (others => '0');
-        sAccumCountBits <= (others => '0');
-        sFlushPending   <= '0';
-        sFifoInValid    <= '0';
-        sFifoInData     <= (others => '0');
-        sCountQ_write   <= '0';
-        sCountQ_wdata   <= (others => '0');
+        sAccumBuffer         <= (others => '0');
+        sAccumCountBits      <= (others => '0');
+        sAccumCountBitsFlush <= (others => '0');
+        sFlushPending        <= '0';
+        sFifoInValid         <= '0';
+        sFifoInData          <= (others => '0');
+        sCountQ_write        <= '0';
+        sCountQ_wdata        <= (others => '0');
 
       else
 
-        vAccumBuffer    := sAccumBuffer;
-        vAccumCountBits := to_integer(sAccumCountBits);
-        vValidLenInt    := to_integer(sInValidLen);
-        vFlushPend      := sFlushPending;
-        vAccept         := (sFlushPending = '0') and (sFifoAlmFull = '0');
+        vAccumBuffer         := sAccumBuffer;
+        vAccumCountBits      := to_integer(sAccumCountBits);
+        vAccumCountBitsFlush := to_integer(sAccumCountBitsFlush);
+        vValidLenInt         := to_integer(sInValidLen);
+        vFlushPend           := sFlushPending;
+        vAccept              := sFifoAlmFull = '0' and iStall = '0';
 
         sFifoInValid  <= '0';
         sCountQ_write <= '0';
 
         ---------------------------------------------------------------------------------
-        -- WRITE
+        -- WRITE to Accumulator
         ---------------------------------------------------------------------------------
         -- Append input bits (MSB-first)
 
-        if sInValid = '1' and iStall = '0' and vAccept then
+        if sInValid = '1' and vAccept then
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLenInt then
               vAccumBuffer(ACCUM_BITS - 1 - vAccumCountBits) := sInWord(IN_WIDTH - 1 - i);
@@ -290,29 +294,42 @@ begin
         end if;
 
         -- Flush entry: pad sub-byte residue to a byte boundary, mark pending.
-        if sInFlush = '1' and iStall = '0' and vAccept then
-          if (vAccumCountBits mod 8) /= 0 then
-            vPadBits := 8 - (vAccumCountBits mod 8);
-            for j in 0 to 7 loop
-              if j < vPadBits then
-                vAccumBuffer(ACCUM_BITS - 1 - vAccumCountBits) := '0';
-                vAccumCountBits                                := vAccumCountBits + 1;
-              end if;
-            end loop;
+        if sInFlush = '1' and vAccept then
+
+          assert vFlushPend = '0'
+          report "byte_stuffer: iFlush asserted while a flush is already pending"
+            severity failure;
+
+          if vFlushPend = '0' then
+            if (vAccumCountBits mod 8) /= 0 then
+              vPadBits := 8 - (vAccumCountBits mod 8);
+              for j in 0 to 7 loop
+                if j < vPadBits then
+                  vAccumBuffer(ACCUM_BITS - 1 - vAccumCountBits) := '0';
+                  vAccumCountBits                                := vAccumCountBits + 1;
+                end if;
+              end loop;
+            end if;
+            vAccumCountBitsFlush := vAccumCountBits;
+            vFlushPend           := '1';
           end if;
-          vFlushPend := '1';
         end if;
 
         ---------------------------------------------------------------------------------
-        -- READ
+        -- READ from Accumulator to FIFO
         ---------------------------------------------------------------------------------
-        -- Always drain a full FIFO_BITS word when available. On flush, the
-        -- final (sub-FIFO_BITS) residue is zero-padded out to FIFO_BITS and
-        -- emitted with last_flag=1 + valid-byte count.
+        -- Always drain a full FIFO_BITS word when available.
+        -- Last word flag is appended to the data word and stored on FIFO for simplicity.
+        -- If a flush is pending, the final word may be partial and needs the variable-byte-count
+        -- logic, a second FIFO store the valid bytes for the last word, this allows for multiple
+        -- last words to exist in the data FIFO.
 
         if sFifoAlmFull = '0' then
-          if vAccumCountBits >= FIFO_BITS then
-            if vFlushPend = '1' and vAccumCountBits = FIFO_BITS then
+          if vFlushPend = '1' and vAccumCountBitsFlush >= FIFO_BITS then
+            -- Full word flush-pending
+
+            if vAccumCountBitsFlush = FIFO_BITS then
+              -- exact width final flush word
               vLastFlag  := '1';
               vFlushPend := '0';
             else
@@ -328,15 +345,15 @@ begin
               sCountQ_wdata <= std_logic_vector(to_unsigned(FIFO_BYTES, COUNT_W));
             end if;
 
-            vAccumBuffer    := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
-            vAccumCountBits := vAccumCountBits - FIFO_BITS;
+            vAccumBuffer         := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
+            vAccumCountBits      := vAccumCountBits - FIFO_BITS;
+            vAccumCountBitsFlush := vAccumCountBitsFlush - FIFO_BITS;
 
           elsif vFlushPend = '1' then
-            -- Final flush word: 0 <= residue < FIFO_BITS, multiple of 8
-            -- after the pad-to-byte-boundary step. Bits below the valid
-            -- region are already '0' (zero-fill from the prior shift_left),
-            -- so the FIFO_BITS slice is naturally zero-padded.
-            vEmitBytes := vAccumCountBits / 8;
+            -- Final partial flush word: 0 <= residue < FIFO_BITS
+            -- Zero padded by the write logic
+
+            vEmitBytes := vAccumCountBitsFlush / 8;
             vDataWord  := vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS);
             sFifoInData  <= vDataWord & '1';
             sFifoInValid <= '1';
@@ -344,15 +361,25 @@ begin
             sCountQ_write <= '1';
             sCountQ_wdata <= std_logic_vector(to_unsigned(vEmitBytes, COUNT_W));
 
-            vAccumBuffer    := (others => '0');
-            vAccumCountBits := 0;
-            vFlushPend      := '0';
+            vAccumBuffer         := std_logic_vector(shift_left(unsigned(vAccumBuffer), vAccumCountBitsFlush));
+            vAccumCountBits      := vAccumCountBits - vAccumCountBitsFlush;
+            vAccumCountBitsFlush := 0;
+            vFlushPend           := '0';
+
+          elsif vFlushPend = '0' and vAccumCountBits >= FIFO_BITS then
+            -- Normal full word
+            sFifoInData  <= vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS) & '0';
+            sFifoInValid <= '1';
+
+            vAccumBuffer    := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
+            vAccumCountBits := vAccumCountBits - FIFO_BITS;
           end if;
         end if;
 
-        sAccumBuffer    <= vAccumBuffer;
-        sAccumCountBits <= to_unsigned(vAccumCountBits, sAccumCountBits'length);
-        sFlushPending   <= vFlushPend;
+        sAccumBuffer         <= vAccumBuffer;
+        sAccumCountBits      <= to_unsigned(vAccumCountBits, sAccumCountBits'length);
+        sAccumCountBitsFlush <= to_unsigned(vAccumCountBitsFlush, sAccumCountBitsFlush'length);
+        sFlushPending        <= vFlushPend;
 
         assert vAccumCountBits <= ACCUM_BITS
         report "byte_stuffer: stage 1 accumulator overflow"
