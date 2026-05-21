@@ -515,7 +515,7 @@ begin
     -- flags, vHold); no per-slot offsets or cons values are materialized.
     variable s1, s2, s3, s4             : std_logic;
     variable byte0, byte1, byte2, byte3 : std_logic_vector(7 downto 0);
-    variable cum1, cum2, cum3           : natural range 0 to 24;
+    variable cumu1, cumu2, cumu3        : natural range 0 to 24;
     variable totalCons                  : natural range 0 to 32;
 
     variable vEmitData   : std_logic_vector(OUT_WIDTH - 1 downto 0);
@@ -661,225 +661,112 @@ begin
         ff3c := bool2bit(vHold(HOLD_BITS - 25 downto HOLD_BITS - 32) = x"FF");
 
         ----------------------------------------------------------------------
-        -- (3) Log-depth parallel-prefix resolver.
-        --     The serial 4-step chain has been algebraically collapsed:
-        --     every output (byte0..byte3, s1..s4, cum*, totalCons) is now
-        --     written as a direct function of (vPrevFF, ff flags, vHold).
-        --     Synthesis maps each output bit into a small flat mux (~2 LUT
-        --     levels after the ff-equality compare) instead of a 4-deep
-        --     dependency walk.
+        -- (3) Resolve the 4-slot chain from (vPrevFF, ff flags, vHold).
         --
-        --     Invariant exploited: if prev_FF_in='1' for slot k, slot k's
-        --     output byte starts with a stuff '0', so it cannot equal 0xFF
-        --     and the next slot's prev_FF_in is forced to '0'. This
-        --     eliminates two-adjacent-stuffs and bounds each slot's offset
-        --     candidate set to {2..3} values, which is what makes the flat
-        --     case tree small.
+        --     The serial 4-step chain is flattened into 8 reachable
+        --     stuff/no-stuff trajectories. Each leaf assigns every output
+        --     of this stage (byte0..byte3, s1..s4, cum1..cum3, totalCons)
+        --     for one trajectory, so the chain reads top-to-bottom inside
+        --     one leaf instead of as a 4-deep dependency walk.
+        --
+        --     Invariant: a slot that stuffs starts its output byte with
+        --     '0', so it cannot equal 0xFF and the next slot's prev_FF_in
+        --     is forced to '0'. This eliminates two-adjacent-stuffs and
+        --     bounds each slot's offset candidate set to 2..3 values,
+        --     keeping the tree to 8 leaves.
         ----------------------------------------------------------------------
-
-        -- byte0 — slot 0 output, single mux on vPrevFF.
         case vPrevFF is
           when '1' =>
+            -- byte0 stuffs: '0' + 7 real bits at offset 0.
             byte0 := '0' & vHold(HOLD_BITS - 1 downto HOLD_BITS - 7);
-          when others =>
-            byte0 := vHold(HOLD_BITS - 1 downto HOLD_BITS - 8);
-        end case;
-
-        -- byte1 — depends on (vPrevFF, ff0).
-        case vPrevFF is
-          when '1' =>
-            -- s1=0 forced, off1=7
+            s1    := '0';
+            cumu1 := 7;
+            -- byte1 reads 8 bits at offset 7.
             byte1 := vHold(HOLD_BITS - 8 downto HOLD_BITS - 15);
-          when others =>
-            -- off1=8, s1=ff0
-            if ff0 = '1' then
-              byte1 := '0' & vHold(HOLD_BITS - 9 downto HOLD_BITS - 15);
-            else
-              byte1 := vHold(HOLD_BITS - 9 downto HOLD_BITS - 16);
-            end if;
-        end case;
-
-        -- byte2 — depends on (vPrevFF, ff0, ff1a/ff1b).
-        case vPrevFF is
+            s2    := ff1a;
+            cumu2 := 15;
+            case ff1a is
           when '1' =>
-            -- s1=0, off2=15, s2=ff1a
-            if ff1a = '1' then
-              byte2 := '0' & vHold(HOLD_BITS - 16 downto HOLD_BITS - 22);
-            else
-              byte2 := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
-            end if;
-          when others =>
-            if ff0 = '1' then
-              -- s1=1, s2=0 forced, off2=15
-              byte2 := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
-            elsif ff1b = '1' then
-              -- s1=0, s2=1, off2=16
-              byte2 := '0' & vHold(HOLD_BITS - 17 downto HOLD_BITS - 23);
-            else
-              -- s1=0, s2=0, off2=16
-              byte2 := vHold(HOLD_BITS - 17 downto HOLD_BITS - 24);
-            end if;
-        end case;
-
-        -- byte3 — depends on (vPrevFF, ff0, ff1a/ff1b, ff2a/ff2b).
-        case vPrevFF is
-          when '1' =>
-            if ff1a = '1' then
-              -- s2=1, s3=0 forced, off3=22
-              byte3 := vHold(HOLD_BITS - 23 downto HOLD_BITS - 30);
-            else
-              -- s2=0, off3=23, s3=ff2a
-              if ff2a = '1' then
-                byte3 := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
-              else
-                byte3 := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
-              end if;
-            end if;
-          when others =>
-            if ff0 = '1' then
-              -- s2=0 forced, off3=23, s3=ff2a
-              if ff2a = '1' then
-                byte3 := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
-              else
-                byte3 := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
-              end if;
-            elsif ff1b = '1' then
-              -- s2=1, s3=0 forced, off3=23
-              byte3 := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
-            else
-              -- s2=0, off3=24, s3=ff2b
-              if ff2b = '1' then
-                byte3 := '0' & vHold(HOLD_BITS - 25 downto HOLD_BITS - 31);
-              else
-                byte3 := vHold(HOLD_BITS - 25 downto HOLD_BITS - 32);
-              end if;
-            end if;
-        end case;
-
-        -- Intermediate s values used by the partial-emit selector.
-        -- s_k = '1' iff byte_{k-1} (as actually emitted) equals 0xFF.
-
-        -- s1: byte0 is FF iff vPrevFF=0 AND ff0=1.
-        s1 := (not vPrevFF) and ff0;
-
-        -- s2.
-        case vPrevFF is
-          when '1'    => s2    := ff1a;
-          when others => s2 := (not ff0) and ff1b;
-        end case;
-
-        -- s3.
-        case vPrevFF is
-          when '1' =>
-            if ff1a = '1' then
-              s3 := '0';
-            else
-              s3 := ff2a;
-            end if;
-          when others =>
-            if ff0 = '1' then
-              s3 := ff2a;
-            elsif ff1b = '1' then
-              s3 := '0';
-            else
-              s3 := ff2b;
-            end if;
-        end case;
-
-        -- s4 (= next-cycle vPrevFF when 4 bytes are emitted).
-        case vPrevFF is
-          when '1' =>
-            if ff1a = '1' then
-              s4 := ff3a;
-            else
-              s4 := (not ff2a) and ff3b;
-            end if;
-          when others =>
-            if ff0 = '1' then
-              s4 := (not ff2a) and ff3b;
-            elsif ff1b = '1' then
-              s4 := ff3b;
-            else
-              s4 := (not ff2b) and ff3c;
-            end if;
-        end case;
-
-        -- Cumulative consumption thresholds (in bits).
-        --   cum1 = cons0
-        --   cum2 = cons0 + cons1
-        --   cum3 = cons0 + cons1 + cons2
-        --   totalCons = cum3 + cons3
-
-        case vPrevFF is
-          when '1'    => cum1    := 7;
-          when others => cum1 := 8;
-        end case;
-
-        case vPrevFF is
-          when '1'    => cum2 := 15;
-          when others =>
-            if ff0 = '1' then
-              cum2 := 15;
-            else
-              cum2 := 16;
-            end if;
-        end case;
-
-        case vPrevFF is
-          when '1' =>
-            if ff1a = '1' then
-              cum3 := 22;
-            else
-              cum3 := 23;
-            end if;
-          when others =>
-            if ff0 = '1' or ff1b = '1' then
-              cum3 := 23;
-            else
-              cum3 := 24;
-            end if;
-        end case;
-
-        case vPrevFF is
-          when '1' =>
-            if ff1a = '1' then
-              totalCons := 30;
-            else
-              if ff2a = '1' then
+                -- byte1 = FF → byte2 stuffs at offset 15 (7 bits).
+                byte2     := '0' & vHold(HOLD_BITS - 16 downto HOLD_BITS - 22);
+                s3        := '0';
+                cumu3     := 22;
+                byte3     := vHold(HOLD_BITS - 23 downto HOLD_BITS - 30);
+                s4        := ff3a;
                 totalCons := 30;
-              else
-                totalCons := 31;
-              end if;
-            end if;
           when others =>
-            if ff0 = '1' then
-              if ff2a = '1' then
-                totalCons := 30;
-              else
+                -- byte1 ≠ FF → byte2 reads 8 bits at offset 15.
+              byte2 := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
+                s3    := ff2a;
+                cumu3 := 23;
+                case ff2a is
+          when '1' =>
+                    byte3     := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
+                    s4        := '0';
+                    totalCons := 30;
+          when others =>
+                    byte3     := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
+                    s4        := ff3b;
+                    totalCons := 31;
+        end case;
+        end case;
+
+          when others =>
+            -- byte0 reads 8 bits at offset 0.
+            byte0 := vHold(HOLD_BITS - 1 downto HOLD_BITS - 8);
+            s1    := ff0;
+            cumu1 := 8;
+            case ff0 is
+          when '1' =>
+                -- byte0 = FF → byte1 stuffs at offset 8 (7 bits).
+                byte1 := '0' & vHold(HOLD_BITS - 9 downto HOLD_BITS - 15);
+                s2    := '0';
+                cumu2 := 15;
+                byte2 := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
+                s3    := ff2a;
+                cumu3 := 23;
+                case ff2a is
+                  when '1' =>
+                    byte3     := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
+                    s4        := '0';
+                    totalCons := 30;
+          when others =>
+                    byte3     := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
+                    s4        := ff3b;
+                    totalCons := 31;
+        end case;
+          when others =>
+                -- byte0 ≠ FF → byte1 reads 8 bits at offset 8.
+                byte1 := vHold(HOLD_BITS - 9 downto HOLD_BITS - 16);
+                s2    := ff1b;
+                cumu2 := 16;
+                case ff1b is
+          when '1' =>
+                    -- byte1 = FF → byte2 stuffs at offset 16.
+                    byte2     := '0' & vHold(HOLD_BITS - 17 downto HOLD_BITS - 23);
+                    s3        := '0';
+                    cumu3     := 23;
+                    byte3     := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
+                    s4        := ff3b;
+                    totalCons := 31;
+          when others =>
+                    -- byte1 ≠ FF → byte2 reads 8 bits at offset 16.
+                    byte2 := vHold(HOLD_BITS - 17 downto HOLD_BITS - 24);
+                    s3    := ff2b;
+                    cumu3 := 24;
+                    case ff2b is
+          when '1' =>
+                        byte3     := '0' & vHold(HOLD_BITS - 25 downto HOLD_BITS - 31);
+                        s4        := '0';
                 totalCons := 31;
-              end if;
-            elsif ff1b = '1' then
-              totalCons := 31;
-            else
-              if ff2b = '1' then
-                totalCons := 31;
-              else
+          when others =>
+                        byte3     := vHold(HOLD_BITS - 25 downto HOLD_BITS - 32);
+                        s4        := ff3c;
                 totalCons := 32;
-              end if;
-            end if;
+                    end case;
+                end case;
+            end case;
         end case;
-
-        -- Parallel constant-subtract candidates (see variable decls).
-        hbMinus7  := vHoldBits - 7;
-        hbMinus8  := vHoldBits - 8;
-        hbMinus15 := vHoldBits - 15;
-        hbMinus16 := vHoldBits - 16;
-        hbMinus22 := vHoldBits - 22;
-        hbMinus23 := vHoldBits - 23;
-        hbMinus24 := vHoldBits - 24;
-        hbMinus30 := vHoldBits - 30;
-        hbMinus31 := vHoldBits - 31;
-        hbMinus32 := vHoldBits - 32;
 
         ----------------------------------------------------------------------
         -- (4) Pick emit count from how much of the chain's consumption is
@@ -894,17 +781,17 @@ begin
           vEmitBytes  := 4;
           vConsumed   := totalCons;
           vEmitLastFF := s4;
-        elsif vHoldBits >= cum3 then
+        elsif vHoldBits >= cumu3 then
           vEmitBytes  := 3;
-          vConsumed   := cum3;
+          vConsumed   := cumu3;
           vEmitLastFF := s3;
-        elsif vHoldBits >= cum2 then
+        elsif vHoldBits >= cumu2 then
           vEmitBytes  := 2;
-          vConsumed   := cum2;
+          vConsumed   := cumu2;
           vEmitLastFF := s2;
-        elsif vHoldBits >= cum1 then
+        elsif vHoldBits >= cumu1 then
           vEmitBytes  := 1;
-          vConsumed   := cum1;
+          vConsumed   := cumu1;
           vEmitLastFF := s1;
         else
           vEmitBytes  := 0;
