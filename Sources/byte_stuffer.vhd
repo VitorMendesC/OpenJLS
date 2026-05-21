@@ -523,24 +523,6 @@ begin
     variable vConsumed   : natural range 0 to 32;
     variable vEmitLastFF : std_logic;
     variable vPadByte    : std_logic_vector(7 downto 0);
-
-    -- Constant-subtract candidates for next-vHoldBits. Each is evaluated
-    -- in parallel by synthesis (the operand is a literal, so each subtract
-    -- collapses to a thin LUT+CARRY4 chain with no variable-side adder
-    -- cone). The final case-mux below picks one by (vEmitBytes, vPrevFF,
-    -- ff*). Replaces `vHoldBits - vConsumed`, where vConsumed was a
-    -- variable derived from cum*/totalCons and pushed the subtract to the
-    -- bottom of the Stage-3 next-state cone.
-    variable hbMinus7  : integer range -32 to HOLD_BITS;
-    variable hbMinus8  : integer range -32 to HOLD_BITS;
-    variable hbMinus15 : integer range -32 to HOLD_BITS;
-    variable hbMinus16 : integer range -32 to HOLD_BITS;
-    variable hbMinus22 : integer range -32 to HOLD_BITS;
-    variable hbMinus23 : integer range -32 to HOLD_BITS;
-    variable hbMinus24 : integer range -32 to HOLD_BITS;
-    variable hbMinus30 : integer range -32 to HOLD_BITS;
-    variable hbMinus31 : integer range -32 to HOLD_BITS;
-    variable hbMinus32 : integer range -32 to HOLD_BITS;
   begin
     if rising_edge(iClk) then
 
@@ -686,7 +668,7 @@ begin
             s2    := ff1a;
             cumu2 := 15;
             case ff1a is
-          when '1' =>
+              when '1' =>
                 -- byte1 = FF → byte2 stuffs at offset 15 (7 bits).
                 byte2     := '0' & vHold(HOLD_BITS - 16 downto HOLD_BITS - 22);
                 s3        := '0';
@@ -694,22 +676,22 @@ begin
                 byte3     := vHold(HOLD_BITS - 23 downto HOLD_BITS - 30);
                 s4        := ff3a;
                 totalCons := 30;
-          when others =>
+              when others =>
                 -- byte1 ≠ FF → byte2 reads 8 bits at offset 15.
-              byte2 := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
+                byte2 := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
                 s3    := ff2a;
                 cumu3 := 23;
                 case ff2a is
-          when '1' =>
+                  when '1' =>
                     byte3     := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
                     s4        := '0';
                     totalCons := 30;
-          when others =>
+                  when others =>
                     byte3     := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
                     s4        := ff3b;
                     totalCons := 31;
-        end case;
-        end case;
+                end case;
+            end case;
 
           when others =>
             -- byte0 reads 8 bits at offset 0.
@@ -717,7 +699,7 @@ begin
             s1    := ff0;
             cumu1 := 8;
             case ff0 is
-          when '1' =>
+              when '1' =>
                 -- byte0 = FF → byte1 stuffs at offset 8 (7 bits).
                 byte1 := '0' & vHold(HOLD_BITS - 9 downto HOLD_BITS - 15);
                 s2    := '0';
@@ -730,18 +712,18 @@ begin
                     byte3     := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
                     s4        := '0';
                     totalCons := 30;
-          when others =>
+                  when others =>
                     byte3     := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
                     s4        := ff3b;
                     totalCons := 31;
-        end case;
-          when others =>
+                end case;
+              when others =>
                 -- byte0 ≠ FF → byte1 reads 8 bits at offset 8.
                 byte1 := vHold(HOLD_BITS - 9 downto HOLD_BITS - 16);
                 s2    := ff1b;
                 cumu2 := 16;
                 case ff1b is
-          when '1' =>
+                  when '1' =>
                     -- byte1 = FF → byte2 stuffs at offset 16.
                     byte2     := '0' & vHold(HOLD_BITS - 17 downto HOLD_BITS - 23);
                     s3        := '0';
@@ -749,20 +731,20 @@ begin
                     byte3     := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
                     s4        := ff3b;
                     totalCons := 31;
-          when others =>
+                  when others =>
                     -- byte1 ≠ FF → byte2 reads 8 bits at offset 16.
                     byte2 := vHold(HOLD_BITS - 17 downto HOLD_BITS - 24);
                     s3    := ff2b;
                     cumu3 := 24;
                     case ff2b is
-          when '1' =>
+                      when '1' =>
                         byte3     := '0' & vHold(HOLD_BITS - 25 downto HOLD_BITS - 31);
                         s4        := '0';
-                totalCons := 31;
-          when others =>
+                        totalCons := 31;
+                      when others =>
                         byte3     := vHold(HOLD_BITS - 25 downto HOLD_BITS - 32);
                         s4        := ff3c;
-                totalCons := 32;
+                        totalCons := 32;
                     end case;
                 end case;
             end case;
@@ -816,70 +798,9 @@ begin
         end if;
 
         if vEmitBytes > 0 then
-          vHold := std_logic_vector(shift_left(unsigned(vHold), vConsumed));
-
-          -- Mux precomputed constant subtracts to form next vHoldBits.
-          -- Flag tests below use vPrevFF *before* it is updated to
-          -- vEmitLastFF — same value that drove the cum*/totalCons
-          -- selection above, so the case matches vConsumed exactly.
-          -- The selected branch's value is >= 0 because vEmitBytes was
-          -- only set when vHoldBits crossed the matching threshold.
-          case vEmitBytes is
-            when 1 =>
-              if vPrevFF = '1' then
-                vHoldBits := hbMinus7;
-              else
-                vHoldBits := hbMinus8;
-              end if;
-            when 2 =>
-              if vPrevFF = '1' or ff0 = '1' then
-                vHoldBits := hbMinus15;
-              else
-                vHoldBits := hbMinus16;
-              end if;
-            when 3 =>
-              case vPrevFF is
-                when '1' =>
-                  if ff1a = '1' then
-                    vHoldBits := hbMinus22;
-                  else
-                    vHoldBits := hbMinus23;
-                  end if;
-                when others =>
-                  if ff0 = '1' or ff1b = '1' then
-                    vHoldBits := hbMinus23;
-                  else
-                    vHoldBits := hbMinus24;
-                  end if;
-              end case;
-            when others => -- vEmitBytes = 4
-              case vPrevFF is
-                when '1' =>
-                  if ff1a = '1' or ff2a = '1' then
-                    vHoldBits := hbMinus30;
-                  else
-                    vHoldBits := hbMinus31;
-                  end if;
-                when others =>
-                  if ff0 = '1' then
-                    if ff2a = '1' then
-                      vHoldBits := hbMinus30;
-                    else
-                      vHoldBits := hbMinus31;
-                    end if;
-                  elsif ff1b = '1' then
-                    vHoldBits := hbMinus31;
-                  else
-                    if ff2b = '1' then
-                      vHoldBits := hbMinus31;
-                    else
-                      vHoldBits := hbMinus32;
-                    end if;
-                  end if;
-              end case;
-          end case;
-
-          vPrevFF := vEmitLastFF;
+          vHold     := std_logic_vector(shift_left(unsigned(vHold), vConsumed));
+          vHoldBits := vHoldBits - vConsumed;
+          vPrevFF   := vEmitLastFF;
         end if;
 
         ----------------------------------------------------------------------
