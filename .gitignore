@@ -4,6 +4,7 @@ ThirdParty/open-logic/doc
 project_testbenches/
 sim/
 Papers/
+Verification/
 
 # Files
 settings.json
