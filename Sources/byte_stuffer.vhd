@@ -746,47 +746,27 @@ begin
         --     covered by vHoldBits. This is the *only* place sHoldBits gates
         --     output, so partial fills naturally degrade to 1..3 byte beats.
         ----------------------------------------------------------------------
-        if iStall = '1' then
-          vEmitBytes  := 0;
+                  vEmitBytes  := 0;
           vConsumed   := 0;
           vEmitLastFF := vPrevFF;
-        elsif vHoldBits >= vCumu(3) then
-          vEmitBytes  := 4;
-          vConsumed   := vCumu(3);
-          vEmitLastFF := vStuffed(3);
-        elsif vHoldBits >= vCumu(2) then
-          vEmitBytes  := 3;
-          vConsumed   := vCumu(2);
-          vEmitLastFF := vStuffed(2);
-        elsif vHoldBits >= vCumu(1) then
-          vEmitBytes  := 2;
-          vConsumed   := vCumu(1);
-          vEmitLastFF := vStuffed(1);
-        elsif vHoldBits >= vCumu(0) then
-          vEmitBytes  := 1;
-          vConsumed   := vCumu(0);
-          vEmitLastFF := vStuffed(0);
-        else
-          vEmitBytes  := 0;
-          vConsumed   := 0;
-          vEmitLastFF := vPrevFF;
+        
+        if iStall = '0' then
+          for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
+            if vHoldBits >= vCumu(i) then
+          vEmitBytes  := i + 1;
+          vConsumed   := vCumu(i);
+          vEmitLastFF := vStuffed(i);
+            end if;
+          end loop;
+
         end if;
 
         ----------------------------------------------------------------------
         -- (5) Pack output and shift hold by the total bits consumed.
         ----------------------------------------------------------------------
-        if vEmitBytes >= 1 then
-          vEmitData(OUT_WIDTH - 1 downto OUT_WIDTH - 8) := byte0;
-        end if;
-        if vEmitBytes >= 2 then
-          vEmitData(OUT_WIDTH - 9 downto OUT_WIDTH - 16) := byte1;
-        end if;
-        if vEmitBytes >= 3 then
-          vEmitData(OUT_WIDTH - 17 downto OUT_WIDTH - 24) := byte2;
-        end if;
-        if vEmitBytes >= 4 then
-          vEmitData(OUT_WIDTH - 25 downto OUT_WIDTH - 32) := byte3;
-        end if;
+        for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
+          vEmitData(OUT_WIDTH - 1 - (i * 8) downto OUT_WIDTH - ((i + 1) * 8)) := vByte(i);
+        end loop;
 
         if vEmitBytes > 0 then
           vHold     := std_logic_vector(shift_left(unsigned(vHold), vConsumed));
