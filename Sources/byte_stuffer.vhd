@@ -68,8 +68,8 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 entity byte_stuffer is
   generic (
     IN_WIDTH            : natural := CO_LIMIT_STD;
-    OUT_BYTES_PER_CYCLE : natural := 4; -- Stuffs up to 4 bytes/cycle, not to be changed
-    OUT_WIDTH           : natural := OUT_BYTES_PER_CYCLE * 8;
+    OUT_BYTES_PER_CYCLE : natural := CO_BYTE_STUFFER_OUT_BYTES_PER_CYCLE; -- Stuffs up to 4 bytes/cycle, not to be changed
+    OUT_WIDTH           : natural := CO_BYTE_STUFFER_OUT_WIDTH;
     BURST_DEPTH         : natural := CO_BYTE_STUFFER_BURST_DEPTH
   );
   port (
@@ -195,8 +195,8 @@ architecture Behavioral of byte_stuffer is
 
 begin
 
-  assert OUT_BYTES_PER_CYCLE >= 1
-  report "byte_stuffer: OUT_BYTES_PER_CYCLE must be >= 1"
+  assert OUT_BYTES_PER_CYCLE = 4
+  report "byte_stuffer: OUT_BYTES_PER_CYCLE must be 4 (stuffing arrays are hardcoded to 4 lanes)"
     severity failure;
 
   assert BURST_DEPTH >= 4
@@ -609,8 +609,8 @@ begin
 
             for k in 0 to FIFO_BYTES - 1 loop
               if k < vPopBytes then
-                vHold(HOLD_BITS - 1 - vHoldBits - k * 8                 downto HOLD_BITS - vHoldBits - (k + 1) * 8)
-                := vPopData(FIFO_BITS - 1 - k * 8                 downto FIFO_BITS - (k + 1) * 8);
+                vHold(HOLD_BITS - 1 - vHoldBits - k * 8 downto HOLD_BITS - vHoldBits - (k + 1) * 8)
+                := vPopData(FIFO_BITS - 1 - k * 8 downto FIFO_BITS - (k + 1) * 8);
               end if;
             end loop;
 
@@ -758,7 +758,6 @@ begin
           vEmitLastFF := vStuffed(i);
             end if;
           end loop;
-
         end if;
 
         ----------------------------------------------------------------------
