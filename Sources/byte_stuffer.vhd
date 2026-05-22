@@ -68,7 +68,8 @@ use openlogic_base.olo_base_pkg_math.log2ceil;
 entity byte_stuffer is
   generic (
     IN_WIDTH            : natural := CO_LIMIT_STD;
-    OUT_BYTES_PER_CYCLE : natural := CO_BYTE_STUFFER_OUT_BYTES_PER_CYCLE;
+    OUT_BYTES_PER_CYCLE : natural := 4; -- Stuffs up to 4 bytes/cycle, not to be changed
+    OUT_WIDTH           : natural := OUT_BYTES_PER_CYCLE * 8;
     BURST_DEPTH         : natural := CO_BYTE_STUFFER_BURST_DEPTH
   );
   port (
@@ -79,7 +80,7 @@ entity byte_stuffer is
     iWordValid  : in std_logic;
     iValidLen   : in unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
     iFlush      : in std_logic;
-    oWord       : out std_logic_vector(OUT_BYTES_PER_CYCLE * 8 - 1 downto 0);
+    oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oWordValid  : out std_logic;
     oValidBytes : out unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
     oAlmostFull : out std_logic;
@@ -102,8 +103,7 @@ architecture Behavioral of byte_stuffer is
   end function;
 
   -- Constants ----------------------------------------------------------------
-  constant OUT_WIDTH : natural := OUT_BYTES_PER_CYCLE * 8;
-
+  
   -- Stage 1 sizing
   constant FIFO_BYTES       : natural := math_ceil_div(IN_WIDTH, 8);
   constant FIFO_BITS        : natural := FIFO_BYTES * 8;
