@@ -170,8 +170,8 @@ architecture rtl of openjls_top is
   -- BYTE_STUFFER_BURST_DEPTH: consecutive worst-case words absorbed without
   -- stalling. 64 covers all natural images plus comfortable margin.
   --------------------------------------------------------------------------------------------
-  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := math_ceil_div(LIMIT, 8);
-  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;
+  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4; -- Hardcoded, fixed
+  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64; -- Can be tuned
   constant BYTE_STUFFER_OUT_WIDTH           : natural := BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
   constant MIN_OUT_WIDTH_WORST_CASE         : natural := BYTE_STUFFER_OUT_WIDTH + 8;
 
@@ -255,7 +255,10 @@ architecture rtl of openjls_top is
   -- as the idle-power gate together with each stage's valid bits: a register
   -- only updates when (NOT sStall) AND (current_valid OR upstream_valid), so a
   -- bubble propagates exactly once and then the register stops toggling.
+  -- TODO: More testing needed on the new added register latency of the stall control signals
   signal sFramerAlmostFull      : std_logic;
+  signal sFramerAlmostFullReg   : std_logic := '0';
+  signal sBsAlmostFullReg       : std_logic := '0';
   signal sStall                 : std_logic := '0';
   signal sStallDelay            : std_logic := '0';
   signal sStallUpstream         : std_logic := '0';
@@ -446,14 +449,28 @@ begin
   process (iClk)
   begin
     if rising_edge(iClk) then
-      sStallDelay <= sStall;
+      if iRst = '1' then
+        sBsAlmostFullReg     <= '0';
+        sFramerAlmostFullReg <= '0';
+        sStallDelay          <= '0';
+        sStallLogic          <= '0';
+      else
+        sBsAlmostFullReg     <= sBsAlmostFull;
+        sFramerAlmostFullReg <= sFramerAlmostFull;
+        sStallDelay          <= sStall;
+        if sStallDelay = '1' and sStall = '1' then
+          sStallLogic <= '1';
+        else
+          sStallLogic <= '0';
+        end if;
+      end if;
     end if;
   end process;
 
-  sStall         <= sFramerAlmostFull or sBsAlmostFull;
+  -- TODO: I don't think this makes sense, we are stalling the whole pipeline if framer is almost full, 
+  -- it should only backpressure the byte stuffer, since byte stuffer is the main design buffer
+  sStall         <= sFramerAlmostFullReg or sBsAlmostFullReg;
   sStallUpstream <= sStall;
-  sStallLogic    <= '1' when sStallDelay = '1' and sStall = '1' else
-    '0'; -- 1 cycle delay to stall logic, so we don't lose the in-flight pixel, deasert immediately
 
   -- Per-stage clock-enable: update register only when not stalled AND there
   -- is a real token to load OR a real token to retire (transition to bubble).
