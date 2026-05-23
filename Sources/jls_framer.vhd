@@ -114,7 +114,10 @@ entity jls_framer is
     OUT_WIDTH          : natural := CO_OUT_WIDTH_STD;
     MAX_IMAGE_WIDTH    : natural := 4096;
     MAX_IMAGE_HEIGHT   : natural := 4096;
-    STALL_MARGIN_BYTES : natural := math_ceil_div(CO_BYTE_STUFFER_OUT_WIDTH, 8) -- supposed to handle the in-flight bytes only
+    -- Cushion between oReady deassertion and BUFFER_BYTES. Covers two
+    -- in-flight cycles of byte_stuffer emission (decision + transfer pipeline)
+    -- plus the +2 EOI footer push. Worst case: 2*BYTES_IN + 2.
+    STALL_MARGIN_BYTES : natural := 2 * math_ceil_div(CO_BYTE_STUFFER_OUT_WIDTH, 8) + 2
   );
   port (
     iClk : in std_logic;
@@ -128,9 +131,7 @@ entity jls_framer is
     iWord       : in std_logic_vector(IN_WIDTH - 1 downto 0);
     iValid      : in std_logic;
     iByteEnable : in unsigned(log2ceil(IN_WIDTH / 8 + 1) - 1 downto 0);
-    -- Backpressure
-    oAlmostFull : out std_logic;
-    iStall      : in std_logic;
+    oReady      : out std_logic;
     -- Output AXI stream interface
     oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oValid      : out std_logic;
@@ -181,7 +182,12 @@ architecture Behavioral of jls_framer is
   signal sValidBytes : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0) := (others => '0');
 
   signal sHeaderByteIdx : natural range 0 to HEADER_LEN := 0;
-  signal sNextPending   : std_logic                     := '0';
+  -- Pending-start counter. Holds iStart pulses that arrive while an earlier
+  -- image is still being framed. Each EOI dequeues one. Sized to absorb the
+  -- worst-case lead of upstream over the framer when byte_stuffer's FIFO is
+  -- buffering several images at once.
+  constant START_QUEUE_DEPTH : natural := 4;
+  signal sNextPending        : natural range 0 to START_QUEUE_DEPTH := 0;
 
   signal sAxiHandshake : boolean;
 
@@ -288,10 +294,10 @@ begin
   oByteEnable <= sValidBytes;
   oLast       <= sOutLast;
 
-  -- Backpressure: high when FIFO occupancy reaches the nominal sizing
-  -- threshold, leaving STALL_MARGIN_BYTES headroom for the in-flight
-  -- bytes only
-  oAlmostFull <= '1' when sFifoByteCount >= BUFFER_BYTES_NOMINAL else
+  -- Ready/valid handshake with byte_stuffer: deasserts at the nominal
+  -- sizing threshold, leaving STALL_MARGIN_BYTES headroom for the
+  -- 1-cycle handshake latency (byte_stuffer's registered output).
+  oReady <= '1' when sFifoByteCount < BUFFER_BYTES_NOMINAL else
     '0';
 
   -------------------------------------------------------------------------------------------------------------
@@ -310,6 +316,7 @@ begin
     variable vCanEmit           : boolean;
     variable vEoiInBeat         : boolean;
     variable vOffsetI           : natural range 0 to BYTES_OUT;
+    variable vNextPending       : natural range 0 to START_QUEUE_DEPTH;
   begin
 
     if rising_edge(iClk) then
@@ -324,7 +331,7 @@ begin
         sOutLast       <= '0';
         sValidBytes    <= (others => '0');
         sHeaderByteIdx <= 0;
-        sNextPending   <= '0';
+        sNextPending   <= 0;
       else
 
         vBuffer        := sBuffer;
@@ -334,14 +341,15 @@ begin
         vWidth         := resize(iImageWidth, 16);
         vHeight        := resize(iImageHeight, 16);
         vCanEmit       := sAxiHandshake or sOutValid = '0';
+        vNextPending   := sNextPending;
 
-        -- iStart latching
-        if iStart = '1' and sFsmState /= IDLE then
-          assert sNextPending = '0'
-          report "jls_framer: iStart dropped (sNextPending already set; only one start can be queued)"
-            severity warning;
-
-          sNextPending <= '1';
+        -- iStart latching: queue starts so back-to-back images can be buffered
+        -- in byte_stuffer while framer drains earlier images.
+        if iStart = '1' then
+          assert vNextPending < START_QUEUE_DEPTH
+          report "jls_framer: iStart dropped (start queue full)"
+            severity failure;
+          vNextPending := vNextPending + 1;
         end if;
 
         -----------------------------------------------------------------------------------------------------
@@ -356,10 +364,10 @@ begin
         case sFsmState is
 
           when IDLE =>
-            if iStart = '1' or sNextPending = '1' then
+            if vNextPending > 0 then
               sFsmState      <= HEADER;
               sHeaderByteIdx <= 0;
-              sNextPending   <= '0';
+              vNextPending := vNextPending - 1;
             end if;
 
           when HEADER =>
@@ -420,10 +428,10 @@ begin
                     sOutLast <= '1';
                     pop_eoi(vEoiIdxFifo, vEoiCount, vEmitDataBytes);
 
-                    if sNextPending = '1' or iStart = '1' then
+                    if vNextPending > 0 then
                       sFsmState      <= HEADER;
                       sHeaderByteIdx <= 0;
-                      sNextPending   <= '0';
+                      vNextPending := vNextPending - 1;
                     else
                       sFsmState <= IDLE;
                     end if;
@@ -466,10 +474,10 @@ begin
                   sOutLast <= '1';
                   pop_eoi(vEoiIdxFifo, vEoiCount, vEmitDataBytes);
 
-                  if sNextPending = '1' or iStart = '1' then
+                  if vNextPending > 0 then
                     sFsmState      <= HEADER;
                     sHeaderByteIdx <= 0;
-                    sNextPending   <= '0';
+                    vNextPending := vNextPending - 1;
                   else
                     sFsmState <= IDLE;
                   end if;
@@ -485,7 +493,7 @@ begin
         -----------------------------------------------------------------------------------------------------
         -- WRITE
         -----------------------------------------------------------------------------------------------------
-        if iValid = '1' and iStall = '0' then
+        if iValid = '1' then
 
           for i in 0 to BYTES_IN - 1 loop
             if i < to_integer(iByteEnable) then
@@ -518,6 +526,7 @@ begin
         sFifoByteCount <= vFifoByteCount;
         sEoiFifo       <= vEoiIdxFifo;
         sEoiCount      <= vEoiCount;
+        sNextPending   <= vNextPending;
 
       end if;
     end if;
