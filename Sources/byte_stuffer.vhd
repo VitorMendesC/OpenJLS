@@ -90,20 +90,8 @@ end entity byte_stuffer;
 
 architecture Behavioral of byte_stuffer is
 
-  -- Functions ---------------------------------------------------------------
-  function almost_full_level(depth : natural) return natural is
-  begin
-    if depth >= 4 then
-      return depth - 2;
-    elsif depth >= 2 then
-      return depth - 1;
-    else
-      return depth;
-    end if;
-  end function;
-
   -- Constants ----------------------------------------------------------------
-  
+
   -- Stage 1 sizing
   constant FIFO_BYTES       : natural := math_ceil_div(IN_WIDTH, 8);
   constant FIFO_BITS        : natural := FIFO_BYTES * 8;
@@ -123,7 +111,12 @@ architecture Behavioral of byte_stuffer is
   -- Sideband byte-valid queue depth: bounds the number of in-flight
   -- last-flag words allowed in the main FIFO simultaneously.
   constant BYTE_VALID_QUEUE_DEPTH : natural := 3;
-  constant ALM_FULL_LEVEL         : natural := almost_full_level(BURST_DEPTH);
+
+  -- AlmFull asserts STALL_CUSHION_ENTRIES below Full so the FIFO can absorb
+  -- in-flight tokens while the top-level stall signal propagates through its
+  -- pipeline (registered AlmFulls + registered sStallLogic = ~4 cycles).
+  constant STALL_CUSHION_ENTRIES : natural := 5;
+  constant ALM_FULL_LEVEL        : natural := BURST_DEPTH - STALL_CUSHION_ENTRIES;
 
   -- Stage 3 holding register: room for at least one full FIFO pop on top of
   -- any leftover bits from the previous consume. Bits are stored MSB-first
@@ -154,6 +147,7 @@ architecture Behavioral of byte_stuffer is
   signal sFifoOutValid : std_logic;
   signal sFifoOutReady : std_logic;
   signal sFifoAlmFull  : std_logic;
+  signal sFifoFull     : std_logic;
 
   -- Skid buffer between FIFO output and Stage 3 consume
   -- Helps timing
@@ -199,8 +193,8 @@ begin
   report "byte_stuffer: OUT_BYTES_PER_CYCLE must be 4 (stuffing arrays are hardcoded to 4 lanes)"
     severity failure;
 
-  assert BURST_DEPTH >= 4
-  report "byte_stuffer: BURST_DEPTH must be >= 4 (AlmFull slack)"
+  assert BURST_DEPTH > STALL_CUSHION_ENTRIES
+  report "byte_stuffer: BURST_DEPTH must exceed STALL_CUSHION_ENTRIES"
     severity failure;
 
   oWord       <= sOutWordReg;
@@ -217,7 +211,7 @@ begin
   sInTake <= '1' when sInValid = '1'
     and iStall = '0'
     and sFlushPending = '0'
-    and sFifoAlmFull = '0'
+    and sFifoFull = '0'
     else
     '0';
 
@@ -254,7 +248,7 @@ begin
     variable vAccept              : boolean;
     variable vPadBits             : natural;
     variable vLastFlag            : std_logic;
-variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
+    variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
     variable vMaskTop             : std_logic_vector(ACCUM_BITS - 1 downto 0);
     variable vShifted             : std_logic_vector(ACCUM_BITS - 1 downto 0);
     variable vMask                : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -280,7 +274,7 @@ variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
         vFlushBytes          := to_integer(sFlushBytes);
         vValidLenInt         := to_integer(sInValidLen);
         vFlushPend           := sFlushPending;
-        vAccept              := sFifoAlmFull = '0' and iStall = '0';
+        vAccept              := sFifoFull = '0' and iStall = '0';
 
         sFifoInValid    <= '0';
         sBVQueueInValid <= '0';
@@ -291,7 +285,7 @@ variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
         -- Append input bits (MSB-first)
 
         if sInValid = '1' and vAccept then
--- TODO: Needs testing
+          -- TODO: Needs testing
 
           vWide                                              := (others => '0');
           vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sInWord;
@@ -303,7 +297,7 @@ variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
             end if;
           end loop;
 
-vShifted        := std_logic_vector(shift_right(unsigned(vWide), vAccumCountBits));
+          vShifted        := std_logic_vector(shift_right(unsigned(vWide), vAccumCountBits));
           vMask           := std_logic_vector(shift_right(unsigned(vMaskTop), vAccumCountBits));
           vAccumBuffer    := (vAccumBuffer and not vMask) or (vShifted and vMask);
           vAccumCountBits := vAccumCountBits + vValidLenInt;
@@ -349,7 +343,7 @@ vShifted        := std_logic_vector(shift_right(unsigned(vWide), vAccumCountBits
         -- the final FIFO_BITS chunk and forward the byte-valid count via
         -- the sideband queue; non-last writes carry the implicit FIFO_BYTES.
 
-        if sFifoAlmFull = '0' then
+        if sFifoFull = '0' then
           if vFlushPend = '1' then
             if vAccumCountBitsFlush = FIFO_BITS then
               vLastFlag := '1';
@@ -415,7 +409,7 @@ vShifted        := std_logic_vector(shift_right(unsigned(vWide), vAccumCountBits
       Out_Data  => sFifoOutData,
       Out_Valid => sFifoOutValid,
       Out_Ready => sFifoOutReady,
-      Full      => open,
+      Full      => sFifoFull,
       AlmFull   => sFifoAlmFull,
       Empty     => open,
       AlmEmpty  => open
@@ -760,16 +754,16 @@ vShifted        := std_logic_vector(shift_right(unsigned(vWide), vAccumCountBits
         --     covered by vHoldBits. This is the *only* place sHoldBits gates
         --     output, so partial fills naturally degrade to 1..3 byte beats.
         ----------------------------------------------------------------------
-                  vEmitBytes  := 0;
-          vConsumed   := 0;
-          vEmitLastFF := vPrevFF;
-        
+        vEmitBytes  := 0;
+        vConsumed   := 0;
+        vEmitLastFF := vPrevFF;
+
         if iStall = '0' then
           for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
             if vHoldBits >= vCumu(i) then
-          vEmitBytes  := i + 1;
-          vConsumed   := vCumu(i);
-          vEmitLastFF := vStuffed(i);
+              vEmitBytes  := i + 1;
+              vConsumed   := vCumu(i);
+              vEmitLastFF := vStuffed(i);
             end if;
           end loop;
         end if;
