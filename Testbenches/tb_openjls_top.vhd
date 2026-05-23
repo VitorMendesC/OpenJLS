@@ -29,7 +29,7 @@ architecture bench of tb_openjls_top is
   -- TB level controls
   -------------------------------------------------------------------------------------------------------------
   constant PRINT_BYTES         : boolean := false;
-  constant POST_SYNTH_FRIENDLY : boolean := true; -- remove generic map
+  constant POST_SYNTH_FRIENDLY : boolean := false; -- remove generic map
   -------------------------------------------------------------------------------------------------------------
 
   -- Test configuration

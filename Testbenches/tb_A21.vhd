@@ -20,29 +20,29 @@ architecture bench of tb_A21 is
     end if;
   end procedure;
 
-  constant K_WIDTH  : natural := CO_K_WIDTH_STD;
-  constant N_WIDTH  : natural := CO_NQ_WIDTH_STD;
-  constant E_WIDTH  : natural := CO_ERROR_VALUE_WIDTH_STD;
+  constant K_WIDTH : natural := CO_K_WIDTH_STD;
+  constant N_WIDTH : natural := CO_NQ_WIDTH_STD;
+  constant E_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
 
-  signal iK    : unsigned(K_WIDTH - 1 downto 0) := (others => '0');
-  signal iErr  : signed(E_WIDTH - 1 downto 0) := (others => '0');
-  signal iNn   : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
-  signal iNq   : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
-  signal oMap  : std_logic;
+  signal iK   : unsigned(K_WIDTH - 1 downto 0) := (others => '0');
+  signal iErr : signed(E_WIDTH - 1 downto 0)   := (others => '0');
+  signal iNn  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
+  signal iNq  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
+  signal oMap : std_logic;
 
   procedure check_case(
     kv, errv, nnv, nqv : integer;
-    exp               : std_logic;
-    map_actual        : std_logic
+    exp                : std_logic;
+    map_actual         : std_logic
   ) is
   begin
     check(map_actual = exp,
-      "A21 map mismatch: k=" & integer'image(kv) &
-      " err=" & integer'image(errv) &
-      " Nn=" & integer'image(nnv) &
-      " Nq=" & integer'image(nqv) &
-      " exp=" & std_logic'image(exp) &
-      " got=" & std_logic'image(map_actual)
+    "A21 map mismatch: k=" & integer'image(kv) &
+    " err=" & integer'image(errv) &
+    " Nn=" & integer'image(nnv) &
+    " Nq=" & integer'image(nqv) &
+    " exp=" & std_logic'image(exp) &
+    " got=" & std_logic'image(map_actual)
     );
   end procedure;
 
@@ -50,11 +50,12 @@ begin
 
   dut : entity work.A21_compute_map
     generic map(
-      K_WIDTH   => K_WIDTH,
-      N_WIDTH   => N_WIDTH,
-      ERR_WIDTH => E_WIDTH
+      K_WIDTH     => K_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      ERROR_WIDTH => E_WIDTH
     )
-    port map(
+    port map
+    (
       iK      => iK,
       iErrval => iErr,
       iNn     => iNn,

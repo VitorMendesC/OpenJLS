@@ -40,8 +40,6 @@ architecture bench of tb_jls_framer is
       err_count := err_count + 1;
     end if;
   end procedure;
-
-
   -- DUT generics
   constant NEAR             : natural := 0;
   constant BITNESS          : natural := 12;
@@ -68,14 +66,13 @@ architecture bench of tb_jls_framer is
   to_unsigned(W, log2ceil(MAX_IMAGE_WIDTH + 1));
   signal iImageHeight : unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0) :=
   to_unsigned(H, log2ceil(MAX_IMAGE_HEIGHT + 1));
-  signal iEOI          : std_logic                                 := '0';
-  signal iBsWord       : std_logic_vector(IN_WIDTH - 1 downto 0)   := (others => '0');
-  signal iBsWordValid  : std_logic                                 := '0';
-  signal iBsValidBytes : unsigned(log2ceil(IN_WIDTH / 8) downto 0) := (others => '0');
-  signal oBsReady      : std_logic;
+  signal iEOI          : std_logic                                         := '0';
+  signal iBsWord       : std_logic_vector(IN_WIDTH - 1 downto 0)           := (others => '0');
+  signal iBsWordValid  : std_logic                                         := '0';
+  signal iBsValidBytes : unsigned(log2ceil(IN_WIDTH / 8 + 1) - 1 downto 0) := (others => '0');
   signal oWord         : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal oWordValid    : std_logic;
-  signal oValidBytes   : unsigned(log2ceil(OUT_WIDTH / 8) downto 0);
+  signal oValidBytes   : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
   signal oLast         : std_logic;
   signal iReady        : std_logic := '1';
 
@@ -118,6 +115,7 @@ architecture bench of tb_jls_framer is
   shared variable mon_byte_idx      : integer := 0;
   shared variable mon_payload_bytes : natural := 0;
   shared variable mon_last_seen     : boolean := false;
+  shared variable mon_image_bytes   : integer := 0; -- frozen at oLast for post-image check
 
 begin
 
@@ -125,7 +123,6 @@ begin
 
   dut : entity work.jls_framer
     generic map(
-      NEAR             => NEAR,
       BITNESS          => BITNESS,
       IN_WIDTH         => IN_WIDTH,
       OUT_WIDTH        => OUT_WIDTH,
@@ -134,21 +131,21 @@ begin
     )
     port map
     (
-      iClk          => iClk,
-      iRst          => iRst,
-      iStart        => iStart,
-      iImageWidth   => iImageWidth,
-      iImageHeight  => iImageHeight,
-      iEOI          => iEOI,
-      iBsWord       => iBsWord,
-      iBsWordValid  => iBsWordValid,
-      iBsValidBytes => iBsValidBytes,
-      oBsReady      => oBsReady,
-      oWord         => oWord,
-      oWordValid    => oWordValid,
-      oValidBytes   => oValidBytes,
-      oLast         => oLast,
-      iReady        => iReady
+      iClk         => iClk,
+      iRst         => iRst,
+      iStart       => iStart,
+      iImageWidth  => iImageWidth,
+      iImageHeight => iImageHeight,
+      iEOI         => iEOI,
+      iWord        => iBsWord,
+      iValid       => iBsWordValid,
+      iByteEnable  => iBsValidBytes,
+      oReady       => open,
+      oWord        => oWord,
+      oValid       => oWordValid,
+      oByteEnable  => oValidBytes,
+      oLast        => oLast,
+      iReady       => iReady
     );
 
   -- =========================================================================
@@ -190,10 +187,12 @@ begin
           end if;
         end loop;
 
-        mon_byte_idx := bi;
-
         if oLast = '1' then
-          mon_last_seen := true;
+          mon_last_seen   := true;
+          mon_image_bytes := bi;
+          mon_byte_idx    := 0; -- ready for next image's first beat (T_last+1)
+        else
+          mon_byte_idx := bi;
         end if;
 
       end if;
@@ -229,10 +228,6 @@ begin
       end if;
 
       for w in 0 to n_words - 1 loop
-        if oBsReady = '0' then
-          wait until oBsReady = '1';
-          wait until rising_edge(iClk);
-        end if;
         if w = n_words - 1 then
           iBsValidBytes <= to_unsigned(partial, iBsValidBytes'length);
           iBsWordValid  <= '1';
@@ -256,14 +251,14 @@ begin
         wait until rising_edge(iClk);
         exit when mon_last_seen;
       end loop;
-      wait until rising_edge(iClk);
+      mon_last_seen := false;
     end procedure;
 
     -- Number of 3-byte payload words for a small image (2 bytes/pixel)
     constant PAYLOAD_BYTES : natural := W * H * 2;
     constant N_WORDS       : natural := (PAYLOAD_BYTES + BYTES_IN - 1) / BYTES_IN;
     -- Valid bytes in the last word (remainder, always >= 1)
-    constant LAST_PARTIAL  : natural := PAYLOAD_BYTES - (N_WORDS - 1) * BYTES_IN;
+    constant LAST_PARTIAL : natural := PAYLOAD_BYTES - (N_WORDS - 1) * BYTES_IN;
 
   begin
 
@@ -292,7 +287,7 @@ begin
     send_payload(N_WORDS, LAST_PARTIAL);
     wait_image_done;
 
-    check(mon_byte_idx = HEADER_LEN + PAYLOAD_BYTES + 2,
+    check(mon_image_bytes = HEADER_LEN + PAYLOAD_BYTES + 2,
     "Test 1: wrong total byte count " & integer'image(mon_byte_idx));
     report "Test 1 done";
 
@@ -342,7 +337,7 @@ begin
 
     wait_image_done;
 
-    check(mon_byte_idx = HEADER_LEN + 2,
+    check(mon_image_bytes = HEADER_LEN + 2,
     "Test 2: image 2 wrong byte count " & integer'image(mon_byte_idx));
     report "Test 2 done";
 
@@ -378,7 +373,7 @@ begin
 
     wait_image_done;
 
-    check(mon_byte_idx = HEADER_LEN + 2,
+    check(mon_image_bytes = HEADER_LEN + 2,
     "Test 3: wrong byte count " & integer'image(mon_byte_idx));
     report "Test 3 done";
 

@@ -24,13 +24,13 @@ architecture bench of tb_A11 is
   constant N_WIDTH                : natural := CO_NQ_WIDTH_STD;
   constant B_WIDTH                : natural := CO_BQ_WIDTH_STD;
   constant K_WIDTH                : natural := CO_K_WIDTH_STD;
-  constant ERROR_VALUE_WIDTH      : natural := CO_ERROR_VALUE_WIDTH_STD;
+  constant ERROR_WIDTH            : natural := CO_ERROR_VALUE_WIDTH_STD;
   constant MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
 
-  signal iK             : unsigned(K_WIDTH - 1 downto 0)         := (others => '0');
-  signal iBq            : signed(B_WIDTH - 1 downto 0)           := (others => '0');
-  signal iNq            : unsigned(N_WIDTH - 1 downto 0)         := (others => '0');
-  signal iErrorVal      : signed(ERROR_VALUE_WIDTH - 1 downto 0) := (others => '0');
+  signal iK             : unsigned(K_WIDTH - 1 downto 0)   := (others => '0');
+  signal iBq            : signed(B_WIDTH - 1 downto 0)     := (others => '0');
+  signal iNq            : unsigned(N_WIDTH - 1 downto 0)   := (others => '0');
+  signal iErrorVal      : signed(ERROR_WIDTH - 1 downto 0) := (others => '0');
   signal oMappedErrorN0 : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
   signal oMappedErrorN2 : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
@@ -120,7 +120,7 @@ begin
       N_WIDTH                => N_WIDTH,
       B_WIDTH                => B_WIDTH,
       K_WIDTH                => K_WIDTH,
-      ERROR_VALUE_WIDTH      => ERROR_VALUE_WIDTH,
+      ERROR_WIDTH            => ERROR_WIDTH,
       MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH,
       NEAR                   => 0
     )
@@ -138,7 +138,7 @@ begin
       N_WIDTH                => N_WIDTH,
       B_WIDTH                => B_WIDTH,
       K_WIDTH                => K_WIDTH,
-      ERROR_VALUE_WIDTH      => ERROR_VALUE_WIDTH,
+      ERROR_WIDTH            => ERROR_WIDTH,
       MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH,
       NEAR                   => 2
     )

@@ -20,21 +20,21 @@ architecture bench of tb_A22 is
     end if;
   end procedure;
 
-  constant ERR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
-  constant ME_WIDTH  : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
+  constant ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
+  constant ME_WIDTH    : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
 
-  signal iErr    : signed(ERR_WIDTH - 1 downto 0) := (others => '0');
-  signal iRI     : std_logic := '0';
-  signal iMap    : std_logic := '0';
-  signal oEmErr  : unsigned(ME_WIDTH - 1 downto 0);
+  signal iErr   : signed(ERROR_WIDTH - 1 downto 0) := (others => '0');
+  signal iRI    : std_logic                        := '0';
+  signal iMap   : std_logic                        := '0';
+  signal oEmErr : unsigned(ME_WIDTH - 1 downto 0);
 
   procedure check_case(
-    errv    : integer;
+    errv         : integer;
     ri, map_flag : std_logic;
-    em_actual : unsigned
+    em_actual    : unsigned
   ) is
-    variable exp : integer;
-    variable ri_i : integer;
+    variable exp   : integer;
+    variable ri_i  : integer;
     variable map_i : integer;
   begin
     if ri = '1' then
@@ -51,11 +51,11 @@ architecture bench of tb_A22 is
     exp := 2 * abs(errv) - ri_i - map_i;
 
     check(em_actual = to_unsigned(exp, em_actual'length),
-      "A22 mismatch: Err=" & integer'image(errv) &
-      " RI=" & std_logic'image(ri) &
-      " map=" & std_logic'image(map_flag) &
-      " exp=" & integer'image(exp) &
-      " got=" & integer'image(to_integer(em_actual))
+    "A22 mismatch: Err=" & integer'image(errv) &
+    " RI=" & std_logic'image(ri) &
+    " map=" & std_logic'image(map_flag) &
+    " exp=" & integer'image(exp) &
+    " got=" & integer'image(to_integer(em_actual))
     );
   end procedure;
 
@@ -63,10 +63,11 @@ begin
 
   dut : entity work.A22_errval_mapping
     generic map(
-      ERR_WIDTH           => ERR_WIDTH,
+      ERROR_WIDTH         => ERROR_WIDTH,
       MAPPED_ERRVAL_WIDTH => ME_WIDTH
     )
-    port map(
+    port map
+    (
       iErrval   => iErr,
       iRItype   => iRI,
       iMap      => iMap,

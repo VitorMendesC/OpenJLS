@@ -20,13 +20,13 @@ architecture bench of tb_A23 is
     end if;
   end procedure;
 
-  constant A_WIDTH  : natural := CO_AQ_WIDTH_STD;
-  constant N_WIDTH  : natural := CO_NQ_WIDTH_STD;
-  constant ERR_W    : natural := CO_ERROR_VALUE_WIDTH_STD;
-  constant RESET_V  : natural := CO_RESET_STD;
+  constant A_WIDTH : natural := CO_AQ_WIDTH_STD;
+  constant N_WIDTH : natural := CO_NQ_WIDTH_STD;
+  constant ERR_W   : natural := CO_ERROR_VALUE_WIDTH_STD;
+  constant RESET_V : natural := CO_RESET_STD;
 
-  signal iErr : signed(ERR_W - 1 downto 0) := (others => '0');
-  signal iRI  : std_logic := '0';
+  signal iErr : signed(ERR_W - 1 downto 0)     := (others => '0');
+  signal iRI  : std_logic                      := '0';
   signal iAq  : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
   signal iNq  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
   signal iNn  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
@@ -94,16 +94,16 @@ architecture bench of tb_A23 is
     model(errv, ri_i, aq, nq, nn, exp_a, exp_n, exp_nn);
 
     check(aq_o = to_unsigned(exp_a, aq_o'length),
-      "A23 Aq mismatch exp=" & integer'image(exp_a) &
-      " got=" & integer'image(to_integer(aq_o))
+    "A23 Aq mismatch exp=" & integer'image(exp_a) &
+    " got=" & integer'image(to_integer(aq_o))
     );
     check(nq_o = to_unsigned(exp_n, nq_o'length),
-      "A23 Nq mismatch exp=" & integer'image(exp_n) &
-      " got=" & integer'image(to_integer(nq_o))
+    "A23 Nq mismatch exp=" & integer'image(exp_n) &
+    " got=" & integer'image(to_integer(nq_o))
     );
     check(nn_o = to_unsigned(exp_nn, nn_o'length),
-      "A23 Nn mismatch exp=" & integer'image(exp_nn) &
-      " got=" & integer'image(to_integer(nn_o))
+    "A23 Nn mismatch exp=" & integer'image(exp_nn) &
+    " got=" & integer'image(to_integer(nn_o))
     );
   end procedure;
 
@@ -111,13 +111,14 @@ begin
 
   dut : entity work.A23_run_interruption_update
     generic map(
-      A_WIDTH   => A_WIDTH,
-      N_WIDTH   => N_WIDTH,
-      ERR_WIDTH => ERR_W,
-      RESET     => RESET_V
+      A_WIDTH     => A_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      ERROR_WIDTH => ERR_W,
+      RESET       => RESET_V
     )
-    port map(
-      iErrval => iErr,
+    port map
+    (
+      iErrVal => iErr,
       iRItype => iRI,
       iAq     => iAq,
       iNq     => iNq,

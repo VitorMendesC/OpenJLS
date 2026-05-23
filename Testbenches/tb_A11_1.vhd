@@ -125,6 +125,8 @@ begin
     port map(
       iK              => iK,
       iMappedErrorVal => iMappedErrorVal,
+      iRiMode         => '0',
+      iRunIndex       => (others => '0'),
       oUnaryZeros     => oUnaryZeros,
       oSuffixLen      => oSuffixLen,
       oSuffixVal      => oSuffixVal

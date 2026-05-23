@@ -54,6 +54,7 @@ architecture bench of tb_A15_A16 is
   signal oRIIx         : unsigned(BITNESS - 1 downto 0);
   signal oRIRa         : unsigned(BITNESS - 1 downto 0);
   signal oRIRb         : unsigned(BITNESS - 1 downto 0);
+  signal oRiRunIndex   : unsigned(4 downto 0);
 
 begin
   iClk <= not iClk after CLK_PERIOD / 2;
@@ -66,6 +67,7 @@ begin
     port map(
       iClk         => iClk,
       iRst         => iRst,
+      iCE          => '1',
       iEOI         => iEOI,
       iRunCnt      => iRunCnt,
       iRunHit      => iRunHit,
@@ -80,7 +82,8 @@ begin
       oRIValid      => oRIValid,
       oRIIx         => oRIIx,
       oRIRa         => oRIRa,
-      oRIRb         => oRIRb
+      oRIRb         => oRIRb,
+      oRiRunIndex   => oRiRunIndex
     );
 
   stim : process
