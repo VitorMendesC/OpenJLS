@@ -254,6 +254,10 @@ begin
     variable vAccept              : boolean;
     variable vPadBits             : natural;
     variable vLastFlag            : std_logic;
+variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
+    variable vMaskTop             : std_logic_vector(ACCUM_BITS - 1 downto 0);
+    variable vShifted             : std_logic_vector(ACCUM_BITS - 1 downto 0);
+    variable vMask                : std_logic_vector(ACCUM_BITS - 1 downto 0);
   begin
     if rising_edge(iClk) then
 
@@ -287,12 +291,22 @@ begin
         -- Append input bits (MSB-first)
 
         if sInValid = '1' and vAccept then
+-- TODO: Needs testing
+
+          vWide                                              := (others => '0');
+          vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sInWord;
+          vMaskTop                                           := (others => '0');
+
           for i in 0 to IN_WIDTH - 1 loop
             if i < vValidLenInt then
-              vAccumBuffer(ACCUM_BITS - 1 - vAccumCountBits) := sInWord(IN_WIDTH - 1 - i);
-              vAccumCountBits                                := vAccumCountBits + 1;
+              vMaskTop(ACCUM_BITS - 1 - i) := '1';
             end if;
           end loop;
+
+vShifted        := std_logic_vector(shift_right(unsigned(vWide), vAccumCountBits));
+          vMask           := std_logic_vector(shift_right(unsigned(vMaskTop), vAccumCountBits));
+          vAccumBuffer    := (vAccumBuffer and not vMask) or (vShifted and vMask);
+          vAccumCountBits := vAccumCountBits + vValidLenInt;
         end if;
 
         -- Flush entry: pad sub-byte residue to byte boundary, snapshot the
