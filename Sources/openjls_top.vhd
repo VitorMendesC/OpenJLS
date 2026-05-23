@@ -256,8 +256,7 @@ architecture rtl of openjls_top is
   -- only updates when (NOT sStall) AND (current_valid OR upstream_valid), so a
   -- bubble propagates exactly once and then the register stops toggling.
   -- TODO: More testing needed on the new added register latency of the stall control signals
-  signal sFramerAlmostFull      : std_logic;
-  signal sFramerAlmostFullReg   : std_logic := '0';
+  signal sFramerReady           : std_logic;
   signal sBsAlmostFullReg       : std_logic := '0';
   signal sStall                 : std_logic := '0';
   signal sStallDelay            : std_logic := '0';
@@ -450,14 +449,12 @@ begin
   begin
     if rising_edge(iClk) then
       if iRst = '1' then
-        sBsAlmostFullReg     <= '0';
-        sFramerAlmostFullReg <= '0';
-        sStallDelay          <= '0';
-        sStallLogic          <= '0';
+        sBsAlmostFullReg <= '0';
+        sStallDelay      <= '0';
+        sStallLogic      <= '0';
       else
-        sBsAlmostFullReg     <= sBsAlmostFull;
-        sFramerAlmostFullReg <= sFramerAlmostFull;
-        sStallDelay          <= sStall;
+        sBsAlmostFullReg <= sBsAlmostFull;
+        sStallDelay      <= sStall;
         if sStallDelay = '1' and sStall = '1' then
           sStallLogic <= '1';
         else
@@ -467,9 +464,10 @@ begin
     end if;
   end process;
 
-  -- TODO: I don't think this makes sense, we are stalling the whole pipeline if framer is almost full, 
-  -- it should only backpressure the byte stuffer, since byte stuffer is the main design buffer
-  sStall         <= sFramerAlmostFullReg or sBsAlmostFullReg;
+  -- Pipeline stall is sourced only from byte_stuffer's FIFO (the main design
+  -- buffer). Framer back-pressure is absorbed by the byte_stuffer FIFO via a
+  -- local ready/valid handshake (sFramerReady -> byte_stuffer.iReady).
+  sStall         <= sBsAlmostFullReg;
   sStallUpstream <= sStall;
 
   -- Per-stage clock-enable: update register only when not stalled AND there
@@ -1371,6 +1369,7 @@ begin
       oWord       => sBsWord,
       oWordValid  => sBsWordV,
       oValidBytes => sBsValidB,
+      iReady      => sFramerReady,
       oAlmostFull => sBsAlmostFull,
       oFlushDone  => sBsFlushDone
     );
@@ -1387,7 +1386,6 @@ begin
     (
       iClk         => iClk,
       iRst         => iRst,
-      iStall       => sStallLogic,
       iStart       => sFramerStart,
       iImageWidth  => sImageWidth,
       iImageHeight => sImageHeight,
@@ -1395,8 +1393,8 @@ begin
       iWord        => sBsWord,
       iValid       => sBsWordV,
       iByteEnable  => sBsValidB,
+      oReady       => sFramerReady,
       iReady       => iReady,
-      oAlmostFull  => sFramerAlmostFull,
       oWord        => oData,
       oValid       => oValid,
       oByteEnable  => sFramerVBytes,
@@ -1446,7 +1444,12 @@ begin
       elsif sStallLogic = '0' then
         if sValid = '1' and sImageActive = '0' then
           sImageActive <= '1';
-        elsif sBsFlushDone = '1' then
+        elsif sBsFlush = '1' then
+          -- Clear when flush ENTERS byte_stuffer, not when it completes.
+          -- byte_stuffer/framer back-pressure is local: flush-done can lag
+          -- far behind sValid. Clearing on sBsFlush lets the next image's
+          -- sFramerStart fire while the previous image is still draining
+          -- (framer queues the start via its internal sNextPending).
           sImageActive <= '0';
         end if;
       end if;
