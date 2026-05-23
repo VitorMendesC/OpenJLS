@@ -83,6 +83,7 @@ entity byte_stuffer is
     oWord       : out std_logic_vector(OUT_WIDTH - 1 downto 0);
     oWordValid  : out std_logic;
     oValidBytes : out unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
+    iReady      : in std_logic;
     oAlmostFull : out std_logic;
     oFlushDone  : out std_logic
   );
@@ -464,7 +465,7 @@ begin
   -- Stage 3 drains the skid buffer when it has data and the hold has room.
   sStgTaken     <= '1' when sStgValid = '1'
     and sHoldBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sHoldBits'length)
-    and iStall = '0'
+    and iReady = '1'
     and sDrainPending = '0'
     and sCleanEndPending = '0'
     else
@@ -541,7 +542,7 @@ begin
         -- 0-byte EOI beat: framer (jls_framer.vhd:488-510) treats
         -- iValid='1' AND iByteEnable=0 AND iEOI='1' as "push FF D9 at
         -- current count" with no data copy.
-        if iStall = '0' then
+        if iReady = '1' then
           sOutWordReg      <= (others => '0');
           sOutBytesReg     <= (others => '0');
           sOutValidReg     <= '1';
@@ -560,7 +561,7 @@ begin
         -- most 7 bits + zero pad + optional MSB stuff '0') and runs in
         -- isolation from the main 4-slot chain, so it does not extend
         -- the main-cycle critical path.
-        if iStall = '0' then
+        if iReady = '1' then
           vHoldBits := to_integer(sHoldBits);
           vPadByte  := (others => '0');
           if sPrevFF = '1' then
@@ -758,7 +759,7 @@ begin
         vConsumed   := 0;
         vEmitLastFF := vPrevFF;
 
-        if iStall = '0' then
+        if iReady = '1' then
           for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
             if vHoldBits >= vCumu(i) then
               vEmitBytes  := i + 1;
@@ -801,7 +802,7 @@ begin
         -- reads those regs and assembles the padded byte combinationally
         -- (see the elsif sDrainPending branch). Keeping the assembly out
         -- of this cycle removes 4-5 LUT levels from the main critical path.
-        if iStall = '0'
+        if iReady = '1'
           and vHoldLast = '1'
           and vHoldBits < 8
           and (vHoldBits > 0 or vPrevFF = '1') then
