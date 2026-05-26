@@ -32,6 +32,8 @@ package Common is
   -- Internal ----------------------------------------------------------------------------
   constant CO_SIGN_POS : std_logic := '0';
   constant CO_SIGN_NEG : std_logic := '1';
+  constant CO_MIN_IMAGE_WIDTH : natural := 4;
+  constant CO_MIN_IMAGE_HEIGHT : natural := 1;
 
   -- Functions
   function math_min(a, b      : in natural) return natural;
