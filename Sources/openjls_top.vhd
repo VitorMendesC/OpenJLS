@@ -800,7 +800,7 @@ begin
       iClk    => iClk,
       iRst    => iRst,
       iWrAddr => std_logic_vector(sReg3.Q),
-      iWrEn   => sCtxWrEn and sCE1,
+      iWrEn   => sCtxWrEn and sCE3,
       iWrData => sCtxWrData,
       iRdAddr => std_logic_vector(sS2Q),
       iRdEn   => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
