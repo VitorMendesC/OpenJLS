@@ -495,14 +495,40 @@ begin
   -- Input Stage — Input register
   -------------------------------------------------------------------------------------------------------------
   process (iClk)
+    variable vImageWidthUnsi : unsigned (iImageWidth'range);
+    variable vImageHeightUnsi : unsigned (iImageHeight'range);
   begin
     if rising_edge(iClk) then
 
       if iRst = '1' then
-        sImageWidth  <= unsigned(iImageWidth);
-        sImageHeight <= unsigned(iImageHeight);
         sValid       <= '0';
         sPixel       <= (others => '0');
+
+        vImageWidthUnsi  := unsigned(iImageWidth);
+        vImageHeightUnsi := unsigned(iImageHeight);
+
+        -- Image resolution set to max value if invalid input
+        -- if the user wants MAX_IMAGE_WIDTH/HEIGHT he can leave the inputs unwired (set to 0)
+        if vImageWidthUnsi < CO_MIN_IMAGE_WIDTH then
+          assert false
+          report "iImageWidth smaller than the minimum allowed: " & integer'image(CO_MIN_IMAGE_WIDTH) & ", using max value instead: " & integer'image(MAX_IMAGE_WIDTH)
+            severity warning;
+
+          sImageWidth  <= to_unsigned(MAX_IMAGE_WIDTH, sImageWidth'length);
+        else
+          sImageWidth  <= vImageWidthUnsi;
+        end if;
+
+        -- TODO: Given how line buffer was constructed, I think 1px image height is also unsupported
+        if vImageHeightUnsi < CO_MIN_IMAGE_HEIGHT then
+          assert false
+          report "iImageHeight smaller than the minimum allowed: " & integer'image(CO_MIN_IMAGE_HEIGHT) & ", using max value instead: " & integer'image(MAX_IMAGE_HEIGHT)
+            severity warning;
+
+          sImageHeight <= to_unsigned(MAX_IMAGE_HEIGHT, sImageHeight'length);
+        else
+          sImageHeight <= vImageHeightUnsi;
+        end if;
       else
 
         if iValid = '1' and sReadyOut = '1' and sStallLogic = '0' then -- handshake
