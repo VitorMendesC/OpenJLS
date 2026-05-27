@@ -3,7 +3,7 @@ preferred_case = "lower"
 
 [libraries]
 lib.files = ['Sources/*.vhd']
-tb.files = ['Testbenches/*.vhd']
+tb.files = ['Verification/Testbenches/*.vhd']
 openlogic_base.files = ['ThirdParty/open-logic/src/base/vhdl/*.vhd']
 
 openlogic_base.is_third_party = true
