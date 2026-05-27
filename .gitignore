@@ -4,7 +4,8 @@ ThirdParty/open-logic/doc
 project_testbenches/
 sim/
 Papers/
-Verification/
+Verification/Reference\ Images
+Verification/Output
 build/
 
 # Files
