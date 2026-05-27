@@ -54,14 +54,14 @@
 --                jls_framer
 --
 -------------------------------------------------------------------------------------------------------------
+
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.log2ceil;
-
-use work.common.all;
+  use work.common.all;
 
 entity openjls_top is
   generic (
@@ -479,7 +479,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- STALL, CLOCK-ENABLE, AND READY LOGIC
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_stall_control : process (iClk) is
   begin
 
     if rising_edge(iClk) then
@@ -498,7 +498,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_stall_control;
 
   -- Pipeline stall is sourced only from byte_stuffer's FIFO (the main design
   -- buffer). Framer back-pressure is absorbed by the byte_stuffer FIFO via a
@@ -530,7 +530,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Input Stage — Input register
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_input_reg : process (iClk) is
 
     variable vImageWidthUnsi  : unsigned (iImageWidth'range);
     variable vImageHeightUnsi : unsigned (iImageHeight'range);
@@ -578,7 +578,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_input_reg;
 
   -------------------------------------------------------------------------------------------------------------
   -- Stage 1 — Line buffer + A.1 gradients + A.3 mode selection
@@ -633,7 +633,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Register 1 (Stage 1 → Stage 2)
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_reg1 : process (iClk) is
 
     variable v : t_pipeline_token;
 
@@ -674,7 +674,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_reg1;
 
   -------------------------------------------------------------------------------------------------------------
   -- Stage 2 — Regular: A.4 → A.4.1 → A.4.2
@@ -784,7 +784,7 @@ begin
     );
 
   -- Run counter register
-  process (iClk) is
+  p_run_cnt : process (iClk) is
   begin
 
     if rising_edge(iClk) then
@@ -799,7 +799,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_run_cnt;
 
   -- Stage 2 mode selection. Precedence: RI break (Golomb+raw) > raw-only.
   sS2TokenMode <= token_regular when sReg1.mode = token_regular else
@@ -905,7 +905,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Register 2 (Stage 2 → Stage 3)
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_reg2 : process (iClk) is
 
     variable v : t_pipeline_token;
 
@@ -969,7 +969,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_reg2;
 
   -------------------------------------------------------------------------------------------------------------
   -- Stage 3 — Regular: A.5 + speculative 3-chain A.6..A.9
@@ -1178,7 +1178,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Register 3 (Stage 3 → Stage 4) — carry per-mode Errval / Temp / Sign
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_reg3 : process (iClk) is
 
     variable v : t_pipeline_token;
 
@@ -1225,7 +1225,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_reg3;
 
   -------------------------------------------------------------------------------------------------------------
   -- Stage 4 — Shared A.10; regular A.12 + A.13; RI A.23
@@ -1302,7 +1302,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Register 4 (Stage 4 → Stage 5)
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_reg4 : process (iClk) is
 
     variable v : t_pipeline_token;
 
@@ -1325,7 +1325,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_reg4;
 
   -------------------------------------------------------------------------------------------------------------
   -- Stage 5 — Regular: A.11; RI: A.21 + A.22;
@@ -1388,7 +1388,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Register 5 (Stage 5 mapping → A.11_1 golomb encoder)
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_reg5 : process (iClk) is
 
     variable v : t_pipeline_token;
 
@@ -1412,7 +1412,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_reg5;
 
   u_a11_1 : entity work.a11_1_golomb_encoder(behavioral)
     generic map (
@@ -1437,7 +1437,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Register 6 (golomb encoder → bit packer)
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_reg6 : process (iClk) is
 
     variable v : t_pipeline_token;
 
@@ -1465,7 +1465,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_reg6;
 
   -------------------------------------------------------------------------------------------------------------
   -- Output — bit packer → byte stuffer → framer
@@ -1573,7 +1573,7 @@ begin
   --        framer sees iEOI='1' aligned with that beat and pushes FF D9 into
   --        the FIFO right after, latching sEndOfImage.
   -------------------------------------------------------------------------------------------------------------
-  process (iClk) is
+  p_flush_control : process (iClk) is
   begin
 
     if rising_edge(iClk) then
@@ -1584,11 +1584,11 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_flush_control;
 
   sFramerEOI <= sBsFlushDone;
 
-  process (iClk) is
+  p_image_active : process (iClk) is
   begin
 
     if rising_edge(iClk) then
@@ -1608,7 +1608,7 @@ begin
       end if;
     end if;
 
-  end process;
+  end process p_image_active;
 
   sFramerStart <= sReadyOut and sValid and not sImageActive;
 
