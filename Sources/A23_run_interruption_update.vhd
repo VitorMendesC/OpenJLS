@@ -1,31 +1,30 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
--- 
--- Create Date: 02/07/2026
--- Design Name: 
--- Module Name: A23_run_interruption_update - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:                 Code segment A.23
---                                      Update of variables for run interruption sample
--- 
-----------------------------------------------------------------------------------
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date: 02/07/2026
+  -- Design Name:
+  -- Module Name: A23_run_interruption_update - Behavioral
+  -- Project Name:
+  -- Target Devices:
+  -- Tool Versions:
+  -- Description:
+  --
+  -- Dependencies:
+  --
+  -- Revision:
+  -- Revision 0.01 - File Created
+  -- Additional Comments:                 Code segment A.23
+  --                                      Update of variables for run interruption sample
+  --
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-use work.Common.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
-
-entity A23_run_interruption_update is
+entity a23_run_interruption_update is
   generic (
     A_WIDTH     : natural := CO_AQ_WIDTH_STD;
     N_WIDTH     : natural := CO_NQ_WIDTH_STD;
@@ -34,37 +33,41 @@ entity A23_run_interruption_update is
     RESET       : natural := CO_RESET_STD
   );
   port (
-    iErrval : in signed (ERROR_WIDTH - 1 downto 0);
-    iRItype : in std_logic;
-    iAq     : in unsigned (A_WIDTH - 1 downto 0);
-    iNq     : in unsigned (N_WIDTH - 1 downto 0);
-    iNn     : in unsigned (NN_WIDTH - 1 downto 0);
-    oAq     : out unsigned (A_WIDTH - 1 downto 0);
-    oNq     : out unsigned (N_WIDTH - 1 downto 0);
-    oNn     : out unsigned (NN_WIDTH - 1 downto 0)
+    iErrVal : in    signed (ERROR_WIDTH - 1 downto 0);
+    iRiType : in    std_logic;
+    iAq     : in    unsigned (A_WIDTH - 1 downto 0);
+    iNq     : in    unsigned (N_WIDTH - 1 downto 0);
+    iNn     : in    unsigned (NN_WIDTH - 1 downto 0);
+    oAq     : out   unsigned (A_WIDTH - 1 downto 0);
+    oNq     : out   unsigned (N_WIDTH - 1 downto 0);
+    oNn     : out   unsigned (NN_WIDTH - 1 downto 0)
   );
-end A23_run_interruption_update;
+end entity a23_run_interruption_update;
 
-architecture Behavioral of A23_run_interruption_update is
+architecture behavioral of a23_run_interruption_update is
+
 begin
 
-  process (iErrval, iRItype, iAq, iNq, iNn)
+  p_ri_update : process (iErrVal, iRiType, iAq, iNq, iNn) is
+
     variable vAq : integer;
     variable vNq : integer;
     variable vNn : integer;
+
   begin
+
     vAq := to_integer(iAq);
     vNq := to_integer(iNq);
     vNn := to_integer(iNn);
 
-    if iErrval < 0 then
+    if (iErrVal < 0) then
       vNn := vNn + 1;
     end if;
 
     -- Mert 2018 Fig. 9 equivalence: A[Q] += abs(Errval) - RItype
-    vAq := vAq + abs(to_integer(iErrval)) - std_to_int(iRItype);
+    vAq := vAq + abs(to_integer(iErrVal)) - std_to_int(iRiType);
 
-    if vNq = integer(RESET) then
+    if (vNq = integer(RESET)) then
       vAq := vAq / 2;
       vNq := vNq / 2;
       vNn := vNn / 2;
@@ -75,6 +78,7 @@ begin
     oAq <= to_unsigned(vAq, oAq'length);
     oNq <= to_unsigned(vNq, oNq'length);
     oNn <= to_unsigned(vNn, oNn'length);
-  end process;
 
-end Behavioral;
+  end process p_ri_update;
+
+end architecture behavioral;

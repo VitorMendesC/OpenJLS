@@ -1,43 +1,44 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
--- 
--- Create Date: 08/24/2025 02:31:55 PM
--- Design Name: 
--- Module Name: prediction_correction - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description:                       
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:                 Code segment A.6
---                                      Prediction correction from the bias
--- 
-----------------------------------------------------------------------------------
-use work.Common.all;
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date: 08/24/2025 02:31:55 PM
+  -- Design Name:
+  -- Module Name: prediction_correction - Behavioral
+  -- Project Name:
+  -- Target Devices:
+  -- Tool Versions:
+  -- Description:
+  --
+  -- Dependencies:
+  --
+  -- Revision:
+  -- Revision 0.01 - File Created
+  -- Additional Comments:                 Code segment A.6
+  --                                      Prediction correction from the bias
+  --
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
-entity A6_prediction_correction is
+entity a6_prediction_correction is
   generic (
     BITNESS : natural := CO_BITNESS_STD;
     MAX_VAL : natural := CO_MAX_VAL_STD
   );
   port (
-    iPx   : in unsigned (BITNESS - 1 downto 0);
-    iSign : in std_logic;
-    iCq   : in signed (CO_CQ_WIDTH - 1 downto 0);
-    oPx   : out unsigned (BITNESS - 1 downto 0)
+    iPx   : in    unsigned (BITNESS - 1 downto 0);
+    iSign : in    std_logic;
+    iCq   : in    signed (CO_CQ_WIDTH - 1 downto 0);
+    oPx   : out   unsigned (BITNESS - 1 downto 0)
   );
-end A6_prediction_correction;
+end entity a6_prediction_correction;
 
-architecture Behavioral of A6_prediction_correction is
+architecture behavioral of a6_prediction_correction is
+
   constant EXT_WIDTH : natural                        := BITNESS + 2;
   constant ZERO_S    : signed(EXT_WIDTH - 1 downto 0) := (others => '0');
   constant MAX_S     : signed(EXT_WIDTH - 1 downto 0) := to_signed(MAX_VAL, EXT_WIDTH);
@@ -57,14 +58,14 @@ begin
 
   -- Saturate add/sub results in parallel
   sAddSat <= (others => '0') when (sPxPlusCq < ZERO_S) else
-    TO_UNSIGNED(MAX_VAL, BITNESS) when (sPxPlusCq > MAX_S) else
-    unsigned(sPxPlusCq(BITNESS - 1 downto 0));
+             TO_UNSIGNED(MAX_VAL, BITNESS) when (sPxPlusCq > MAX_S) else
+             unsigned(sPxPlusCq(BITNESS - 1 downto 0));
   sSubSat <= (others => '0') when (sPxMinusCq < ZERO_S) else
-    TO_UNSIGNED(MAX_VAL, BITNESS) when (sPxMinusCq > MAX_S) else
-    unsigned(sPxMinusCq(BITNESS - 1 downto 0));
+             TO_UNSIGNED(MAX_VAL, BITNESS) when (sPxMinusCq > MAX_S) else
+             unsigned(sPxMinusCq(BITNESS - 1 downto 0));
 
   -- Final 2:1 mux by sign
   oPx <= sAddSat when iSign = CO_SIGN_POS else
-    sSubSat;
+         sSubSat;
 
-end Behavioral;
+end architecture behavioral;

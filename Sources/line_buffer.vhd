@@ -1,43 +1,43 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
---
--- Create Date:
--- Module Name: line_buffer - Behavioral
--- Description:
---
--- Notes:
---              Stores one row of pixels on FIFO and provides the four T.87 causal
---              context neighbors for each pixel, where x is the current pixel:
---
---                  c  b  d
---                  a  x  
---
---              a = left neighbor        (same row, col-1)
---              b = upper neighbor       (previous row, col)
---              c = upper-left neighbor  (previous row, col-1)
---              d = upper-right neighbor (previous row, col+1)
---
---              Border conditions (T.87 A.2.1):
---                First row      : b = c = d = 0
---                Col 0 (rows>0) : a = Rb = first pixel of previous row
---                                 c = Ra from start of previous row
---                                   = first pixel of the row before that
---                Col W-1        : d = b (replicate last pixel of previous row)
---
---
--- Assumptions:
---              iImageWidth >= 3, iImageHeight >= 1.
---              iImageWidth and iImageHeight are stable for the entire image.
-----------------------------------------------------------------------------------
-use work.Common.all;
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date:
+  -- Module Name: line_buffer - Behavioral
+  -- Description:
+  --
+  -- Notes:
+  --              Stores one row of pixels on FIFO and provides the four T.87 causal
+  --              context neighbors for each pixel, where x is the current pixel:
+  --
+  --                  c  b  d
+  --                  a  x
+  --
+  --              a = left neighbor        (same row, col-1)
+  --              b = upper neighbor       (previous row, col)
+  --              c = upper-left neighbor  (previous row, col-1)
+  --              d = upper-right neighbor (previous row, col+1)
+  --
+  --              Border conditions (T.87 A.2.1):
+  --                First row      : b = c = d = 0
+  --                Col 0 (rows>0) : a = Rb = first pixel of previous row
+  --                                 c = Ra from start of previous row
+  --                                   = first pixel of the row before that
+  --                Col W-1        : d = b (replicate last pixel of previous row)
+  --
+  --
+  -- Assumptions:
+  --              iImageWidth >= 3, iImageHeight >= 1.
+  --              iImageWidth and iImageHeight are stable for the entire image.
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
 library openlogic_base;
-use openlogic_base.olo_base_pkg_math.log2ceil;
+  use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity line_buffer is
   generic (
@@ -46,28 +46,29 @@ entity line_buffer is
     BITNESS          : natural := CO_BITNESS_STD
   );
   port (
-    iClk         : in std_logic;
-    iRst         : in std_logic;
-    iImageWidth  : in unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-    iImageHeight : in unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-    iValid       : in std_logic;
-    iPixel       : in unsigned(BITNESS - 1 downto 0);
-    oA           : out unsigned(BITNESS - 1 downto 0);
-    oB           : out unsigned(BITNESS - 1 downto 0);
-    oC           : out unsigned(BITNESS - 1 downto 0);
-    oD           : out unsigned(BITNESS - 1 downto 0);
-    oValid       : out std_logic;
-    oEOL         : out std_logic; -- end of line
-    oEOI         : out std_logic  -- end of image
+    iClk         : in    std_logic;
+    iRst         : in    std_logic;
+    iImageWidth  : in    unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+    iImageHeight : in    unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+    iValid       : in    std_logic;
+    iPixel       : in    unsigned(BITNESS - 1 downto 0);
+    oA           : out   unsigned(BITNESS - 1 downto 0);
+    oB           : out   unsigned(BITNESS - 1 downto 0);
+    oC           : out   unsigned(BITNESS - 1 downto 0);
+    oD           : out   unsigned(BITNESS - 1 downto 0);
+    oValid       : out   std_logic;
+    oEol         : out   std_logic; -- end of line
+    oEoi         : out   std_logic  -- end of image
   );
 end entity line_buffer;
 
-architecture Behavioral of line_buffer is
+architecture behavioral of line_buffer is
 
   constant COL_WIDTH : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
   constant ROW_WIDTH : natural := log2ceil(MAX_IMAGE_HEIGHT + 1);
 
-  type fifo_state_t is (PRELOAD, WAIT_END_FIRST_ROW, NOMINAL);
+  type fifo_state_t is (preload, wait_end_first_row, nominal);
+
   signal sFifoState : fifo_state_t;
 
   signal sFifoOutReady       : std_logic;
@@ -84,8 +85,8 @@ architecture Behavioral of line_buffer is
   signal sRowCounter         : unsigned(ROW_WIDTH - 1 downto 0);
   signal sIsLastCol          : boolean;
   signal sIsLastRow          : boolean;
-  signal sIsEOI              : boolean;
-  signal sIsEOL              : boolean;
+  signal sIsEoi              : boolean;
+  signal sIsEol              : boolean;
   signal sIsFifoOutHandshake : boolean;
   signal sIsFirstCol         : boolean;
   signal sPreloadCounter     : unsigned(1 downto 0);
@@ -93,60 +94,60 @@ architecture Behavioral of line_buffer is
 begin
 
   -- Combinatorial process ----------------------------------------------------------------
-  comb_proc : process (all)
+  comb_proc : process (all) is
   begin
 
     oValid              <= iValid;
     sIsLastCol          <= sColCounter = iImageWidth - 1;
     sIsLastRow          <= sRowCounter = iImageHeight - 1;
     sIsFirstCol         <= sColCounter = 0;
-    sIsEOL              <= sIsLastCol and iValid = '1';
-    sIsEOI              <= sIsLastCol and sIsLastRow and iValid = '1';
-    oEOI                <= bool2bit(sIsEOI);
-    oEOL                <= bool2bit(sIsEOL);
+    sIsEol              <= sIsLastCol and iValid = '1';
+    sIsEoi              <= sIsLastCol and sIsLastRow and iValid = '1';
+    oEoi                <= bool2bit(sIsEoi);
+    oEol                <= bool2bit(sIsEol);
     sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
 
     -- Read FIFO logic ------------------------------------------------------
-    sFifoOutReady <= '1' when sFifoState = PRELOAD else
-      iValid when sFifoState = NOMINAL else
-      '0';
+    sFifoOutReady <= '1' when sFifoState = preload else
+                     iValid when sFifoState = nominal else
+                     '0';
 
     -- Corner case handling for border conditions (T.87 A.2.1) --------------
-    if sRowCounter = 0 then -- First row: b = c = d = 0
+    if (sRowCounter = 0) then                                          -- First row: b = c = d = 0
       oB <= (others => '0');
       oC <= (others => '0');
       oD <= (others => '0');
     else
       oB <= sB;
-      if sIsFirstCol then
-        oC <= sBorderC; -- Col 0: c = Ra from start of previous row
+      if (sIsFirstCol) then
+        oC <= sBorderC;                                                -- Col 0: c = Ra from start of previous row
       else
         oC <= sC;
       end if;
 
-      if sIsLastCol then
-        oD <= sB; -- Last col: replicate last pixel of previous row (= b)
+      if (sIsLastCol) then
+        oD <= sB;                                                      -- Last col: replicate last pixel of previous row (= b)
       else
         oD <= sD;
       end if;
     end if;
 
-    if sIsFirstCol then
-      oA <= sB; -- First col: replicate first pixel of previous row (= b)
+    if (sIsFirstCol) then
+      oA <= sB;                                                        -- First col: replicate first pixel of previous row (= b)
     else
       oA <= sA;
     end if;
 
-  end process; ----------------------------------------------------------------------------
+  end process comb_proc; ----------------------------------------------------------------------------
 
   -- Clocked Process ----------------------------------------------------------------------
-  clocked_proc : process (iClk)
+  clocked_proc : process (iClk) is
   begin
 
     if rising_edge(iClk) then
-      if iRst = '1' then
+      if (iRst = '1') then
         sPreloadCounter <= (others => '0');
-        sFifoState      <= PRELOAD;
+        sFifoState      <= preload;
 
         sColCounter <= (others => '0');
         sRowCounter <= (others => '0');
@@ -156,49 +157,50 @@ begin
         sD       <= (others => '0');
         sA       <= (others => '0');
         sBorderC <= (others => '0');
-
       else
-
         -- FIFO control FSM ----------------------------
         -- sFifoOutReady is controlled combinationally using these states
         case sFifoState is
 
-          when PRELOAD =>
+          when preload =>
+
             -- When FIFO receives the first pixels it loads them into registers, preparing for nominal operation
             -- Only loads b and d, since c is out of image
 
-            if sIsFifoOutHandshake then
+            if (sIsFifoOutHandshake) then
               sPreloadCounter <= sPreloadCounter + 1;
-              if sPreloadCounter = 1 then
-                sFifoState <= WAIT_END_FIRST_ROW;
+              if (sPreloadCounter = 1) then
+                sFifoState <= wait_end_first_row;
 
-                if sIsEOL then -- needs this check to work with images with width=4 (Annex H.3 test image)
-                  sFifoState <= NOMINAL;
+                if (sIsEol) then                           -- needs this check to work with images with width=4 (Annex H.3 test image)
+                  sFifoState <= nominal;
                 end if;
               end if;
             end if;
 
-          when WAIT_END_FIRST_ROW =>
+          when wait_end_first_row =>
+
             -- Nominal operation starts only on second row, since first row has no valid context
-            if sIsEOL then
-              sFifoState <= NOMINAL;
+            if (sIsEol) then
+              sFifoState <= nominal;
             end if;
 
-          when NOMINAL =>
+          when nominal =>
+
             -- On valid operation, every new pixel steps the context window by reading a new neighbor pixels and shifting the current ones
 
-            if sIsEOI then
-              sFifoState      <= PRELOAD;
+            if (sIsEoi) then
+              sFifoState      <= preload;
               sPreloadCounter <= (others => '0');
             end if;
 
         end case;
 
         -- Counters -------------------------------------
-        if iValid = '1' then
-          if sIsLastCol then
+        if (iValid = '1') then
+          if (sIsLastCol) then
             sColCounter <= (others => '0');
-            if sIsLastRow then
+            if (sIsLastRow) then
               sRowCounter <= (others => '0');
             else
               sRowCounter <= sRowCounter + 1;
@@ -210,55 +212,54 @@ begin
 
         -- Output control -------------------------------
         -- Shift context window
-        if sIsFifoOutHandshake then
+        if (sIsFifoOutHandshake) then
           sC <= sB;
           sB <= sD;
           sD <= unsigned(sFifoOutData);
-        elsif sFifoState = NOMINAL and iValid = '1' then
+        elsif (sFifoState = nominal and iValid = '1') then
           -- FIFO empty (last row, end of row): sD has no new data but sB/sC still step
           sC <= sB;
           sB <= sD;
         end if;
 
-        if iValid = '1' then
+        if (iValid = '1') then
           -- Store last pixel
           sA <= iPixel;
 
-          if sIsFirstCol then
-            sBorderC <= sB; -- Capture sB at col 0 for use as c border at col 0 of next ro
+          if (sIsFirstCol) then
+            sBorderC <= sB;                                -- Capture sB at col 0 for use as c border at col 0 of next ro
           end if;
         end if;
 
-        if sIsEOI then
+        if (sIsEoi) then
           sB       <= (others => '0');
           sC       <= (others => '0');
           sD       <= (others => '0');
           sA       <= (others => '0');
           sBorderC <= (others => '0');
         end if;
-
       end if;
     end if;
-  end process; -----------------------------------------------------------------------------
+
+  end process clocked_proc; -----------------------------------------------------------------------------
 
   -- Instance FIFO -------------------------------------------------------------------------
-  fifo_inst : entity openlogic_base.olo_base_fifo_sync
-    generic map(
-      Width_g       => BITNESS,
-      Depth_g       => MAX_IMAGE_WIDTH,
-      RamBehavior_g => "RBW"
+  fifo_inst : entity openlogic_base.olo_base_fifo_sync(rtl)
+    generic map (
+      WIDTH_G       => BITNESS,
+      DEPTH_G       => MAX_IMAGE_WIDTH,
+      RAMBEHAVIOR_G => "RBW"
     )
-    port map
-    (
+    port map (
       Clk       => iClk,
       Rst       => iRst,
       In_Data   => std_logic_vector(iPixel),
       In_Valid  => iValid and not bool2bit(sIsLastRow),
-      Out_Ready => sFifoOutReady, -- Read FIFO if not empty (valid)
+      Out_Ready => sFifoOutReady,
       Out_Data  => sFifoOutData,
       Out_Valid => sFifoOutValid,
       Full      => sFifoFull,
       Empty     => sFifoEmpty
     );
 
-end architecture Behavioral;
+end architecture behavioral;

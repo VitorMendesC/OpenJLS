@@ -1,33 +1,33 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
--- 
--- Create Date:
--- Design Name: 
--- Module Name: A12_variables_update - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
---
--- Assumptions:
---                 B_WIDTH  >=  ERROR_WIDTH
---                 A_WIDTH  >=  ERROR_WIDTH
--- 
-----------------------------------------------------------------------------------
-use work.Common.all;
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date:
+  -- Design Name:
+  -- Module Name: A12_variables_update - Behavioral
+  -- Project Name:
+  -- Target Devices:
+  -- Tool Versions:
+  -- Description:
+  --
+  -- Dependencies:
+  --
+  -- Revision:
+  -- Revision 0.01 - File Created
+  -- Additional Comments:
+  --
+  -- Assumptions:
+  --                 B_WIDTH  >=  ERROR_WIDTH
+  --                 A_WIDTH  >=  ERROR_WIDTH
+  --
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
-entity A12_variables_update is
+entity a12_variables_update is
   generic (
     ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
     A_WIDTH     : natural := CO_AQ_WIDTH_STD;
@@ -36,18 +36,18 @@ entity A12_variables_update is
     RESET       : natural := CO_RESET_STD
   );
   port (
-    iErrorVal : in signed (ERROR_WIDTH - 1 downto 0);
-    iAq       : in unsigned (A_WIDTH - 1 downto 0);
-    iBq       : in signed (B_WIDTH - 1 downto 0);
-    iNq       : in unsigned (N_WIDTH - 1 downto 0);
+    iErrorVal : in    signed (ERROR_WIDTH - 1 downto 0);
+    iAq       : in    unsigned (A_WIDTH - 1 downto 0);
+    iBq       : in    signed (B_WIDTH - 1 downto 0);
+    iNq       : in    unsigned (N_WIDTH - 1 downto 0);
 
-    oAq : out unsigned (A_WIDTH - 1 downto 0);
-    oBq : out signed (B_WIDTH - 1 downto 0);
-    oNq : out unsigned (N_WIDTH - 1 downto 0)
+    oAq : out   unsigned (A_WIDTH - 1 downto 0);
+    oBq : out   signed (B_WIDTH - 1 downto 0);
+    oNq : out   unsigned (N_WIDTH - 1 downto 0)
   );
-end entity;
+end entity a12_variables_update;
 
-architecture rtl of A12_variables_update is
+architecture rtl of a12_variables_update is
 
   signal sDoRescale      : std_logic;
   signal sErrorAbsExtend : unsigned(A_WIDTH - 1 downto 0);
@@ -61,7 +61,7 @@ architecture rtl of A12_variables_update is
 begin
 
   sDoRescale <= '1' when (iNq = to_unsigned(RESET, iNq'length)) else
-    '0';
+                '0';
 
   sErrorAbsExtend <= resize(unsigned(abs(iErrorVal)), A_WIDTH);
 
@@ -75,10 +75,10 @@ begin
   sNRescale <= shift_right(iNq, 1) + 1;
 
   oAq <= sARescale when sDoRescale = '1' else
-    sAqNew;
+         sAqNew;
   oBq <= sBRescale when sDoRescale = '1' else
-    sBqNew;
+         sBqNew;
   oNq <= sNRescale when sDoRescale = '1' else
-    sNqNew;
+         sNqNew;
 
-end architecture;
+end architecture rtl;

@@ -1,53 +1,55 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
--- 
--- Create Date: 02/07/2026
--- Design Name: 
--- Module Name: A22_errval_mapping - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:                 Code segment A.22
---                                      Errval mapping for run interruption sample
--- 
-----------------------------------------------------------------------------------
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date: 02/07/2026
+  -- Design Name:
+  -- Module Name: A22_errval_mapping - Behavioral
+  -- Project Name:
+  -- Target Devices:
+  -- Tool Versions:
+  -- Description:
+  --
+  -- Dependencies:
+  --
+  -- Revision:
+  -- Revision 0.01 - File Created
+  -- Additional Comments:                 Code segment A.22
+  --                                      Errval mapping for run interruption sample
+  --
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-use work.Common.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
-
-entity A22_errval_mapping is
+entity a22_errval_mapping is
   generic (
     ERROR_WIDTH         : natural := CO_ERROR_VALUE_WIDTH_STD;
     MAPPED_ERRVAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iErrval   : in signed (ERROR_WIDTH - 1 downto 0);
-    iRItype   : in std_logic;
-    iMap      : in std_logic;
-    oEMErrval : out unsigned (MAPPED_ERRVAL_WIDTH - 1 downto 0)
+    iErrval   : in    signed (ERROR_WIDTH - 1 downto 0);
+    iRiType   : in    std_logic;
+    iMap      : in    std_logic;
+    oEmErrVal : out   unsigned (MAPPED_ERRVAL_WIDTH - 1 downto 0)
   );
-end A22_errval_mapping;
+end entity a22_errval_mapping;
 
-architecture Behavioral of A22_errval_mapping is
+architecture behavioral of a22_errval_mapping is
+
 begin
 
-  process (iErrval, iRItype, iMap)
+  p_errval_map : process (iErrval, iRiType, iMap) is
+
     variable vRI       : integer;
     variable vMap      : integer;
     variable vEmErrval : integer;
+
   begin
 
-    vRi  := std_to_int(iRItype);
+    vRI  := std_to_int(iRiType);
     vMap := std_to_int(iMap);
 
     vEmErrval := 2 * abs(to_integer(iErrval)) - vRI - vMap;
@@ -56,11 +58,12 @@ begin
     -- (A.21's iNn/iNq go through an extra delta via sNnExt/sNqExt, so iMap
     -- may briefly trail iErrval/iRItype before A.21's process re-evaluates).
     -- The settled value is always non-negative when inputs are coherent.
-    if vEmErrval < 0 then
+    if (vEmErrval < 0) then
       vEmErrval := 0;
     end if;
 
-    oEMErrval <= to_unsigned(vEmErrval, oEMErrval'length);
-  end process;
+    oEmErrVal <= to_unsigned(vEmErrval, oEmErrVal'length);
 
-end Behavioral;
+  end process p_errval_map;
+
+end architecture behavioral;

@@ -19,6 +19,27 @@ rule:
     case: 'camelCase'
   port_map_002:
     case: 'camelCase'
+    case_exceptions:
+      - 'Clk'
+      - 'Rst'
+      - 'In_Data'
+      - 'In_Valid'
+      - 'In_Ready'
+      - 'Out_Data'
+      - 'Out_Valid'
+      - 'Out_Ready'
+      - 'Full'
+      - 'Empty'
+      - 'AlmFull'
+      - 'AlmEmpty'
+      - 'Rd_Clk'
+      - 'Rd_Addr'
+      - 'Rd_Ena'
+      - 'Rd_Data'
+      - 'Wr_Addr'
+      - 'Wr_Ena'
+      - 'Wr_Be'
+      - 'Wr_Data'
   variable_004:
     case: 'camelCase'
   alias_declaration_502:

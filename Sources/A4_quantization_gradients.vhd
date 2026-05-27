@@ -1,89 +1,98 @@
 ----------------------------------------------------------------------------------
 -- Company:
 -- Engineer:    Vitor Mendes Camilo
--- 
+--
 -- Create Date: 08/18/2025 10:55:58 PM
--- Design Name: 
+-- Design Name:
 -- Module Name: quantization_gradients - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description:                             
--- 
--- Dependencies: 
--- 
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
 -- Revision:
 -- Revision 0.01 - File Created
 -- Additional Comments:                     Code segment A.4
 --                                          Quantization of the gradients
---                      
+--
 ----------------------------------------------------------------------------------
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
-use Work.Common.all;
 
-entity A4_quantization_gradients is
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.common.all;
+
+entity a4_quantization_gradients is
   generic (
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
     MAX_VAL : natural               := CO_MAX_VAL_STD
   );
   port (
-    iD1 : in signed (BITNESS downto 0);
-    iD2 : in signed (BITNESS downto 0);
-    iD3 : in signed (BITNESS downto 0);
-    oQ1 : out signed (3 downto 0);
-    oQ2 : out signed (3 downto 0);
-    oQ3 : out signed (3 downto 0)
+    iD1 : in    signed (BITNESS downto 0);
+    iD2 : in    signed (BITNESS downto 0);
+    iD3 : in    signed (BITNESS downto 0);
+    oQ1 : out   signed (3 downto 0);
+    oQ2 : out   signed (3 downto 0);
+    oQ3 : out   signed (3 downto 0)
   );
-end A4_quantization_gradients;
+end entity a4_quantization_gradients;
 
-architecture Behavioral of A4_quantization_gradients is
+architecture behavioral of a4_quantization_gradients is
 
   -- T.87 compliant clamping function
+
   function clamp (
     i        : integer;
     j        : integer;
-    MaxValue : integer) return integer is
+    maxvalue : integer
+  ) return integer is
   begin
-    if i > MaxValue or i < j then
+
+    if (i > maxvalue or i < j) then
       return j;
     else
       return i;
     end if;
-  end function;
+
+  end function clamp;
 
   function quantizate (
-    signal Di   : signed (BITNESS downto 0);
-    constant T1 : natural;
-    constant T2 : natural;
-    constant T3 : natural
+    signal di   : signed (BITNESS downto 0);
+    constant t1 : natural;
+    constant t2 : natural;
+    constant t3 : natural
   ) return signed is
-    variable Qi     : signed (3 downto 0);
+
+    variable qi     : signed (3 downto 0);
     variable vAbsQi : natural;
     variable vSign  : std_logic;
+
   begin
-    vAbsQi := abs(to_integer(Di));
-    vSign  := Di(Di'high);
 
-    if vAbsQi = 0 then
-      Qi := to_signed(0, Qi'length);
-    elsif vAbsQi < T1 then
-      Qi := to_signed(1, Qi'length);
-    elsif vAbsQi < T2 then
-      Qi := to_signed(2, Qi'length);
-    elsif vAbsQi < T3 then
-      Qi := to_signed(3, Qi'length);
+    vAbsQi := abs(to_integer(di));
+    vSign  := di(di'high);
+
+    if (vAbsQi = 0) then
+      qi := to_signed(0, qi'length);
+    elsif (vAbsQi < t1) then
+      qi := to_signed(1, qi'length);
+    elsif (vAbsQi < t2) then
+      qi := to_signed(2, qi'length);
+    elsif (vAbsQi < t3) then
+      qi := to_signed(3, qi'length);
     else
-      Qi := to_signed(4, Qi'length);
+      qi := to_signed(4, qi'length);
     end if;
 
-    if vSign = '1' then
-      Qi := - Qi;
+    if (vSign = '1') then
+      qi := - qi;
     end if;
 
-    return Qi;
-  end function;
+    return qi;
+
+  end function quantizate;
 
   constant BASIC_T1 : natural := 3;
   constant BASIC_T2 : natural := 7;
@@ -99,4 +108,4 @@ begin
   oQ2 <= quantizate(iD2, T1, T2, T3);
   oQ3 <= quantizate(iD3, T1, T2, T3);
 
-end Behavioral;
+end architecture behavioral;

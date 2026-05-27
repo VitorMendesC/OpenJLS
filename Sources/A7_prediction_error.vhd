@@ -1,47 +1,46 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
--- 
--- Create Date: 08/24/2025 03:24:03 PM
--- Design Name: 
--- Module Name: prediction_error - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:             Code segment A.7
---                                  Computation of prediction error
--- 
-----------------------------------------------------------------------------------
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date: 08/24/2025 03:24:03 PM
+  -- Design Name:
+  -- Module Name: prediction_error - Behavioral
+  -- Project Name:
+  -- Target Devices:
+  -- Tool Versions:
+  -- Description:
+  --
+  -- Dependencies:
+  --
+  -- Revision:
+  -- Revision 0.01 - File Created
+  -- Additional Comments:             Code segment A.7
+  --                                  Computation of prediction error
+  --
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-use work.Common.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
-
-entity A7_prediction_error is
+entity a7_prediction_error is
   generic (
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
-    iIx       : in unsigned (BITNESS - 1 downto 0);
-    iPx       : in unsigned (BITNESS - 1 downto 0);
-    iSign     : in std_logic;
-    oErrorVal : out signed (BITNESS downto 0)
+    iIx       : in    unsigned (BITNESS - 1 downto 0);
+    iPx       : in    unsigned (BITNESS - 1 downto 0);
+    iSign     : in    std_logic;
+    oErrorVal : out   signed (BITNESS downto 0)
   );
-end A7_prediction_error;
+end entity a7_prediction_error;
 
-architecture Behavioral of A7_prediction_error is
+architecture behavioral of a7_prediction_error is
+
 begin
 
-  oErrorVal <= signed('0' & iIx) - signed('0' & iPx) when iSign = CO_SIGN_POS
-    else
-    signed('0' & iPx) - signed('0' & iIx);
+  oErrorVal <= signed('0' & iIx) - signed('0' & iPx) when iSign = CO_SIGN_POS else
+               signed('0' & iPx) - signed('0' & iIx);
 
-end Behavioral;
+end architecture behavioral;

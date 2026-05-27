@@ -1,30 +1,30 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:    Vitor Mendes Camilo
--- 
--- Create Date: 08/30/2025 12:02:02 AM
--- Design Name: 
--- Module Name: A11_error_mapping - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision: 
--- Revision 0.01 - File Created
--- Additional Comments:             Code segment A.11
---                                  Error mapping to non-negative values
---
-----------------------------------------------------------------------------------
-use work.Common.all;
+  -- Company:
+  -- Engineer:    Vitor Mendes Camilo
+  --
+  -- Create Date: 08/30/2025 12:02:02 AM
+  -- Design Name:
+  -- Module Name: A11_error_mapping - Behavioral
+  -- Project Name:
+  -- Target Devices:
+  -- Tool Versions:
+  -- Description:
+  --
+  -- Dependencies:
+  --
+  -- Revision:
+  -- Revision 0.01 - File Created
+  -- Additional Comments:             Code segment A.11
+  --                                  Error mapping to non-negative values
+  --
+  ----------------------------------------------------------------------------------
+  use work.common.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
-entity A11_error_mapping is
+entity a11_error_mapping is
   generic (
     N_WIDTH                : natural := CO_NQ_WIDTH_STD;
     B_WIDTH                : natural := CO_BQ_WIDTH_STD;
@@ -33,15 +33,16 @@ entity A11_error_mapping is
     MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iK              : in unsigned (K_WIDTH - 1 downto 0);
-    iBq             : in signed (B_WIDTH - 1 downto 0);
-    iNq             : in unsigned (N_WIDTH - 1 downto 0);
-    iErrorVal       : in signed (ERROR_WIDTH - 1 downto 0);
-    oMappedErrorVal : out unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0)
+    iK              : in    unsigned (K_WIDTH - 1 downto 0);
+    iBq             : in    signed (B_WIDTH - 1 downto 0);
+    iNq             : in    unsigned (N_WIDTH - 1 downto 0);
+    iErrorVal       : in    signed (ERROR_WIDTH - 1 downto 0);
+    oMappedErrorVal : out   unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0)
   );
-end A11_error_mapping;
+end entity a11_error_mapping;
 
-architecture Behavioral of A11_error_mapping is
+architecture behavioral of a11_error_mapping is
+
   -- Control flags
   signal sSpecialMap          : std_logic;
   signal sErrEqualGreaterZero : std_logic;
@@ -66,11 +67,11 @@ begin
   sNExt <= resize(signed(iNq), sBExt'length);
 
   sSpecialMap <= '1' when (iK = 0 and 2 * sBExt <= - sNExt) else
-    '0';
+                 '0';
 
   -- Error sign flag
   sErrEqualGreaterZero <= '1' when iErrorVal >= 0 else
-    '0';
+                          '0';
 
   -- Magnitudes for mapping
   sErrU    <= resize(unsigned(iErrorVal), sErrU'length); -- Only used when ErrorVal >= 0, conversion is safe
@@ -86,8 +87,8 @@ begin
 
   -- Final selection (purely combinational)
   oMappedErrorVal <= sMapErrorSpecialPos when (sSpecialMap = '1' and sErrEqualGreaterZero = '1') else
-    sMapErrorSpecialNeg when (sSpecialMap = '1' and sErrEqualGreaterZero = '0') else
-    sMapErrorRegPos when (sSpecialMap = '0' and sErrEqualGreaterZero = '1') else
-    sMapErrorRegNeg; -- last case (Errval<0)
+                     sMapErrorSpecialNeg when (sSpecialMap = '1' and sErrEqualGreaterZero = '0') else
+                     sMapErrorRegPos when (sSpecialMap = '0' and sErrEqualGreaterZero = '1') else
+                     sMapErrorRegNeg; -- last case (Errval<0)
 
-end Behavioral;
+end architecture behavioral;

@@ -213,7 +213,7 @@ architecture rtl of openjls_top is
     Rc         : unsigned(BITNESS - 1 downto 0);
     Q          : unsigned(8 downto 0);
     Sign       : std_logic;
-    RItype     : std_logic;
+    RiType     : std_logic;
     Aq         : unsigned(A_WIDTH - 1 downto 0);
     Bq         : signed(B_WIDTH - 1 downto 0);
     Cq         : signed(C_WIDTH - 1 downto 0);
@@ -236,7 +236,7 @@ architecture rtl of openjls_top is
     Rc         => (others => '0'),
     Q          => (others => '0'),
     Sign       => '0',
-    RItype     => '0',
+    RiType     => '0',
     Aq         => (others => '0'),
     Bq         => (others => '0'),
     Cq         => (others => '0'),
@@ -601,8 +601,8 @@ begin
       oC           => sLbRc,
       oD           => sLbRd,
       oValid       => sLbValid,
-      oEOL         => sLbEol,
-      oEOI         => sLbEoi
+      oEol         => sLbEol,
+      oEoi         => sLbEoi
     );
 
   u_a1 : entity work.a1_gradient_comp(behavioral)
@@ -724,7 +724,7 @@ begin
       iRa          => sReg1.Ra(BITNESS - 1 downto 0),
       iIx          => sReg1.Ix(BITNESS - 1 downto 0),
       iRunCnt      => sRunCntReg,
-      iEOL         => sReg1Eol,
+      iEol         => sReg1Eol,
       oRunCnt      => sS2RunCnt,
       oRunHit      => sS2RunHit,
       oRunContinue => sS2RunContinue
@@ -742,7 +742,7 @@ begin
       iClk          => iClk,
       iRst          => iRst,
       iCE           => not sStallLogic,
-      iEOI          => sReg1Eoi,
+      iEoi          => sReg1Eoi,
       iRunCnt       => sS2RunCnt,
       iRunHit       => sS2RunHit,
       iRunContinue  => sS2RunContinue,
@@ -753,10 +753,10 @@ begin
       oRawValid     => sS2RawValid,
       oRawSuffixLen => sS2RawLen,
       oRawSuffixVal => sS2RawVal,
-      oRIValid      => sS2RiValid,
-      oRIIx         => sS2RiIx,
-      oRIRa         => sS2RiRa,
-      oRIRb         => sS2RiRb,
+      oRiValid      => sS2RiValid,
+      oRiIx         => sS2RiIx,
+      oRiRa         => sS2RiRa,
+      oRiRb         => sS2RiRb,
       oRiRunIndex   => sS2RiRunIndex,
       oInRunNext    => sS1InRunNext
     );
@@ -941,7 +941,7 @@ begin
             v.Ix         := sS2RiIx;
             v.Ra         := sS2RiRa;
             v.Rb         := sS2RiRb;
-            v.RItype     := sS2RItype;
+            v.RiType     := sS2RItype;
             v.Errval     := resize(sS2RiErr18, v.Errval'length);
             v.RawLen     := resize(sS2RawLen, v.RawLen'length);
             v.RawVal     := resize(sS2RawVal, v.RawVal'length);
@@ -1155,7 +1155,7 @@ begin
     )
     port map (
       iErrval => sReg2.Errval(BITNESS downto 0),
-      iRItype => sReg2.RItype,
+      iRItype => sReg2.RiType,
       iRa     => sReg2.Ra(BITNESS - 1 downto 0),
       iRb     => sReg2.Rb(BITNESS - 1 downto 0),
       oErrval => sS3RiErr19,
@@ -1169,7 +1169,7 @@ begin
       N_WIDTH => N_WIDTH
     )
     port map (
-      iRItype => sReg2.RItype,
+      iRItype => sReg2.RiType,
       iAq     => sS3Aq,
       iNq     => sS3Nq,
       oTemp   => sS3RiTemp
@@ -1290,7 +1290,7 @@ begin
     )
     port map (
       iErrVal => sReg3.Errval(BITNESS downto 0),
-      iRItype => sReg3.RItype,
+      iRItype => sReg3.RiType,
       iAq     => sReg3.Aq,
       iNq     => sReg3.Nq,
       iNn     => sReg3.Nn,
@@ -1365,7 +1365,7 @@ begin
   -- across delta-cycle transitions when sS5RiMap lags sReg4.
   sA22Errval <= sReg4.Errval(BITNESS downto 0) when sReg4.mode = token_run_interruption else
                 (others => '0');
-  sA22RItype <= sReg4.RItype when sReg4.mode = token_run_interruption else
+  sA22RItype <= sReg4.RiType when sReg4.mode = token_run_interruption else
                 '0';
   sA22Map    <= sS5RiMap when sReg4.mode = token_run_interruption else
                 '0';
@@ -1379,7 +1379,7 @@ begin
       iErrval   => sA22Errval,
       iRItype   => sA22RItype,
       iMap      => sA22Map,
-      oEMErrval => sS5RiEmErrval
+      oEmErrVal => sS5RiEmErrval
     );
 
   sS5GolMErr <= sS5MErrval when sReg4.mode = token_regular else
@@ -1538,7 +1538,7 @@ begin
       iStart       => sFramerStart,
       iImageWidth  => sImageWidth,
       iImageHeight => sImageHeight,
-      iEOI         => sFramerEoi,
+      iEoi         => sFramerEoi,
       iWord        => sBsWord,
       iValid       => sBsWordV,
       iByteEnable  => sBsValidB,
@@ -1645,7 +1645,7 @@ begin
                    " Ra=" & integer'image(to_integer(sReg6.Ra)) &
                    " Rb=" & integer'image(to_integer(sReg6.Rb)) &
                    " Q=" & integer'image(to_integer(sReg6.Q)) &
-                   " RItype=" & std_logic'image(sReg6.RItype) &
+                   " RItype=" & std_logic'image(sReg6.RiType) &
                    " Errval=" & integer'image(to_integer(sReg6.Errval)) &
                    " Aq=" & integer'image(to_integer(sReg6.Aq)) &
                    " Nq=" & integer'image(to_integer(sReg6.Nq)) &
