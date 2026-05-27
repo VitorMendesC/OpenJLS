@@ -33,11 +33,11 @@ entity a11_error_mapping is
     MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iK              : in    unsigned (K_WIDTH - 1 downto 0);
-    iBq             : in    signed (B_WIDTH - 1 downto 0);
-    iNq             : in    unsigned (N_WIDTH - 1 downto 0);
-    iErrorVal       : in    signed (ERROR_WIDTH - 1 downto 0);
-    oMappedErrorVal : out   unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0)
+    iK                     : in    unsigned (K_WIDTH - 1 downto 0);
+    iBq                    : in    signed (B_WIDTH - 1 downto 0);
+    iNq                    : in    unsigned (N_WIDTH - 1 downto 0);
+    iErrorVal              : in    signed (ERROR_WIDTH - 1 downto 0);
+    oMappedErrorVal        : out   unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0)
   );
 end entity a11_error_mapping;
 
@@ -48,16 +48,16 @@ architecture behavioral of a11_error_mapping is
   signal sErrEqualGreaterZero : std_logic;
 
   -- Width-extended compare for 2*B <= -N (avoid overflow and mismatched lengths)
-  signal sBExt        : signed(B_WIDTH downto 0);
-  signal sNExt        : signed(B_WIDTH downto 0);
-  signal sErrorValExt : signed((2 * MAPPED_ERROR_VAL_WIDTH) - 1 downto 0); -- so that abs(ErrorVal) fits
+  signal sBExt                : signed(B_WIDTH downto 0);
+  signal sNExt                : signed(B_WIDTH downto 0);
+  signal sErrorValExt         : signed((2 * MAPPED_ERROR_VAL_WIDTH) - 1 downto 0); -- so that abs(ErrorVal) fits
 
   -- Precomputed mapping candidates (parallel)
-  signal sErrU, sErrAbsU     : unsigned (oMappedErrorVal'range);
-  signal sMapErrorSpecialPos : unsigned (oMappedErrorVal'range);
-  signal sMapErrorSpecialNeg : unsigned (oMappedErrorVal'range);
-  signal sMapErrorRegPos     : unsigned (oMappedErrorVal'range);
-  signal sMapErrorRegNeg     : unsigned (oMappedErrorVal'range);
+  signal sErrU, sErrAbsU      : unsigned (oMappedErrorVal'range);
+  signal sMapErrorSpecialPos  : unsigned (oMappedErrorVal'range);
+  signal sMapErrorSpecialNeg  : unsigned (oMappedErrorVal'range);
+  signal sMapErrorRegPos      : unsigned (oMappedErrorVal'range);
+  signal sMapErrorRegNeg      : unsigned (oMappedErrorVal'range);
 
 begin
 

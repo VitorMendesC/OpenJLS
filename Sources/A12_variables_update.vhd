@@ -36,14 +36,14 @@ entity a12_variables_update is
     RESET       : natural := CO_RESET_STD
   );
   port (
-    iErrorVal : in    signed (ERROR_WIDTH - 1 downto 0);
-    iAq       : in    unsigned (A_WIDTH - 1 downto 0);
-    iBq       : in    signed (B_WIDTH - 1 downto 0);
-    iNq       : in    unsigned (N_WIDTH - 1 downto 0);
+    iErrorVal   : in    signed (ERROR_WIDTH - 1 downto 0);
+    iAq         : in    unsigned (A_WIDTH - 1 downto 0);
+    iBq         : in    signed (B_WIDTH - 1 downto 0);
+    iNq         : in    unsigned (N_WIDTH - 1 downto 0);
 
-    oAq : out   unsigned (A_WIDTH - 1 downto 0);
-    oBq : out   signed (B_WIDTH - 1 downto 0);
-    oNq : out   unsigned (N_WIDTH - 1 downto 0)
+    oAq         : out   unsigned (A_WIDTH - 1 downto 0);
+    oBq         : out   signed (B_WIDTH - 1 downto 0);
+    oNq         : out   unsigned (N_WIDTH - 1 downto 0)
   );
 end entity a12_variables_update;
 

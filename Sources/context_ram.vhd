@@ -52,19 +52,19 @@ end entity context_ram;
 
 architecture behavioral of context_ram is
 
-  constant A_INIT : natural := math_max(2, (RANGE_P + 32) / 64);
-  constant B_INIT : integer := 0;
-  constant C_INIT : integer := 0;
-  constant N_INIT : natural := 1;
+  constant A_INIT      : natural := math_max(2, (RANGE_P + 32) / 64);
+  constant B_INIT      : integer := 0;
+  constant C_INIT      : integer := 0;
+  constant N_INIT      : natural := 1;
 
   -- Packed init word (A | B | C | N)
   -- For run context (A | Nn | 0 | N)
   -- Nn also initializes to 0, like B
-  constant CTX_INIT : std_logic_vector(TOTAL_WIDTH - 1 downto 0) :=
-                                                                    std_logic_vector(to_unsigned(A_INIT, A_WIDTH)) &
-                                                                    std_logic_vector(to_signed(B_INIT, B_WIDTH)) &
-                                                                    std_logic_vector(to_signed(C_INIT, C_WIDTH)) &
-                                                                    std_logic_vector(to_unsigned(N_INIT, N_WIDTH));
+  constant CTX_INIT    : std_logic_vector(TOTAL_WIDTH - 1 downto 0) :=
+                                                                       std_logic_vector(to_unsigned(A_INIT, A_WIDTH)) &
+                                                                       std_logic_vector(to_signed(B_INIT, B_WIDTH)) &
+                                                                       std_logic_vector(to_signed(C_INIT, C_WIDTH)) &
+                                                                       std_logic_vector(to_unsigned(N_INIT, N_WIDTH));
 
   signal sUseInitValue : std_logic_vector(RAM_DEPTH - 1 downto 0); -- Indicates if init value should be used for each address
   signal sUseInitReg   : std_logic;                                -- Registered flag aligning with BRAM RdLatency=1.
@@ -85,15 +85,15 @@ begin
       INITFORMAT_G    => "NONE"
     )
     port map (
-      Clk     => iClk,
-      Wr_Addr => iWrAddr,
-      Wr_Ena  => iWrEn,
-      Wr_Be   => open,
-      Wr_Data => iWrData,
-      Rd_Clk  => open,
-      Rd_Addr => iRdAddr,
-      Rd_Ena  => iRdEn,
-      Rd_Data => sBramRdData
+      Clk             => iClk,
+      Wr_Addr         => iWrAddr,
+      Wr_Ena          => iWrEn,
+      Wr_Be           => open,
+      Wr_Data         => iWrData,
+      Rd_Clk          => open,
+      Rd_Addr         => iRdAddr,
+      Rd_Ena          => iRdEn,
+      Rd_Data         => sBramRdData
     );
 
   p_init_tracker : process (iClk) is

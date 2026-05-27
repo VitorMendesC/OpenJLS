@@ -35,23 +35,23 @@ entity a15_a16_encode_run is
     RUN_CNT_WIDTH : natural := 16
   );
   port (
-    iClk : in    std_logic;
-    iRst : in    std_logic;
-    iCE  : in    std_logic;
-    iEoi : in    std_logic;
+    iClk          : in    std_logic;
+    iRst          : in    std_logic;
+    iCE           : in    std_logic;
+    iEoi          : in    std_logic;
 
     -- From A14 (combinational — no register between A14 and this stage)
-    iRunCnt      : in    unsigned(RUN_CNT_WIDTH - 1 downto 0); -- A14 oRunCnt
-    iRunHit      : in    std_logic;                            -- A14 oRunHit
-    iRunContinue : in    std_logic;                            -- A14 oRunContinue
+    iRunCnt       : in    unsigned(RUN_CNT_WIDTH - 1 downto 0); -- A14 oRunCnt
+    iRunHit       : in    std_logic;                            -- A14 oRunHit
+    iRunContinue  : in    std_logic;                            -- A14 oRunContinue
 
     -- Mode gate: only process when pipeline is in run mode
-    iModeIsRun : in    std_logic;
+    iModeIsRun    : in    std_logic;
 
     -- Pixel data for RI token (valid on break cycle)
-    iIx : in    unsigned(BITNESS - 1 downto 0);
-    iRa : in    unsigned(BITNESS - 1 downto 0);
-    iRb : in    unsigned(BITNESS - 1 downto 0);
+    iIx           : in    unsigned(BITNESS - 1 downto 0);
+    iRa           : in    unsigned(BITNESS - 1 downto 0);
+    iRb           : in    unsigned(BITNESS - 1 downto 0);
 
     -- Raw bit token: A15 '1' bits (SuffixLen=1, SuffixVal=1) and
     --               A16 break prefix (SuffixLen=J+1, SuffixVal=residual).
@@ -63,12 +63,12 @@ entity a15_a16_encode_run is
     -- Run-interruption token (break case only); carries Ix/Ra/Rb for Golomb path.
     -- oRiRunIndex is RUNindex before the A.16 decrement, used by A.22.1 to
     -- compute glimit = LIMIT - J[RUNindex] - 1.
-    oRiValid    : out   std_logic;
-    oRiIx       : out   unsigned(BITNESS - 1 downto 0);
-    oRiRa       : out   unsigned(BITNESS - 1 downto 0);
-    oRiRb       : out   unsigned(BITNESS - 1 downto 0);
-    oRiRunIndex : out   unsigned(4 downto 0);
-    oInRunNext  : out   std_logic -- Tells top level we are mid-run
+    oRiValid      : out   std_logic;
+    oRiIx         : out   unsigned(BITNESS - 1 downto 0);
+    oRiRa         : out   unsigned(BITNESS - 1 downto 0);
+    oRiRb         : out   unsigned(BITNESS - 1 downto 0);
+    oRiRunIndex   : out   unsigned(4 downto 0);
+    oInRunNext    : out   std_logic                             -- Tells top level we are mid-run
   );
 end entity a15_a16_encode_run;
 
@@ -77,14 +77,14 @@ architecture behavioral of a15_a16_encode_run is
   constant C_BOUND_WIDTH : natural := RUN_CNT_WIDTH + 1;
 
   -- Registered state
-  signal sRunIndex  : unsigned(4 downto 0);
-  signal sNextBound : unsigned(C_BOUND_WIDTH - 1 downto 0);
-  signal sInRun     : std_logic;
+  signal sRunIndex       : unsigned(4 downto 0);
+  signal sNextBound      : unsigned(C_BOUND_WIDTH - 1 downto 0);
+  signal sInRun          : std_logic;
 
   -- Next-state signals (driven combinationally, captured by clocked process)
-  signal sRunIndexNext  : unsigned(4 downto 0);
-  signal sNextBoundNext : unsigned(C_BOUND_WIDTH - 1 downto 0);
-  signal sInRunNext     : std_logic;
+  signal sRunIndexNext   : unsigned(4 downto 0);
+  signal sNextBoundNext  : unsigned(C_BOUND_WIDTH - 1 downto 0);
+  signal sInRunNext      : std_logic;
 
 begin
 

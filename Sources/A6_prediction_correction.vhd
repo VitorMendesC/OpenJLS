@@ -30,10 +30,10 @@ entity a6_prediction_correction is
     MAX_VAL : natural := CO_MAX_VAL_STD
   );
   port (
-    iPx   : in    unsigned (BITNESS - 1 downto 0);
-    iSign : in    std_logic;
-    iCq   : in    signed (CO_CQ_WIDTH - 1 downto 0);
-    oPx   : out   unsigned (BITNESS - 1 downto 0)
+    iPx     : in    unsigned (BITNESS - 1 downto 0);
+    iSign   : in    std_logic;
+    iCq     : in    signed (CO_CQ_WIDTH - 1 downto 0);
+    oPx     : out   unsigned (BITNESS - 1 downto 0)
   );
 end entity a6_prediction_correction;
 
@@ -43,12 +43,12 @@ architecture behavioral of a6_prediction_correction is
   constant ZERO_S    : signed(EXT_WIDTH - 1 downto 0) := (others => '0');
   constant MAX_S     : signed(EXT_WIDTH - 1 downto 0) := to_signed(MAX_VAL, EXT_WIDTH);
 
-  signal sPxPlusCq  : signed (EXT_WIDTH - 1 downto 0);
-  signal sPxMinusCq : signed (EXT_WIDTH - 1 downto 0);
+  signal sPxPlusCq   : signed (EXT_WIDTH - 1 downto 0);
+  signal sPxMinusCq  : signed (EXT_WIDTH - 1 downto 0);
 
   -- Precomputed saturated results (vector-select is shallow)
-  signal sAddSat : unsigned (BITNESS - 1 downto 0);
-  signal sSubSat : unsigned (BITNESS - 1 downto 0);
+  signal sAddSat     : unsigned (BITNESS - 1 downto 0);
+  signal sSubSat     : unsigned (BITNESS - 1 downto 0);
 
 begin
 

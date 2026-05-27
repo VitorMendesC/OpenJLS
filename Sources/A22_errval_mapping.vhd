@@ -30,10 +30,10 @@ entity a22_errval_mapping is
     MAPPED_ERRVAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iErrval   : in    signed (ERROR_WIDTH - 1 downto 0);
-    iRiType   : in    std_logic;
-    iMap      : in    std_logic;
-    oEmErrVal : out   unsigned (MAPPED_ERRVAL_WIDTH - 1 downto 0)
+    iErrval             : in    signed (ERROR_WIDTH - 1 downto 0);
+    iRiType             : in    std_logic;
+    iMap                : in    std_logic;
+    oEmErrVal           : out   unsigned (MAPPED_ERRVAL_WIDTH - 1 downto 0)
   );
 end entity a22_errval_mapping;
 

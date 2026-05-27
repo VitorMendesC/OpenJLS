@@ -26,7 +26,7 @@ library ieee;
 
 entity a7_prediction_error is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD
+    BITNESS   : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
     iIx       : in    unsigned (BITNESS - 1 downto 0);

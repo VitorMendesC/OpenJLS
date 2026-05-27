@@ -109,44 +109,44 @@ library openlogic_base;
 
 entity jls_framer is
   generic (
-    BITNESS          : natural := CO_BITNESS_STD;
-    IN_WIDTH         : natural := CO_BYTE_STUFFER_OUT_WIDTH;
-    OUT_WIDTH        : natural := CO_OUT_WIDTH_STD;
-    MAX_IMAGE_WIDTH  : natural := 4096;
-    MAX_IMAGE_HEIGHT : natural := 4096;
+    BITNESS            : natural := CO_BITNESS_STD;
+    IN_WIDTH           : natural := CO_BYTE_STUFFER_OUT_WIDTH;
+    OUT_WIDTH          : natural := CO_OUT_WIDTH_STD;
+    MAX_IMAGE_WIDTH    : natural := 4096;
+    MAX_IMAGE_HEIGHT   : natural := 4096;
     -- Cushion between oReady deassertion and BUFFER_BYTES. Covers two
     -- in-flight cycles of byte_stuffer emission (decision + transfer pipeline)
     -- plus the +2 EOI footer push. Worst case: 2*BYTES_IN + 2.
     STALL_MARGIN_BYTES : natural := 2 * math_ceil_div(CO_BYTE_STUFFER_OUT_WIDTH, 8) + 2
   );
   port (
-    iClk : in    std_logic;
-    iRst : in    std_logic;
+    iClk               : in    std_logic;
+    iRst               : in    std_logic;
     -- Image control
-    iStart       : in    std_logic;
-    iImageWidth  : in    unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-    iImageHeight : in    unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-    iEoi         : in    std_logic;
+    iStart             : in    std_logic;
+    iImageWidth        : in    unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+    iImageHeight       : in    unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+    iEoi               : in    std_logic;
     -- Byte stuffer interface
-    iWord       : in    std_logic_vector(IN_WIDTH - 1 downto 0);
-    iValid      : in    std_logic;
-    iByteEnable : in    unsigned(log2ceil(IN_WIDTH / 8 + 1) - 1 downto 0);
-    oReady      : out   std_logic;
+    iWord              : in    std_logic_vector(IN_WIDTH - 1 downto 0);
+    iValid             : in    std_logic;
+    iByteEnable        : in    unsigned(log2ceil(IN_WIDTH / 8 + 1) - 1 downto 0);
+    oReady             : out   std_logic;
     -- Output AXI stream interface
-    oWord       : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
-    oValid      : out   std_logic;
-    oByteEnable : out   unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
-    oLast       : out   std_logic;
-    iReady      : in    std_logic
+    oWord              : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+    oValid             : out   std_logic;
+    oByteEnable        : out   unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
+    oLast              : out   std_logic;
+    iReady             : in    std_logic
   );
 end entity jls_framer;
 
 architecture behavioral of jls_framer is
 
-  constant NEAR       : natural := 0;
-  constant BYTES_IN   : natural := IN_WIDTH / 8;
-  constant BYTES_OUT  : natural := OUT_WIDTH / 8;
-  constant HEADER_LEN : natural := 25;
+  constant NEAR                 : natural := 0;
+  constant BYTES_IN             : natural := IN_WIDTH / 8;
+  constant BYTES_OUT            : natural := OUT_WIDTH / 8;
+  constant HEADER_LEN           : natural := 25;
 
   -- Auto-derived FIFO depth (worst-case occupancy; see file header).
   -- BUFFER_BYTES_NOMINAL handles steady-state (iReady='1') traffic.
@@ -165,33 +165,33 @@ architecture behavioral of jls_framer is
 
   type fsm_t is (idle, header, data);
 
-  signal sFsmState : fsm_t;
+  signal sFsmState              : fsm_t;
 
   -- EoI tracker: queue of footer (D9) byte offsets for in-flight images.
   -- Needed for really small images, like the 4x4 image on T.87 H.3 example
-  constant EOI_FIFO_DEPTH : natural := 2;
+  constant EOI_FIFO_DEPTH       : natural := 2;
 
   type eoi_offsets_t is array(natural range <>) of natural range 0 to BUFFER_BYTES;
 
-  signal sBuffer        : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
-  signal sFifoByteCount : natural range 0 to BUFFER_BYTES;
-  signal sEoiFifo       : eoi_offsets_t(0 to EOI_FIFO_DEPTH - 1);
-  signal sEoiCount      : natural range 0 to EOI_FIFO_DEPTH;
+  signal sBuffer                : std_logic_vector(BUFFER_WIDTH - 1 downto 0);
+  signal sFifoByteCount         : natural range 0 to BUFFER_BYTES;
+  signal sEoiFifo               : eoi_offsets_t(0 to EOI_FIFO_DEPTH - 1);
+  signal sEoiCount              : natural range 0 to EOI_FIFO_DEPTH;
 
-  signal sOutWord    : std_logic_vector(OUT_WIDTH - 1 downto 0);
-  signal sOutValid   : std_logic;
-  signal sOutLast    : std_logic;
-  signal sValidBytes : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
+  signal sOutWord               : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal sOutValid              : std_logic;
+  signal sOutLast               : std_logic;
+  signal sValidBytes            : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
-  signal sHeaderByteIdx : natural range 0 to HEADER_LEN;
+  signal sHeaderByteIdx         : natural range 0 to HEADER_LEN;
   -- Pending-start counter. Holds iStart pulses that arrive while an earlier
   -- image is still being framed. Each EOI dequeues one. Sized to absorb the
   -- worst-case lead of upstream over the framer when byte_stuffer's FIFO is
   -- buffering several images at once.
-  constant START_QUEUE_DEPTH : natural := 4;
-  signal   sNextPending      : natural range 0 to START_QUEUE_DEPTH;
+  constant START_QUEUE_DEPTH    : natural := 4;
+  signal   sNextPending         : natural range 0 to START_QUEUE_DEPTH;
 
-  signal sAxiHandshake : boolean;
+  signal sAxiHandshake          : boolean;
 
   -- Returns the i-th byte of the 25-byte JPEG-LS frame header.
   -- Header layout:

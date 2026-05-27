@@ -25,8 +25,8 @@ library ieee;
 
 entity a2_mode_selection is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    NEAR    : natural               := CO_NEAR_STD
+    BITNESS  : natural range 8 to 16 := CO_BITNESS_STD;
+    NEAR     : natural               := CO_NEAR_STD
   );
   port (
     iD1      : in    signed(BITNESS downto 0);

@@ -38,22 +38,22 @@ entity a11_2_bit_packer is
     OUT_WIDTH       : natural := CO_LIMIT_STD
   );
   port (
-    iClk   : in    std_logic;
-    iRst   : in    std_logic;
-    iStall : in    std_logic;
+    iClk            : in    std_logic;
+    iRst            : in    std_logic;
+    iStall          : in    std_logic;
     -- Raw bits interface - A.15 boundary bits, A.16 break residual (Sporadic raws & RI)
-    iRawValid : in    std_logic;
-    iRawLen   : in    unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
-    iRawVal   : in    unsigned(SUFFIX_WIDTH - 1 downto 0);
+    iRawValid       : in    std_logic;
+    iRawLen         : in    unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+    iRawVal         : in    unsigned(SUFFIX_WIDTH - 1 downto 0);
     -- Golomb interface (regular mode & RI)
-    iGolombValid : in    std_logic;
-    iUnaryZeros  : in    unsigned(UNARY_WIDTH - 1 downto 0);
-    iSuffixLen   : in    unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
-    iSuffixVal   : in    unsigned(SUFFIX_WIDTH - 1 downto 0);
+    iGolombValid    : in    std_logic;
+    iUnaryZeros     : in    unsigned(UNARY_WIDTH - 1 downto 0);
+    iSuffixLen      : in    unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+    iSuffixVal      : in    unsigned(SUFFIX_WIDTH - 1 downto 0);
     -- Output: MSB-aligned variable-length word
-    oWord      : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
-    oWordValid : out   std_logic;
-    oValidLen  : out   unsigned(log2ceil(OUT_WIDTH + 1) - 1 downto 0)
+    oWord           : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+    oWordValid      : out   std_logic;
+    oValidLen       : out   unsigned(log2ceil(OUT_WIDTH + 1) - 1 downto 0)
   );
 end entity a11_2_bit_packer;
 

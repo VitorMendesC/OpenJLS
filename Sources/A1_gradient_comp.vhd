@@ -30,13 +30,13 @@ entity a1_gradient_comp is
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
-    iA  : in    unsigned (BITNESS - 1 downto 0);
-    iB  : in    unsigned (BITNESS - 1 downto 0);
-    iC  : in    unsigned (BITNESS - 1 downto 0);
-    iD  : in    unsigned (BITNESS - 1 downto 0);
-    oD1 : out   signed (BITNESS downto 0);
-    oD2 : out   signed (BITNESS downto 0);
-    oD3 : out   signed (BITNESS downto 0)
+    iA      : in    unsigned (BITNESS - 1 downto 0);
+    iB      : in    unsigned (BITNESS - 1 downto 0);
+    iC      : in    unsigned (BITNESS - 1 downto 0);
+    iD      : in    unsigned (BITNESS - 1 downto 0);
+    oD1     : out   signed (BITNESS downto 0);
+    oD2     : out   signed (BITNESS downto 0);
+    oD3     : out   signed (BITNESS downto 0)
   );
 end entity a1_gradient_comp;
 

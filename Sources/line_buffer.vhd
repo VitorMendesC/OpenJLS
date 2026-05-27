@@ -46,30 +46,30 @@ entity line_buffer is
     BITNESS          : natural := CO_BITNESS_STD
   );
   port (
-    iClk         : in    std_logic;
-    iRst         : in    std_logic;
-    iImageWidth  : in    unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-    iImageHeight : in    unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-    iValid       : in    std_logic;
-    iPixel       : in    unsigned(BITNESS - 1 downto 0);
-    oA           : out   unsigned(BITNESS - 1 downto 0);
-    oB           : out   unsigned(BITNESS - 1 downto 0);
-    oC           : out   unsigned(BITNESS - 1 downto 0);
-    oD           : out   unsigned(BITNESS - 1 downto 0);
-    oValid       : out   std_logic;
-    oEol         : out   std_logic; -- end of line
-    oEoi         : out   std_logic  -- end of image
+    iClk             : in    std_logic;
+    iRst             : in    std_logic;
+    iImageWidth      : in    unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+    iImageHeight     : in    unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+    iValid           : in    std_logic;
+    iPixel           : in    unsigned(BITNESS - 1 downto 0);
+    oA               : out   unsigned(BITNESS - 1 downto 0);
+    oB               : out   unsigned(BITNESS - 1 downto 0);
+    oC               : out   unsigned(BITNESS - 1 downto 0);
+    oD               : out   unsigned(BITNESS - 1 downto 0);
+    oValid           : out   std_logic;
+    oEol             : out   std_logic; -- end of line
+    oEoi             : out   std_logic  -- end of image
   );
 end entity line_buffer;
 
 architecture behavioral of line_buffer is
 
-  constant COL_WIDTH : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
-  constant ROW_WIDTH : natural := log2ceil(MAX_IMAGE_HEIGHT + 1);
+  constant COL_WIDTH         : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
+  constant ROW_WIDTH         : natural := log2ceil(MAX_IMAGE_HEIGHT + 1);
 
   type fifo_state_t is (preload, wait_end_first_row, nominal);
 
-  signal sFifoState : fifo_state_t;
+  signal sFifoState          : fifo_state_t;
 
   signal sFifoOutReady       : std_logic;
   signal sFifoOutValid       : std_logic;
@@ -251,15 +251,15 @@ begin
       RAMBEHAVIOR_G => "RBW"
     )
     port map (
-      Clk       => iClk,
-      Rst       => iRst,
-      In_Data   => std_logic_vector(iPixel),
-      In_Valid  => iValid and not bool2bit(sIsLastRow),
-      Out_Ready => sFifoOutReady,
-      Out_Data  => sFifoOutData,
-      Out_Valid => sFifoOutValid,
-      Full      => sFifoFull,
-      Empty     => sFifoEmpty
+      Clk           => iClk,
+      Rst           => iRst,
+      In_Data       => std_logic_vector(iPixel),
+      In_Valid      => iValid and not bool2bit(sIsLastRow),
+      Out_Ready     => sFifoOutReady,
+      Out_Data      => sFifoOutData,
+      Out_Valid     => sFifoOutValid,
+      Full          => sFifoFull,
+      Empty         => sFifoEmpty
     );
 
 end architecture behavioral;

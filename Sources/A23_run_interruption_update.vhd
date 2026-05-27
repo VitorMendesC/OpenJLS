@@ -33,14 +33,14 @@ entity a23_run_interruption_update is
     RESET       : natural := CO_RESET_STD
   );
   port (
-    iErrVal : in    signed (ERROR_WIDTH - 1 downto 0);
-    iRiType : in    std_logic;
-    iAq     : in    unsigned (A_WIDTH - 1 downto 0);
-    iNq     : in    unsigned (N_WIDTH - 1 downto 0);
-    iNn     : in    unsigned (NN_WIDTH - 1 downto 0);
-    oAq     : out   unsigned (A_WIDTH - 1 downto 0);
-    oNq     : out   unsigned (N_WIDTH - 1 downto 0);
-    oNn     : out   unsigned (NN_WIDTH - 1 downto 0)
+    iErrVal     : in    signed (ERROR_WIDTH - 1 downto 0);
+    iRiType     : in    std_logic;
+    iAq         : in    unsigned (A_WIDTH - 1 downto 0);
+    iNq         : in    unsigned (N_WIDTH - 1 downto 0);
+    iNn         : in    unsigned (NN_WIDTH - 1 downto 0);
+    oAq         : out   unsigned (A_WIDTH - 1 downto 0);
+    oNq         : out   unsigned (N_WIDTH - 1 downto 0);
+    oNn         : out   unsigned (NN_WIDTH - 1 downto 0)
   );
 end entity a23_run_interruption_update;
 

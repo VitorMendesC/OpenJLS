@@ -29,7 +29,7 @@ library ieee;
 
 entity a3_mode_selection is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD
+    BITNESS  : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
     iD1      : in    signed(BITNESS downto 0); -- signed

@@ -73,19 +73,19 @@ entity byte_stuffer is
     BURST_DEPTH         : natural := CO_BYTE_STUFFER_BURST_DEPTH
   );
   port (
-    iClk        : in    std_logic;
-    iRst        : in    std_logic;
-    iStall      : in    std_logic;
-    iWord       : in    std_logic_vector(IN_WIDTH - 1 downto 0);
-    iWordValid  : in    std_logic;
-    iValidLen   : in    unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
-    iFlush      : in    std_logic;
-    oWord       : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
-    oWordValid  : out   std_logic;
-    oValidBytes : out   unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
-    iReady      : in    std_logic;
-    oAlmostFull : out   std_logic;
-    oFlushDone  : out   std_logic
+    iClk                : in    std_logic;
+    iRst                : in    std_logic;
+    iStall              : in    std_logic;
+    iWord               : in    std_logic_vector(IN_WIDTH - 1 downto 0);
+    iWordValid          : in    std_logic;
+    iValidLen           : in    unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+    iFlush              : in    std_logic;
+    oWord               : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+    oWordValid          : out   std_logic;
+    oValidBytes         : out   unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
+    iReady              : in    std_logic;
+    oAlmostFull         : out   std_logic;
+    oFlushDone          : out   std_logic
   );
 end entity byte_stuffer;
 
@@ -94,10 +94,10 @@ architecture behavioral of byte_stuffer is
   -- Constants ----------------------------------------------------------------
 
   -- Stage 1 sizing
-  constant FIFO_BYTES       : natural := math_ceil_div(IN_WIDTH, 8);
-  constant FIFO_BITS        : natural := FIFO_BYTES * 8;
-  constant ACCUM_BITS       : natural := 2 * FIFO_BITS;
-  constant BYTE_VALID_WIDTH : natural := log2ceil(FIFO_BYTES + 1);
+  constant FIFO_BYTES             : natural := math_ceil_div(IN_WIDTH, 8);
+  constant FIFO_BITS              : natural := FIFO_BYTES * 8;
+  constant ACCUM_BITS             : natural := 2 * FIFO_BITS;
+  constant BYTE_VALID_WIDTH       : natural := log2ceil(FIFO_BYTES + 1);
 
   -- FIFO entry layout (LSB-first):
   --   bit  [0]              : last_flag
@@ -105,9 +105,9 @@ architecture behavioral of byte_stuffer is
   --                           zero-padded below the valid region)
   --   Byte-valid count for last-flag words lives sideband in sByteValidQ
   --   (only written/read on last_flag events).
-  constant LAST_POS   : natural := 0;
-  constant DATA_LSB   : natural := 1;
-  constant FIFO_WIDTH : natural := FIFO_BITS + 1;
+  constant LAST_POS               : natural := 0;
+  constant DATA_LSB               : natural := 1;
+  constant FIFO_WIDTH             : natural := FIFO_BITS + 1;
 
   -- Sideband byte-valid queue depth: bounds the number of in-flight
   -- last-flag words allowed in the main FIFO simultaneously.
@@ -116,51 +116,51 @@ architecture behavioral of byte_stuffer is
   -- AlmFull asserts STALL_CUSHION_ENTRIES below Full so the FIFO can absorb
   -- in-flight tokens while the top-level stall signal propagates through its
   -- pipeline (registered AlmFulls + registered sStallLogic = ~4 cycles).
-  constant STALL_CUSHION_ENTRIES : natural := 5;
-  constant ALM_FULL_LEVEL        : natural := BURST_DEPTH - STALL_CUSHION_ENTRIES;
+  constant STALL_CUSHION_ENTRIES  : natural := 5;
+  constant ALM_FULL_LEVEL         : natural := BURST_DEPTH - STALL_CUSHION_ENTRIES;
 
   -- Stage 3 holding register: room for at least one full FIFO pop on top of
   -- any leftover bits from the previous consume. Bits are stored MSB-first
   -- (oldest emitted first) at the top of the buffer.
-  constant HOLD_BYTES : natural := 2 * FIFO_BYTES;
-  constant HOLD_BITS  : natural := HOLD_BYTES * 8;
+  constant HOLD_BYTES             : natural := 2 * FIFO_BYTES;
+  constant HOLD_BITS              : natural := HOLD_BYTES * 8;
 
   -- Signals ---------------------------------------------------------------------
   -- Input registers
-  signal sInWord     : std_logic_vector(IN_WIDTH - 1 downto 0);
-  signal sInValidLen : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
-  signal sInValid    : std_logic;
-  signal sInFlush    : std_logic;
-  signal sInTake     : std_logic;
+  signal sInWord                  : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal sInValidLen              : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+  signal sInValid                 : std_logic;
+  signal sInFlush                 : std_logic;
+  signal sInTake                  : std_logic;
 
   -- Stage 1 accumulator
-  signal sAccumBuffer         : std_logic_vector(ACCUM_BITS - 1 downto 0);
-  signal sAccumCountBits      : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
-  signal sAccumCountBitsFlush : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
-  signal sFlushBytes          : unsigned(log2ceil(2 * FIFO_BYTES + 1) - 1 downto 0);
-  signal sFlushPending        : std_logic;
+  signal sAccumBuffer             : std_logic_vector(ACCUM_BITS - 1 downto 0);
+  signal sAccumCountBits          : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
+  signal sAccumCountBitsFlush     : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
+  signal sFlushBytes              : unsigned(log2ceil(2 * FIFO_BYTES + 1) - 1 downto 0);
+  signal sFlushPending            : std_logic;
 
   -- FIFO interface
-  signal sFifoInData   : std_logic_vector(FIFO_WIDTH - 1 downto 0);
-  signal sFifoInValid  : std_logic;
-  signal sFifoInReady  : std_logic;
-  signal sFifoOutData  : std_logic_vector(FIFO_WIDTH - 1 downto 0);
-  signal sFifoOutValid : std_logic;
-  signal sFifoOutReady : std_logic;
-  signal sFifoAlmFull  : std_logic;
-  signal sFifoFull     : std_logic;
+  signal sFifoInData              : std_logic_vector(FIFO_WIDTH - 1 downto 0);
+  signal sFifoInValid             : std_logic;
+  signal sFifoInReady             : std_logic;
+  signal sFifoOutData             : std_logic_vector(FIFO_WIDTH - 1 downto 0);
+  signal sFifoOutValid            : std_logic;
+  signal sFifoOutReady            : std_logic;
+  signal sFifoAlmFull             : std_logic;
+  signal sFifoFull                : std_logic;
 
   -- Skid buffer between FIFO output and Stage 3 consume
   -- Helps timing
-  signal sStgData  : std_logic_vector(FIFO_WIDTH - 1 downto 0);
-  signal sStgValid : std_logic;
-  signal sStgTaken : std_logic;
+  signal sStgData                 : std_logic_vector(FIFO_WIDTH - 1 downto 0);
+  signal sStgValid                : std_logic;
+  signal sStgTaken                : std_logic;
 
   -- Byte Valid queue (FIFO) signals
-  signal sBvQueueInValid  : std_logic;
-  signal sBvQueueInData   : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0);
-  signal sBvQueueOutReady : std_logic;
-  signal sBvQueueOutData  : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0);
+  signal sBvQueueInValid          : std_logic;
+  signal sBvQueueInData           : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0);
+  signal sBvQueueOutReady         : std_logic;
+  signal sBvQueueOutData          : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0);
 
   ----------------------------------------------------------------------------
   -- Stage 3 (FF stuffer + emit) state.
@@ -173,20 +173,20 @@ architecture behavioral of byte_stuffer is
   --                     0xFF, meaning the next bit emitted to the output
   --                     stream must be the stuffed '0'.
   ----------------------------------------------------------------------------
-  signal sHold        : std_logic_vector(HOLD_BITS - 1 downto 0);
-  signal sHoldBits    : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
-  signal sHoldLast    : std_logic;
-  signal sPrevFF      : std_logic;
-  signal sOutWordReg  : std_logic_vector(OUT_WIDTH - 1 downto 0);
-  signal sOutValidReg : std_logic;
-  signal sOutBytesReg : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
-  signal sFlushDone   : std_logic;
+  signal sHold                    : std_logic_vector(HOLD_BITS - 1 downto 0);
+  signal sHoldBits                : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
+  signal sHoldLast                : std_logic;
+  signal sPrevFF                  : std_logic;
+  signal sOutWordReg              : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal sOutValidReg             : std_logic;
+  signal sOutBytesReg             : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
+  signal sFlushDone               : std_logic;
 
   -- End-of-image partial-byte drain
-  signal sDrainPending : std_logic;
+  signal sDrainPending            : std_logic;
 
   -- End-of-image clean-end
-  signal sCleanEndPending : std_logic;
+  signal sCleanEndPending         : std_logic;
 
 begin
 
@@ -406,18 +406,18 @@ begin
       RAMBEHAVIOR_G  => "RBW"
     )
     port map (
-      Clk       => iClk,
-      Rst       => iRst,
-      In_Data   => sFifoInData,
-      In_Valid  => sFifoInValid,
-      In_Ready  => sFifoInReady,
-      Out_Data  => sFifoOutData,
-      Out_Valid => sFifoOutValid,
-      Out_Ready => sFifoOutReady,
-      Full      => sFifoFull,
-      AlmFull   => sFifoAlmFull,
-      Empty     => open,
-      AlmEmpty  => open
+      Clk            => iClk,
+      Rst            => iRst,
+      In_Data        => sFifoInData,
+      In_Valid       => sFifoInValid,
+      In_Ready       => sFifoInReady,
+      Out_Data       => sFifoOutData,
+      Out_Valid      => sFifoOutValid,
+      Out_Ready      => sFifoOutReady,
+      Full           => sFifoFull,
+      AlmFull        => sFifoAlmFull,
+      Empty          => open,
+      AlmEmpty       => open
     );
 
   -- Sideband byte-valid queue
@@ -433,16 +433,16 @@ begin
       RAMBEHAVIOR_G => "RBW"
     )
     port map (
-      Clk       => iClk,
-      Rst       => iRst,
-      In_Data   => sBvQueueInData,
-      In_Valid  => sBvQueueInValid,
-      In_Ready  => open,
-      Out_Data  => sBvQueueOutData,
-      Out_Valid => open,
-      Out_Ready => sBvQueueOutReady,
-      Full      => open,
-      Empty     => open
+      Clk           => iClk,
+      Rst           => iRst,
+      In_Data       => sBvQueueInData,
+      In_Valid      => sBvQueueInValid,
+      In_Ready      => open,
+      Out_Data      => sBvQueueOutData,
+      Out_Valid     => open,
+      Out_Ready     => sBvQueueOutReady,
+      Full          => open,
+      Empty         => open
     );
 
   -------------------------------------------------------------------------------------------------------------------------

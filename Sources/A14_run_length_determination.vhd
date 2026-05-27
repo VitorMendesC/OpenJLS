@@ -19,13 +19,13 @@ entity a14_run_length_determination is
     RUN_CNT_WIDTH : natural               := 16
   );
   port (
-    iRa          : in    unsigned (BITNESS - 1 downto 0);
-    iIx          : in    unsigned (BITNESS - 1 downto 0);
-    iRunCnt      : in    unsigned (RUN_CNT_WIDTH - 1 downto 0);
-    iEol         : in    std_logic;
-    oRunCnt      : out   unsigned (RUN_CNT_WIDTH - 1 downto 0);
-    oRunHit      : out   std_logic;
-    oRunContinue : out   std_logic
+    iRa           : in    unsigned (BITNESS - 1 downto 0);
+    iIx           : in    unsigned (BITNESS - 1 downto 0);
+    iRunCnt       : in    unsigned (RUN_CNT_WIDTH - 1 downto 0);
+    iEol          : in    std_logic;
+    oRunCnt       : out   unsigned (RUN_CNT_WIDTH - 1 downto 0);
+    oRunHit       : out   std_logic;
+    oRunContinue  : out   std_logic
   );
 end entity a14_run_length_determination;
 

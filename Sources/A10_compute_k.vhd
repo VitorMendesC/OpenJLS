@@ -31,9 +31,9 @@ entity a10_compute_k is
     N_WIDTH : natural := CO_NQ_WIDTH_STD
   );
   port (
-    iNq : in    unsigned (N_WIDTH - 1 downto 0);
-    iAq : in    unsigned (A_WIDTH - 1 downto 0);
-    oK  : out   unsigned (K_WIDTH - 1 downto 0)
+    iNq     : in    unsigned (N_WIDTH - 1 downto 0);
+    iAq     : in    unsigned (A_WIDTH - 1 downto 0);
+    oK      : out   unsigned (K_WIDTH - 1 downto 0)
   );
 end entity a10_compute_k;
 

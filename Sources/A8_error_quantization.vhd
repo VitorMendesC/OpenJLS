@@ -29,8 +29,8 @@ library ieee;
 
 entity a8_error_quantization is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    MAX_VAL : natural               := CO_MAX_VAL_STD
+    BITNESS   : natural range 8 to 16 := CO_BITNESS_STD;
+    MAX_VAL   : natural               := CO_MAX_VAL_STD
   );
   port (
     iErrorVal : in    signed (BITNESS downto 0);

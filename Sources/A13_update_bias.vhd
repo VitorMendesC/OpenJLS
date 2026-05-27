@@ -35,11 +35,11 @@ entity a13_update_bias is
     MAX_C   : integer := CO_MAX_CQ
   );
   port (
-    iBq : in    signed (B_WIDTH - 1 downto 0);
-    iNq : in    unsigned (N_WIDTH - 1 downto 0);
-    iCq : in    signed (C_WIDTH - 1 downto 0);
-    oBq : out   signed (B_WIDTH - 1 downto 0);
-    oCq : out   signed (C_WIDTH - 1 downto 0)
+    iBq     : in    signed (B_WIDTH - 1 downto 0);
+    iNq     : in    unsigned (N_WIDTH - 1 downto 0);
+    iCq     : in    signed (C_WIDTH - 1 downto 0);
+    oBq     : out   signed (B_WIDTH - 1 downto 0);
+    oCq     : out   signed (C_WIDTH - 1 downto 0)
   );
 end entity a13_update_bias;
 

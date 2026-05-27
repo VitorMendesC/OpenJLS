@@ -26,8 +26,8 @@ library ieee;
 
 entity a9_modulo_reduction is
   generic (
-    BITNESS : natural range 8 to 16 := CO_BITNESS_STD;
-    RANGE_P : natural               := CO_RANGE_STD
+    BITNESS   : natural range 8 to 16 := CO_BITNESS_STD;
+    RANGE_P   : natural               := CO_RANGE_STD
   );
   port (
     iErrorVal : in    signed (BITNESS downto 0);
@@ -42,8 +42,8 @@ architecture behavioral of a9_modulo_reduction is
   -- max = 2**(BITNESS+1) - 1 >= RANGE_P.
   constant RANGE_S : signed(BITNESS + 1 downto 0) := to_signed(RANGE_P, BITNESS + 2);
 
-  signal sExt    : signed(BITNESS + 1 downto 0);
-  signal sErrAdj : signed(BITNESS + 1 downto 0);
+  signal sExt      : signed(BITNESS + 1 downto 0);
+  signal sErrAdj   : signed(BITNESS + 1 downto 0);
 
 begin
 

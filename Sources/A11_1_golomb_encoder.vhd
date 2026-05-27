@@ -41,15 +41,15 @@ entity a11_1_golomb_encoder is
     MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD
   );
   port (
-    iK              : in    unsigned (K_WIDTH - 1 downto 0);
-    iMappedErrorVal : in    unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+    iK                     : in    unsigned (K_WIDTH - 1 downto 0);
+    iMappedErrorVal        : in    unsigned (MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
     -- iRiMode selects T.87 A.22.1 LG(k, glimit) with glimit = LIMIT - J[iRunIndex] - 1.
     -- iRunIndex is the RUNindex value before the A.16 decrement. Ignored when iRiMode='0'.
-    iRiMode     : in    std_logic;
-    iRunIndex   : in    unsigned (4 downto 0);
-    oUnaryZeros : out   unsigned (UNARY_WIDTH - 1 downto 0);
-    oSuffixLen  : out   unsigned (SUFFIXLEN_WIDTH - 1 downto 0);
-    oSuffixVal  : out   unsigned (SUFFIX_WIDTH - 1 downto 0)
+    iRiMode                : in    std_logic;
+    iRunIndex              : in    unsigned (4 downto 0);
+    oUnaryZeros            : out   unsigned (UNARY_WIDTH - 1 downto 0);
+    oSuffixLen             : out   unsigned (SUFFIXLEN_WIDTH - 1 downto 0);
+    oSuffixVal             : out   unsigned (SUFFIX_WIDTH - 1 downto 0)
   );
 end entity a11_1_golomb_encoder;
 

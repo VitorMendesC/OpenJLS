@@ -30,12 +30,12 @@ entity a4_quantization_gradients is
     MAX_VAL : natural               := CO_MAX_VAL_STD
   );
   port (
-    iD1 : in    signed (BITNESS downto 0);
-    iD2 : in    signed (BITNESS downto 0);
-    iD3 : in    signed (BITNESS downto 0);
-    oQ1 : out   signed (3 downto 0);
-    oQ2 : out   signed (3 downto 0);
-    oQ3 : out   signed (3 downto 0)
+    iD1     : in    signed (BITNESS downto 0);
+    iD2     : in    signed (BITNESS downto 0);
+    iD3     : in    signed (BITNESS downto 0);
+    oQ1     : out   signed (3 downto 0);
+    oQ2     : out   signed (3 downto 0);
+    oQ3     : out   signed (3 downto 0)
   );
 end entity a4_quantization_gradients;
 

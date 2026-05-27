@@ -29,10 +29,10 @@ entity a5_edge_detecting_predictor is
     BITNESS : natural range 8 to 16 := CO_BITNESS_STD
   );
   port (
-    iA  : in    unsigned (BITNESS - 1 downto 0);
-    iB  : in    unsigned (BITNESS - 1 downto 0);
-    iC  : in    unsigned (BITNESS - 1 downto 0);
-    oPx : out   unsigned (BITNESS - 1 downto 0)
+    iA      : in    unsigned (BITNESS - 1 downto 0);
+    iB      : in    unsigned (BITNESS - 1 downto 0);
+    iC      : in    unsigned (BITNESS - 1 downto 0);
+    oPx     : out   unsigned (BITNESS - 1 downto 0)
   );
 end entity a5_edge_detecting_predictor;
 

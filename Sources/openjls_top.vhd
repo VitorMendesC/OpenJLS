@@ -71,44 +71,44 @@ entity openjls_top is
     OUT_WIDTH        : positive range 32 to 1024 := 64
   );
   port (
-    iClk         : in    std_logic;
-    iRst         : in    std_logic;
-    iValid       : in    std_logic;
-    iPixel       : in    std_logic_vector(BITNESS - 1 downto 0);
-    oReady       : out   std_logic;
-    iImageWidth  : in    std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-    iImageHeight : in    std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-    oData        : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
-    oValid       : out   std_logic;
-    oKeep        : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
-    oLast        : out   std_logic;
-    iReady       : in    std_logic
+    iClk             : in    std_logic;
+    iRst             : in    std_logic;
+    iValid           : in    std_logic;
+    iPixel           : in    std_logic_vector(BITNESS - 1 downto 0);
+    oReady           : out   std_logic;
+    iImageWidth      : in    std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+    iImageHeight     : in    std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+    oData            : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+    oValid           : out   std_logic;
+    oKeep            : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
+    oLast            : out   std_logic;
+    iReady           : in    std_logic
   );
 end entity openjls_top;
 
 architecture rtl of openjls_top is
 
-  constant DEBUG_MODE : boolean := false;
+  constant DEBUG_MODE                       : boolean := false;
 
   -------------------------------------------------------------------------------------------------------------
   -- ENCODER PARAMETERS
   -------------------------------------------------------------------------------------------------------------
   -- Derived constants
-  constant MAX_VAL : natural := 2 ** BITNESS - 1;
-  constant RANGE_P : natural := MAX_VAL + 1;
-  constant QBPP    : natural := log2ceil(RANGE_P);
-  constant BPP     : natural := math_max(2, log2ceil(MAX_VAL + 1));
-  constant LIMIT   : natural := 2 * (BPP + math_max(8, BPP));
+  constant MAX_VAL                          : natural := 2 ** BITNESS - 1;
+  constant RANGE_P                          : natural := MAX_VAL + 1;
+  constant QBPP                             : natural := log2ceil(RANGE_P);
+  constant BPP                              : natural := math_max(2, log2ceil(MAX_VAL + 1));
+  constant LIMIT                            : natural := 2 * (BPP + math_max(8, BPP));
 
   -- Widths computed locally from generics
-  constant ERROR_WIDTH            : natural  := BITNESS + 1;
-  constant MAPPED_ERROR_VAL_WIDTH : natural  := BITNESS + 2;
-  constant RAM_DEPTH              : positive := 367;   -- 365 contexts + 2 RI-specific contexts
-  constant RESET                  : natural  := 64;    -- T.87
-  constant MAX_C                  : integer  := 127;   -- T.87
-  constant MIN_C                  : integer  := - 128; -- T.87
-  constant ABS_MIN_C              : natural  := - MIN_C;
-  constant ABS_MAX_C              : natural  := MAX_C;
+  constant ERROR_WIDTH                      : natural  := BITNESS + 1;
+  constant MAPPED_ERROR_VAL_WIDTH           : natural  := BITNESS + 2;
+  constant RAM_DEPTH                        : positive := 367;                -- 365 contexts + 2 RI-specific contexts
+  constant RESET                            : natural  := 64;                 -- T.87
+  constant MAX_C                            : integer  := 127;                -- T.87
+  constant MIN_C                            : integer  := - 128;              -- T.87
+  constant ABS_MIN_C                        : natural  := - MIN_C;
+  constant ABS_MAX_C                        : natural  := MAX_C;
 
   --------------------------------------------------------------------------------------------
   -- Context-variable widths.
@@ -128,18 +128,18 @@ architecture rtl of openjls_top is
   --   N      ⌈log2(RESET)⌉ (RESET↦0)         0 ⇒ RESET                 log2ceil(RESET+1)
   --   Nn     ⌈log2(RESET)⌉                   direct                    = _STORED
 
-  constant A_STORED    : natural := BPP - 1 + log2ceil(RESET);
-  constant B_STORED    : natural := log2ceil(RESET);
-  constant C_STORED    : natural := log2ceil(math_max(ABS_MIN_C, ABS_MAX_C)) + 1;
-  constant N_STORED    : natural := log2ceil(RESET);
-  constant NN_STORED   : natural := log2ceil(RESET);
-  constant A_WIDTH     : natural := A_STORED + 1;
-  constant B_WIDTH     : natural := BPP + 1;
-  constant C_WIDTH     : natural := C_STORED;
-  constant N_WIDTH     : natural := log2ceil(RESET + 1);
-  constant NN_WIDTH    : natural := NN_STORED;
-  constant K_WIDTH     : natural := log2ceil(BPP + log2ceil(RESET));
-  constant TOTAL_WIDTH : natural := A_STORED + B_STORED + C_STORED + N_STORED;
+  constant A_STORED                         : natural := BPP - 1 + log2ceil(RESET);
+  constant B_STORED                         : natural := log2ceil(RESET);
+  constant C_STORED                         : natural := log2ceil(math_max(ABS_MIN_C, ABS_MAX_C)) + 1;
+  constant N_STORED                         : natural := log2ceil(RESET);
+  constant NN_STORED                        : natural := log2ceil(RESET);
+  constant A_WIDTH                          : natural := A_STORED + 1;
+  constant B_WIDTH                          : natural := BPP + 1;
+  constant C_WIDTH                          : natural := C_STORED;
+  constant N_WIDTH                          : natural := log2ceil(RESET + 1);
+  constant NN_WIDTH                         : natural := NN_STORED;
+  constant K_WIDTH                          : natural := log2ceil(BPP + log2ceil(RESET));
+  constant TOTAL_WIDTH                      : natural := A_STORED + B_STORED + C_STORED + N_STORED;
 
   --------------------------------------------------------------------------------------------
   -- Golomb / Raw suffix output widths.
@@ -151,12 +151,12 @@ architecture rtl of openjls_top is
   -- Unary capped by LIMIT (T.87 escape rule).
 
   -- Run length bounded by image width (run cannot cross EOL).
-  constant RUN_CNT_WIDTH : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
+  constant RUN_CNT_WIDTH                    : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
   -- TODO: Verify this, maybe make them all LIMIT to simplify
-  constant J_MAX_BITS      : natural := 15; -- T.87 A.2.1, J[31] = 15
-  constant UNARY_WIDTH     : natural := log2ceil(LIMIT + 1);
-  constant SUFFIX_WIDTH    : natural := math_max(BPP + log2ceil(RESET), RUN_CNT_WIDTH);
-  constant SUFFIXLEN_WIDTH : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2));
+  constant J_MAX_BITS                       : natural := 15;                  -- T.87 A.2.1, J[31] = 15
+  constant UNARY_WIDTH                      : natural := log2ceil(LIMIT + 1);
+  constant SUFFIX_WIDTH                     : natural := math_max(BPP + log2ceil(RESET), RUN_CNT_WIDTH);
+  constant SUFFIXLEN_WIDTH                  : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2));
 
   --------------------------------------------------------------------------------------------
   -- Bit packer / byte stuffer / framer interface widths.
@@ -170,8 +170,8 @@ architecture rtl of openjls_top is
   -- BYTE_STUFFER_BURST_DEPTH: consecutive worst-case words absorbed without
   -- stalling. 64 covers all natural images plus comfortable margin.
   --------------------------------------------------------------------------------------------
-  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4;  -- Hardcoded, fixed
-  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64; -- Can be tuned
+  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4;                   -- Hardcoded, fixed
+  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;                  -- Can be tuned
   constant BYTE_STUFFER_OUT_WIDTH           : natural := BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
   constant MIN_OUT_WIDTH_WORST_CASE         : natural := BYTE_STUFFER_OUT_WIDTH + 8;
 
@@ -180,16 +180,16 @@ architecture rtl of openjls_top is
   --------------------------------------------------------------------------------------------
   -- Regular mode:  (A | B  | C | N)
   -- Run mode:      (A | NN | 0 | N)
-  constant CTX_A_HI  : natural := TOTAL_WIDTH - 1;
-  constant CTX_A_LO  : natural := TOTAL_WIDTH - A_STORED;
-  constant CTX_B_HI  : natural := CTX_A_LO - 1;
-  constant CTX_B_LO  : natural := CTX_A_LO - B_STORED;
-  constant CTX_C_HI  : natural := CTX_B_LO - 1;
-  constant CTX_C_LO  : natural := CTX_B_LO - C_STORED;
-  constant CTX_N_HI  : natural := CTX_C_LO - 1;
-  constant CTX_N_LO  : natural := 0;
-  constant CTX_NN_HI : natural := CTX_B_LO + NN_STORED - 1;
-  constant CTX_NN_LO : natural := CTX_B_LO;
+  constant CTX_A_HI                         : natural := TOTAL_WIDTH - 1;
+  constant CTX_A_LO                         : natural := TOTAL_WIDTH - A_STORED;
+  constant CTX_B_HI                         : natural := CTX_A_LO - 1;
+  constant CTX_B_LO                         : natural := CTX_A_LO - B_STORED;
+  constant CTX_C_HI                         : natural := CTX_B_LO - 1;
+  constant CTX_C_LO                         : natural := CTX_B_LO - C_STORED;
+  constant CTX_N_HI                         : natural := CTX_C_LO - 1;
+  constant CTX_N_LO                         : natural := 0;
+  constant CTX_NN_HI                        : natural := CTX_B_LO + NN_STORED - 1;
+  constant CTX_NN_LO                        : natural := CTX_B_LO;
 
   -------------------------------------------------------------------------------------------------------------
   -- PIPELINE TOKEN RECORD
@@ -227,7 +227,7 @@ architecture rtl of openjls_top is
     RiRunIndex : unsigned(4 downto 0);
   end record t_pipeline_token;
 
-  constant CO_TOKEN_NONE : t_pipeline_token :=
+  constant CO_TOKEN_NONE                    : t_pipeline_token :=
   (
     mode       => token_none,
     Ix         => (others => '0'),
@@ -257,187 +257,187 @@ architecture rtl of openjls_top is
   -- only updates when (NOT sStall) AND (current_valid OR upstream_valid), so a
   -- bubble propagates exactly once and then the register stops toggling.
   -- TODO: More testing needed on the new added register latency of the stall control signals
-  signal sFramerReady     : std_logic;
-  signal sBsAlmostFullReg : std_logic;
-  signal sStall           : std_logic;
-  signal sStallDelay      : std_logic;
-  signal sStallUpstream   : std_logic;
-  signal sStallLogic      : std_logic;
-  signal sCE1             : std_logic;
-  signal sCE2             : std_logic;
-  signal sCE3             : std_logic;
-  signal sCE4             : std_logic;
-  signal sCE5,     sCE6   : std_logic;
+  signal sFramerReady                       : std_logic;
+  signal sBsAlmostFullReg                   : std_logic;
+  signal sStall                             : std_logic;
+  signal sStallDelay                        : std_logic;
+  signal sStallUpstream                     : std_logic;
+  signal sStallLogic                        : std_logic;
+  signal sCE1                               : std_logic;
+  signal sCE2                               : std_logic;
+  signal sCE3                               : std_logic;
+  signal sCE4                               : std_logic;
+  signal sCE5,     sCE6                     : std_logic;
 
   -- Pipeline tokens + sideband
-  signal sReg1        : t_pipeline_token;
-  signal sReg2        : t_pipeline_token;
-  signal sReg3        : t_pipeline_token;
-  signal sReg4        : t_pipeline_token;
-  signal sReg1V       : std_logic;
-  signal sReg2V       : std_logic;
-  signal sReg3V       : std_logic;
-  signal sReg4V       : std_logic;
-  signal sReg1Eol     : std_logic;
-  signal sReg1Eoi     : std_logic;
-  signal sReg2Eoi     : std_logic;
-  signal sReg3Eoi     : std_logic;
-  signal sReg4Eoi     : std_logic;
-  signal sReg1ModeRun : std_logic;
-  signal sReg1D1      : signed(BITNESS downto 0);
-  signal sReg1D2      : signed(BITNESS downto 0);
-  signal sReg1D3      : signed(BITNESS downto 0);
+  signal sReg1                              : t_pipeline_token;
+  signal sReg2                              : t_pipeline_token;
+  signal sReg3                              : t_pipeline_token;
+  signal sReg4                              : t_pipeline_token;
+  signal sReg1V                             : std_logic;
+  signal sReg2V                             : std_logic;
+  signal sReg3V                             : std_logic;
+  signal sReg4V                             : std_logic;
+  signal sReg1Eol                           : std_logic;
+  signal sReg1Eoi                           : std_logic;
+  signal sReg2Eoi                           : std_logic;
+  signal sReg3Eoi                           : std_logic;
+  signal sReg4Eoi                           : std_logic;
+  signal sReg1ModeRun                       : std_logic;
+  signal sReg1D1                            : signed(BITNESS downto 0);
+  signal sReg1D2                            : signed(BITNESS downto 0);
+  signal sReg1D3                            : signed(BITNESS downto 0);
 
   -- Input stage
-  signal sPixel       : unsigned(BITNESS - 1 downto 0);
-  signal sImageWidth  : unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-  signal sImageHeight : unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-  signal sValid       : std_logic; -- iValid & sReady
-  signal sLbRa        : unsigned(BITNESS - 1 downto 0);
-  signal sLbRb        : unsigned(BITNESS - 1 downto 0);
-  signal sLbRc        : unsigned(BITNESS - 1 downto 0);
-  signal sLbRd        : unsigned(BITNESS - 1 downto 0);
-  signal sLbValid     : std_logic;
-  signal sLbEol       : std_logic;
-  signal sLbEoi       : std_logic;
+  signal sPixel                             : unsigned(BITNESS - 1 downto 0);
+  signal sImageWidth                        : unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+  signal sImageHeight                       : unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+  signal sValid                             : std_logic;                      -- iValid & sReady
+  signal sLbRa                              : unsigned(BITNESS - 1 downto 0);
+  signal sLbRb                              : unsigned(BITNESS - 1 downto 0);
+  signal sLbRc                              : unsigned(BITNESS - 1 downto 0);
+  signal sLbRd                              : unsigned(BITNESS - 1 downto 0);
+  signal sLbValid                           : std_logic;
+  signal sLbEol                             : std_logic;
+  signal sLbEoi                             : std_logic;
 
   -- Stage 1 combinational
-  signal sS1D1      : signed(BITNESS downto 0);
-  signal sS1D2      : signed(BITNESS downto 0);
-  signal sS1D3      : signed(BITNESS downto 0);
-  signal sS1ModeRun : std_logic;
+  signal sS1D1                              : signed(BITNESS downto 0);
+  signal sS1D2                              : signed(BITNESS downto 0);
+  signal sS1D3                              : signed(BITNESS downto 0);
+  signal sS1ModeRun                         : std_logic;
   -- Sticky run flag: A15_16's next-state sInRun, fed back to stage 1 so the
   -- pixel currently in stage 1 inherits "still in run" from the prior pixel
   -- in stage 2. Without it, A.3's gradient-based decision can break runs
   -- silently because the FSM is gated by iModeIsRun.
-  signal sS1InRunNext : std_logic;
+  signal sS1InRunNext                       : std_logic;
 
   -- Stage 2 — regular
-  signal sS2Q1    : signed(3 downto 0);
-  signal sS2Q2    : signed(3 downto 0);
-  signal sS2Q3    : signed(3 downto 0);
-  signal sS2MQ1   : signed(3 downto 0);
-  signal sS2MQ2   : signed(3 downto 0);
-  signal sS2MQ3   : signed(3 downto 0);
-  signal sS2MSign : std_logic;
-  signal sS2QReg  : unsigned(8 downto 0);
+  signal sS2Q1                              : signed(3 downto 0);
+  signal sS2Q2                              : signed(3 downto 0);
+  signal sS2Q3                              : signed(3 downto 0);
+  signal sS2MQ1                             : signed(3 downto 0);
+  signal sS2MQ2                             : signed(3 downto 0);
+  signal sS2MQ3                             : signed(3 downto 0);
+  signal sS2MSign                           : std_logic;
+  signal sS2QReg                            : unsigned(8 downto 0);
 
   -- Stage 2 — run
-  signal sRunCntReg     : unsigned(RUN_CNT_WIDTH - 1 downto 0);
-  signal sS2RunCnt      : unsigned(RUN_CNT_WIDTH - 1 downto 0);
-  signal sS2RunHit      : std_logic;
-  signal sS2RunContinue : std_logic;
-  signal sS2RItype      : std_logic;
-  signal sS2RawValid    : std_logic;
-  signal sS2RawLen      : unsigned(4 downto 0);
-  signal sS2RawVal      : unsigned(RUN_CNT_WIDTH - 1 downto 0);
-  signal sS2RiValid     : std_logic;
-  signal sS2RiIx        : unsigned(BITNESS - 1 downto 0);
-  signal sS2RiRa        : unsigned(BITNESS - 1 downto 0);
-  signal sS2RiRb        : unsigned(BITNESS - 1 downto 0);
-  signal sS2RiRunIndex  : unsigned(4 downto 0);
-  signal sS2RiErr18     : signed(BITNESS downto 0);
+  signal sRunCntReg                         : unsigned(RUN_CNT_WIDTH - 1 downto 0);
+  signal sS2RunCnt                          : unsigned(RUN_CNT_WIDTH - 1 downto 0);
+  signal sS2RunHit                          : std_logic;
+  signal sS2RunContinue                     : std_logic;
+  signal sS2RItype                          : std_logic;
+  signal sS2RawValid                        : std_logic;
+  signal sS2RawLen                          : unsigned(4 downto 0);
+  signal sS2RawVal                          : unsigned(RUN_CNT_WIDTH - 1 downto 0);
+  signal sS2RiValid                         : std_logic;
+  signal sS2RiIx                            : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiRa                            : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiRb                            : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiRunIndex                      : unsigned(4 downto 0);
+  signal sS2RiErr18                         : signed(BITNESS downto 0);
 
   -- Stage 2 — muxed
-  signal sS2Q         : unsigned(8 downto 0);
-  signal sS2TokenMode : t_token_mode;
+  signal sS2Q                               : unsigned(8 downto 0);
+  signal sS2TokenMode                       : t_token_mode;
 
-  signal sS2Px   : unsigned(BITNESS - 1 downto 0);
-  signal sReg2Px : unsigned(BITNESS - 1 downto 0);
+  signal sS2Px                              : unsigned(BITNESS - 1 downto 0);
+  signal sReg2Px                            : unsigned(BITNESS - 1 downto 0);
 
   -- context_ram packed I/O
-  signal sCtxRdData : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
-  signal sCtxWrData : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
-  signal sCtxWrEn   : std_logic;
+  signal sCtxRdData                         : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
+  signal sCtxWrData                         : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
+  signal sCtxWrEn                           : std_logic;
 
   -- Stage 3 context (mux between BRAM regular read and RI cluster read)
-  signal sS3Aq : unsigned(A_WIDTH - 1 downto 0);
-  signal sS3Bq : signed(B_WIDTH - 1 downto 0);
-  signal sS3Cq : signed(C_WIDTH - 1 downto 0);
-  signal sS3Nq : unsigned(N_WIDTH - 1 downto 0);
-  signal sS3Nn : unsigned(NN_WIDTH - 1 downto 0);
+  signal sS3Aq                              : unsigned(A_WIDTH - 1 downto 0);
+  signal sS3Bq                              : signed(B_WIDTH - 1 downto 0);
+  signal sS3Cq                              : signed(C_WIDTH - 1 downto 0);
+  signal sS3Nq                              : unsigned(N_WIDTH - 1 downto 0);
+  signal sS3Nn                              : unsigned(NN_WIDTH - 1 downto 0);
 
   -- Stage 3 — regular prediction (speculative 3-chain)
-  signal sS3Px      : unsigned(BITNESS - 1 downto 0);
-  signal sS3CqBase  : signed(C_WIDTH - 1 downto 0);
-  signal sS3CqP1    : signed(C_WIDTH - 1 downto 0);
-  signal sS3CqM1    : signed(C_WIDTH - 1 downto 0);
-  signal sS3PxC     : unsigned(BITNESS - 1 downto 0);
-  signal sS3PxP     : unsigned(BITNESS - 1 downto 0);
-  signal sS3PxM     : unsigned(BITNESS - 1 downto 0);
-  signal sS3Err7C   : signed(BITNESS downto 0);
-  signal sS3Err7P   : signed(BITNESS downto 0);
-  signal sS3Err7M   : signed(BITNESS downto 0);
-  signal sS3Err9C   : signed(BITNESS downto 0);
-  signal sS3Err9P   : signed(BITNESS downto 0);
-  signal sS3Err9M   : signed(BITNESS downto 0);
-  signal sS3Err9Sel : signed(BITNESS downto 0);
+  signal sS3Px                              : unsigned(BITNESS - 1 downto 0);
+  signal sS3CqBase                          : signed(C_WIDTH - 1 downto 0);
+  signal sS3CqP1                            : signed(C_WIDTH - 1 downto 0);
+  signal sS3CqM1                            : signed(C_WIDTH - 1 downto 0);
+  signal sS3PxC                             : unsigned(BITNESS - 1 downto 0);
+  signal sS3PxP                             : unsigned(BITNESS - 1 downto 0);
+  signal sS3PxM                             : unsigned(BITNESS - 1 downto 0);
+  signal sS3Err7C                           : signed(BITNESS downto 0);
+  signal sS3Err7P                           : signed(BITNESS downto 0);
+  signal sS3Err7M                           : signed(BITNESS downto 0);
+  signal sS3Err9C                           : signed(BITNESS downto 0);
+  signal sS3Err9P                           : signed(BITNESS downto 0);
+  signal sS3Err9M                           : signed(BITNESS downto 0);
+  signal sS3Err9Sel                         : signed(BITNESS downto 0);
 
   -- Q3==Q4 forwarding: one flag per mode. Q ranges are disjoint (regular
   -- 0..364, RI 365,366), so a Q match + the Stage-4 mode uniquely identifies
   -- which writeback path is live; Stage-2 mode is implied.
-  signal sFwdRegHit : std_logic;
-  signal sFwdRiHit  : std_logic;
+  signal sFwdRegHit                         : std_logic;
+  signal sFwdRiHit                          : std_logic;
 
   -- Speculation control (Cq only)
-  signal sDeltaCq  : signed(C_WIDTH - 1 downto 0);
-  signal sSpecUseM : std_logic;
-  signal sSpecUseP : std_logic;
+  signal sDeltaCq                           : signed(C_WIDTH - 1 downto 0);
+  signal sSpecUseM                          : std_logic;
+  signal sSpecUseP                          : std_logic;
 
   -- Stage 3 — RI path
-  signal sS3RiSign  : std_logic;
-  signal sS3RiErr19 : signed(BITNESS downto 0);
-  signal sS3RiTemp  : unsigned(A_WIDTH - 1 downto 0);
+  signal sS3RiSign                          : std_logic;
+  signal sS3RiErr19                         : signed(BITNESS downto 0);
+  signal sS3RiTemp                          : unsigned(A_WIDTH - 1 downto 0);
 
   -- Stage 4
-  signal sS4K       : unsigned(K_WIDTH - 1 downto 0);
-  signal sS4AqSel   : unsigned(A_WIDTH - 1 downto 0); -- iAq mux for shared A.10
-  signal sS4AqNew   : unsigned(A_WIDTH - 1 downto 0);
-  signal sS4BqMid   : signed(B_WIDTH - 1 downto 0);
-  signal sS4NqNew   : unsigned(N_WIDTH - 1 downto 0);
-  signal sS4BqNew   : signed(B_WIDTH - 1 downto 0);
-  signal sS4CqNew   : signed(C_WIDTH - 1 downto 0);
-  signal sS4RiAqNew : unsigned(A_WIDTH - 1 downto 0);
-  signal sS4RiNqNew : unsigned(N_WIDTH - 1 downto 0);
-  signal sS4RiNnNew : unsigned(NN_WIDTH - 1 downto 0);
+  signal sS4K                               : unsigned(K_WIDTH - 1 downto 0);
+  signal sS4AqSel                           : unsigned(A_WIDTH - 1 downto 0); -- iAq mux for shared A.10
+  signal sS4AqNew                           : unsigned(A_WIDTH - 1 downto 0);
+  signal sS4BqMid                           : signed(B_WIDTH - 1 downto 0);
+  signal sS4NqNew                           : unsigned(N_WIDTH - 1 downto 0);
+  signal sS4BqNew                           : signed(B_WIDTH - 1 downto 0);
+  signal sS4CqNew                           : signed(C_WIDTH - 1 downto 0);
+  signal sS4RiAqNew                         : unsigned(A_WIDTH - 1 downto 0);
+  signal sS4RiNqNew                         : unsigned(N_WIDTH - 1 downto 0);
+  signal sS4RiNnNew                         : unsigned(NN_WIDTH - 1 downto 0);
   -- BRAM-side encode helpers for the N 0↔RESET trick.
-  signal sNqEncReg : unsigned(N_STORED - 1 downto 0);
-  signal sNqEncRi  : unsigned(N_STORED - 1 downto 0);
+  signal sNqEncReg                          : unsigned(N_STORED - 1 downto 0);
+  signal sNqEncRi                           : unsigned(N_STORED - 1 downto 0);
 
   -- Stage 5
-  signal sS5MErrval    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
-  signal sS5RiMap      : std_logic;
-  signal sS5RiEmErrval : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
-  signal sS5GolMErr    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal sS5MErrval                         : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal sS5RiMap                           : std_logic;
+  signal sS5RiEmErrval                      : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal sS5GolMErr                         : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
   -- A.22 is RI-only. Gate its inputs on mode so non-RI tokens drive zeros and
   -- the combinational arithmetic never produces a negative value.
   -- TODO: I don't like this, it's better to not drive this logic at all instead add logic gating
-  signal sA22Errval : signed(ERROR_WIDTH - 1 downto 0);
-  signal sA22RItype : std_logic;
-  signal sA22Map    : std_logic;
-  signal sS5Unary   : unsigned(UNARY_WIDTH - 1 downto 0);
-  signal sS5SufLen  : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
-  signal sS5SufVal  : unsigned(SUFFIX_WIDTH - 1 downto 0);
+  signal sA22Errval                         : signed(ERROR_WIDTH - 1 downto 0);
+  signal sA22RItype                         : std_logic;
+  signal sA22Map                            : std_logic;
+  signal sS5Unary                           : unsigned(UNARY_WIDTH - 1 downto 0);
+  signal sS5SufLen                          : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+  signal sS5SufVal                          : unsigned(SUFFIX_WIDTH - 1 downto 0);
 
   -- Stage 5 inter-stage registers: Reg5 in front of A.11_1, Reg6 after.
-  signal sReg5,    sReg6    : t_pipeline_token;
-  signal sReg5V,   sReg6V   : std_logic;
-  signal sReg5Eoi, sReg6Eoi : std_logic;
-  signal sReg5GolMErr       : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
-  signal sReg6Unary         : unsigned(UNARY_WIDTH - 1 downto 0);
-  signal sReg6SufLen        : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
-  signal sReg6SufVal        : unsigned(SUFFIX_WIDTH - 1 downto 0);
+  signal sReg5,    sReg6                    : t_pipeline_token;
+  signal sReg5V,   sReg6V                   : std_logic;
+  signal sReg5Eoi, sReg6Eoi                 : std_logic;
+  signal sReg5GolMErr                       : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal sReg6Unary                         : unsigned(UNARY_WIDTH - 1 downto 0);
+  signal sReg6SufLen                        : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+  signal sReg6SufVal                        : unsigned(SUFFIX_WIDTH - 1 downto 0);
 
   -- Output
-  signal sBpRawV,  sBpGolV : std_logic;
-  signal sBpWord           : std_logic_vector(LIMIT - 1 downto 0);
-  signal sBpWordV          : std_logic;
-  signal sBpValidLen       : unsigned(log2ceil(LIMIT + 1) - 1 downto 0);
-  signal sBsWord           : std_logic_vector(BYTE_STUFFER_OUT_WIDTH - 1 downto 0);
-  signal sBsWordV          : std_logic;
-  signal sBsValidB         : unsigned(log2ceil(BYTE_STUFFER_OUT_WIDTH / 8 + 1) - 1 downto 0);
-  signal sFramerVBytes     : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
+  signal sBpRawV,  sBpGolV                  : std_logic;
+  signal sBpWord                            : std_logic_vector(LIMIT - 1 downto 0);
+  signal sBpWordV                           : std_logic;
+  signal sBpValidLen                        : unsigned(log2ceil(LIMIT + 1) - 1 downto 0);
+  signal sBsWord                            : std_logic_vector(BYTE_STUFFER_OUT_WIDTH - 1 downto 0);
+  signal sBsWordV                           : std_logic;
+  signal sBsValidB                          : unsigned(log2ceil(BYTE_STUFFER_OUT_WIDTH / 8 + 1) - 1 downto 0);
+  signal sFramerVBytes                      : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
   -- Flush / framer control
   -- Bit packer is purely combinational + 1 register; it has no flush signal.
@@ -446,13 +446,13 @@ architecture rtl of openjls_top is
   -- with the narrow-output byte_stuffer, the drain takes a variable number of
   -- cycles, so framer iEOI is driven by byte_stuffer's oFlushDone pulse
   -- (asserts on the final drain beat of the image).
-  signal sBsFlush      : std_logic;
-  signal sBsAlmostFull : std_logic;
-  signal sBsFlushDone  : std_logic;
-  signal sFramerEoi    : std_logic;
-  signal sImageActive  : std_logic;
-  signal sFramerStart  : std_logic;
-  signal sReadyOut     : std_logic;
+  signal sBsFlush                           : std_logic;
+  signal sBsAlmostFull                      : std_logic;
+  signal sBsFlushDone                       : std_logic;
+  signal sFramerEoi                         : std_logic;
+  signal sImageActive                       : std_logic;
+  signal sFramerStart                       : std_logic;
+  signal sReadyOut                          : std_logic;
 
 begin
 
@@ -590,19 +590,19 @@ begin
       BITNESS          => BITNESS
     )
     port map (
-      iClk         => iClk,
-      iRst         => iRst,
-      iImageWidth  => sImageWidth,
-      iImageHeight => sImageHeight,
-      iValid       => sValid,
-      iPixel       => sPixel,
-      oA           => sLbRa,
-      oB           => sLbRb,
-      oC           => sLbRc,
-      oD           => sLbRd,
-      oValid       => sLbValid,
-      oEol         => sLbEol,
-      oEoi         => sLbEoi
+      iClk             => iClk,
+      iRst             => iRst,
+      iImageWidth      => sImageWidth,
+      iImageHeight     => sImageHeight,
+      iValid           => sValid,
+      iPixel           => sPixel,
+      oA               => sLbRa,
+      oB               => sLbRb,
+      oC               => sLbRc,
+      oD               => sLbRd,
+      oValid           => sLbValid,
+      oEol             => sLbEol,
+      oEoi             => sLbEoi
     );
 
   u_a1 : entity work.a1_gradient_comp(behavioral)
@@ -610,18 +610,18 @@ begin
       BITNESS => BITNESS
     )
     port map (
-      iA  => sLbRa,
-      iB  => sLbRb,
-      iC  => sLbRc,
-      iD  => sLbRd,
-      oD1 => sS1D1,
-      oD2 => sS1D2,
-      oD3 => sS1D3
+      iA      => sLbRa,
+      iB      => sLbRb,
+      iC      => sLbRc,
+      iD      => sLbRd,
+      oD1     => sS1D1,
+      oD2     => sS1D2,
+      oD3     => sS1D3
     );
 
   u_a3 : entity work.a3_mode_selection(behavioral)
     generic map (
-      BITNESS => BITNESS
+      BITNESS  => BITNESS
     )
     port map (
       iD1      => sS1D1,
@@ -685,12 +685,12 @@ begin
       MAX_VAL => MAX_VAL
     )
     port map (
-      iD1 => sReg1D1,
-      iD2 => sReg1D2,
-      iD3 => sReg1D3,
-      oQ1 => sS2Q1,
-      oQ2 => sS2Q2,
-      oQ3 => sS2Q3
+      iD1     => sReg1D1,
+      iD2     => sReg1D2,
+      iD3     => sReg1D3,
+      oQ1     => sS2Q1,
+      oQ2     => sS2Q2,
+      oQ3     => sS2Q3
     );
 
   u_a4_1 : entity work.a4_1_quant_gradient_merging(behavioral)
@@ -721,13 +721,13 @@ begin
       RUN_CNT_WIDTH => RUN_CNT_WIDTH
     )
     port map (
-      iRa          => sReg1.Ra(BITNESS - 1 downto 0),
-      iIx          => sReg1.Ix(BITNESS - 1 downto 0),
-      iRunCnt      => sRunCntReg,
-      iEol         => sReg1Eol,
-      oRunCnt      => sS2RunCnt,
-      oRunHit      => sS2RunHit,
-      oRunContinue => sS2RunContinue
+      iRa           => sReg1.Ra(BITNESS - 1 downto 0),
+      iIx           => sReg1.Ix(BITNESS - 1 downto 0),
+      iRunCnt       => sRunCntReg,
+      iEol          => sReg1Eol,
+      oRunCnt       => sS2RunCnt,
+      oRunHit       => sS2RunHit,
+      oRunContinue  => sS2RunContinue
     );
 
   sReg1ModeRun <= '1' when sReg1.mode = token_run else
@@ -896,10 +896,10 @@ begin
       BITNESS => BITNESS
     )
     port map (
-      iA  => sReg1.Ra(BITNESS - 1 downto 0),
-      iB  => sReg1.Rb(BITNESS - 1 downto 0),
-      iC  => sReg1.Rc(BITNESS - 1 downto 0),
-      oPx => sS2Px
+      iA      => sReg1.Ra(BITNESS - 1 downto 0),
+      iB      => sReg1.Rb(BITNESS - 1 downto 0),
+      iC      => sReg1.Rc(BITNESS - 1 downto 0),
+      oPx     => sS2Px
     );
 
   -------------------------------------------------------------------------------------------------------------
@@ -1010,15 +1010,15 @@ begin
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
     port map (
-      iPx   => sS3Px,
-      iSign => sReg2.Sign,
-      iCq   => sS3CqBase,
-      oPx   => sS3PxC
+      iPx     => sS3Px,
+      iSign   => sReg2.Sign,
+      iCq     => sS3CqBase,
+      oPx     => sS3PxC
     );
 
   u_a7_c : entity work.a7_prediction_error(behavioral)
     generic map (
-      BITNESS => BITNESS
+      BITNESS   => BITNESS
     )
     port map (
       iIx       => sReg2.Ix(BITNESS - 1 downto 0),
@@ -1029,7 +1029,7 @@ begin
 
   u_a8_c : entity work.a8_error_quantization(behavioral)
     generic map (
-      BITNESS => BITNESS, MAX_VAL => MAX_VAL
+      BITNESS   => BITNESS, MAX_VAL => MAX_VAL
     )
     port map (
       iErrorVal => sS3Err7C,
@@ -1040,7 +1040,7 @@ begin
 
   u_a9_c : entity work.a9_modulo_reduction(behavioral)
     generic map (
-      BITNESS => BITNESS, RANGE_P => RANGE_P
+      BITNESS   => BITNESS, RANGE_P => RANGE_P
     )
     port map (
       iErrorVal => sS3Err7C,
@@ -1053,15 +1053,15 @@ begin
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
     port map (
-      iPx   => sS3Px,
-      iSign => sReg2.Sign,
-      iCq   => sS3CqP1,
-      oPx   => sS3PxP
+      iPx     => sS3Px,
+      iSign   => sReg2.Sign,
+      iCq     => sS3CqP1,
+      oPx     => sS3PxP
     );
 
   u_a7_p : entity work.a7_prediction_error(behavioral)
     generic map (
-      BITNESS => BITNESS
+      BITNESS   => BITNESS
     )
     port map (
       iIx       => sReg2.Ix(BITNESS - 1 downto 0),
@@ -1072,7 +1072,7 @@ begin
 
   u_a8_p : entity work.a8_error_quantization(behavioral)
     generic map (
-      BITNESS => BITNESS, MAX_VAL => MAX_VAL
+      BITNESS   => BITNESS, MAX_VAL => MAX_VAL
     )
     port map (
       iErrorVal => sS3Err7P,
@@ -1083,7 +1083,7 @@ begin
 
   u_a9_p : entity work.a9_modulo_reduction(behavioral)
     generic map (
-      BITNESS => BITNESS, RANGE_P => RANGE_P
+      BITNESS   => BITNESS, RANGE_P => RANGE_P
     )
     port map (
       iErrorVal => sS3Err7P,
@@ -1096,15 +1096,15 @@ begin
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
     port map (
-      iPx   => sS3Px,
-      iSign => sReg2.Sign,
-      iCq   => sS3CqM1,
-      oPx   => sS3PxM
+      iPx     => sS3Px,
+      iSign   => sReg2.Sign,
+      iCq     => sS3CqM1,
+      oPx     => sS3PxM
     );
 
   u_a7_m : entity work.a7_prediction_error(behavioral)
     generic map (
-      BITNESS => BITNESS
+      BITNESS   => BITNESS
     )
     port map (
       iIx       => sReg2.Ix(BITNESS - 1 downto 0),
@@ -1115,7 +1115,7 @@ begin
 
   u_a8_m : entity work.a8_error_quantization(behavioral)
     generic map (
-      BITNESS => BITNESS, MAX_VAL => MAX_VAL
+      BITNESS   => BITNESS, MAX_VAL => MAX_VAL
     )
     port map (
       iErrorVal => sS3Err7M,
@@ -1126,7 +1126,7 @@ begin
 
   u_a9_m : entity work.a9_modulo_reduction(behavioral)
     generic map (
-      BITNESS => BITNESS, RANGE_P => RANGE_P
+      BITNESS   => BITNESS, RANGE_P => RANGE_P
     )
     port map (
       iErrorVal => sS3Err7M,
@@ -1241,9 +1241,9 @@ begin
       N_WIDTH => N_WIDTH
     )
     port map (
-      iNq => sReg3.Nq,
-      iAq => sS4AqSel,
-      oK  => sS4K
+      iNq     => sReg3.Nq,
+      iAq     => sS4AqSel,
+      oK      => sS4K
     );
 
   u_a12 : entity work.a12_variables_update(rtl)
@@ -1255,13 +1255,13 @@ begin
       RESET       => RESET
     )
     port map (
-      iErrorVal => sReg3.Errval(BITNESS downto 0),
-      iAq       => sReg3.Aq,
-      iBq       => sReg3.Bq,
-      iNq       => sReg3.Nq,
-      oAq       => sS4AqNew,
-      oBq       => sS4BqMid,
-      oNq       => sS4NqNew
+      iErrorVal   => sReg3.Errval(BITNESS downto 0),
+      iAq         => sReg3.Aq,
+      iBq         => sReg3.Bq,
+      iNq         => sReg3.Nq,
+      oAq         => sS4AqNew,
+      oBq         => sS4BqMid,
+      oNq         => sS4NqNew
     );
 
   u_a13 : entity work.a13_update_bias(rtl)
@@ -1273,11 +1273,11 @@ begin
       MAX_C   => MAX_C
     )
     port map (
-      iBq => sS4BqMid,
-      iNq => sS4NqNew,
-      iCq => sReg3.Cq,
-      oBq => sS4BqNew,
-      oCq => sS4CqNew
+      iBq     => sS4BqMid,
+      iNq     => sS4NqNew,
+      iCq     => sReg3.Cq,
+      oBq     => sS4BqNew,
+      oCq     => sS4CqNew
     );
 
   u_a23 : entity work.a23_run_interruption_update(behavioral)
@@ -1289,14 +1289,14 @@ begin
       RESET       => RESET
     )
     port map (
-      iErrVal => sReg3.Errval(BITNESS downto 0),
-      iRItype => sReg3.RiType,
-      iAq     => sReg3.Aq,
-      iNq     => sReg3.Nq,
-      iNn     => sReg3.Nn,
-      oAq     => sS4RiAqNew,
-      oNq     => sS4RiNqNew,
-      oNn     => sS4RiNnNew
+      iErrVal     => sReg3.Errval(BITNESS downto 0),
+      iRItype     => sReg3.RiType,
+      iAq         => sReg3.Aq,
+      iNq         => sReg3.Nq,
+      iNn         => sReg3.Nn,
+      oAq         => sS4RiAqNew,
+      oNq         => sS4RiNqNew,
+      oNn         => sS4RiNnNew
     );
 
   -------------------------------------------------------------------------------------------------------------
@@ -1339,11 +1339,11 @@ begin
       MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
     )
     port map (
-      iK              => sReg4.k,
-      iBq             => sReg4.Bq,
-      iNq             => sReg4.Nq,
-      iErrorVal       => sReg4.Errval(BITNESS downto 0),
-      oMappedErrorVal => sS5MErrval
+      iK                     => sReg4.k,
+      iBq                    => sReg4.Bq,
+      iNq                    => sReg4.Nq,
+      iErrorVal              => sReg4.Errval(BITNESS downto 0),
+      oMappedErrorVal        => sS5MErrval
     );
 
   u_a21 : entity work.a21_compute_map(behavioral)
@@ -1353,11 +1353,11 @@ begin
       ERROR_WIDTH => ERROR_WIDTH
     )
     port map (
-      iK      => sReg4.k,
-      iErrval => sReg4.Errval(BITNESS downto 0),
-      iNn     => resize(sReg4.Nn, N_WIDTH),
-      iNq     => sReg4.Nq,
-      oMap    => sS5RiMap
+      iK          => sReg4.k,
+      iErrval     => sReg4.Errval(BITNESS downto 0),
+      iNn         => resize(sReg4.Nn, N_WIDTH),
+      iNq         => sReg4.Nq,
+      oMap        => sS5RiMap
     );
 
   -- Gate A.22's inputs on RI mode. Non-RI tokens drive zeros so the
@@ -1376,10 +1376,10 @@ begin
       MAPPED_ERRVAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
     )
     port map (
-      iErrval   => sA22Errval,
-      iRItype   => sA22RItype,
-      iMap      => sA22Map,
-      oEmErrVal => sS5RiEmErrval
+      iErrval             => sA22Errval,
+      iRItype             => sA22RItype,
+      iMap                => sA22Map,
+      oEmErrVal           => sS5RiEmErrval
     );
 
   sS5GolMErr <= sS5MErrval when sReg4.mode = token_regular else
@@ -1425,13 +1425,13 @@ begin
       MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
     )
     port map (
-      iK              => sReg5.k,
-      iMappedErrorVal => sReg5GolMErr,
-      iRiMode         => bool2bit(sReg5.mode = TOKEN_RUN_INTERRUPTION),
-      iRunIndex       => sReg5.RiRunIndex,
-      oUnaryZeros     => sS5Unary,
-      oSuffixLen      => sS5SufLen,
-      oSuffixVal      => sS5SufVal
+      iK                     => sReg5.k,
+      iMappedErrorVal        => sReg5GolMErr,
+      iRiMode                => bool2bit(sReg5.mode = TOKEN_RUN_INTERRUPTION),
+      iRunIndex              => sReg5.RiRunIndex,
+      oUnaryZeros            => sS5Unary,
+      oSuffixLen             => sS5SufLen,
+      oSuffixVal             => sS5SufVal
     );
 
   -------------------------------------------------------------------------------------------------------------
@@ -1487,19 +1487,19 @@ begin
       SUFFIXLEN_WIDTH => SUFFIXLEN_WIDTH
     )
     port map (
-      iClk         => iClk,
-      iRst         => iRst,
-      iStall       => sStallLogic,
-      iRawValid    => sBpRawV,
-      iRawLen      => sReg6.RawLen,
-      iRawVal      => sReg6.RawVal,
-      iGolombValid => sBpGolV,
-      iUnaryZeros  => sReg6Unary,
-      iSuffixLen   => sReg6SufLen,
-      iSuffixVal   => sReg6SufVal,
-      oWord        => sBpWord,
-      oWordValid   => sBpWordV,
-      oValidLen    => sBpValidLen
+      iClk            => iClk,
+      iRst            => iRst,
+      iStall          => sStallLogic,
+      iRawValid       => sBpRawV,
+      iRawLen         => sReg6.RawLen,
+      iRawVal         => sReg6.RawVal,
+      iGolombValid    => sBpGolV,
+      iUnaryZeros     => sReg6Unary,
+      iSuffixLen      => sReg6SufLen,
+      iSuffixVal      => sReg6SufVal,
+      oWord           => sBpWord,
+      oWordValid      => sBpWordV,
+      oValidLen       => sBpValidLen
     );
 
   u_byte_stuffer : entity work.byte_stuffer(behavioral)
@@ -1509,19 +1509,19 @@ begin
       BURST_DEPTH         => BYTE_STUFFER_BURST_DEPTH
     )
     port map (
-      iClk        => iClk,
-      iRst        => iRst,
-      iStall      => sStallLogic,
-      iWord       => sBpWord,
-      iWordValid  => sBpWordV,
-      iValidLen   => sBpValidLen,
-      iFlush      => sBsFlush,
-      oWord       => sBsWord,
-      oWordValid  => sBsWordV,
-      oValidBytes => sBsValidB,
-      iReady      => sFramerReady,
-      oAlmostFull => sBsAlmostFull,
-      oFlushDone  => sBsFlushDone
+      iClk                => iClk,
+      iRst                => iRst,
+      iStall              => sStallLogic,
+      iWord               => sBpWord,
+      iWordValid          => sBpWordV,
+      iValidLen           => sBpValidLen,
+      iFlush              => sBsFlush,
+      oWord               => sBsWord,
+      oWordValid          => sBsWordV,
+      oValidBytes         => sBsValidB,
+      iReady              => sFramerReady,
+      oAlmostFull         => sBsAlmostFull,
+      oFlushDone          => sBsFlushDone
     );
 
   u_framer : entity work.jls_framer(behavioral)
@@ -1533,21 +1533,21 @@ begin
       MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT
     )
     port map (
-      iClk         => iClk,
-      iRst         => iRst,
-      iStart       => sFramerStart,
-      iImageWidth  => sImageWidth,
-      iImageHeight => sImageHeight,
-      iEoi         => sFramerEoi,
-      iWord        => sBsWord,
-      iValid       => sBsWordV,
-      iByteEnable  => sBsValidB,
-      oReady       => sFramerReady,
-      iReady       => iReady,
-      oWord        => oData,
-      oValid       => oValid,
-      oByteEnable  => sFramerVBytes,
-      oLast        => oLast
+      iClk             => iClk,
+      iRst             => iRst,
+      iStart           => sFramerStart,
+      iImageWidth      => sImageWidth,
+      iImageHeight     => sImageHeight,
+      iEoi             => sFramerEoi,
+      iWord            => sBsWord,
+      iValid           => sBsWordV,
+      iByteEnable      => sBsValidB,
+      oReady           => sFramerReady,
+      iReady           => iReady,
+      oWord            => oData,
+      oValid           => oValid,
+      oByteEnable      => sFramerVBytes,
+      oLast            => oLast
     );
 
   -- AXI-Stream tkeep: one bit per byte, MSB = first byte transmitted.
