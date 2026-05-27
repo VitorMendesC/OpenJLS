@@ -278,11 +278,11 @@ architecture rtl of openjls_top is
   signal sReg2V       : std_logic;
   signal sReg3V       : std_logic;
   signal sReg4V       : std_logic;
-  signal sReg1EOL     : std_logic;
-  signal sReg1EOI     : std_logic;
-  signal sReg2EOI     : std_logic;
-  signal sReg3EOI     : std_logic;
-  signal sReg4EOI     : std_logic;
+  signal sReg1Eol     : std_logic;
+  signal sReg1Eoi     : std_logic;
+  signal sReg2Eoi     : std_logic;
+  signal sReg3Eoi     : std_logic;
+  signal sReg4Eoi     : std_logic;
   signal sReg1ModeRun : std_logic;
   signal sReg1D1      : signed(BITNESS downto 0);
   signal sReg1D2      : signed(BITNESS downto 0);
@@ -298,8 +298,8 @@ architecture rtl of openjls_top is
   signal sLbRc        : unsigned(BITNESS - 1 downto 0);
   signal sLbRd        : unsigned(BITNESS - 1 downto 0);
   signal sLbValid     : std_logic;
-  signal sLbEOL       : std_logic;
-  signal sLbEOI       : std_logic;
+  signal sLbEol       : std_logic;
+  signal sLbEoi       : std_logic;
 
   -- Stage 1 combinational
   signal sS1D1      : signed(BITNESS downto 0);
@@ -331,10 +331,10 @@ architecture rtl of openjls_top is
   signal sS2RawValid    : std_logic;
   signal sS2RawLen      : unsigned(4 downto 0);
   signal sS2RawVal      : unsigned(RUN_CNT_WIDTH - 1 downto 0);
-  signal sS2RIValid     : std_logic;
-  signal sS2RIIx        : unsigned(BITNESS - 1 downto 0);
-  signal sS2RIRa        : unsigned(BITNESS - 1 downto 0);
-  signal sS2RIRb        : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiValid     : std_logic;
+  signal sS2RiIx        : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiRa        : unsigned(BITNESS - 1 downto 0);
+  signal sS2RiRb        : unsigned(BITNESS - 1 downto 0);
   signal sS2RiRunIndex  : unsigned(4 downto 0);
   signal sS2RiErr18     : signed(BITNESS downto 0);
 
@@ -407,7 +407,7 @@ architecture rtl of openjls_top is
   -- Stage 5
   signal sS5MErrval    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
   signal sS5RiMap      : std_logic;
-  signal sS5RiEMErrval : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal sS5RiEmErrval : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
   signal sS5GolMErr    : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
   -- A.22 is RI-only. Gate its inputs on mode so non-RI tokens drive zeros and
@@ -423,7 +423,7 @@ architecture rtl of openjls_top is
   -- Stage 5 inter-stage registers: Reg5 in front of A.11_1, Reg6 after.
   signal sReg5,    sReg6    : t_pipeline_token;
   signal sReg5V,   sReg6V   : std_logic;
-  signal sReg5EOI, sReg6EOI : std_logic;
+  signal sReg5Eoi, sReg6Eoi : std_logic;
   signal sReg5GolMErr       : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
   signal sReg6Unary         : unsigned(UNARY_WIDTH - 1 downto 0);
   signal sReg6SufLen        : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
@@ -449,7 +449,7 @@ architecture rtl of openjls_top is
   signal sBsFlush      : std_logic;
   signal sBsAlmostFull : std_logic;
   signal sBsFlushDone  : std_logic;
-  signal sFramerEOI    : std_logic;
+  signal sFramerEoi    : std_logic;
   signal sImageActive  : std_logic;
   signal sFramerStart  : std_logic;
   signal sReadyOut     : std_logic;
@@ -601,8 +601,8 @@ begin
       oC           => sLbRc,
       oD           => sLbRd,
       oValid       => sLbValid,
-      oEOL         => sLbEOL,
-      oEOI         => sLbEOI
+      oEOL         => sLbEol,
+      oEOI         => sLbEoi
     );
 
   u_a1 : entity work.a1_gradient_comp(behavioral)
@@ -643,8 +643,8 @@ begin
       if (iRst = '1') then
         sReg1    <= CO_TOKEN_NONE;
         sReg1V   <= '0';
-        sReg1EOL <= '0';
-        sReg1EOI <= '0';
+        sReg1Eol <= '0';
+        sReg1Eoi <= '0';
         sReg1D1  <= (others => '0');
         sReg1D2  <= (others => '0');
         sReg1D3  <= (others => '0');
@@ -666,8 +666,8 @@ begin
 
         sReg1    <= v;
         sReg1V   <= sValid;
-        sReg1EOL <= sLbValid and sLbEOL;
-        sReg1EOI <= sLbValid and sLbEOI;
+        sReg1Eol <= sLbValid and sLbEol;
+        sReg1Eoi <= sLbValid and sLbEoi;
         sReg1D1  <= sS1D1;
         sReg1D2  <= sS1D2;
         sReg1D3  <= sS1D3;
@@ -724,7 +724,7 @@ begin
       iRa          => sReg1.Ra(BITNESS - 1 downto 0),
       iIx          => sReg1.Ix(BITNESS - 1 downto 0),
       iRunCnt      => sRunCntReg,
-      iEOL         => sReg1EOL,
+      iEOL         => sReg1Eol,
       oRunCnt      => sS2RunCnt,
       oRunHit      => sS2RunHit,
       oRunContinue => sS2RunContinue
@@ -742,7 +742,7 @@ begin
       iClk          => iClk,
       iRst          => iRst,
       iCE           => not sStallLogic,
-      iEOI          => sReg1EOI,
+      iEOI          => sReg1Eoi,
       iRunCnt       => sS2RunCnt,
       iRunHit       => sS2RunHit,
       iRunContinue  => sS2RunContinue,
@@ -753,10 +753,10 @@ begin
       oRawValid     => sS2RawValid,
       oRawSuffixLen => sS2RawLen,
       oRawSuffixVal => sS2RawVal,
-      oRIValid      => sS2RIValid,
-      oRIIx         => sS2RIIx,
-      oRIRa         => sS2RIRa,
-      oRIRb         => sS2RIRb,
+      oRIValid      => sS2RiValid,
+      oRIIx         => sS2RiIx,
+      oRIRa         => sS2RiRa,
+      oRIRb         => sS2RiRb,
       oRiRunIndex   => sS2RiRunIndex,
       oInRunNext    => sS1InRunNext
     );
@@ -777,9 +777,9 @@ begin
     )
     port map (
       iRItype => sS2RItype,
-      iRa     => sS2RIRa,
-      iRb     => sS2RIRb,
-      iIx     => sS2RIIx,
+      iRa     => sS2RiRa,
+      iRb     => sS2RiRb,
+      iIx     => sS2RiIx,
       oErrval => sS2RiErr18
     );
 
@@ -803,7 +803,7 @@ begin
 
   -- Stage 2 mode selection. Precedence: RI break (Golomb+raw) > raw-only.
   sS2TokenMode <= token_regular when sReg1.mode = token_regular else
-                  token_run_interruption when sS2RIValid = '1' else
+                  token_run_interruption when sS2RiValid = '1' else
                   token_raw when sS2RawValid = '1' else
                   token_none;
 
@@ -859,7 +859,7 @@ begin
       iRdAddr     => std_logic_vector(sS2Q),
       iRdEn       => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
       bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
-      iEndOfImage => sReg1EOI,
+      iEndOfImage => sReg1Eoi,
       oRdData     => sCtxRdData
     );
 
@@ -915,7 +915,7 @@ begin
       if (iRst = '1') then
         sReg2    <= CO_TOKEN_NONE;
         sReg2V   <= '0';
-        sReg2EOI <= '0';
+        sReg2Eoi <= '0';
         sReg2Px  <= (others => '0');
       elsif (sCE2 = '1') then
         -- Build Reg2 per mode. Fields not meaningful for the current mode
@@ -938,9 +938,9 @@ begin
 
           when token_run_interruption =>
 
-            v.Ix         := sS2RIIx;
-            v.Ra         := sS2RIRa;
-            v.Rb         := sS2RIRb;
+            v.Ix         := sS2RiIx;
+            v.Ra         := sS2RiRa;
+            v.Rb         := sS2RiRb;
             v.RItype     := sS2RItype;
             v.Errval     := resize(sS2RiErr18, v.Errval'length);
             v.RawLen     := resize(sS2RawLen, v.RawLen'length);
@@ -964,7 +964,7 @@ begin
 
         sReg2    <= v;
         sReg2V   <= sReg1V and bool2bit(sS2TokenMode /= token_none);
-        sReg2EOI <= sReg1EOI;
+        sReg2Eoi <= sReg1Eoi;
         sReg2Px  <= sS2Px;
       end if;
     end if;
@@ -1188,7 +1188,7 @@ begin
       if (iRst = '1') then
         sReg3    <= CO_TOKEN_NONE;
         sReg3V   <= '0';
-        sReg3EOI <= '0';
+        sReg3Eoi <= '0';
       elsif (sCE3 = '1') then
         v      := sReg2;
         v.Aq   := sS3Aq;
@@ -1221,7 +1221,7 @@ begin
         end if;
         sReg3    <= v;
         sReg3V   <= sReg2V;
-        sReg3EOI <= sReg2EOI;
+        sReg3Eoi <= sReg2Eoi;
       end if;
     end if;
 
@@ -1312,7 +1312,7 @@ begin
       if (iRst = '1') then
         sReg4    <= CO_TOKEN_NONE;
         sReg4V   <= '0';
-        sReg4EOI <= '0';
+        sReg4Eoi <= '0';
       elsif (sCE4 = '1') then
         v   := sReg3;
         v.k := resize(sS4K, K_WIDTH);
@@ -1321,7 +1321,7 @@ begin
         end if;
         sReg4    <= v;
         sReg4V   <= sReg3V;
-        sReg4EOI <= sReg3EOI;
+        sReg4Eoi <= sReg3Eoi;
       end if;
     end if;
 
@@ -1379,11 +1379,11 @@ begin
       iErrval   => sA22Errval,
       iRItype   => sA22RItype,
       iMap      => sA22Map,
-      oEMErrval => sS5RiEMErrval
+      oEMErrval => sS5RiEmErrval
     );
 
   sS5GolMErr <= sS5MErrval when sReg4.mode = token_regular else
-                sS5RiEMErrval;
+                sS5RiEmErrval;
 
   -------------------------------------------------------------------------------------------------------------
   -- Register 5 (Stage 5 mapping → A.11_1 golomb encoder)
@@ -1398,7 +1398,7 @@ begin
       if (iRst = '1') then
         sReg5        <= CO_TOKEN_NONE;
         sReg5V       <= '0';
-        sReg5EOI     <= '0';
+        sReg5Eoi     <= '0';
         sReg5GolMErr <= (others => '0');
       elsif (sCE5 = '1') then
         v := sReg4;
@@ -1407,7 +1407,7 @@ begin
         end if;
         sReg5        <= v;
         sReg5V       <= sReg4V;
-        sReg5EOI     <= sReg4EOI;
+        sReg5Eoi     <= sReg4Eoi;
         sReg5GolMErr <= sS5GolMErr;
       end if;
     end if;
@@ -1447,7 +1447,7 @@ begin
       if (iRst = '1') then
         sReg6       <= CO_TOKEN_NONE;
         sReg6V      <= '0';
-        sReg6EOI    <= '0';
+        sReg6Eoi    <= '0';
         sReg6Unary  <= (others => '0');
         sReg6SufLen <= (others => '0');
         sReg6SufVal <= (others => '0');
@@ -1458,7 +1458,7 @@ begin
         end if;
         sReg6       <= v;
         sReg6V      <= sReg5V;
-        sReg6EOI    <= sReg5EOI;
+        sReg6Eoi    <= sReg5Eoi;
         sReg6Unary  <= sS5Unary;
         sReg6SufLen <= sS5SufLen;
         sReg6SufVal <= sS5SufVal;
@@ -1538,7 +1538,7 @@ begin
       iStart       => sFramerStart,
       iImageWidth  => sImageWidth,
       iImageHeight => sImageHeight,
-      iEOI         => sFramerEOI,
+      iEOI         => sFramerEoi,
       iWord        => sBsWord,
       iValid       => sBsWordV,
       iByteEnable  => sBsValidB,
@@ -1562,7 +1562,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Flush / framer control
   -------------------------------------------------------------------------------------------------------------
-  -- Timing (T = cycle when sReg6EOI is sampled high, i.e. Reg6 holds the
+  -- Timing (T = cycle when sReg6Eoi is sampled high, i.e. Reg6 holds the
   -- image's last token, which is the cycle bit_packer consumes it):
   --   T+1: bit_packer's registered output presents the last bit-packed word
   --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
@@ -1580,13 +1580,13 @@ begin
       if (iRst = '1') then
         sBsFlush <= '0';
       elsif (sStallLogic = '0') then
-        sBsFlush <= sReg6EOI;
+        sBsFlush <= sReg6Eoi;
       end if;
     end if;
 
   end process p_flush_control;
 
-  sFramerEOI <= sBsFlushDone;
+  sFramerEoi <= sBsFlushDone;
 
   p_image_active : process (iClk) is
   begin
