@@ -47,6 +47,12 @@ rule:
   parameter_specification_500:
     case: 'camelCase'
 
+  # ── snake_case: process labels ──
+  process_017:
+    case: 'lower'
+  process_019:
+    case: 'lower'
+
   # ── snake_case: entities, architectures, instances, types, subprograms ──
   architecture_011:
     case: 'lower'
