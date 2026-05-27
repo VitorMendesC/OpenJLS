@@ -1,0 +1,121 @@
+# VSG (VHDL Style Guide) config file for conform.nvim
+
+rule:
+  instantiation_034: # Disable "Change to component instantiation error"
+    disable: true
+
+  # ── UPPER_SNAKE_CASE: constants and generics ──
+  constant_004:
+    case: 'upper'
+  generic_007:
+    case: 'upper'
+  generic_map_002:
+    case: 'upper'
+
+  # ── camelCase: signals, ports, variables, aliases ──
+  signal_004:
+    case: 'camelCase'
+  port_010:
+    case: 'camelCase'
+  port_map_002:
+    case: 'camelCase'
+  variable_004:
+    case: 'camelCase'
+  alias_declaration_502:
+    case: 'camelCase'
+  parameter_specification_500:
+    case: 'camelCase'
+
+  # ── snake_case: entities, architectures, instances, types, subprograms ──
+  architecture_011:
+    case: 'lower'
+  architecture_013:
+    case: 'lower'
+  architecture_014:
+    case: 'lower'
+  entity_008:
+    case: 'lower'
+  entity_012:
+    case: 'lower'
+  entity_specification_503:
+    case: 'lower'
+  component_008:
+    case: 'lower'
+  component_012:
+    case: 'lower'
+  instantiation_009:
+    case: 'lower'
+  instantiation_028:
+    case: 'lower'
+  instantiation_500:
+    case: 'lower'
+  type_004:
+    case: 'lower'
+  type_500:
+    case: 'lower'
+  type_mark_500:
+    case: 'lower'
+  subtype_501:
+    case: 'lower'
+  function_017:
+    case: 'lower'
+  function_506:
+    case: 'lower'
+  function_507:
+    case: 'lower'
+  function_508:
+    case: 'lower'
+  procedure_501:
+    case: 'lower'
+  procedure_506:
+    case: 'lower'
+  procedure_508:
+    case: 'lower'
+  procedure_509:
+    case: 'lower'
+  procedure_call_502:
+    case: 'lower'
+  package_008:
+    case: 'lower'
+  package_010:
+    case: 'lower'
+  package_body_502:
+    case: 'lower'
+  package_body_507:
+    case: 'lower'
+  package_instantiation_501:
+    case: 'lower'
+  package_instantiation_504:
+    case: 'lower'
+  subprogram_instantiation_500:
+    case: 'lower'
+  subprogram_instantiation_503:
+    case: 'lower'
+  context_012:
+    case: 'lower'
+  context_016:
+    case: 'lower'
+  file_500:
+    case: 'lower'
+  interface_incomplete_type_declaration_501:
+    case: 'lower'
+  attribute_declaration_501:
+    case: 'lower'
+  attribute_declaration_502:
+    case: 'lower'
+  attribute_specification_501:
+    case: 'lower'
+
+  # ── lowercase: library/use/context refs ──
+  library_500:
+    case: 'lower'
+  use_clause_500:
+    case: 'lower'
+  use_clause_501:
+    case: 'lower'
+  use_clause_502:
+    case: 'lower'
+  context_ref_500:
+    case: 'lower'
+  context_ref_501:
+    case: 'lower'
