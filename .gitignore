@@ -5,6 +5,7 @@ project_testbenches/
 sim/
 Papers/
 Verification/
+build/
 
 # Files
 settings.json
