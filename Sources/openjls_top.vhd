@@ -583,7 +583,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 1 — Line buffer + A.1 gradients + A.3 mode selection
   -------------------------------------------------------------------------------------------------------------
-  u_line_buffer : entity work.line_buffer
+  u_line_buffer : entity work.line_buffer(behavioral)
     generic map (
       MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
       MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
@@ -605,7 +605,7 @@ begin
       oEOI         => sLbEOI
     );
 
-  u_a1 : entity work.a1_gradient_comp
+  u_a1 : entity work.a1_gradient_comp(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -619,7 +619,7 @@ begin
       oD3 => sS1D3
     );
 
-  u_a3 : entity work.a3_mode_selection
+  u_a3 : entity work.a3_mode_selection(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -679,7 +679,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 2 — Regular: A.4 → A.4.1 → A.4.2
   -------------------------------------------------------------------------------------------------------------
-  u_a4 : entity work.a4_quantization_gradients
+  u_a4 : entity work.a4_quantization_gradients(behavioral)
     generic map (
       BITNESS => BITNESS,
       MAX_VAL => MAX_VAL
@@ -693,7 +693,7 @@ begin
       oQ3 => sS2Q3
     );
 
-  u_a4_1 : entity work.a4_1_quant_gradient_merging
+  u_a4_1 : entity work.a4_1_quant_gradient_merging(behavioral)
     port map (
       iQ1   => sS2Q1,
       iQ2   => sS2Q2,
@@ -704,7 +704,7 @@ begin
       oSign => sS2MSign
     );
 
-  u_a4_2 : entity work.a4_2_q_mapping
+  u_a4_2 : entity work.a4_2_q_mapping(behavioral)
     port map (
       iQ1 => sS2MQ1,
       iQ2 => sS2MQ2,
@@ -715,7 +715,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 2 — Run: A.14, A.15/A.16 (FSM), A.17
   -------------------------------------------------------------------------------------------------------------
-  u_a14 : entity work.a14_run_length_determination
+  u_a14 : entity work.a14_run_length_determination(behavioral)
     generic map (
       BITNESS       => BITNESS,
       RUN_CNT_WIDTH => RUN_CNT_WIDTH
@@ -733,7 +733,7 @@ begin
   sReg1ModeRun <= '1' when sReg1.mode = token_run else
                   '0';
 
-  u_a15_16 : entity work.a15_a16_encode_run
+  u_a15_16 : entity work.a15_a16_encode_run(behavioral)
     generic map (
       BITNESS       => BITNESS,
       RUN_CNT_WIDTH => RUN_CNT_WIDTH
@@ -761,7 +761,7 @@ begin
       oInRunNext    => sS1InRunNext
     );
 
-  u_a17 : entity work.a17_run_interruption_index
+  u_a17 : entity work.a17_run_interruption_index(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -771,7 +771,7 @@ begin
       oRItype => sS2RItype
     );
 
-  u_a18 : entity work.a18_run_interruption_prediction_error
+  u_a18 : entity work.a18_run_interruption_prediction_error(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -839,7 +839,7 @@ begin
   sNqEncRi <= (others => '0') when sS4RiNqNew = to_unsigned(RESET, N_WIDTH) else
               resize(sS4RiNqNew, N_STORED);
 
-  u_ctx_ram : entity work.context_ram
+  u_ctx_ram : entity work.context_ram(behavioral)
     generic map (
       RANGE_P     => RANGE_P,
       RAM_DEPTH   => RAM_DEPTH,
@@ -891,7 +891,7 @@ begin
            (others => '0') when sReg2.mode = token_regular else
            unsigned(sCtxRdData(CTX_NN_HI downto CTX_NN_LO));
 
-  u_a5 : entity work.a5_edge_detecting_predictor
+  u_a5 : entity work.a5_edge_detecting_predictor(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -1005,7 +1005,7 @@ begin
              sS3CqBase - 1;
 
   -- Central chain (ΔCq = 0)
-  u_a6_c : entity work.a6_prediction_correction
+  u_a6_c : entity work.a6_prediction_correction(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
@@ -1016,7 +1016,7 @@ begin
       oPx   => sS3PxC
     );
 
-  u_a7_c : entity work.a7_prediction_error
+  u_a7_c : entity work.a7_prediction_error(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -1027,7 +1027,7 @@ begin
       oErrorVal => sS3Err7C
     );
 
-  u_a8_c : entity work.a8_error_quantization
+  u_a8_c : entity work.a8_error_quantization(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
@@ -1038,7 +1038,7 @@ begin
       oRx       => open
     );
 
-  u_a9_c : entity work.a9_modulo_reduction
+  u_a9_c : entity work.a9_modulo_reduction(behavioral)
     generic map (
       BITNESS => BITNESS, RANGE_P => RANGE_P
     )
@@ -1048,7 +1048,7 @@ begin
     );
 
   -- +1 chain (ΔCq = +1)
-  u_a6_p : entity work.a6_prediction_correction
+  u_a6_p : entity work.a6_prediction_correction(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
@@ -1059,7 +1059,7 @@ begin
       oPx   => sS3PxP
     );
 
-  u_a7_p : entity work.a7_prediction_error
+  u_a7_p : entity work.a7_prediction_error(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -1070,7 +1070,7 @@ begin
       oErrorVal => sS3Err7P
     );
 
-  u_a8_p : entity work.a8_error_quantization
+  u_a8_p : entity work.a8_error_quantization(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
@@ -1081,7 +1081,7 @@ begin
       oRx       => open
     );
 
-  u_a9_p : entity work.a9_modulo_reduction
+  u_a9_p : entity work.a9_modulo_reduction(behavioral)
     generic map (
       BITNESS => BITNESS, RANGE_P => RANGE_P
     )
@@ -1091,7 +1091,7 @@ begin
     );
 
   -- −1 chain (ΔCq = −1)
-  u_a6_m : entity work.a6_prediction_correction
+  u_a6_m : entity work.a6_prediction_correction(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
@@ -1102,7 +1102,7 @@ begin
       oPx   => sS3PxM
     );
 
-  u_a7_m : entity work.a7_prediction_error
+  u_a7_m : entity work.a7_prediction_error(behavioral)
     generic map (
       BITNESS => BITNESS
     )
@@ -1113,7 +1113,7 @@ begin
       oErrorVal => sS3Err7M
     );
 
-  u_a8_m : entity work.a8_error_quantization
+  u_a8_m : entity work.a8_error_quantization(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
     )
@@ -1124,7 +1124,7 @@ begin
       oRx       => open
     );
 
-  u_a9_m : entity work.a9_modulo_reduction
+  u_a9_m : entity work.a9_modulo_reduction(behavioral)
     generic map (
       BITNESS => BITNESS, RANGE_P => RANGE_P
     )
@@ -1148,7 +1148,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 3 — RI: A.19, A.20
   -------------------------------------------------------------------------------------------------------------
-  u_a19 : entity work.a19_run_interruption_error
+  u_a19 : entity work.a19_run_interruption_error(behavioral)
     generic map (
       BITNESS => BITNESS,
       RANGE_P => RANGE_P
@@ -1163,7 +1163,7 @@ begin
     );
 
   -- A.20: single context read returns (Aq, Nq) for Q ∈ {365, 366}.
-  u_a20 : entity work.a20_compute_temp
+  u_a20 : entity work.a20_compute_temp(behavioral)
     generic map (
       A_WIDTH => A_WIDTH,
       N_WIDTH => N_WIDTH
@@ -1234,7 +1234,7 @@ begin
   sS4AqSel <= sReg3.Temp when sReg3.mode = token_run_interruption else
               sReg3.Aq;
 
-  u_a10 : entity work.a10_compute_k
+  u_a10 : entity work.a10_compute_k(behavioral)
     generic map (
       A_WIDTH => A_WIDTH,
       K_WIDTH => K_WIDTH,
@@ -1246,7 +1246,7 @@ begin
       oK  => sS4K
     );
 
-  u_a12 : entity work.a12_variables_update
+  u_a12 : entity work.a12_variables_update(rtl)
     generic map (
       ERROR_WIDTH => ERROR_WIDTH,
       A_WIDTH     => A_WIDTH,
@@ -1264,7 +1264,7 @@ begin
       oNq       => sS4NqNew
     );
 
-  u_a13 : entity work.a13_update_bias
+  u_a13 : entity work.a13_update_bias(rtl)
     generic map (
       B_WIDTH => B_WIDTH,
       N_WIDTH => N_WIDTH,
@@ -1280,7 +1280,7 @@ begin
       oCq => sS4CqNew
     );
 
-  u_a23 : entity work.a23_run_interruption_update
+  u_a23 : entity work.a23_run_interruption_update(behavioral)
     generic map (
       A_WIDTH     => A_WIDTH,
       N_WIDTH     => N_WIDTH,
@@ -1330,7 +1330,7 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 5 — Regular: A.11; RI: A.21 + A.22;
   -------------------------------------------------------------------------------------------------------------
-  u_a11 : entity work.a11_error_mapping
+  u_a11 : entity work.a11_error_mapping(behavioral)
     generic map (
       N_WIDTH                => N_WIDTH,
       B_WIDTH                => B_WIDTH,
@@ -1346,7 +1346,7 @@ begin
       oMappedErrorVal => sS5MErrval
     );
 
-  u_a21 : entity work.a21_compute_map
+  u_a21 : entity work.a21_compute_map(behavioral)
     generic map (
       K_WIDTH     => K_WIDTH,
       N_WIDTH     => N_WIDTH,
@@ -1370,7 +1370,7 @@ begin
   sA22Map    <= sS5RiMap when sReg4.mode = token_run_interruption else
                 '0';
 
-  u_a22 : entity work.a22_errval_mapping
+  u_a22 : entity work.a22_errval_mapping(behavioral)
     generic map (
       ERROR_WIDTH         => ERROR_WIDTH,
       MAPPED_ERRVAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
@@ -1414,7 +1414,7 @@ begin
 
   end process;
 
-  u_a11_1 : entity work.a11_1_golomb_encoder
+  u_a11_1 : entity work.a11_1_golomb_encoder(behavioral)
     generic map (
       K_WIDTH                => K_WIDTH,
       QBPP                   => QBPP,
@@ -1478,7 +1478,7 @@ begin
                       and (sReg6.mode = token_regular or sReg6.mode = token_run_interruption) else
              '0';
 
-  u_bit_packer : entity work.a11_2_bit_packer
+  u_bit_packer : entity work.a11_2_bit_packer(behavioral)
     generic map (
       LIMIT           => LIMIT,
       OUT_WIDTH       => LIMIT,
@@ -1502,7 +1502,7 @@ begin
       oValidLen    => sBpValidLen
     );
 
-  u_byte_stuffer : entity work.byte_stuffer
+  u_byte_stuffer : entity work.byte_stuffer(behavioral)
     generic map (
       IN_WIDTH            => LIMIT,
       OUT_BYTES_PER_CYCLE => BYTE_STUFFER_OUT_BYTES_PER_CYCLE,
@@ -1524,7 +1524,7 @@ begin
       oFlushDone  => sBsFlushDone
     );
 
-  u_framer : entity work.jls_framer
+  u_framer : entity work.jls_framer(behavioral)
     generic map (
       BITNESS          => BITNESS,
       IN_WIDTH         => BYTE_STUFFER_OUT_WIDTH,
