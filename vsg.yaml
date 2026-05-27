@@ -4,6 +4,34 @@ rule:
   instantiation_034: # Disable "Change to component instantiation error"
     disable: true
 
+  # ── Alignment: don't break groups on comments or blank lines ──
+  architecture_026: # signal : alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+  architecture_027: # constant : alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+  entity_017: # generic : alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+    separate_generic_port_alignment: 'no'
+  entity_018: # port : alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+    separate_generic_port_alignment: 'no'
+  entity_020: # port mode (in/out) alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+    separate_generic_port_alignment: 'no'
+  instantiation_010: # generic_map/port_map => alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+    separate_generic_port_alignment: 'no'
+  instantiation_029: # generic_map/port_map comment alignment
+    blank_line_ends_group: 'no'
+    comment_line_ends_group: 'no'
+    separate_generic_port_alignment: 'no'
+
   # ── UPPER_SNAKE_CASE: constants and generics ──
   constant_004:
     case: 'upper'
