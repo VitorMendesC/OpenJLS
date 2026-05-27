@@ -1,28 +1,28 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 08/24/2025 02:31:55 PM
-  -- Design Name:
-  -- Module Name: prediction_correction - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:                 Code segment A.6
-  --                                      Prediction correction from the bias
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 08/24/2025 02:31:55 PM
+-- Design Name:
+-- Module Name: prediction_correction - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:                 Code segment A.6
+--                                      Prediction correction from the bias
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a6_prediction_correction is
   generic (

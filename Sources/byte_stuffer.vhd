@@ -1,66 +1,66 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Module Name: byte_stuffer - Behavioral
-  -- Description:
-  --
-  --   Per T.87: every 0xFF byte in the encoded bitstream must be followed by a
-  --   stuffed '0' bit so decoders can distinguish payload from markers (an FF
-  --   followed by a non-zero byte = marker).
-  --
-  --   Three internal stages:
-  --
-  --     Stage 1 — bit packer:
-  --       Accumulates input bits MSB-first into a 2*FIFO_BITS accumulator.
-  --       Drains a fixed FIFO_BITS-wide word into the FIFO whenever enough
-  --       bits are present. On flush the sub-byte residue is padded to a
-  --       byte boundary; the final FIFO write is always FIFO_BITS wide
-  --       (zero-padded if needed) and carries the byte-valid count
-  --       plus last_flag=1. Non-last writes always carry FIFO_BYTES; the
-  --       byte-valid field is only consulted on last_flag=1.
-  --
-  --     Stage 2 — BRAM-backed sync FIFO
-  --
-  --     Stage 3 — FF stuffer + output emit:
-  --       Refills a holding register from FIFO pops. Each cycle forms up to
-  --       OUT_BYTES_PER_CYCLE output bytes via:
-  --         (a) a parallel pre-compute of FF-equality flags over the 8 fixed
-  --             candidate byte windows that any of the 4 slots could ever
-  --             read from (offsets 0, 7, 8, 15, 16, 22, 23, 24);
-  --         (b) a 4-step chain over the slots that resolves each slot's input
-  --             prev_FF and selects the correct candidate flag/bits via a
-  --             small mux.
-  --
-  --       End-of-image partial-byte drain (sub-byte residue, or a pending
-  --       stuff bit with no follow-up data) is split into its own cycle via
-  --       sDrainPending: the padded byte is assembled, latched, and emitted
-  --       on the following beat. Adds at most 1 cycle of latency per image
-  --       boundary and keeps the pad-byte assembly off the critical path.
-  --
-  --   Flush protocol (iFlush, single-cycle pulse from upstream on the cycle
-  --   the bit_packer presents the image's last word):
-  --     - Stage 1 pads its sub-byte residue and tags the final FIFO write
-  --       with last_flag=1. If the accumulator was already empty, it emits
-  --       a count=0 sentinel with last_flag=1.
-  --     - Stage 3 latches the last_flag when it pops that word. Once the
-  --       holding register drains, it inserts a final stuff '0' if the last
-  --       payload byte was 0xFF, zero-pads the output accumulator to a byte
-  --       boundary, emits the remaining whole bytes, and pulses oFlushDone
-  --       on the final output beat (oFlushDone is sampled together with
-  --       oWordValid='1', matching jls_framer's iEOI contract).
-  --
-  -- Generics:
-  --   IN_WIDTH            : bit_packer worst-case word width (= LIMIT).
-  --   OUT_BYTES_PER_CYCLE : output bytes/cycle. Bounds the Stage 3 FF chain
-  --                         depth (4 bytes/cycle -> 4 levels).
-  --   BURST_DEPTH         : depth of the BRAM-backed FIFO (in wide words).
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: byte_stuffer - Behavioral
+-- Description:
+--
+--   Per T.87: every 0xFF byte in the encoded bitstream must be followed by a
+--   stuffed '0' bit so decoders can distinguish payload from markers (an FF
+--   followed by a non-zero byte = marker).
+--
+--   Three internal stages:
+--
+--     Stage 1 — bit packer:
+--       Accumulates input bits MSB-first into a 2*FIFO_BITS accumulator.
+--       Drains a fixed FIFO_BITS-wide word into the FIFO whenever enough
+--       bits are present. On flush the sub-byte residue is padded to a
+--       byte boundary; the final FIFO write is always FIFO_BITS wide
+--       (zero-padded if needed) and carries the byte-valid count
+--       plus last_flag=1. Non-last writes always carry FIFO_BYTES; the
+--       byte-valid field is only consulted on last_flag=1.
+--
+--     Stage 2 — BRAM-backed sync FIFO
+--
+--     Stage 3 — FF stuffer + output emit:
+--       Refills a holding register from FIFO pops. Each cycle forms up to
+--       OUT_BYTES_PER_CYCLE output bytes via:
+--         (a) a parallel pre-compute of FF-equality flags over the 8 fixed
+--             candidate byte windows that any of the 4 slots could ever
+--             read from (offsets 0, 7, 8, 15, 16, 22, 23, 24);
+--         (b) a 4-step chain over the slots that resolves each slot's input
+--             prev_FF and selects the correct candidate flag/bits via a
+--             small mux.
+--
+--       End-of-image partial-byte drain (sub-byte residue, or a pending
+--       stuff bit with no follow-up data) is split into its own cycle via
+--       sDrainPending: the padded byte is assembled, latched, and emitted
+--       on the following beat. Adds at most 1 cycle of latency per image
+--       boundary and keeps the pad-byte assembly off the critical path.
+--
+--   Flush protocol (iFlush, single-cycle pulse from upstream on the cycle
+--   the bit_packer presents the image's last word):
+--     - Stage 1 pads its sub-byte residue and tags the final FIFO write
+--       with last_flag=1. If the accumulator was already empty, it emits
+--       a count=0 sentinel with last_flag=1.
+--     - Stage 3 latches the last_flag when it pops that word. Once the
+--       holding register drains, it inserts a final stuff '0' if the last
+--       payload byte was 0xFF, zero-pads the output accumulator to a byte
+--       boundary, emits the remaining whole bytes, and pulses oFlushDone
+--       on the final output beat (oFlushDone is sampled together with
+--       oWordValid='1', matching jls_framer's iEOI contract).
+--
+-- Generics:
+--   IN_WIDTH            : bit_packer worst-case word width (= LIMIT).
+--   OUT_BYTES_PER_CYCLE : output bytes/cycle. Bounds the Stage 3 FF chain
+--                         depth (4 bytes/cycle -> 4 levels).
+--   BURST_DEPTH         : depth of the BRAM-backed FIFO (in wide words).
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.log2ceil;

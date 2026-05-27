@@ -1,19 +1,19 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Module Name: A20_compute_temp - Behavioral
-  -- Description: Code segment A.20 — computation of the auxiliary variable TEMP.
-  --              Q = RItype + 365, so a single context read (Aq, Nq at Q)
-  --              supplies everything needed:
-  --                RItype = 0 → TEMP = Aq                   (N unused)
-  --                RItype = 1 → TEMP = Aq + (Nq >> 1)
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: A20_compute_temp - Behavioral
+-- Description: Code segment A.20 — computation of the auxiliary variable TEMP.
+--              Q = RItype + 365, so a single context read (Aq, Nq at Q)
+--              supplies everything needed:
+--                RItype = 0 → TEMP = Aq                   (N unused)
+--                RItype = 1 → TEMP = Aq + (Nq >> 1)
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a20_compute_temp is
   generic (

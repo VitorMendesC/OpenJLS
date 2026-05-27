@@ -1,108 +1,108 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Module Name: jls_framer - Behavioral
-  -- Description:
-  --
-  --   Wraps the byte-stuffed compressed payload with JPEG-LS framing markers:
-  --     SOI + SOF55 + SOS  (header, 25 bytes, before data)
-  --     EOI = FF D9        (footer, 2 bytes, after data)
-  --
-  --   Architecture:
-  --     - One byte FIFO holds payload bytes. The FF D9 footer is pushed into
-  --       the FIFO right after byte_stuffer's last word on iEoi, so the output
-  --       side sees footer bytes as ordinary data and oLast falls out naturally.
-  --     - Header bytes come from a combinational ROM (get_header_byte). The
-  --       FIFO never stores header bytes since there are too many of them and
-  --       we need the FIFO to store new data as the HEADER is being sent.
-  --     - Output FSM (IDLE / HEADER / DATA) selects header ROM vs FIFO per beat.
-  --       Splicing handles the partial last header beat (filled from the FIFO)
-  --       and the partial last data beat (cut at sEndOfImage with oLast).
-  --     - byte_stuffer is never back-pressured. The FIFO is sized so that
-  --       pushes always fit under correct upstream behavior.
-  --
-  --   iEoi (1-cycle pulse): asserts on byte_stuffer's last word for the image.
-  --   That cycle the framer pushes (iBsValidBytes byte_stuffer bytes) followed
-  --   by (FF D9), and latches sEndOfImage to the offset (from FIFO head) of the
-  --   trailing D9. The output FSM watches this offset; when the bytes popped
-  --   this cycle reach it, oLast asserts on that beat.
-  --
-  --   In-flight EoI offsets are held in a small queue (EOI_FIFO_DEPTH) so that
-  --   tiny back-to-back images can have multiple D9 markers pending in the FIFO
-  --   at once. Depth 3 covers the smallest line_buffer-supported image (3x1)
-  --   pipelined back-to-back; overflow is caught by an assert at push time.
-  --
-  --   Image dimensions are fixed at reset by the top level and read directly
-  --   from the ports without registering.
-  --
-  --   IN_WIDTH     : word width from byte_stuffer  (CO_BYTE_STUFFER_OUT_WIDTH)
-  --   OUT_WIDTH    : final output word width        (CO_OUT_WIDTH_STD)
-  --   BUFFER_BYTES : payload FIFO depth in bytes (auto-derived; see below)
-  --
-  ---------------------------------------------------------------------------
-  -- BUFFER_BYTES sizing (worst-case occupancy)
-  ---------------------------------------------------------------------------
-  --   Two regimes contribute to peak FIFO occupancy:
-  --
-  --   1) iEoi cycle (single-image worst case):
-  --        DATA pop fires only when vCount >= BYTES_OUT, so vCount_pre at iEoi
-  --        can sit at BYTES_OUT - 1 without triggering a pop. The iEoi cycle
-  --        then pushes (iBsValidBytes <= BYTES_IN) plus the 2 footer bytes:
-  --          vCount_iEoi_max = BYTES_OUT - 1 + BYTES_IN + 2
-  --
-  --   2) Back-to-back images (image N+1 starts pushing while N drains):
-  --        From iEoi cycle T, the FF D9 marker takes
-  --          D = ceil(vCount_iEoi_max / BYTES_OUT)
-  --        cycles to reach the FIFO head and emit (oLast fires on the D9 beat).
-  --        After that, the framer transits to HEADER and emits the 25-byte
-  --        marker block over
-  --          N_h = ceil(HEADER_LEN / BYTES_OUT)
-  --        beats. The first (N_h - 1) HEADER beats pull bytes from the ROM and
-  --        do not pop the FIFO; the final mixed beat splices ROM + FIFO bytes
-  --        and pops (BYTES_OUT - HEADER_LEN mod BYTES_OUT) data bytes.
-  --
-  --        Worst case: byte_stuffer begins pushing image N+1 the cycle after
-  --        iEoi and continues at BYTES_IN/cycle throughout. Since BYTES_OUT is
-  --        normally >= BYTES_IN, image N drains faster than N+1 accumulates,
-  --        so by the time the mixed HEADER beat fires N's bytes are gone and
-  --        only N+1's bytes occupy the FIFO. Peak N+1 bytes (after the mixed
-  --        beat's net push):
-  --          PEAK_N1 = (D + N_h) * BYTES_IN
-  --                  - (BYTES_OUT - HEADER_LEN mod BYTES_OUT)
-  --
-  --   General formula (peak FIFO occupancy across all phases):
-  --
-  --     V_iEoi  = BYTES_OUT + BYTES_IN + 1
-  --     D       = ceil(V_iEoi    / BYTES_OUT)
-  --     N_h     = ceil(HEADER_LEN / BYTES_OUT)
-  --
-  --     BUFFER_BYTES = max(
-  --       V_iEoi,                                              (a) iEoi cycle
-  --       D * BYTES_IN,                                        (b) end of N drain
-  --       (D + N_h - 1) * BYTES_IN,                            (c) last full hdr beat
-  --       (D + N_h) * BYTES_IN - (N_h*BYTES_OUT - HEADER_LEN)  (d) after mixed beat
-  --     )
-  --
-  --   For typical configs with BYTES_IN <= BYTES_OUT, term (d) dominates.
-  --
-  --   Standard config (BYTES_IN=8, BYTES_OUT=9, HEADER_LEN=25):
-  --     V_iEoi = 18, D = 2, N_h = 3
-  --     (a)=18, (b)=16, (c)=32, (d)=(5*8) - (3*9 - 25) = 40 - 2 = 38
-  --     BUFFER_BYTES = 38
-  --
-  --   This also implies that outputting the last bytes after EOI can take several
-  --   cycles, the image last byte needs to be tracked to assert oLast, padding and
-  --   oKeep on the correct beat.
-  --
-  --   Caveat: the BUFFER_BYTES formula above assumes iReady = '1' steady-state.
-  --   With sustained downstream backpressure the FIFO has no bound (no upstream
-  --   stall path). A runtime assert catches overflow in simulation.
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: jls_framer - Behavioral
+-- Description:
+--
+--   Wraps the byte-stuffed compressed payload with JPEG-LS framing markers:
+--     SOI + SOF55 + SOS  (header, 25 bytes, before data)
+--     EOI = FF D9        (footer, 2 bytes, after data)
+--
+--   Architecture:
+--     - One byte FIFO holds payload bytes. The FF D9 footer is pushed into
+--       the FIFO right after byte_stuffer's last word on iEoi, so the output
+--       side sees footer bytes as ordinary data and oLast falls out naturally.
+--     - Header bytes come from a combinational ROM (get_header_byte). The
+--       FIFO never stores header bytes since there are too many of them and
+--       we need the FIFO to store new data as the HEADER is being sent.
+--     - Output FSM (IDLE / HEADER / DATA) selects header ROM vs FIFO per beat.
+--       Splicing handles the partial last header beat (filled from the FIFO)
+--       and the partial last data beat (cut at sEndOfImage with oLast).
+--     - byte_stuffer is never back-pressured. The FIFO is sized so that
+--       pushes always fit under correct upstream behavior.
+--
+--   iEoi (1-cycle pulse): asserts on byte_stuffer's last word for the image.
+--   That cycle the framer pushes (iBsValidBytes byte_stuffer bytes) followed
+--   by (FF D9), and latches sEndOfImage to the offset (from FIFO head) of the
+--   trailing D9. The output FSM watches this offset; when the bytes popped
+--   this cycle reach it, oLast asserts on that beat.
+--
+--   In-flight EoI offsets are held in a small queue (EOI_FIFO_DEPTH) so that
+--   tiny back-to-back images can have multiple D9 markers pending in the FIFO
+--   at once. Depth 3 covers the smallest line_buffer-supported image (3x1)
+--   pipelined back-to-back; overflow is caught by an assert at push time.
+--
+--   Image dimensions are fixed at reset by the top level and read directly
+--   from the ports without registering.
+--
+--   IN_WIDTH     : word width from byte_stuffer  (CO_BYTE_STUFFER_OUT_WIDTH)
+--   OUT_WIDTH    : final output word width        (CO_OUT_WIDTH_STD)
+--   BUFFER_BYTES : payload FIFO depth in bytes (auto-derived; see below)
+--
+---------------------------------------------------------------------------
+-- BUFFER_BYTES sizing (worst-case occupancy)
+---------------------------------------------------------------------------
+--   Two regimes contribute to peak FIFO occupancy:
+--
+--   1) iEoi cycle (single-image worst case):
+--        DATA pop fires only when vCount >= BYTES_OUT, so vCount_pre at iEoi
+--        can sit at BYTES_OUT - 1 without triggering a pop. The iEoi cycle
+--        then pushes (iBsValidBytes <= BYTES_IN) plus the 2 footer bytes:
+--          vCount_iEoi_max = BYTES_OUT - 1 + BYTES_IN + 2
+--
+--   2) Back-to-back images (image N+1 starts pushing while N drains):
+--        From iEoi cycle T, the FF D9 marker takes
+--          D = ceil(vCount_iEoi_max / BYTES_OUT)
+--        cycles to reach the FIFO head and emit (oLast fires on the D9 beat).
+--        After that, the framer transits to HEADER and emits the 25-byte
+--        marker block over
+--          N_h = ceil(HEADER_LEN / BYTES_OUT)
+--        beats. The first (N_h - 1) HEADER beats pull bytes from the ROM and
+--        do not pop the FIFO; the final mixed beat splices ROM + FIFO bytes
+--        and pops (BYTES_OUT - HEADER_LEN mod BYTES_OUT) data bytes.
+--
+--        Worst case: byte_stuffer begins pushing image N+1 the cycle after
+--        iEoi and continues at BYTES_IN/cycle throughout. Since BYTES_OUT is
+--        normally >= BYTES_IN, image N drains faster than N+1 accumulates,
+--        so by the time the mixed HEADER beat fires N's bytes are gone and
+--        only N+1's bytes occupy the FIFO. Peak N+1 bytes (after the mixed
+--        beat's net push):
+--          PEAK_N1 = (D + N_h) * BYTES_IN
+--                  - (BYTES_OUT - HEADER_LEN mod BYTES_OUT)
+--
+--   General formula (peak FIFO occupancy across all phases):
+--
+--     V_iEoi  = BYTES_OUT + BYTES_IN + 1
+--     D       = ceil(V_iEoi    / BYTES_OUT)
+--     N_h     = ceil(HEADER_LEN / BYTES_OUT)
+--
+--     BUFFER_BYTES = max(
+--       V_iEoi,                                              (a) iEoi cycle
+--       D * BYTES_IN,                                        (b) end of N drain
+--       (D + N_h - 1) * BYTES_IN,                            (c) last full hdr beat
+--       (D + N_h) * BYTES_IN - (N_h*BYTES_OUT - HEADER_LEN)  (d) after mixed beat
+--     )
+--
+--   For typical configs with BYTES_IN <= BYTES_OUT, term (d) dominates.
+--
+--   Standard config (BYTES_IN=8, BYTES_OUT=9, HEADER_LEN=25):
+--     V_iEoi = 18, D = 2, N_h = 3
+--     (a)=18, (b)=16, (c)=32, (d)=(5*8) - (3*9 - 25) = 40 - 2 = 38
+--     BUFFER_BYTES = 38
+--
+--   This also implies that outputting the last bytes after EOI can take several
+--   cycles, the image last byte needs to be tracked to assert oLast, padding and
+--   oKeep on the correct beat.
+--
+--   Caveat: the BUFFER_BYTES formula above assumes iReady = '1' steady-state.
+--   With sustained downstream backpressure the FIFO has no bound (no upstream
+--   stall path). A runtime assert catches overflow in simulation.
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.log2ceil;

@@ -1,28 +1,28 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 02/07/2026
-  -- Design Name:
-  -- Module Name: A22_errval_mapping - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:                 Code segment A.22
-  --                                      Errval mapping for run interruption sample
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 02/07/2026
+-- Design Name:
+-- Module Name: A22_errval_mapping - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:                 Code segment A.22
+--                                      Errval mapping for run interruption sample
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a22_errval_mapping is
   generic (

@@ -1,28 +1,28 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 02/07/2026
-  -- Design Name:
-  -- Module Name: A17_run_interruption_index - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:                 Code segment A.17
-  --                                      Index computation for run interruption
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 02/07/2026
+-- Design Name:
+-- Module Name: A17_run_interruption_index - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:                 Code segment A.17
+--                                      Index computation for run interruption
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a17_run_interruption_index is
   generic (

@@ -1,40 +1,40 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date:
-  -- Module Name: line_buffer - Behavioral
-  -- Description:
-  --
-  -- Notes:
-  --              Stores one row of pixels on FIFO and provides the four T.87 causal
-  --              context neighbors for each pixel, where x is the current pixel:
-  --
-  --                  c  b  d
-  --                  a  x
-  --
-  --              a = left neighbor        (same row, col-1)
-  --              b = upper neighbor       (previous row, col)
-  --              c = upper-left neighbor  (previous row, col-1)
-  --              d = upper-right neighbor (previous row, col+1)
-  --
-  --              Border conditions (T.87 A.2.1):
-  --                First row      : b = c = d = 0
-  --                Col 0 (rows>0) : a = Rb = first pixel of previous row
-  --                                 c = Ra from start of previous row
-  --                                   = first pixel of the row before that
-  --                Col W-1        : d = b (replicate last pixel of previous row)
-  --
-  --
-  -- Assumptions:
-  --              iImageWidth >= 3, iImageHeight >= 1.
-  --              iImageWidth and iImageHeight are stable for the entire image.
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date:
+-- Module Name: line_buffer - Behavioral
+-- Description:
+--
+-- Notes:
+--              Stores one row of pixels on FIFO and provides the four T.87 causal
+--              context neighbors for each pixel, where x is the current pixel:
+--
+--                  c  b  d
+--                  a  x
+--
+--              a = left neighbor        (same row, col-1)
+--              b = upper neighbor       (previous row, col)
+--              c = upper-left neighbor  (previous row, col-1)
+--              d = upper-right neighbor (previous row, col+1)
+--
+--              Border conditions (T.87 A.2.1):
+--                First row      : b = c = d = 0
+--                Col 0 (rows>0) : a = Rb = first pixel of previous row
+--                                 c = Ra from start of previous row
+--                                   = first pixel of the row before that
+--                Col W-1        : d = b (replicate last pixel of previous row)
+--
+--
+-- Assumptions:
+--              iImageWidth >= 3, iImageHeight >= 1.
+--              iImageWidth and iImageHeight are stable for the entire image.
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.log2ceil;

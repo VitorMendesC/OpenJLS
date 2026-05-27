@@ -1,29 +1,29 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 08/18/2025 09:27:13 PM
-  -- Design Name:
-  -- Module Name: gradient_comp - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:                 Code segment A.1
-  --                                      Local gradient computation for context determination
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 08/18/2025 09:27:13 PM
+-- Design Name:
+-- Module Name: gradient_comp - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:                 Code segment A.1
+--                                      Local gradient computation for context determination
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a1_gradient_comp is
   generic (

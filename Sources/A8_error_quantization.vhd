@@ -1,31 +1,31 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 02/07/2026
-  -- Design Name:
-  -- Module Name: A8_error_quantization - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:                 Code segment A.8
-  --                                      Error quantization and computation of the
-  --                                      reconstructed value in near-lossless coding
-  --
-  -- "In lossless coding (NEAR = 0), the reconstructed value Rx shall be set to Ix."
-  -- T.87, pg. 20
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 02/07/2026
+-- Design Name:
+-- Module Name: A8_error_quantization - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:                 Code segment A.8
+--                                      Error quantization and computation of the
+--                                      reconstructed value in near-lossless coding
+--
+-- "In lossless coding (NEAR = 0), the reconstructed value Rx shall be set to Ix."
+-- T.87, pg. 20
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a8_error_quantization is
   generic (

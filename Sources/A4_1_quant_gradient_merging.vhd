@@ -1,28 +1,28 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 08/23/2025 06:20:54 PM
-  -- Design Name:
-  -- Module Name: quant_gradient_merging - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:               Code segment A.4.1
-  --                                    Text only, described on section A.3.4
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 08/23/2025 06:20:54 PM
+-- Design Name:
+-- Module Name: quant_gradient_merging - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:               Code segment A.4.1
+--                                    Text only, described on section A.3.4
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a4_1_quant_gradient_merging is
   port (

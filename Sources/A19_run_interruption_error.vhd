@@ -1,20 +1,20 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Module Name: A19_run_interruption_error - Behavioral
-  -- Description: Code segment A.19 — error computation for run-interruption
-  --              sample (lossless only).
-  --
-  --              With NEAR=0, the T.87 Quantize() step is identity and
-  --              Rx = Ix, so no reconstruction is produced here. Only:
-  --                - sign flip when RItype=0 and Ra > Rb
-  --                - modulo reduction (A.9 inlined)
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: A19_run_interruption_error - Behavioral
+-- Description: Code segment A.19 — error computation for run-interruption
+--              sample (lossless only).
+--
+--              With NEAR=0, the T.87 Quantize() step is identity and
+--              Rx = Ix, so no reconstruction is produced here. Only:
+--                - sign flip when RItype=0 and Ra > Rb
+--                - modulo reduction (A.9 inlined)
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a19_run_interruption_error is
   generic (

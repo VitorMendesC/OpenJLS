@@ -1,31 +1,31 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date: 08/18/2025 10:04:45 PM
-  -- Design Name:
-  -- Module Name: mode_selection - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:                 Code segment A.3
-  --                                      Local gradient computation for context determination
-  --
-  --                                NOTE: Losless mode specific
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date: 08/18/2025 10:04:45 PM
+-- Design Name:
+-- Module Name: mode_selection - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:                 Code segment A.3
+--                                      Local gradient computation for context determination
+--
+--                                NOTE: Losless mode specific
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
   use ieee.std_logic_misc.all;
+  use work.common.all;
 
 entity a3_mode_selection is
   generic (

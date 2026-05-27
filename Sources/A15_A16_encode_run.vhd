@@ -1,33 +1,33 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Module Name: A15_A16_encode_run - Behavioral
-  -- Description: Code segments A.15 and A.16 — run-segment encoding.
-  --
-  --              Mealy FSM: outputs are combinational from A14's current outputs
-  --              and registered state. A14 is connected combinationally (no
-  --              register between A14 and this stage).
-  --
-  --              sNextBound: cumulative pixel count at which the next A15 '1' bit
-  --              fires. Initialized to 2^J[RUNindex] at run start; advances by
-  --              2^J[RUNindex+1] on each boundary hit.
-  --
-  --              Each cycle when iRunHit='1':
-  --                if iRunCnt == sNextBound → emit A15 '1' (oA15Valid).
-  --              When run ends (iRunContinue='0'):
-  --                EOLine, residual > 0: emit A16 '1' bit (only if no boundary hit).
-  --                Break (iRunHit='0'): emit RI token with A16 prefix. Covers
-  --                both breaks after one or more matches (sInRun='1') and the
-  --                immediate-break case on the first pixel of run mode
-  --                (sInRun='0', RUNcnt=0 → single '0' bit + RI).
-  --
-  --              RUNindex persists across runs within a scan; resets at iEoi.
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: A15_A16_encode_run - Behavioral
+-- Description: Code segments A.15 and A.16 — run-segment encoding.
+--
+--              Mealy FSM: outputs are combinational from A14's current outputs
+--              and registered state. A14 is connected combinationally (no
+--              register between A14 and this stage).
+--
+--              sNextBound: cumulative pixel count at which the next A15 '1' bit
+--              fires. Initialized to 2^J[RUNindex] at run start; advances by
+--              2^J[RUNindex+1] on each boundary hit.
+--
+--              Each cycle when iRunHit='1':
+--                if iRunCnt == sNextBound → emit A15 '1' (oA15Valid).
+--              When run ends (iRunContinue='0'):
+--                EOLine, residual > 0: emit A16 '1' bit (only if no boundary hit).
+--                Break (iRunHit='0'): emit RI token with A16 prefix. Covers
+--                both breaks after one or more matches (sInRun='1') and the
+--                immediate-break case on the first pixel of run mode
+--                (sInRun='0', RUNcnt=0 → single '0' bit + RI).
+--
+--              RUNindex persists across runs within a scan; resets at iEoi.
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a15_a16_encode_run is
   generic (

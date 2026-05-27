@@ -1,31 +1,31 @@
 ----------------------------------------------------------------------------------
-  -- Company:
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Create Date:
-  -- Design Name:
-  -- Module Name: A12_variables_update - Behavioral
-  -- Project Name:
-  -- Target Devices:
-  -- Tool Versions:
-  -- Description:
-  --
-  -- Dependencies:
-  --
-  -- Revision:
-  -- Revision 0.01 - File Created
-  -- Additional Comments:
-  --
-  -- Assumptions:
-  --                 B_WIDTH  >=  ERROR_WIDTH
-  --                 A_WIDTH  >=  ERROR_WIDTH
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Company:
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Create Date:
+-- Design Name:
+-- Module Name: A12_variables_update - Behavioral
+-- Project Name:
+-- Target Devices:
+-- Tool Versions:
+-- Description:
+--
+-- Dependencies:
+--
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+--
+-- Assumptions:
+--                 B_WIDTH  >=  ERROR_WIDTH
+--                 A_WIDTH  >=  ERROR_WIDTH
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 entity a12_variables_update is
   generic (

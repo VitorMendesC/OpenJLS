@@ -1,30 +1,30 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Module Name: A11_2_bit_packer - Behavioral
-  -- Description:
-  --
-  --    Concatenates this cycle's raw + Golomb fields into a single
-  --    variable-length word. Output is (oWord, oValidLen): MSB-aligned
-  --    bitstream in oWord, oValidLen counts how many top bits are
-  --    meaningful. Downstream byte_stuffer accumulates these
-  --    variable-length words and produces byte-aligned output.
-  --
-  --    Word layout (MSB → LSB):
-  --      [raw bits (rawLen)][unary zeros (unaryZeros)]['1'][suffix (suffixLen)]
-  --
-  --    When only one of raw/Golomb fires, the corresponding portion is
-  --    omitted. Both fire simultaneously in RI (run-interruption) mode.
-  --
-  --    No internal buffer. Concat is combinational on the inputs;
-  --    outputs are registered to break the comb chain into byte_stuffer.
-  --
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: A11_2_bit_packer - Behavioral
+-- Description:
+--
+--    Concatenates this cycle's raw + Golomb fields into a single
+--    variable-length word. Output is (oWord, oValidLen): MSB-aligned
+--    bitstream in oWord, oValidLen counts how many top bits are
+--    meaningful. Downstream byte_stuffer accumulates these
+--    variable-length words and produces byte-aligned output.
+--
+--    Word layout (MSB → LSB):
+--      [raw bits (rawLen)][unary zeros (unaryZeros)]['1'][suffix (suffixLen)]
+--
+--    When only one of raw/Golomb fires, the corresponding portion is
+--    omitted. Both fire simultaneously in RI (run-interruption) mode.
+--
+--    No internal buffer. Concat is combinational on the inputs;
+--    outputs are registered to break the comb chain into byte_stuffer.
+--
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.log2ceil;

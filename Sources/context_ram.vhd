@@ -21,10 +21,10 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
+  use work.common.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.all;
-  use work.common.all;
 
 entity context_ram is
   generic (
