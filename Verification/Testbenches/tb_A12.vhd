@@ -26,24 +26,21 @@ architecture bench of tb_a12 is
 
   end procedure check;
 
-  constant BITNESS         : natural := CO_BITNESS_STD;
+  constant ERROR_WIDTH     : natural := CO_ERROR_VALUE_WIDTH_STD;
   constant A_WIDTH         : natural := CO_AQ_WIDTH_STD;
   constant B_WIDTH         : natural := CO_BQ_WIDTH_STD;
   constant N_WIDTH         : natural := CO_NQ_WIDTH_STD;
   constant RESET           : natural := CO_RESET_STD;
+  constant BITNESS         : natural := CO_BITNESS_STD;
 
-  signal iErrorVal         : signed(BITNESS downto 0);
+  signal iErrorVal         : signed(ERROR_WIDTH - 1 downto 0);
   signal iAq               : unsigned(A_WIDTH - 1 downto 0);
   signal iBq               : signed(B_WIDTH - 1 downto 0);
   signal iNq               : unsigned(N_WIDTH - 1 downto 0);
 
-  signal oAqN0             : unsigned(A_WIDTH - 1 downto 0);
-  signal oBqN0             : signed(B_WIDTH - 1 downto 0);
-  signal oNqN0             : unsigned(N_WIDTH - 1 downto 0);
-
-  signal oAqN2             : unsigned(A_WIDTH - 1 downto 0);
-  signal oBqN2             : signed(B_WIDTH - 1 downto 0);
-  signal oNqN2             : unsigned(N_WIDTH - 1 downto 0);
+  signal oAq               : unsigned(A_WIDTH - 1 downto 0);
+  signal oBq               : signed(B_WIDTH - 1 downto 0);
+  signal oNq               : unsigned(N_WIDTH - 1 downto 0);
 
   function floor_div2 (
     v : integer
@@ -62,7 +59,7 @@ architecture bench of tb_a12 is
     s : unsigned(31 downto 0)
   ) return unsigned is
 
-    variable v   : unsigned(31 downto 0);
+    variable v   : unsigned(31 downto 0) := s;
     variable bit : std_logic;
 
   begin
@@ -80,9 +77,7 @@ architecture bench of tb_a12 is
     err_val      : integer;
     aq_val       : natural;
     bq_val       : integer;
-    nq_val       : natural;
-    near_val     : natural;
-    name_tag     : string
+    nq_val       : natural
   ) is
 
     variable aqNew : integer;
@@ -95,7 +90,7 @@ architecture bench of tb_a12 is
   begin
 
     aqNew := integer(aq_val) + abs(err_val);
-    bqNew := bq_val + err_val * integer((2 * near_val) + 1);
+    bqNew := bq_val + err_val;
     nqNew := integer(nq_val) + 1;
 
     if (nq_val = RESET) then
@@ -109,7 +104,7 @@ architecture bench of tb_a12 is
     end if;
 
     check(saout = to_unsigned(expA, saout'length),
-          "A12 " & name_tag & " Aq mismatch: Err=" & integer'image(err_val) &
+          "A12 Aq mismatch: Err=" & integer'image(err_val) &
           " Aq=" & integer'image(integer(aq_val)) &
           " Bq=" & integer'image(bq_val) &
           " Nq=" & integer'image(integer(nq_val)) &
@@ -118,7 +113,7 @@ architecture bench of tb_a12 is
         );
 
     check(sbout = to_signed(expB, sbout'length),
-          "A12 " & name_tag & " Bq mismatch: Err=" & integer'image(err_val) &
+          "A12 Bq mismatch: Err=" & integer'image(err_val) &
           " Aq=" & integer'image(integer(aq_val)) &
           " Bq=" & integer'image(bq_val) &
           " Nq=" & integer'image(integer(nq_val)) &
@@ -127,7 +122,7 @@ architecture bench of tb_a12 is
         );
 
     check(snout = to_unsigned(expN, snout'length),
-          "A12 " & name_tag & " Nq mismatch: Err=" & integer'image(err_val) &
+          "A12 Nq mismatch: Err=" & integer'image(err_val) &
           " Aq=" & integer'image(integer(aq_val)) &
           " Bq=" & integer'image(bq_val) &
           " Nq=" & integer'image(integer(nq_val)) &
@@ -142,12 +137,9 @@ architecture bench of tb_a12 is
     signal saqin : out unsigned;
     signal sbqin : out signed;
     signal snqin : out unsigned;
-    signal saqn0 : in unsigned;
-    signal sbqn0 : in signed;
-    signal snqn0 : in unsigned;
-    signal saqn2 : in unsigned;
-    signal sbqn2 : in signed;
-    signal snqn2 : in unsigned;
+    signal saqout : in unsigned;
+    signal sbqout : in signed;
+    signal snqout : in unsigned;
     err_val      : integer;
     aq_val       : natural;
     bq_val       : integer;
@@ -161,56 +153,34 @@ architecture bench of tb_a12 is
     snqin <= to_unsigned(nq_val, snqin'length);
     wait for 1 ns;
 
-    check_variant(saqn0, sbqn0, snqn0, err_val, aq_val, bq_val, nq_val, 0, "NEAR=0");
-    check_variant(saqn2, sbqn2, snqn2, err_val, aq_val, bq_val, nq_val, 2, "NEAR=2");
+    check_variant(saqout, sbqout, snqout, err_val, aq_val, bq_val, nq_val);
 
   end procedure check_case;
 
 begin
 
-  dut_n0 : entity work.a12_variables_update(rtl)
+  dut : entity work.a12_variables_update(rtl)
 
     generic map (
-      BITNESS   => BITNESS,
-      A_WIDTH   => A_WIDTH,
-      B_WIDTH   => B_WIDTH,
-      N_WIDTH   => N_WIDTH,
-      RESET     => RESET,
-      NEAR      => 0
+      ERROR_WIDTH => ERROR_WIDTH,
+      A_WIDTH     => A_WIDTH,
+      B_WIDTH     => B_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      RESET       => RESET
     )
     port map (
       iErrorVal => iErrorVal,
       iAq       => iAq,
       iBq       => iBq,
       iNq       => iNq,
-      oAq       => oAqN0,
-      oBq       => oBqN0,
-      oNq       => oNqN0
-    );
-
-  dut_n2 : entity work.a12_variables_update(rtl)
-
-    generic map (
-      BITNESS   => BITNESS,
-      A_WIDTH   => A_WIDTH,
-      B_WIDTH   => B_WIDTH,
-      N_WIDTH   => N_WIDTH,
-      RESET     => RESET,
-      NEAR      => 2
-    )
-    port map (
-      iErrorVal => iErrorVal,
-      iAq       => iAq,
-      iBq       => iBq,
-      iNq       => iNq,
-      oAq       => oAqN2,
-      oBq       => oBqN2,
-      oNq       => oNqN2
+      oAq       => oAq,
+      oBq       => oBq,
+      oNq       => oNq
     );
 
   stim : process is
 
-    variable lfsr : unsigned(31 downto 0);
+    variable lfsr : unsigned(31 downto 0) := x"A3C5E7F1";
     variable errv : integer;
     variable aqv  : natural;
     variable bqv  : integer;
@@ -225,12 +195,12 @@ begin
     iNq       <= (others => '0');
 
     -- Directed cases
-    check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, 5, 10, -3, 1);
-    check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, -7, 40, 12, 10);
-    check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, 4, 20, 6, RESET);
-    check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, -3, 21, 2, RESET);
-    check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, 4095, 1000, -2000, 63);
-    check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, -4096, 2000, 1500, RESET);
+    check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, 5, 10, -3, 1);
+    check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, -7, 40, 12, 10);
+    check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, 4, 20, 6, RESET);
+    check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, -3, 21, 2, RESET);
+    check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, 4095, 1000, -2000, 63);
+    check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, -4096, 2000, 1500, RESET);
 
     -- Pseudo-random coverage
     for i in 0 to 999 loop
@@ -251,7 +221,7 @@ begin
         nqv := RESET;
       end if;
 
-      check_case(iErrorVal, iAq, iBq, iNq, oAqN0, oBqN0, oNqN0, oAqN2, oBqN2, oNqN2, errv, aqv, bqv, nqv);
+      check_case(iErrorVal, iAq, iBq, iNq, oAq, oBq, oNq, errv, aqv, bqv, nqv);
 
     end loop;
 

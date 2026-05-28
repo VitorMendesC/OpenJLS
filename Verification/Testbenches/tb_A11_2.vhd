@@ -1,7 +1,12 @@
+use work.common.all;
+
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
   use std.env.all;
+
+library openlogic_base;
+  use openlogic_base.olo_base_pkg_math.log2ceil;
 
 entity tb_a11_2 is
 end entity tb_a11_2;
@@ -25,16 +30,15 @@ architecture bench of tb_a11_2 is
   end procedure check;
 
   constant CLK_PERIOD      : time    := 10 ns;
-  constant LIMIT           : natural := 16;
-  constant OUT_WIDTH       : natural := 8;
-  constant BUFFER_WIDTH    : natural := 24;
-  constant UNARY_WIDTH     : natural := 5;
-  constant SUFFIX_WIDTH    : natural := 8;
-  constant SUFFIXLEN_WIDTH : natural := 4;
+  constant LIMIT           : natural := CO_LIMIT_STD;
+  constant UNARY_WIDTH     : natural := CO_UNARY_WIDTH_STD;
+  constant SUFFIX_WIDTH    : natural := CO_SUFFIX_WIDTH_STD;
+  constant SUFFIXLEN_WIDTH : natural := CO_SUFFIXLEN_WIDTH_STD;
+  constant OUT_WIDTH       : natural := CO_LIMIT_STD;
 
   signal iClk              : std_logic;
   signal iRst              : std_logic;
-  signal iFlush            : std_logic;
+  signal iStall            : std_logic;
 
   signal iRawValid         : std_logic;
   signal iRawLen           : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
@@ -45,29 +49,20 @@ architecture bench of tb_a11_2 is
   signal iSuffixLen        : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
   signal iSuffixVal        : unsigned(SUFFIX_WIDTH - 1 downto 0);
 
-  signal iReady            : std_logic;
   signal oWord             : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal oWordValid        : std_logic;
-  signal oBufferOverflow   : std_logic;
+  signal oValidLen         : unsigned(log2ceil(OUT_WIDTH + 1) - 1 downto 0);
 
-  type int_array_t is array (natural range <>) of natural;
+  -- Return the top 'nbits' bits of word as an unsigned vector
+  function top_bits (
+    word  : std_logic_vector;
+    nbits : natural
+  ) return unsigned is
+  begin
 
-  constant C_UNARY         : int_array_t := (3, 0, 2, 0, 1, 0);
-  constant C_SUFFIX_LEN    : int_array_t := (4, 7, 2, 2, 1, 4);
-  constant C_SUFFIX_VAL    : int_array_t := (10, 85, 1, 2, 1, 9);
+    return unsigned(word(word'high downto word'high - nbits + 1));
 
-  type word_array_t is array (natural range <>) of std_logic_vector(OUT_WIDTH - 1 downto 0);
-
-  constant C_EXP_WORDS     : word_array_t := (x"1A", x"D5", x"2E", x"79");
-
-  -- Raw mode test vectors (no unary prefix, no terminating '1').
-  -- Case 1: len=4, val=0b0101=5   -> "0101"
-  -- Case 2: len=4, val=0b1011=11  -> "1011"  => byte 0: "01011011" = 0x5B
-  -- Case 3: len=3, val=0b010=2    -> "010"
-  -- Case 4: len=5, val=0b11001=25 -> "11001" => byte 1: "01011001" = 0x59
-  constant C_RAW_LEN       : int_array_t  := (4,   4,   3,   5);
-  constant C_RAW_VAL       : int_array_t  := (5,  11,   2,  25);
-  constant C_EXP_RAW       : word_array_t := (x"5B", x"59");
+  end function top_bits;
 
 begin
 
@@ -85,16 +80,15 @@ begin
 
     generic map (
       LIMIT           => LIMIT,
-      OUT_WIDTH       => OUT_WIDTH,
-      BUFFER_WIDTH    => BUFFER_WIDTH,
       UNARY_WIDTH     => UNARY_WIDTH,
       SUFFIX_WIDTH    => SUFFIX_WIDTH,
-      SUFFIXLEN_WIDTH => SUFFIXLEN_WIDTH
+      SUFFIXLEN_WIDTH => SUFFIXLEN_WIDTH,
+      OUT_WIDTH       => OUT_WIDTH
     )
     port map (
       iClk            => iClk,
       iRst            => iRst,
-      iFlush          => iFlush,
+      iStall          => iStall,
       iRawValid       => iRawValid,
       iRawLen         => iRawLen,
       iRawVal         => iRawVal,
@@ -102,21 +96,102 @@ begin
       iUnaryZeros     => iUnaryZeros,
       iSuffixLen      => iSuffixLen,
       iSuffixVal      => iSuffixVal,
-      iReady          => iReady,
       oWord           => oWord,
       oWordValid      => oWordValid,
-      oBufferOverflow => oBufferOverflow
+      oValidLen       => oValidLen
     );
 
   stim : process is
 
-    variable outIdx : natural;
+    -- Drive one Golomb symbol and check the registered output one cycle later.
+    -- Expected output: unaryZeros zeros + '1' marker + suffix bits, MSB-aligned.
+    -- oValidLen = unaryZeros + 1 + suffixLen.
+    -- Drive one Golomb symbol and check the registered output in the same cycle
+    -- (1 ns after the rising edge that captured the inputs).
+    procedure send_golomb (
+      unary_v  : natural;
+      suf_len  : natural;
+      suf_val  : natural;
+      exp_bits : natural;
+      exp_len  : natural;
+      tag      : string
+    ) is
+    begin
+
+      iGolombValid <= '1';
+      iUnaryZeros  <= to_unsigned(unary_v, iUnaryZeros'length);
+      iSuffixLen   <= to_unsigned(suf_len,  iSuffixLen'length);
+      iSuffixVal   <= to_unsigned(suf_val,  iSuffixVal'length);
+      wait until rising_edge(iClk);
+      wait for 1 ns;                                                                       -- outputs settled after capture edge
+
+      check(oWordValid = '1', tag & ": oWordValid not asserted");
+      check(to_integer(oValidLen) = exp_len,
+            tag & ": oValidLen mismatch exp=" & integer'image(exp_len) &
+            " got=" & integer'image(to_integer(oValidLen)));
+      check(to_integer(top_bits(oWord, exp_len)) = exp_bits,
+            tag & ": top bits mismatch exp=" & integer'image(exp_bits) &
+            " got=" & integer'image(to_integer(top_bits(oWord, exp_len))));
+
+      iGolombValid <= '0';
+      iUnaryZeros  <= (others => '0');
+      iSuffixLen   <= (others => '0');
+      iSuffixVal   <= (others => '0');
+
+    end procedure send_golomb;
+
+    -- Drive one raw symbol and check the registered output in the same capture cycle.
+    procedure send_raw (
+      len_v    : natural;
+      val_v    : natural;
+      exp_bits : natural;
+      tag      : string
+    ) is
+    begin
+
+      iRawValid <= '1';
+      iRawLen   <= to_unsigned(len_v, iRawLen'length);
+      iRawVal   <= to_unsigned(val_v, iRawVal'length);
+      wait until rising_edge(iClk);
+      wait for 1 ns;
+
+      check(oWordValid = '1', tag & ": oWordValid not asserted");
+      check(to_integer(oValidLen) = len_v,
+            tag & ": oValidLen mismatch exp=" & integer'image(len_v) &
+            " got=" & integer'image(to_integer(oValidLen)));
+      check(to_integer(top_bits(oWord, len_v)) = exp_bits,
+            tag & ": top bits mismatch exp=" & integer'image(exp_bits) &
+            " got=" & integer'image(to_integer(top_bits(oWord, len_v))));
+
+      iRawValid <= '0';
+      iRawLen   <= (others => '0');
+      iRawVal   <= (others => '0');
+
+    end procedure send_raw;
+
+    -- Reset DUT
+    procedure do_reset is
+    begin
+
+      iRst         <= '1';
+      iStall       <= '0';
+      iRawValid    <= '0';
+      iRawLen      <= (others => '0');
+      iRawVal      <= (others => '0');
+      iGolombValid <= '0';
+      iUnaryZeros  <= (others => '0');
+      iSuffixLen   <= (others => '0');
+      iSuffixVal   <= (others => '0');
+      wait until rising_edge(iClk);
+      iRst         <= '0';
+
+    end procedure do_reset;
 
   begin
 
     -- Initial values (no defaults — set explicitly here)
-    iRst         <= '0';
-    iFlush       <= '0';
+    iRst         <= '1';
+    iStall       <= '0';
     iRawValid    <= '0';
     iRawLen      <= (others => '0');
     iRawVal      <= (others => '0');
@@ -124,161 +199,45 @@ begin
     iUnaryZeros  <= (others => '0');
     iSuffixLen   <= (others => '0');
     iSuffixVal   <= (others => '0');
-    iReady       <= '1';
 
     -- -----------------------------------------------------------------------
-    -- Test 1: Golomb-only words
+    -- T1: Golomb-only symbols.
+    --   Each symbol: unaryZeros + '1' + suffix, MSB-aligned.
+    --   Sym 0: unary=3, sufLen=4, sufVal=10 -> "000" + "1" + "1010" = 0x1A (8 bits)
+    --   Sym 1: unary=0, sufLen=7, sufVal=85 -> "1" + "1010101"       = 0xD5 (8 bits)
+    --   Sym 2: unary=2, sufLen=2, sufVal=1  -> "00" + "1" + "01"     = 0x05 = "00101" (5 bits)
+    --   Sym 3: unary=0, sufLen=2, sufVal=2  -> "1" + "10"            = 0x06 = "110" (3 bits)
+    --   Sym 4: unary=1, sufLen=1, sufVal=1  -> "0" + "1" + "1"       = 0x03 = "011" (3 bits)
+    --   Sym 5: unary=0, sufLen=4, sufVal=9  -> "1" + "1001"          = 0x19 = "11001" (5 bits)
     -- -----------------------------------------------------------------------
-    iRst         <= '1';
-    iGolombValid <= '0';
-    iFlush       <= '0';
-    iReady       <= '1';
-    wait until rising_edge(iClk);
-    wait until rising_edge(iClk);
-    iRst         <= '0';
-
-    for cycle in 0 to 40 loop
-
-      if (cycle < C_UNARY'length) then
-        iGolombValid <= '1';
-        iUnaryZeros  <= to_unsigned(C_UNARY(cycle),      iUnaryZeros'length);
-        iSuffixLen   <= to_unsigned(C_SUFFIX_LEN(cycle), iSuffixLen'length);
-        iSuffixVal   <= to_unsigned(C_SUFFIX_VAL(cycle), iSuffixVal'length);
-      else
-        iGolombValid <= '0';
-        iUnaryZeros  <= (others => '0');
-        iSuffixLen   <= (others => '0');
-        iSuffixVal   <= (others => '0');
-      end if;
-
-      wait until rising_edge(iClk);
-      wait for 1 ns;
-
-      if (oWordValid = '1') then
-        check(outIdx < C_EXP_WORDS'length,
-              "A11.2 Golomb: unexpected extra output word at index " &
-              integer'image(integer(outIdx))
-            );
-        check(oWord = C_EXP_WORDS(outIdx),
-              "A11.2 Golomb: mismatch at index " & integer'image(integer(outIdx)) &
-              " exp=" & integer'image(to_integer(unsigned(C_EXP_WORDS(outIdx)))) &
-              " got=" & integer'image(to_integer(unsigned(oWord)))
-            );
-        outIdx := outIdx + 1;
-      end if;
-
-    end loop;
-
-    check(outIdx = C_EXP_WORDS'length,
-          "A11.2 Golomb: output count mismatch. exp=" &
-          integer'image(C_EXP_WORDS'length) &
-          " got=" & integer'image(integer(outIdx))
-        );
-    check(oBufferOverflow = '0', "A11.2 Golomb: buffer overflow should not occur");
+    do_reset;
+    send_golomb(3, 4, 10, 16#1A#, 8,  "T1-sym0");
+    send_golomb(0, 7, 85, 16#D5#, 8,  "T1-sym1");
+    send_golomb(2, 2,  1, 16#05#, 5,  "T1-sym2");
+    send_golomb(0, 2,  2, 16#06#, 3,  "T1-sym3");
+    send_golomb(1, 1,  1, 16#03#, 3,  "T1-sym4");
+    send_golomb(0, 4,  9, 16#19#, 5,  "T1-sym5");
 
     -- -----------------------------------------------------------------------
-    -- Test 2: Raw-only words
+    -- T2: Raw-only symbols (MSB end, no marker/suffix structure).
+    --   Raw 0: len=4, val=5  = "0101" -> top 4 bits = 5
+    --   Raw 1: len=4, val=11 = "1011" -> top 4 bits = 11
+    --   Raw 2: len=3, val=2  = "010"  -> top 3 bits = 2
+    --   Raw 3: len=5, val=25 = "11001"-> top 5 bits = 25
     -- -----------------------------------------------------------------------
-    iRst         <= '1';
-    iGolombValid <= '0';
-    iRawValid    <= '0';
-    wait until rising_edge(iClk);
-    wait until rising_edge(iClk);
-    iRst         <= '0';
-
-    outIdx := 0;
-
-    for cycle in 0 to 20 loop
-
-      if (cycle < C_RAW_LEN'length) then
-        iRawValid <= '1';
-        iRawLen   <= to_unsigned(C_RAW_LEN(cycle), iRawLen'length);
-        iRawVal   <= to_unsigned(C_RAW_VAL(cycle), iRawVal'length);
-      else
-        iRawValid <= '0';
-        iRawLen   <= (others => '0');
-        iRawVal   <= (others => '0');
-      end if;
-
-      wait until rising_edge(iClk);
-      wait for 1 ns;
-
-      if (oWordValid = '1') then
-        check(outIdx < C_EXP_RAW'length,
-              "A11.2 Raw: unexpected extra output word at index " &
-              integer'image(integer(outIdx))
-            );
-        check(oWord = C_EXP_RAW(outIdx),
-              "A11.2 Raw: mismatch at index " & integer'image(integer(outIdx)) &
-              " exp=" & integer'image(to_integer(unsigned(C_EXP_RAW(outIdx)))) &
-              " got=" & integer'image(to_integer(unsigned(oWord)))
-            );
-        outIdx := outIdx + 1;
-      end if;
-
-    end loop;
-
-    check(outIdx = C_EXP_RAW'length,
-          "A11.2 Raw: output count mismatch. exp=" &
-          integer'image(C_EXP_RAW'length) &
-          " got=" & integer'image(integer(outIdx))
-        );
-    check(oBufferOverflow = '0', "A11.2 Raw: buffer overflow should not occur");
+    do_reset;
+    send_raw(4,  5,  5,  "T2-raw0");
+    send_raw(4, 11, 11,  "T2-raw1");
+    send_raw(3,  2,  2,  "T2-raw2");
+    send_raw(5, 25, 25,  "T2-raw3");
 
     -- -----------------------------------------------------------------------
-    -- Test 3: Flush (partial word)
-    -- UnaryZeros=0, SuffixLen=2, SuffixVal=1 -> "1"+"01" = "101" (3 bits)
-    -- Flush pads to OUT_WIDTH=8 at LSB -> "10100000" = 0xA0
+    -- T3: Simultaneous raw + Golomb (Run Interruption mode).
+    --   Raw: len=3, val=1 -> "001" (3 bits)
+    --   Golomb: unary=1, sufLen=3, sufVal=5 -> "0" + "1" + "101" = "01101" (5 bits)
+    --   Combined: "001" ++ "01101" = "00101101" (8 bits) = 0x2D
     -- -----------------------------------------------------------------------
-    iRst         <= '1';
-    iGolombValid <= '0';
-    iRawValid    <= '0';
-    wait until rising_edge(iClk);
-    wait until rising_edge(iClk);
-    iRst         <= '0';
-
-    iGolombValid <= '1';
-    iUnaryZeros  <= to_unsigned(0, iUnaryZeros'length);
-    iSuffixLen   <= to_unsigned(2, iSuffixLen'length);
-    iSuffixVal   <= to_unsigned(1, iSuffixVal'length);
-    wait until rising_edge(iClk);
-    iGolombValid <= '0';
-    wait until rising_edge(iClk);                                                       -- let write commit
-
-    iFlush <= '1';
-    wait until rising_edge(iClk);
-    wait for 1 ns;
-    iFlush <= '0';
-
-    check(oWordValid = '1', "A11.2 Flush: oWordValid should be asserted after flush");
-    check(oWord = x"A0",
-          "A11.2 Flush: partial word mismatch. exp=0xA0 got=" &
-          integer'image(to_integer(unsigned(oWord)))
-        );
-
-    wait until rising_edge(iClk);
-    wait for 1 ns;
-    check(oWordValid = '0', "A11.2 Flush: oWordValid should deassert after handshake");
-
-    -- -----------------------------------------------------------------------
-    -- Test 4: Run interruption — iRawValid and iGolombValid both asserted
-    --
-    -- Simulates an A.16 break cycle where the run-interruption pixel arrives
-    -- at the bit packer simultaneously with its raw prefix.
-    --
-    -- Raw  : len=3, val=1 -> "001"  (J=2: leading '0' break indicator + 2-bit RUNcnt=01)
-    -- Golomb: UnaryZeros=1, SuffixLen=3, SuffixVal=5
-    --           -> "0" + "1" + "101" = "01101" (5 bits)
-    --
-    -- Expected bitstream: "001" ++ "01101" = "00101101" = 0x2D
-    -- -----------------------------------------------------------------------
-    iRst         <= '1';
-    iGolombValid <= '0';
-    iRawValid    <= '0';
-    wait until rising_edge(iClk);
-    wait until rising_edge(iClk);
-    iRst         <= '0';
-
+    do_reset;
     iRawValid    <= '1';
     iRawLen      <= to_unsigned(3, iRawLen'length);
     iRawVal      <= to_unsigned(1, iRawVal'length);
@@ -286,21 +245,53 @@ begin
     iUnaryZeros  <= to_unsigned(1, iUnaryZeros'length);
     iSuffixLen   <= to_unsigned(3, iSuffixLen'length);
     iSuffixVal   <= to_unsigned(5, iSuffixVal'length);
-    wait until rising_edge(iClk);                                                       -- inputs registered; sRawBuffer/sGolombBuffer set
-    iRawValid    <= '0';
-    iGolombValid <= '0';
-    wait until rising_edge(iClk);                                                       -- save stage fires; 8 bits written to buffer
-    wait until rising_edge(iClk);                                                       -- read stage fires; oWordValid asserted
+    wait until rising_edge(iClk);
     wait for 1 ns;
 
-    check(oWordValid = '1', "A11.2 RunInt: oWordValid should be asserted");
-    check(oWord = x"2D",
-          "A11.2 RunInt: output mismatch. exp=0x2D got=" &
-          integer'image(to_integer(unsigned(oWord)))
-        );
-    check(oBufferOverflow = '0', "A11.2 RunInt: buffer overflow should not occur");
+    check(oWordValid = '1', "T3: oWordValid not asserted");
+    check(to_integer(oValidLen) = 8, "T3: oValidLen mismatch exp=8 got=" & integer'image(to_integer(oValidLen)));
+    check(to_integer(top_bits(oWord, 8)) = 16#2D#,
+          "T3: combined bits mismatch exp=0x2D got=" &
+          integer'image(to_integer(top_bits(oWord, 8))));
 
     -- -----------------------------------------------------------------------
+    -- T4: Stall — output register frozen while iStall='1'.
+    --   Drive a golomb symbol while stalled: register should not capture it.
+    --   After stall release, the symbol fires on the next active edge.
+    --   Symbol: unary=0, sufLen=3, sufVal=5 -> "1"+"101" = "1101" (4 bits) = 0xD
+    -- -----------------------------------------------------------------------
+    do_reset;
+
+    -- Assert stall, then drive input
+    iStall       <= '1';
+    iGolombValid <= '1';
+    iUnaryZeros  <= to_unsigned(0, iUnaryZeros'length);
+    iSuffixLen   <= to_unsigned(3, iSuffixLen'length);
+    iSuffixVal   <= to_unsigned(5, iSuffixVal'length);
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    -- Stall prevents capture: output should stay at reset value (oWordValid='0')
+    check(oWordValid = '0', "T4: oWordValid should stay 0 while stalled");
+
+    -- Release stall — same inputs still driven
+    iStall       <= '0';
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    check(oWordValid = '1', "T4: oWordValid should assert after stall release");
+    check(to_integer(oValidLen) = 4, "T4: oValidLen mismatch exp=4 got=" & integer'image(to_integer(oValidLen)));
+    check(to_integer(top_bits(oWord, 4)) = 16#D#,
+          "T4: bits mismatch exp=0xD got=" & integer'image(to_integer(top_bits(oWord, 4))));
+    iGolombValid <= '0';
+
+    -- -----------------------------------------------------------------------
+    -- T5: Idle cycle — no valid inputs should produce oWordValid='0'.
+    -- -----------------------------------------------------------------------
+    do_reset;
+    wait until rising_edge(iClk);
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    check(oWordValid = '0', "T5: oWordValid should be 0 when no symbol presented");
+
     if (errCount > 0) then
       report "tb_A11_2 RESULT: FAIL (" & integer'image(errCount) & " errors)"
         severity failure;
@@ -309,7 +300,7 @@ begin
         severity note;
     end if;
 
-    wait for 20 ns;
+    wait for CLK_PERIOD * 2;
     finish;
 
   end process stim;

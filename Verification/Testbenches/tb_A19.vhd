@@ -81,7 +81,7 @@ architecture bench of tb_a19 is
     s : unsigned(31 downto 0)
   ) return unsigned is
 
-    variable v   : unsigned(31 downto 0);
+    variable v   : unsigned(31 downto 0) := s;
     variable bit : std_logic;
 
   begin
@@ -139,7 +139,7 @@ begin
 
     generic map (
       BITNESS => BITNESS,
-      MAX_VAL => MAX_VAL
+      RANGE_P => MAX_VAL + 1
     )
     port map (
       iErrval => iErr,
@@ -152,7 +152,7 @@ begin
 
   stim : process is
 
-    variable lfsr : unsigned(31 downto 0);
+    variable lfsr : unsigned(31 downto 0) := x"2E4C8A1F";
     variable ra   : integer;
     variable rb   : integer;
     variable ix   : integer;

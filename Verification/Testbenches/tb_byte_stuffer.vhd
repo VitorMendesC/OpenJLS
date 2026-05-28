@@ -46,12 +46,13 @@ architecture bench of tb_byte_stuffer is
   constant CLK_PERIOD            : time    := 10 ns;
   constant IN_WIDTH              : natural := 48;
   constant OUT_BYTES_PER_CYCLE   : natural := 4;
-  constant BURST_DEPTH           : natural := 4;
+  constant BURST_DEPTH           : natural := CO_BYTE_STUFFER_BURST_DEPTH;
   constant OUT_WIDTH             : natural := OUT_BYTES_PER_CYCLE * 8;
 
   signal iClk                    : std_logic;
   signal iRst                    : std_logic;
   signal iStall                  : std_logic;
+  signal iReady                  : std_logic;
   signal iFlush                  : std_logic;
   signal iWordValid              : std_logic;
   signal iWord                   : std_logic_vector(IN_WIDTH - 1 downto 0);
@@ -106,6 +107,7 @@ begin
       oWord               => oWord,
       oWordValid          => oWordValid,
       oValidBytes         => oValidBytes,
+      iReady              => iReady,
       oAlmostFull         => oAlmostFull,
       oFlushDone          => oFlushDone
     );
@@ -167,15 +169,13 @@ begin
     procedure clear_collector is
     begin
 
-      -- Initial values (no defaults — set explicitly here)
-      iRst            <= '1';
+      -- Reset idle-side signals then handshake with collect process.
+      -- iRst is NOT asserted here — do_reset handles DUT reset.
       iStall          <= '0';
       iFlush          <= '0';
       iWordValid      <= '0';
       iWord           <= (others => '0');
       iValidLen       <= (others => '0');
-      collectResetReq <= '0';
-      collectResetAck <= '0';
 
       collectResetReq <= '1';
       wait until rising_edge(iClk) and collectResetAck = '1';
@@ -299,6 +299,9 @@ begin
     end procedure check_output;
 
   begin
+
+    -- Initial values (no defaults — set explicitly at top of stim)
+    iReady <= '1';
 
     -- ------------------------------------------------------------------
     -- T1: pure pass-through, no 0xFF in stream, byte-aligned input.

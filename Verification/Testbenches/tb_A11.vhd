@@ -38,14 +38,12 @@ architecture bench of tb_a11 is
   signal iNq                      : unsigned(N_WIDTH - 1 downto 0);
   signal iErrorVal                : signed(ERROR_WIDTH - 1 downto 0);
   signal oMappedErrorN0           : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
-  signal oMappedErrorN2           : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
   function model_map (
     errval : integer;
     bq_val : integer;
     nq_val : integer;
-    k_val  : integer;
-    near_v : integer
+    k_val  : integer
   ) return natural is
 
     variable isSpecial : boolean;
@@ -53,7 +51,7 @@ architecture bench of tb_a11 is
 
   begin
 
-    isSpecial := (near_v = 0) and (k_val = 0) and ((2 * bq_val) <= (-nq_val));
+    isSpecial := (k_val = 0) and ((2 * bq_val) <= (-nq_val));
 
     if (isSpecial) then
       if (errval >= 0) then
@@ -77,7 +75,7 @@ architecture bench of tb_a11 is
     s : unsigned(31 downto 0)
   ) return unsigned is
 
-    variable v   : unsigned(31 downto 0);
+    variable v   : unsigned(31 downto 0) := s;
     variable bit : std_logic;
 
   begin
@@ -94,7 +92,6 @@ architecture bench of tb_a11 is
     signal snq    : out unsigned;
     signal serr   : out signed;
     signal soutn0 : in unsigned;
-    signal soutn2 : in unsigned;
     err_val       : integer;
     bq_val        : integer;
     nq_val        : integer;
@@ -102,7 +99,6 @@ architecture bench of tb_a11 is
   ) is
 
     variable expN0 : natural;
-    variable expN2 : natural;
 
   begin
 
@@ -112,11 +108,10 @@ architecture bench of tb_a11 is
     serr <= to_signed(err_val, serr'length);
     wait for 1 ns;
 
-    expN0 := model_map(err_val, bq_val, nq_val, k_val, 0);
-    expN2 := model_map(err_val, bq_val, nq_val, k_val, 2);
+    expN0 := model_map(err_val, bq_val, nq_val, k_val);
 
     check(soutn0 = to_unsigned(expN0, soutn0'length),
-          "A11 NEAR=0 mismatch: Errval=" & integer'image(err_val) &
+          "A11 mismatch: Errval=" & integer'image(err_val) &
           " Bq=" & integer'image(bq_val) &
           " Nq=" & integer'image(nq_val) &
           " K=" & integer'image(k_val) &
@@ -124,28 +119,18 @@ architecture bench of tb_a11 is
           " got=" & integer'image(to_integer(soutn0))
         );
 
-    check(soutn2 = to_unsigned(expN2, soutn2'length),
-          "A11 NEAR=2 mismatch: Errval=" & integer'image(err_val) &
-          " Bq=" & integer'image(bq_val) &
-          " Nq=" & integer'image(nq_val) &
-          " K=" & integer'image(k_val) &
-          " exp=" & integer'image(integer(expN2)) &
-          " got=" & integer'image(to_integer(soutn2))
-        );
-
   end procedure check_case;
 
 begin
 
-  dut_near0 : entity work.a11_error_mapping(behavioral)
+  dut : entity work.a11_error_mapping(behavioral)
 
     generic map (
       N_WIDTH                => N_WIDTH,
       B_WIDTH                => B_WIDTH,
       K_WIDTH                => K_WIDTH,
       ERROR_WIDTH            => ERROR_WIDTH,
-      MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH,
-      NEAR                   => 0
+      MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
     )
     port map (
       iK                     => iK,
@@ -155,27 +140,9 @@ begin
       oMappedErrorVal        => oMappedErrorN0
     );
 
-  dut_near2 : entity work.a11_error_mapping(behavioral)
-
-    generic map (
-      N_WIDTH                => N_WIDTH,
-      B_WIDTH                => B_WIDTH,
-      K_WIDTH                => K_WIDTH,
-      ERROR_WIDTH            => ERROR_WIDTH,
-      MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH,
-      NEAR                   => 2
-    )
-    port map (
-      iK                     => iK,
-      iBq                    => iBq,
-      iNq                    => iNq,
-      iErrorVal              => iErrorVal,
-      oMappedErrorVal        => oMappedErrorN2
-    );
-
   stim : process is
 
-    variable lfsr : unsigned(31 downto 0);
+    variable lfsr : unsigned(31 downto 0) := x"6B81C5F2";
     variable errV : integer;
     variable bqV  : integer;
     variable nqV  : integer;
@@ -190,16 +157,16 @@ begin
     iErrorVal <= (others => '0');
 
     -- Directed cases
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, 3, -5, 10, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, -3, -5, 10, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, 3, -4, 10, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, -3, -4, 10, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, 12, -20, 15, 1);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, -12, -20, 15, 1);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, 0, -1, 1, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, -1, -1, 1, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, 4095, -100, 63, 0);
-    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, -4096, -100, 63, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, 3, -5, 10, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, -3, -5, 10, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, 3, -4, 10, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, -3, -4, 10, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, 12, -20, 15, 1);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, -12, -20, 15, 1);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, 0, -1, 1, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, -1, -1, 1, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, 4095, -100, 63, 0);
+    check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, -4096, -100, 63, 0);
 
     -- Pseudo-random coverage
     for i in 0 to 999 loop
@@ -220,7 +187,7 @@ begin
       lfsr := lfsr_next(lfsr);
       kV   := to_integer(unsigned(lfsr(3 downto 0))) mod 8;
 
-      check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, oMappedErrorN2, errV, bqV, nqV, kV);
+      check_case(iK, iBq, iNq, iErrorVal, oMappedErrorN0, errV, bqV, nqV, kV);
 
     end loop;
 

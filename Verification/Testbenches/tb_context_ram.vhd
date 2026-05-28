@@ -18,6 +18,8 @@
 --
 ----------------------------------------------------------------------------------
 
+use work.common.all;
+
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
@@ -53,28 +55,36 @@ architecture bench of tb_context_ram is
 
   -- Generics
   constant RAM_DEPTH       : positive := 1024;
-  constant WORD_WIDTH      : positive := 32;
+  constant TOTAL_WIDTH     : positive := CO_TOTAL_WIDTH_STD;
   -- Ports
   signal iClk              : std_logic;
+  signal iRst              : std_logic;
   signal iWrAddr           : std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
   signal iWrEn             : std_logic;
-  signal iWrData           : std_logic_vector(WORD_WIDTH - 1 downto 0);
+  signal iWrData           : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
   signal iRdAddr           : std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
   signal iRdEn             : std_logic;
-  signal oRdData           : std_logic_vector(WORD_WIDTH - 1 downto 0);
+  signal iEndOfImage       : std_logic;
+  signal oRdData           : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
 
 begin
 
   context_ram_inst : entity work.context_ram(behavioral)
 
+    generic map (
+      RAM_DEPTH   => RAM_DEPTH,
+      TOTAL_WIDTH => TOTAL_WIDTH
+    )
     port map (
-      iClk    => iClk,
-      iWrAddr => iWrAddr,
-      iWrEn   => iWrEn,
-      iWrData => iWrData,
-      iRdAddr => iRdAddr,
-      iRdEn   => iRdEn,
-      oRdData => oRdData
+      iClk        => iClk,
+      iRst        => iRst,
+      iWrAddr     => iWrAddr,
+      iWrEn       => iWrEn,
+      iWrData     => iWrData,
+      iRdAddr     => iRdAddr,
+      iRdEn       => iRdEn,
+      iEndOfImage => iEndOfImage,
+      oRdData     => oRdData
     );
 
   clk_proc : process is
@@ -91,23 +101,44 @@ begin
   begin
 
     -- Initial values (no defaults — set explicitly here)
-    iWrAddr <= (others => '0');
-    iWrEn   <= '0';
-    iWrData <= (others => '0');
-    iRdAddr <= (others => '0');
-    iRdEn   <= '0';
+    iRst        <= '1';
+    iEndOfImage <= '0';
+    iWrAddr     <= (others => '0');
+    iWrEn       <= '0';
+    iWrData     <= (others => '0');
+    iRdAddr     <= (others => '0');
+    iRdEn       <= '0';
 
-    -- Feed-forward test
     wait for CSTDWAIT;
+    iRst <= '0';
+    wait until rising_edge(iClk);
+
+    -- Write a known value to addr 0
+    iWrAddr <= (others => '0');
+    iWrData <= std_logic_vector(to_unsigned(16#BEBEBEE#, TOTAL_WIDTH));
     iWrEn   <= '1';
+    wait until rising_edge(iClk);
+    iWrEn   <= '0';
+
+    -- First read of addr 0 should return the init context (per-address first-read marker)
+    iRdAddr <= (others => '0');
     iRdEn   <= '1';
-    iWrData <= x"BEEBEBEE";
+    wait until rising_edge(iClk);
+    iRdEn   <= '0';
+    wait until rising_edge(iClk);
+    -- One more delta to let combinational mux propagate
+    wait for 1 ns;
+    check(oRdData /= std_logic_vector(to_unsigned(16#BEBEBEE#, TOTAL_WIDTH)),
+          "First read after write should return CTX_INIT, not stored data");
 
-    wait for CLK_PERIOD;
-    check(oRdData = x"BEEBEBEE", "Feed-forward test failed!");
-
-    iWrEn <= '0';
+    -- Second read of addr 0 should return the previously written value
+    iRdEn <= '1';
+    wait until rising_edge(iClk);
     iRdEn <= '0';
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    check(oRdData = std_logic_vector(to_unsigned(16#BEBEBEE#, TOTAL_WIDTH)),
+          "Second read should return stored data");
 
     wait for CSTDWAIT;
 
