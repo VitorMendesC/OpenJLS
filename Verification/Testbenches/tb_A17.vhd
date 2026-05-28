@@ -1,65 +1,81 @@
-use work.Common.all;
+use work.common.all;
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a17 is
+end entity tb_a17;
 
-entity tb_A17 is
-end;
+architecture bench of tb_a17 is
 
-architecture bench of tb_A17 is
-  shared variable err_count : natural := 0;
+  shared variable errCount : natural;
 
-  procedure check(cond : boolean; msg : string) is
+  procedure check (
+    cond : boolean;
+    msg  : string
+  ) is
   begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
     end if;
-  end procedure;
 
-  constant BITNESS : natural := CO_BITNESS_STD;
+  end procedure check;
 
-  signal iRa : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal iRb : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal oRI : std_logic;
+  constant BITNESS         : natural := CO_BITNESS_STD;
 
-  procedure check_case(
+  signal iRa               : unsigned(BITNESS - 1 downto 0);
+  signal iRb               : unsigned(BITNESS - 1 downto 0);
+  signal oRI               : std_logic;
+
+  procedure check_case (
     constant ra, rb : integer;
     ri_actual       : std_logic
   ) is
+
     variable exp : std_logic;
+
   begin
-    if ra = rb then
+
+    if (ra = rb) then
       exp := '1';
     else
       exp := '0';
     end if;
 
     check(ri_actual = exp,
-      "A17 mismatch: Ra=" & integer'image(ra) &
-      " Rb=" & integer'image(rb) &
-      " exp=" & std_logic'image(exp) &
-      " got=" & std_logic'image(ri_actual)
-    );
-  end procedure;
+          "A17 mismatch: Ra=" & integer'image(ra) &
+          " Rb=" & integer'image(rb) &
+          " exp=" & std_logic'image(exp) &
+          " got=" & std_logic'image(ri_actual)
+        );
+
+  end procedure check_case;
 
 begin
 
-  dut : entity work.A17_run_interruption_index
-    generic map(
+  dut : entity work.a17_run_interruption_index(behavioral)
+
+    generic map (
       BITNESS => BITNESS
     )
-    port map(
+    port map (
       iRa     => iRa,
       iRb     => iRb,
       oRItype => oRI
     );
 
-  stim : process
+  stim : process is
   begin
+
+    -- Initial values (no defaults — set explicitly here)
+    iRa <= (others => '0');
+    iRb <= (others => '0');
+
     iRa <= to_unsigned(10, iRa'length);
     iRb <= to_unsigned(10, iRb'length);
     wait for 1 ns;
@@ -90,12 +106,16 @@ begin
     wait for 1 ns;
     check_case(0, 0, oRI);
 
-    if err_count > 0 then
-      report "tb_A17 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A17 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A17 RESULT: PASS" severity note;
+      report "tb_A17 RESULT: PASS"
+        severity note;
     end if;
-    finish;
-  end process;
 
-end;
+    finish;
+
+  end process stim;
+
+end architecture bench;

@@ -1,70 +1,88 @@
-use work.Common.all;
+use work.common.all;
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a21 is
+end entity tb_a21;
 
-entity tb_A21 is
-end;
+architecture bench of tb_a21 is
 
-architecture bench of tb_A21 is
-  shared variable err_count : natural := 0;
+  shared variable errCount : natural;
 
-  procedure check(cond : boolean; msg : string) is
-  begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
-    end if;
-  end procedure;
-
-  constant K_WIDTH : natural := CO_K_WIDTH_STD;
-  constant N_WIDTH : natural := CO_NQ_WIDTH_STD;
-  constant E_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
-
-  signal iK   : unsigned(K_WIDTH - 1 downto 0) := (others => '0');
-  signal iErr : signed(E_WIDTH - 1 downto 0)   := (others => '0');
-  signal iNn  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
-  signal iNq  : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
-  signal oMap : std_logic;
-
-  procedure check_case(
-    kv, errv, nnv, nqv : integer;
-    exp                : std_logic;
-    map_actual         : std_logic
+  procedure check (
+    cond : boolean;
+    msg  : string
   ) is
   begin
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
+    end if;
+
+  end procedure check;
+
+  constant K_WIDTH         : natural := CO_K_WIDTH_STD;
+  constant N_WIDTH         : natural := CO_NQ_WIDTH_STD;
+  constant E_WIDTH         : natural := CO_ERROR_VALUE_WIDTH_STD;
+
+  signal iK                : unsigned(K_WIDTH - 1 downto 0);
+  signal iErr              : signed(E_WIDTH - 1 downto 0);
+  signal iNn               : unsigned(N_WIDTH - 1 downto 0);
+  signal iNq               : unsigned(N_WIDTH - 1 downto 0);
+  signal oMap              : std_logic;
+
+  procedure check_case (
+    kv,
+    errv,
+    nnv,
+    nqv        : integer;
+    exp        : std_logic;
+    map_actual : std_logic
+  ) is
+  begin
+
     check(map_actual = exp,
-    "A21 map mismatch: k=" & integer'image(kv) &
-    " err=" & integer'image(errv) &
-    " Nn=" & integer'image(nnv) &
-    " Nq=" & integer'image(nqv) &
-    " exp=" & std_logic'image(exp) &
-    " got=" & std_logic'image(map_actual)
-    );
-  end procedure;
+          "A21 map mismatch: k=" & integer'image(kv) &
+          " err=" & integer'image(errv) &
+          " Nn=" & integer'image(nnv) &
+          " Nq=" & integer'image(nqv) &
+          " exp=" & std_logic'image(exp) &
+          " got=" & std_logic'image(map_actual)
+        );
+
+  end procedure check_case;
 
 begin
 
-  dut : entity work.A21_compute_map
-    generic map(
+  dut : entity work.a21_compute_map(behavioral)
+
+    generic map (
       K_WIDTH     => K_WIDTH,
       N_WIDTH     => N_WIDTH,
       ERROR_WIDTH => E_WIDTH
     )
-    port map
-    (
-      iK      => iK,
-      iErrval => iErr,
-      iNn     => iNn,
-      iNq     => iNq,
-      oMap    => oMap
+    port map (
+      iK          => iK,
+      iErrval     => iErr,
+      iNn         => iNn,
+      iNq         => iNq,
+      oMap        => oMap
     );
 
-  stim : process
+  stim : process is
   begin
+
+    -- Initial values (no defaults — set explicitly here)
+    iK   <= (others => '0');
+    iErr <= (others => '0');
+    iNn  <= (others => '0');
+    iNq  <= (others => '0');
+
     -- Branch 1: k=0, err>0, 2*Nn < N
     iK   <= to_unsigned(0, iK'length);
     iErr <= to_signed(5, iErr'length);
@@ -94,12 +112,16 @@ begin
     wait for 1 ns;
     check_case(1, 4, 5, 8, '0', oMap);
 
-    if err_count > 0 then
-      report "tb_A21 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A21 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A21 RESULT: PASS" severity note;
+      report "tb_A21 RESULT: PASS"
+        severity note;
     end if;
-    finish;
-  end process;
 
-end;
+    finish;
+
+  end process stim;
+
+end architecture bench;

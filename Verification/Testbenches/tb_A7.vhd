@@ -1,84 +1,97 @@
-use work.Common.all;
+use work.common.all;
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a7 is
+end entity tb_a7;
 
-entity tb_A7 is
-end;
+architecture bench of tb_a7 is
 
-architecture bench of tb_A7 is
-  shared variable err_count : natural := 0;
+  shared variable errCount : natural;
 
-  procedure check(cond : boolean; msg : string) is
+  procedure check (
+    cond : boolean;
+    msg  : string
+  ) is
   begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
     end if;
-  end procedure;
+
+  end procedure check;
 
   -- Clock period
-  constant clk_period : time := 5 ns;
+  constant CLK_PERIOD      : time := 5 ns;
   -- Generics
-  constant BITNESS : natural range 8 to 16 := 12;
+  constant BITNESS         : natural range 8 to 16 := 12;
   -- Ports
-  signal iIx       : unsigned (BITNESS - 1 downto 0);
-  signal iPx       : unsigned (BITNESS - 1 downto 0);
-  signal iSign     : std_logic;
-  signal oErrorVal : signed (BITNESS downto 0);
+  signal iIx               : unsigned (BITNESS - 1 downto 0);
+  signal iPx               : unsigned (BITNESS - 1 downto 0);
+  signal iSign             : std_logic;
+  signal oErrorVal         : signed (BITNESS downto 0);
 
-  procedure check_case(
-    signal iIx_s   : out unsigned(BITNESS - 1 downto 0);
-    signal iPx_s   : out unsigned(BITNESS - 1 downto 0);
-    signal iSign_s : out std_logic;
+  procedure check_case (
+    signal iix_s   : out unsigned(BITNESS - 1 downto 0);
+    signal ipx_s   : out unsigned(BITNESS - 1 downto 0);
+    signal isign_s : out std_logic;
     ix_val         : natural;
     px_val         : natural;
     sign_val       : std_logic
   ) is
-    variable ix_u  : unsigned(BITNESS - 1 downto 0);
-    variable px_u  : unsigned(BITNESS - 1 downto 0);
-    variable exp_v : signed(BITNESS downto 0);
-  begin
-    ix_u := to_unsigned(ix_val, BITNESS);
-    px_u := to_unsigned(px_val, BITNESS);
 
-    iIx_s   <= ix_u;
-    iPx_s   <= px_u;
-    iSign_s <= sign_val;
+    variable ixU  : unsigned(BITNESS - 1 downto 0);
+    variable pxU  : unsigned(BITNESS - 1 downto 0);
+    variable expV : signed(BITNESS downto 0);
+
+  begin
+
+    ixU := to_unsigned(ix_val, BITNESS);
+    pxU := to_unsigned(px_val, BITNESS);
+
+    iix_s   <= ixU;
+    ipx_s   <= pxU;
+    isign_s <= sign_val;
     wait for 1 ns;
 
-    exp_v := signed('0' & ix_u) - signed('0' & px_u);
-    if sign_val = CO_SIGN_NEG then
-      exp_v := - exp_v;
+    expV := signed('0' & ixU) - signed('0' & pxU);
+
+    if (sign_val = CO_SIGN_NEG) then
+      expV := - expV;
     end if;
 
-    check(oErrorVal = exp_v,
-      "A7 mismatch: Ix=" & integer'image(ix_val) &
-      " Px=" & integer'image(px_val) &
-      " Sign=" & std_logic'image(sign_val) &
-      " Exp=" & integer'image(to_integer(exp_v)) &
-      " Got=" & integer'image(to_integer(oErrorVal))
-    );
-  end procedure;
+    check(oErrorVal = expV,
+          "A7 mismatch: Ix=" & integer'image(ix_val) &
+          " Px=" & integer'image(px_val) &
+          " Sign=" & std_logic'image(sign_val) &
+          " Exp=" & integer'image(to_integer(expV)) &
+          " Got=" & integer'image(to_integer(oErrorVal))
+        );
+
+  end procedure check_case;
+
 begin
 
-  A7_prediction_error_inst : entity work.A7_prediction_error
-    generic map(
-      BITNESS => BITNESS
+  a7_prediction_error_inst : entity work.a7_prediction_error(behavioral)
+
+    generic map (
+      BITNESS   => BITNESS
     )
-    port map
-    (
+    port map (
       iIx       => iIx,
       iPx       => iPx,
       iSign     => iSign,
       oErrorVal => oErrorVal
     );
 
-  stim_proc : process
+  stim_proc : process is
   begin
+
     -- Basic cases
     check_case(iIx, iPx, iSign, 0, 0, CO_SIGN_POS);
     check_case(iIx, iPx, iSign, 0, 0, CO_SIGN_NEG);
@@ -95,11 +108,16 @@ begin
     check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, CO_SIGN_POS);
     check_case(iIx, iPx, iSign, 2 ** BITNESS - 1, 2 ** BITNESS - 1, CO_SIGN_NEG);
 
-    if err_count > 0 then
-      report "tb_A7 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A7 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A7 RESULT: PASS" severity note;
+      report "tb_A7 RESULT: PASS"
+        severity note;
     end if;
+
     finish;
-  end process;
-end;
+
+  end process stim_proc;
+
+end architecture bench;

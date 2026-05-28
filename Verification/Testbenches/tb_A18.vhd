@@ -1,61 +1,75 @@
-use work.Common.all;
+use work.common.all;
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a18 is
+end entity tb_a18;
 
-entity tb_A18 is
-end;
+architecture bench of tb_a18 is
 
-architecture bench of tb_A18 is
-  shared variable err_count : natural := 0;
+  shared variable errCount : natural;
 
-  procedure check(cond : boolean; msg : string) is
+  procedure check (
+    cond : boolean;
+    msg  : string
+  ) is
   begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
     end if;
-  end procedure;
 
-  constant BITNESS : natural := CO_BITNESS_STD;
+  end procedure check;
 
-  signal iRItype : std_logic                      := '0';
-  signal iRa     : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal iRb     : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal iIx     : unsigned(BITNESS - 1 downto 0) := (others => '0');
-  signal oErr    : signed(BITNESS downto 0);
+  constant BITNESS         : natural := CO_BITNESS_STD;
 
-  procedure check_case(
+  signal iRItype           : std_logic;
+  signal iRa               : unsigned(BITNESS - 1 downto 0);
+  signal iRb               : unsigned(BITNESS - 1 downto 0);
+  signal iIx               : unsigned(BITNESS - 1 downto 0);
+  signal oErr              : signed(BITNESS downto 0);
+
+  procedure check_case (
     ri         : std_logic;
-    ra, rb, ix : integer;
+    ra,
+    rb,
+    ix         : integer;
     err_actual : signed
   ) is
-    variable exp_px  : integer;
-    variable exp_err : integer;
-  begin
-    if ri = '1' then
-      exp_px := ra;
-    else
-      exp_px := rb;
-    end if;
-    exp_err := ix - exp_px;
 
-    check(err_actual = to_signed(exp_err, err_actual'length),
-      "A18 Err mismatch: exp=" & integer'image(exp_err) &
-      " got=" & integer'image(to_integer(err_actual))
-    );
-  end procedure;
+    variable expPx  : integer;
+    variable expErr : integer;
+
+  begin
+
+    if (ri = '1') then
+      expPx := ra;
+    else
+      expPx := rb;
+    end if;
+
+    expErr := ix - expPx;
+
+    check(err_actual = to_signed(expErr, err_actual'length),
+          "A18 Err mismatch: exp=" & integer'image(expErr) &
+          " got=" & integer'image(to_integer(err_actual))
+        );
+
+  end procedure check_case;
 
 begin
 
-  dut : entity work.A18_run_interruption_prediction_error
-    generic map(
+  dut : entity work.a18_run_interruption_prediction_error(behavioral)
+
+    generic map (
       BITNESS => BITNESS
     )
-    port map(
+    port map (
       iRItype => iRItype,
       iRa     => iRa,
       iRb     => iRb,
@@ -63,8 +77,15 @@ begin
       oErrval => oErr
     );
 
-  stim : process
+  stim : process is
   begin
+
+    -- Initial values (no defaults — set explicitly here)
+    iRItype <= '0';
+    iRa     <= (others => '0');
+    iRb     <= (others => '0');
+    iIx     <= (others => '0');
+
     iRItype <= '1';
     iRa     <= to_unsigned(10, iRa'length);
     iRb     <= to_unsigned(20, iRb'length);
@@ -93,12 +114,16 @@ begin
     wait for 1 ns;
     check_case('0', 100, 0, 80, oErr);
 
-    if err_count > 0 then
-      report "tb_A18 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A18 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A18 RESULT: PASS" severity note;
+      report "tb_A18 RESULT: PASS"
+        severity note;
     end if;
-    finish;
-  end process;
 
-end;
+    finish;
+
+  end process stim;
+
+end architecture bench;

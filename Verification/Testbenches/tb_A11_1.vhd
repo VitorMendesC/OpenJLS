@@ -1,24 +1,30 @@
-use work.Common.all;
+use work.common.all;
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a11_1 is
+end entity tb_a11_1;
 
-entity tb_A11_1 is
-end;
+architecture bench of tb_a11_1 is
 
-architecture bench of tb_A11_1 is
-  shared variable err_count : natural := 0;
+  shared variable errCount        : natural;
 
-  procedure check(cond : boolean; msg : string) is
+  procedure check (
+    cond : boolean;
+    msg  : string
+  ) is
   begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
     end if;
-  end procedure;
+
+  end procedure check;
 
   constant K_WIDTH                : natural := CO_K_WIDTH_STD;
   constant QBPP                   : natural := CO_QBPP_STD;
@@ -29,91 +35,114 @@ architecture bench of tb_A11_1 is
   constant MAPPED_ERROR_VAL_WIDTH : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
   constant THRESHOLD              : natural := LIMIT - QBPP - 1;
 
-  signal iK              : unsigned(K_WIDTH - 1 downto 0) := (others => '0');
-  signal iMappedErrorVal : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0) := (others => '0');
-  signal oUnaryZeros     : unsigned(UNARY_WIDTH - 1 downto 0);
-  signal oSuffixLen      : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
-  signal oSuffixVal      : unsigned(SUFFIX_WIDTH - 1 downto 0);
+  signal iK                       : unsigned(K_WIDTH - 1 downto 0);
+  signal iMappedErrorVal          : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
+  signal oUnaryZeros              : unsigned(UNARY_WIDTH - 1 downto 0);
+  signal oSuffixLen               : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
+  signal oSuffixVal               : unsigned(SUFFIX_WIDTH - 1 downto 0);
 
-  function pow2(n : natural) return natural is
-    variable v : natural := 1;
+  function pow2 (
+    n : natural
+  ) return natural is
+
+    variable v : natural;
+
   begin
-    if n = 0 then
+
+    if (n = 0) then
       return 1;
     end if;
-    for i in 1 to n loop
-      v := v * 2;
-    end loop;
-    return v;
-  end function;
 
-  function lfsr_next(s : unsigned(31 downto 0)) return unsigned is
-    variable v   : unsigned(31 downto 0) := s;
+    for i in 1 to n loop
+
+      v := v * 2;
+
+    end loop;
+
+    return v;
+
+  end function pow2;
+
+  function lfsr_next (
+    s : unsigned(31 downto 0)
+  ) return unsigned is
+
+    variable v   : unsigned(31 downto 0);
     variable bit : std_logic;
+
   begin
+
     bit := v(31) xor v(21) xor v(1) xor v(0);
     v   := v(30 downto 0) & bit;
     return v;
-  end function;
 
-  procedure check_case(
-    signal sK      : out unsigned;
-    signal sMErr   : out unsigned;
-    signal sUnary  : in unsigned;
-    signal sSufLen : in unsigned;
-    signal sSufVal : in unsigned;
+  end function lfsr_next;
+
+  procedure check_case (
+    signal sk      : out unsigned;
+    signal smerr   : out unsigned;
+    signal sunary  : in unsigned;
+    signal ssuflen : in unsigned;
+    signal ssufval : in unsigned;
     k_val          : natural;
     merr_val       : natural
   ) is
-    variable step        : natural;
-    variable high_order  : natural;
-    variable low_order   : natural;
-    variable exp_unary   : natural;
-    variable exp_suf_len : natural;
-    variable exp_suf_val : natural;
+
+    variable step      : natural;
+    variable highOrder : natural;
+    variable lowOrder  : natural;
+    variable expUnary  : natural;
+    variable expSufLen : natural;
+    variable expSufVal : natural;
+
   begin
-    sK    <= to_unsigned(k_val, sK'length);
-    sMErr <= to_unsigned(merr_val, sMErr'length);
+
+    sk    <= to_unsigned(k_val, sk'length);
+    smerr <= to_unsigned(merr_val, smerr'length);
     wait for 1 ns;
 
-    step       := pow2(k_val);
-    high_order := merr_val / step;
-    low_order  := merr_val mod step;
+    step      := pow2(k_val);
+    highOrder := merr_val / step;
+    lowOrder  := merr_val mod step;
 
-    if high_order < THRESHOLD then
-      exp_unary   := high_order;
-      exp_suf_len := k_val;
-      exp_suf_val := low_order;
+    if (highOrder < THRESHOLD) then
+      expUnary  := highOrder;
+      expSufLen := k_val;
+      expSufVal := lowOrder;
     else
-      exp_unary   := THRESHOLD;
-      exp_suf_len := QBPP;
-      exp_suf_val := (merr_val - 1) mod pow2(QBPP);
+      expUnary  := THRESHOLD;
+      expSufLen := QBPP;
+      expSufVal := (merr_val - 1) mod pow2(QBPP);
     end if;
 
-    check(sUnary = to_unsigned(exp_unary, sUnary'length),
-      "A11.1 unary mismatch: k=" & integer'image(integer(k_val)) &
-      " MErr=" & integer'image(integer(merr_val)) &
-      " exp=" & integer'image(integer(exp_unary)) &
-      " got=" & integer'image(to_integer(sUnary))
-    );
+    check(sunary = to_unsigned(expUnary, sunary'length),
+          "A11.1 unary mismatch: k=" & integer'image(integer(k_val)) &
+          " MErr=" & integer'image(integer(merr_val)) &
+          " exp=" & integer'image(integer(expUnary)) &
+          " got=" & integer'image(to_integer(sunary))
+        );
 
-    check(sSufLen = to_unsigned(exp_suf_len, sSufLen'length),
-      "A11.1 suffix length mismatch: k=" & integer'image(integer(k_val)) &
-      " MErr=" & integer'image(integer(merr_val)) &
-      " exp=" & integer'image(integer(exp_suf_len)) &
-      " got=" & integer'image(to_integer(sSufLen))
-    );
+    check(ssuflen = to_unsigned(expSufLen, ssuflen'length),
+          "A11.1 suffix length mismatch: k=" & integer'image(integer(k_val)) &
+          " MErr=" & integer'image(integer(merr_val)) &
+          " exp=" & integer'image(integer(expSufLen)) &
+          " got=" & integer'image(to_integer(ssuflen))
+        );
 
-    check(sSufVal = to_unsigned(exp_suf_val, sSufVal'length),
-      "A11.1 suffix value mismatch: k=" & integer'image(integer(k_val)) &
-      " MErr=" & integer'image(integer(merr_val)) &
-      " exp=" & integer'image(integer(exp_suf_val)) &
-      " got=" & integer'image(to_integer(sSufVal))
-    );
-  end procedure;
+    check(ssufval = to_unsigned(expSufVal, ssufval'length),
+          "A11.1 suffix value mismatch: k=" & integer'image(integer(k_val)) &
+          " MErr=" & integer'image(integer(merr_val)) &
+          " exp=" & integer'image(integer(expSufVal)) &
+          " got=" & integer'image(to_integer(ssufval))
+        );
+
+  end procedure check_case;
+
 begin
-  dut : entity work.A11_1_golomb_encoder
-    generic map(
+
+  dut : entity work.a11_1_golomb_encoder(behavioral)
+
+    generic map (
       K_WIDTH                => K_WIDTH,
       QBPP                   => QBPP,
       LIMIT                  => LIMIT,
@@ -122,21 +151,28 @@ begin
       SUFFIXLEN_WIDTH        => SUFFIXLEN_WIDTH,
       MAPPED_ERROR_VAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
     )
-    port map(
-      iK              => iK,
-      iMappedErrorVal => iMappedErrorVal,
-      iRiMode         => '0',
-      iRunIndex       => (others => '0'),
-      oUnaryZeros     => oUnaryZeros,
-      oSuffixLen      => oSuffixLen,
-      oSuffixVal      => oSuffixVal
+    port map (
+      iK                     => iK,
+      iMappedErrorVal        => iMappedErrorVal,
+      iRiMode                => '0',
+      iRunIndex              => (others => '0'),
+      oUnaryZeros            => oUnaryZeros,
+      oSuffixLen             => oSuffixLen,
+      oSuffixVal             => oSuffixVal
     );
 
-  stim : process
-    variable lfsr   : unsigned(31 downto 0) := x"5C71A2E9";
-    variable k_v    : natural;
-    variable merr_v : natural;
+  stim : process is
+
+    variable lfsr  : unsigned(31 downto 0);
+    variable kV    : natural;
+    variable merrV : natural;
+
   begin
+
+    -- Initial values (no defaults — set explicitly here)
+    iK              <= (others => '0');
+    iMappedErrorVal <= (others => '0');
+
     -- Directed cases
     check_case(iK, iMappedErrorVal, oUnaryZeros, oSuffixLen, oSuffixVal, 0, 0);
     check_case(iK, iMappedErrorVal, oUnaryZeros, oSuffixLen, oSuffixVal, 2, 9);
@@ -148,19 +184,26 @@ begin
 
     -- Pseudo-random coverage
     for i in 0 to 999 loop
-      lfsr   := lfsr_next(lfsr);
-      k_v    := to_integer(unsigned(lfsr(3 downto 0))) mod (QBPP + 1);
-      lfsr   := lfsr_next(lfsr);
-      merr_v := to_integer(unsigned(lfsr(MAPPED_ERROR_VAL_WIDTH - 1 downto 0)));
 
-      check_case(iK, iMappedErrorVal, oUnaryZeros, oSuffixLen, oSuffixVal, k_v, merr_v);
+      lfsr  := lfsr_next(lfsr);
+      kV    := to_integer(unsigned(lfsr(3 downto 0))) mod (QBPP + 1);
+      lfsr  := lfsr_next(lfsr);
+      merrV := to_integer(unsigned(lfsr(MAPPED_ERROR_VAL_WIDTH - 1 downto 0)));
+
+      check_case(iK, iMappedErrorVal, oUnaryZeros, oSuffixLen, oSuffixVal, kV, merrV);
+
     end loop;
 
-    if err_count > 0 then
-      report "tb_A11_1 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A11_1 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A11_1 RESULT: PASS" severity note;
+      report "tb_A11_1 RESULT: PASS"
+        severity note;
     end if;
+
     finish;
-  end process;
-end;
+
+  end process stim;
+
+end architecture bench;

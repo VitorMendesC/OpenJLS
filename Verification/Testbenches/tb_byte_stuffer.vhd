@@ -1,231 +1,305 @@
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
 library openlogic_base;
-use openlogic_base.olo_base_pkg_math.log2ceil;
-
-use work.Common.all;
-
-use std.env.all;
+  use openlogic_base.olo_base_pkg_math.log2ceil;
+  use work.common.all;
+  use std.env.all;
 
 entity tb_byte_stuffer is
-end;
+end entity tb_byte_stuffer;
 
 architecture bench of tb_byte_stuffer is
 
-  shared variable err_count : natural := 0;
+  shared variable errCount       : natural;
 
-  procedure check(cond : boolean; msg : string) is
+  procedure check (
+    cond : boolean;
+    msg  : string
+  ) is
   begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
-    end if;
-  end procedure;
 
-  function hex(v : std_logic_vector(7 downto 0)) return string is
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
+    end if;
+
+  end procedure check;
+
+  function hex (
+    v : std_logic_vector(7 downto 0)
+  ) return string is
+
     constant HEX : string(1 to 16) := "0123456789ABCDEF";
     variable r   : string(1 to 2);
+
   begin
+
     r(1) := HEX(to_integer(unsigned(v(7 downto 4))) + 1);
     r(2) := HEX(to_integer(unsigned(v(3 downto 0))) + 1);
     return r;
-  end function;
 
-  constant CLK_PERIOD          : time    := 10 ns;
-  constant IN_WIDTH            : natural := 48;
-  constant OUT_BYTES_PER_CYCLE : natural := 4;
-  constant BURST_DEPTH         : natural := 4;
-  constant OUT_WIDTH           : natural := OUT_BYTES_PER_CYCLE * 8;
+  end function hex;
 
-  signal iClk        : std_logic                                     := '0';
-  signal iRst        : std_logic                                     := '1';
-  signal iStall      : std_logic                                     := '0';
-  signal iFlush      : std_logic                                     := '0';
-  signal iWordValid  : std_logic                                     := '0';
-  signal iWord       : std_logic_vector(IN_WIDTH - 1 downto 0)       := (others => '0');
-  signal iValidLen   : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0) := (others => '0');
-  signal oWord       : std_logic_vector(OUT_WIDTH - 1 downto 0);
-  signal oWordValid  : std_logic;
-  signal oValidBytes : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
-  signal oAlmostFull : std_logic;
-  signal oFlushDone  : std_logic;
+  constant CLK_PERIOD            : time    := 10 ns;
+  constant IN_WIDTH              : natural := 48;
+  constant OUT_BYTES_PER_CYCLE   : natural := 4;
+  constant BURST_DEPTH           : natural := 4;
+  constant OUT_WIDTH             : natural := OUT_BYTES_PER_CYCLE * 8;
+
+  signal iClk                    : std_logic;
+  signal iRst                    : std_logic;
+  signal iStall                  : std_logic;
+  signal iFlush                  : std_logic;
+  signal iWordValid              : std_logic;
+  signal iWord                   : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal iValidLen               : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+  signal oWord                   : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal oWordValid              : std_logic;
+  signal oValidBytes             : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
+  signal oAlmostFull             : std_logic;
+  signal oFlushDone              : std_logic;
 
   type byte_array_t is array(natural range <>) of std_logic_vector(7 downto 0);
 
-  constant COLLECT_CAP : natural := 4096;
+  constant COLLECT_CAP           : natural := 4096;
 
-  -- Collector shared state. Reset (collected_count <= 0) is requested by the
-  -- stimulus process via `collect_reset_req`; collector clears its counters
-  -- on the next rising edge and pulses `collect_reset_ack`.
-  shared variable collected        : byte_array_t(0 to COLLECT_CAP - 1) := (others => (others => '0'));
-  shared variable collected_count  : natural                            := 0;
-  shared variable flush_done_count : natural                            := 0;
+  -- Collector shared state. Reset (collectedCount <= 0) is requested by the
+  -- stimulus process via `collectResetReq`; collector clears its counters
+  -- on the next rising edge and pulses `collectResetAck`.
+  shared variable collected      : byte_array_t(0 to COLLECT_CAP - 1);
+  shared variable collectedCount : natural;
+  shared variable flushDoneCount : natural;
 
-  signal collect_reset_req : std_logic := '0';
-  signal collect_reset_ack : std_logic := '0';
+  signal collectResetReq         : std_logic;
+  signal collectResetAck         : std_logic;
 
 begin
 
-  iClk <= not iClk after CLK_PERIOD / 2;
+  clk_proc : process is
+  begin
 
-  dut : entity work.byte_stuffer
+    iClk <= '0';
+    wait for CLK_PERIOD / 2;
+    iClk <= '1';
+    wait for CLK_PERIOD / 2;
+
+  end process clk_proc;
+
+  dut : entity work.byte_stuffer(behavioral)
+
     generic map (
       IN_WIDTH            => IN_WIDTH,
       OUT_BYTES_PER_CYCLE => OUT_BYTES_PER_CYCLE,
       BURST_DEPTH         => BURST_DEPTH
     )
     port map (
-      iClk        => iClk,
-      iRst        => iRst,
-      iStall      => iStall,
-      iFlush      => iFlush,
-      iWord       => iWord,
-      iWordValid  => iWordValid,
-      iValidLen   => iValidLen,
-      oWord       => oWord,
-      oWordValid  => oWordValid,
-      oValidBytes => oValidBytes,
-      oAlmostFull => oAlmostFull,
-      oFlushDone  => oFlushDone
+      iClk                => iClk,
+      iRst                => iRst,
+      iStall              => iStall,
+      iFlush              => iFlush,
+      iWord               => iWord,
+      iWordValid          => iWordValid,
+      iValidLen           => iValidLen,
+      oWord               => oWord,
+      oWordValid          => oWordValid,
+      oValidBytes         => oValidBytes,
+      oAlmostFull         => oAlmostFull,
+      oFlushDone          => oFlushDone
     );
 
   ----------------------------------------------------------------------------
   -- Collector: capture output bytes on every cycle oWordValid='1'. Uses the
   -- oValidBytes count to know how many top bytes of oWord are payload (MSB
-  -- = first byte). Counters cleared on iRst and on collect_reset_req pulses
+  -- = first byte). Counters cleared on iRst and on collectResetReq pulses
   -- from the stimulus process between tests.
   ----------------------------------------------------------------------------
-  collect : process (iClk)
+  collect : process (iClk) is
+
     variable n : natural;
+
   begin
+
     if rising_edge(iClk) then
-      collect_reset_ack <= '0';
-      if iRst = '1' then
-        collected_count  := 0;
-        flush_done_count := 0;
+      collectResetAck <= '0';
+      if (iRst = '1') then
+        collectedCount := 0;
+        flushDoneCount := 0;
       else
-        if collect_reset_req = '1' then
-          collected_count   := 0;
-          flush_done_count  := 0;
-          collect_reset_ack <= '1';
+        if (collectResetReq = '1') then
+          collectedCount  := 0;
+          flushDoneCount  := 0;
+          collectResetAck <= '1';
         end if;
 
-        if oWordValid = '1' then
+        if (oWordValid = '1') then
           n := to_integer(oValidBytes);
+
           for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
-            if i < n then
-              if collected_count < COLLECT_CAP then
-                collected(collected_count) := oWord(OUT_WIDTH - 1 - i * 8
-                                                    downto OUT_WIDTH - (i + 1) * 8);
+
+            if (i < n) then
+              if (collectedCount < COLLECT_CAP) then
+                collected(collectedCount) := oWord(OUT_WIDTH - 1 - i * 8
+                                                   downto OUT_WIDTH - (i + 1) * 8);
               end if;
-              collected_count := collected_count + 1;
+              collectedCount := collectedCount + 1;
             end if;
+
           end loop;
+
         end if;
 
-        if oFlushDone = '1' then
-          flush_done_count := flush_done_count + 1;
+        if (oFlushDone = '1') then
+          flushDoneCount := flushDoneCount + 1;
         end if;
       end if;
     end if;
-  end process;
+
+  end process collect;
 
   ----------------------------------------------------------------------------
   -- Stimulus
   ----------------------------------------------------------------------------
-  stim : process
+  stim : process is
 
     procedure clear_collector is
     begin
-      collect_reset_req <= '1';
-      wait until rising_edge(iClk) and collect_reset_ack = '1';
-      collect_reset_req <= '0';
+
+      -- Initial values (no defaults — set explicitly here)
+      iRst            <= '1';
+      iStall          <= '0';
+      iFlush          <= '0';
+      iWordValid      <= '0';
+      iWord           <= (others => '0');
+      iValidLen       <= (others => '0');
+      collectResetReq <= '0';
+      collectResetAck <= '0';
+
+      collectResetReq <= '1';
+      wait until rising_edge(iClk) and collectResetAck = '1';
+      collectResetReq <= '0';
       wait until rising_edge(iClk);
-    end procedure;
+
+    end procedure clear_collector;
 
     procedure do_reset is
     begin
+
       iRst       <= '1';
       iWordValid <= '0';
       iFlush     <= '0';
       iStall     <= '0';
+
       for i in 0 to 3 loop
+
         wait until rising_edge(iClk);
+
       end loop;
+
       iRst <= '0';
       wait until rising_edge(iClk);
-    end procedure;
+
+    end procedure do_reset;
 
     -- Drive one input word. `last` asserts iFlush together with
     -- iWordValid on this beat, matching the top-level convention
     -- (sBsFlush <= sReg6EOI registered alongside bit_packer's last word).
+
     procedure send_word (
       constant word : in std_logic_vector(IN_WIDTH - 1 downto 0);
       constant vlen : in natural;
       constant last : in boolean := false
     ) is
     begin
+
       iWordValid <= '1';
       iWord      <= word;
       iValidLen  <= to_unsigned(vlen, iValidLen'length);
-      if last then
+
+      if (last) then
         iFlush <= '1';
       else
         iFlush <= '0';
       end if;
+
       wait until rising_edge(iClk);
       iWordValid <= '0';
       iFlush     <= '0';
       iValidLen  <= (others => '0');
-    end procedure;
+
+    end procedure send_word;
 
     -- Wait for oFlushDone, with timeout.
-    procedure wait_flush_done (constant tag : in string) is
-      variable cycles : natural := 0;
+
+    procedure wait_flush_done (
+      constant tag : in string
+    ) is
+
+      variable cycles : natural;
+
     begin
-      while flush_done_count = 0 loop
+
+      while flushDoneCount = 0 loop
+
         wait until rising_edge(iClk);
         cycles := cycles + 1;
-        if cycles >= 500 then
-          report tag & ": oFlushDone timeout after 500 cycles" severity error;
-          err_count := err_count + 1;
+
+        if (cycles >= 500) then
+          report tag & ": oFlushDone timeout after 500 cycles"
+            severity error;
+          errCount := errCount + 1;
           exit;
         end if;
+
       end loop;
+
       -- Drain a few extra cycles to make sure no stray output leaks past
       -- oFlushDone.
       for i in 0 to 3 loop
+
         wait until rising_edge(iClk);
+
       end loop;
-    end procedure;
+
+    end procedure wait_flush_done;
 
     procedure check_output (
       constant expected : in byte_array_t;
       constant tag      : in string
     ) is
+
       variable n : natural;
+
     begin
-      check(collected_count = expected'length,
+
+      check(collectedCount = expected'length,
             tag & ": byte count mismatch exp=" & integer'image(expected'length) &
-            " got=" & integer'image(collected_count));
-      n := collected_count;
-      if expected'length < n then
+            " got=" & integer'image(collectedCount));
+      n := collectedCount;
+
+      if (expected'length < n) then
         n := expected'length;
       end if;
+
       for i in 0 to n - 1 loop
+
         check(collected(i) = expected(expected'low + i),
               tag & ": byte " & integer'image(i) &
               " exp=0x" & hex(expected(expected'low + i)) &
               " got=0x" & hex(collected(i)));
+
       end loop;
-      check(flush_done_count = 1,
+
+      check(flushDoneCount = 1,
             tag & ": expected exactly one oFlushDone pulse, got " &
-            integer'image(flush_done_count));
-    end procedure;
+            integer'image(flushDoneCount));
+
+    end procedure check_output;
 
   begin
+
     -- ------------------------------------------------------------------
     -- T1: pure pass-through, no 0xFF in stream, byte-aligned input.
     --   Bytes:  12 34 56 78 9A BC  -> identical on output, no pad.
@@ -338,9 +412,13 @@ begin
     clear_collector;
     send_word(x"FFFFFFFFFFFF", 48, last => true);
     iStall <= '1';
+
     for i in 0 to 6 loop
+
       wait until rising_edge(iClk);
+
     end loop;
+
     iStall <= '0';
     wait_flush_done("T8");
     check_output((x"FF", x"7F", x"FF", x"7F", x"FF", x"7F", x"E0"), "T8");
@@ -365,13 +443,17 @@ begin
     -- Final report
     -- ------------------------------------------------------------------
     wait for CLK_PERIOD * 2;
-    if err_count > 0 then
-      report "tb_byte_stuffer RESULT: FAIL (" & integer'image(err_count) & " errors)"
+
+    if (errCount > 0) then
+      report "tb_byte_stuffer RESULT: FAIL (" & integer'image(errCount) & " errors)"
         severity failure;
     else
-      report "tb_byte_stuffer RESULT: PASS" severity note;
+      report "tb_byte_stuffer RESULT: PASS"
+        severity note;
     end if;
-    finish;
-  end process;
 
-end architecture;
+    finish;
+
+  end process stim;
+
+end architecture bench;

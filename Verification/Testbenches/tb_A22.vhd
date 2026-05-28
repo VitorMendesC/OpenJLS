@@ -1,81 +1,99 @@
-use work.Common.all;
+use work.common.all;
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a22 is
+end entity tb_a22;
 
-entity tb_A22 is
-end;
+architecture bench of tb_a22 is
 
-architecture bench of tb_A22 is
-  shared variable err_count : natural := 0;
+  shared variable errCount : natural;
 
-  procedure check(cond : boolean; msg : string) is
-  begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
-    end if;
-  end procedure;
-
-  constant ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
-  constant ME_WIDTH    : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
-
-  signal iErr   : signed(ERROR_WIDTH - 1 downto 0) := (others => '0');
-  signal iRI    : std_logic                        := '0';
-  signal iMap   : std_logic                        := '0';
-  signal oEmErr : unsigned(ME_WIDTH - 1 downto 0);
-
-  procedure check_case(
-    errv         : integer;
-    ri, map_flag : std_logic;
-    em_actual    : unsigned
+  procedure check (
+    cond : boolean;
+    msg  : string
   ) is
-    variable exp   : integer;
-    variable ri_i  : integer;
-    variable map_i : integer;
   begin
-    if ri = '1' then
-      ri_i := 1;
-    else
-      ri_i := 0;
-    end if;
-    if map_flag = '1' then
-      map_i := 1;
-    else
-      map_i := 0;
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
     end if;
 
-    exp := 2 * abs(errv) - ri_i - map_i;
+  end procedure check;
+
+  constant ERROR_WIDTH     : natural := CO_ERROR_VALUE_WIDTH_STD;
+  constant ME_WIDTH        : natural := CO_MAPPED_ERROR_VAL_WIDTH_STD;
+
+  signal iErr              : signed(ERROR_WIDTH - 1 downto 0);
+  signal iRI               : std_logic;
+  signal iMap              : std_logic;
+  signal oEmErr            : unsigned(ME_WIDTH - 1 downto 0);
+
+  procedure check_case (
+    errv      : integer;
+    ri,
+    map_flag  : std_logic;
+    em_actual : unsigned
+  ) is
+
+    variable exp  : integer;
+    variable riI  : integer;
+    variable mapI : integer;
+
+  begin
+
+    if (ri = '1') then
+      riI := 1;
+    else
+      riI := 0;
+    end if;
+
+    if (map_flag = '1') then
+      mapI := 1;
+    else
+      mapI := 0;
+    end if;
+
+    exp := 2 * abs(errv) - riI - mapI;
 
     check(em_actual = to_unsigned(exp, em_actual'length),
-    "A22 mismatch: Err=" & integer'image(errv) &
-    " RI=" & std_logic'image(ri) &
-    " map=" & std_logic'image(map_flag) &
-    " exp=" & integer'image(exp) &
-    " got=" & integer'image(to_integer(em_actual))
-    );
-  end procedure;
+          "A22 mismatch: Err=" & integer'image(errv) &
+          " RI=" & std_logic'image(ri) &
+          " map=" & std_logic'image(map_flag) &
+          " exp=" & integer'image(exp) &
+          " got=" & integer'image(to_integer(em_actual))
+        );
+
+  end procedure check_case;
 
 begin
 
-  dut : entity work.A22_errval_mapping
-    generic map(
+  dut : entity work.a22_errval_mapping(behavioral)
+
+    generic map (
       ERROR_WIDTH         => ERROR_WIDTH,
       MAPPED_ERRVAL_WIDTH => ME_WIDTH
     )
-    port map
-    (
-      iErrval   => iErr,
-      iRItype   => iRI,
-      iMap      => iMap,
-      oEMErrval => oEmErr
+    port map (
+      iErrval             => iErr,
+      iRItype             => iRI,
+      iMap                => iMap,
+      oEmErrVal           => oEmErr
     );
 
-  stim : process
+  stim : process is
   begin
+
+    -- Initial values (no defaults — set explicitly here)
+    iErr <= (others => '0');
+    iRI  <= '0';
+    iMap <= '0';
+
     iErr <= to_signed(5, iErr'length);
     iRI  <= '0';
     iMap <= '0';
@@ -106,12 +124,16 @@ begin
     wait for 1 ns;
     check_case(-3, '0', '1', oEmErr);
 
-    if err_count > 0 then
-      report "tb_A22 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A22 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A22 RESULT: PASS" severity note;
+      report "tb_A22 RESULT: PASS"
+        severity note;
     end if;
-    finish;
-  end process;
 
-end;
+    finish;
+
+  end process stim;
+
+end architecture bench;

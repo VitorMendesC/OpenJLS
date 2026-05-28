@@ -1,68 +1,86 @@
-use work.Common.all;
+use work.common.all;
 
 library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use std.env.all;
 
-use std.env.all;
+entity tb_a20 is
+end entity tb_a20;
 
-entity tb_A20 is
-end;
+architecture bench of tb_a20 is
 
-architecture bench of tb_A20 is
-  shared variable err_count : natural := 0;
+  shared variable errCount : natural;
 
-  procedure check(cond : boolean; msg : string) is
+  procedure check (
+    cond : boolean;
+    msg  : string
+  ) is
   begin
-    if not cond then
-      report msg severity error;
-      err_count := err_count + 1;
+
+    if (not cond) then
+      report msg
+        severity error;
+      errCount := errCount + 1;
     end if;
-  end procedure;
 
-  constant A_WIDTH : natural := CO_AQ_WIDTH_STD;
-  constant N_WIDTH : natural := CO_NQ_WIDTH_STD;
+  end procedure check;
 
-  signal iRI   : std_logic := '0';
-  signal iAq   : unsigned(A_WIDTH - 1 downto 0) := (others => '0');
-  signal iNq   : unsigned(N_WIDTH - 1 downto 0) := (others => '0');
-  signal oTemp : unsigned(A_WIDTH - 1 downto 0);
+  constant A_WIDTH         : natural := CO_AQ_WIDTH_STD;
+  constant N_WIDTH         : natural := CO_NQ_WIDTH_STD;
 
-  procedure check_case(
+  signal iRI               : std_logic;
+  signal iAq               : unsigned(A_WIDTH - 1 downto 0);
+  signal iNq               : unsigned(N_WIDTH - 1 downto 0);
+  signal oTemp             : unsigned(A_WIDTH - 1 downto 0);
+
+  procedure check_case (
     ri          : std_logic;
-    aq, nq      : integer;
+    aq,
+    nq          : integer;
     temp_actual : unsigned
   ) is
+
     variable exp : integer;
+
   begin
-    if ri = '0' then
+
+    if (ri = '0') then
       exp := aq;
     else
       exp := aq + (nq / 2);
     end if;
 
     check(temp_actual = to_unsigned(exp, temp_actual'length),
-      "A20 TEMP mismatch exp=" & integer'image(exp) &
-      " got=" & integer'image(to_integer(temp_actual))
-    );
-  end procedure;
+          "A20 TEMP mismatch exp=" & integer'image(exp) &
+          " got=" & integer'image(to_integer(temp_actual))
+        );
+
+  end procedure check_case;
 
 begin
 
-  dut : entity work.A20_compute_temp
-    generic map(
+  dut : entity work.a20_compute_temp(behavioral)
+
+    generic map (
       A_WIDTH => A_WIDTH,
       N_WIDTH => N_WIDTH
     )
-    port map(
+    port map (
       iRItype => iRI,
       iAq     => iAq,
       iNq     => iNq,
       oTemp   => oTemp
     );
 
-  stim : process
+  stim : process is
   begin
+
+    -- Initial values (no defaults — set explicitly here)
+    iRI <= '0';
+    iAq <= (others => '0');
+    iNq <= (others => '0');
+
     -- RItype = 0 → TEMP = Aq (Nq ignored)
     iRI <= '0';
     iAq <= to_unsigned(100, iAq'length);
@@ -104,12 +122,16 @@ begin
     wait for 1 ns;
     check_case('1', 42, 1, oTemp);
 
-    if err_count > 0 then
-      report "tb_A20 RESULT: FAIL (" & integer'image(err_count) & " errors)" severity failure;
+    if (errCount > 0) then
+      report "tb_A20 RESULT: FAIL (" & integer'image(errCount) & " errors)"
+        severity failure;
     else
-      report "tb_A20 RESULT: PASS" severity note;
+      report "tb_A20 RESULT: PASS"
+        severity note;
     end if;
-    finish;
-  end process;
 
-end;
+    finish;
+
+  end process stim;
+
+end architecture bench;
