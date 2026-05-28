@@ -38,7 +38,7 @@ architecture bench of tb_a9 is
     errval : integer
   ) return integer is
 
-    variable v : integer;
+    variable v : integer := errval;
 
   begin
 
@@ -58,7 +58,7 @@ architecture bench of tb_a9 is
     s : unsigned(31 downto 0)
   ) return unsigned is
 
-    variable v   : unsigned(31 downto 0);
+    variable v   : unsigned(31 downto 0) := s;
     variable bit : std_logic;
 
   begin
@@ -104,7 +104,7 @@ begin
 
   stim : process is
 
-    variable lfsr : unsigned(31 downto 0);
+    variable lfsr : unsigned(31 downto 0) := x"4F1C3B2A";
     variable errv : integer;
 
   begin

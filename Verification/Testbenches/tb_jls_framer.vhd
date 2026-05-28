@@ -310,18 +310,9 @@ begin
       partial : natural := BYTES_IN
     ) is
 
-      variable word : std_logic_vector(IN_WIDTH - 1 downto 0);
+      variable word : std_logic_vector(IN_WIDTH - 1 downto 0) := (others => '0');
 
     begin
-
-      -- Initial values (no defaults — set explicitly here)
-      iRst          <= '1';
-      iStart        <= '0';
-      iEoi          <= '0';
-      iBsWord       <= (others => '0');
-      iBsWordValid  <= '0';
-      iBsValidBytes <= (others => '0');
-      iReady        <= '1';
 
       -- Fill each word with 0xAB for easy visual inspection
       for b in 0 to BYTES_IN - 1 loop
@@ -386,7 +377,15 @@ begin
 
   begin
 
-    iRst <= '1';
+    -- Initial values (no defaults — set explicitly here)
+    iRst          <= '1';
+    iStart        <= '0';
+    iEoi          <= '0';
+    iBsWord       <= (others => '0');
+    iBsWordValid  <= '0';
+    iBsValidBytes <= (others => '0');
+    iReady        <= '1';
+
     wait for 3 * CLK_PERIOD;
     wait until rising_edge(iClk);
     iRst <= '0';

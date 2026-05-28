@@ -45,7 +45,7 @@ architecture bench of tb_a11_1 is
     n : natural
   ) return natural is
 
-    variable v : natural;
+    variable v : natural := 1;
 
   begin
 
@@ -67,7 +67,7 @@ architecture bench of tb_a11_1 is
     s : unsigned(31 downto 0)
   ) return unsigned is
 
-    variable v   : unsigned(31 downto 0);
+    variable v   : unsigned(31 downto 0) := s;
     variable bit : std_logic;
 
   begin
@@ -163,7 +163,7 @@ begin
 
   stim : process is
 
-    variable lfsr  : unsigned(31 downto 0);
+    variable lfsr  : unsigned(31 downto 0) := x"5C71A2E9";
     variable kV    : natural;
     variable merrV : natural;
 

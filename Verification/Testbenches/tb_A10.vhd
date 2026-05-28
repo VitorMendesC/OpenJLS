@@ -49,7 +49,7 @@ architecture bench of tb_a10 is
   ) return unsigned is
 
     constant TMP_WIDTH : natural := aq'length + 1;
-    variable vK        : unsigned(K_WIDTH - 1 downto 0);
+    variable vK        : unsigned(K_WIDTH - 1 downto 0) := (others => '0');
     variable vNqTmp    : unsigned(TMP_WIDTH - 1 downto 0);
     variable vAqTmp    : unsigned(TMP_WIDTH - 1 downto 0);
 
@@ -77,7 +77,7 @@ architecture bench of tb_a10 is
     s : unsigned(31 downto 0)
   ) return unsigned is
 
-    variable v   : unsigned(31 downto 0);
+    variable v   : unsigned(31 downto 0) := s;
     variable bit : std_logic;
 
   begin
@@ -131,7 +131,7 @@ begin
 
   stim : process is
 
-    variable lfsr : unsigned(31 downto 0);
+    variable lfsr : unsigned(31 downto 0) := x"1F2E3D4C";
     variable nq   : natural;
     variable aq   : natural;
 

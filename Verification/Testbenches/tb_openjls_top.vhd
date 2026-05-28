@@ -286,7 +286,7 @@ begin
 
   pulse_iready : process (iClk) is
 
-    variable vCount : integer;
+    variable vCount : integer := 0;
 
   begin
 
