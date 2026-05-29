@@ -1,0 +1,7 @@
+osvvm-lib/
+tb_support-lib/
+work-lib/
+*.cf
+*.o
+*.exe
+OsvvmLibraries/
