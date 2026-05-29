@@ -236,13 +236,22 @@ begin
     wait for 5 * CLK_PERIOD;
 
     -- -----------------------------------------------------------------------
-    -- Test 3: Run interrupted by EOI (end of image)
+    -- Test 3: Run closed by EOI (end of image)
     --
-    -- 1 matching pixel (hits boundary, oRawValid='1'), then iEoi='1'.
-    -- The iEoi gate suppresses all outputs on the EOI cycle and resets state.
-    -- Verified by running a fresh pixel after EOI deassertion: it should
-    -- behave as if from reset (count=1 hits sNextBound=1 again).
+    -- Top-level wires sReg1Eoi <= sLbValid and sLbEoi (openjls_top.vhd:670),
+    -- so iEoi='1' ALWAYS coincides with a valid pixel — the LAST pixel of the
+    -- image. The DUT must encode that last pixel on the EOI cycle (otherwise
+    -- the bitstream loses a symbol) AND reset state for the next image.
+    --
+    -- Two sub-cases of "last pixel on EOI cycle":
+    --   3a. Run-hit at boundary  → oRawValid='1' (A.15 boundary '1' marker)
+    --   3b. Break (iRunHit='0')  → oRawValid='1' with break code, oRiValid='1'
+    --                              with RI pixel (A.16 break path)
+    -- After each sub-case, verify state reset: a fresh pixel should behave as
+    -- if from cold reset (sRunIndex=0, sNextBound=1, sInRun=0).
     -- -----------------------------------------------------------------------
+
+    -- ── 3a: last pixel is a run-hit at boundary ───────────────────────────
     iRst         <= '1';
     iModeIsRun   <= '1';
     iRunHit      <= '0';
@@ -251,7 +260,7 @@ begin
     wait until rising_edge(iClk);
     iRst         <= '0';
 
-    -- Pixel 1: match, boundary hit
+    -- Pixel 1 (image 1): match, boundary hit
     iRunHit      <= '1';
     iRunContinue <= '1';
     iRunCnt      <= to_unsigned(1, RUN_CNT_WIDTH);
@@ -259,31 +268,93 @@ begin
     iRa          <= to_unsigned(10, BITNESS);
     iRb          <= to_unsigned(20, BITNESS);
     wait for 1 ns;
-    check(oRawValid = '1', "T3 pixel 1: boundary hit before EOI");
+    check(oRawValid = '1', "T3a pixel 1: boundary hit before EOI");
     wait until rising_edge(iClk);
-    -- State: sRUNindex=1, sNextBound=2, sInRun=1
+    -- State: sRunIndex=1, sNextBound=2, sInRun=1
 
-    -- EOI cycle: outputs must be suppressed regardless of inputs
+    -- EOI cycle: last pixel is also a run-hit at the next boundary.
+    -- Expect the boundary '1' marker to be emitted (DUT comb path), and on
+    -- the next edge the state register resets via the (iRst or iEoi) gate.
     iEoi    <= '1';
     iRunHit <= '1';
     iRunCnt <= to_unsigned(2, RUN_CNT_WIDTH);
     wait for 1 ns;
-    check(oRawValid = '0', "T3 EOI: oRawValid must be suppressed during EOI");
-    check(oRiValid = '0', "T3 EOI: oRiValid must be suppressed during EOI");
+    check(oRawValid = '1',
+          "T3a EOI: last pixel hits boundary; A.15 '1' marker must be emitted");
+    check(oRawSuffixLen = to_unsigned(1, oRawSuffixLen'length),
+          "T3a EOI: SuffixLen exp=1 (boundary marker)");
+    check(oRawSuffixVal = to_unsigned(1, oRawSuffixVal'length),
+          "T3a EOI: SuffixVal exp=1 (boundary marker)");
+    check(oRiValid = '0', "T3a EOI: run-hit, no RI pixel");
     wait until rising_edge(iClk);
-    -- State reset: sRUNindex=0, sNextBound=1, sInRun=0
     iEoi <= '0';
+    -- State should now be reset: sRunIndex=0, sNextBound=1, sInRun=0
 
-    -- Post-EOI: fresh pixel should behave like the very first pixel of a run
-    -- (iRunCnt=1 since top-level resets RunCnt after EOI, A14 increments to 1)
+    -- Post-EOI: fresh pixel should behave like the very first pixel of a run.
     iRunHit      <= '1';
     iRunContinue <= '1';
     iRunCnt      <= to_unsigned(1, RUN_CNT_WIDTH);
     wait for 1 ns;
     check(oRawValid = '1',
-          "T3 post-EOI: state should be reset; count=1 should hit sNextBound=1");
+          "T3a post-EOI: state should be reset; count=1 should hit sNextBound=1");
     check(oRiValid = '0',
-          "T3 post-EOI: no RI on boundary hit");
+          "T3a post-EOI: no RI on boundary hit");
+    wait until rising_edge(iClk);
+
+    iModeIsRun <= '0';
+    iRunHit    <= '0';
+    wait for 2 * CLK_PERIOD;
+
+    -- ── 3b: last pixel is a break ─────────────────────────────────────────
+    iRst         <= '1';
+    iModeIsRun   <= '1';
+    iRunHit      <= '0';
+    iRunContinue <= '0';
+    iRunCnt      <= (others => '0');
+    wait until rising_edge(iClk);
+    iRst         <= '0';
+
+    -- Pixel 1 (image 2): match, boundary hit (sets up sRunIndex=1, sNextBound=2)
+    iRunHit      <= '1';
+    iRunContinue <= '1';
+    iRunCnt      <= to_unsigned(1, RUN_CNT_WIDTH);
+    iIx          <= to_unsigned(10, BITNESS);
+    iRa          <= to_unsigned(10, BITNESS);
+    iRb          <= to_unsigned(20, BITNESS);
+    wait for 1 ns;
+    check(oRawValid = '1', "T3b pixel 1: boundary hit");
+    wait until rising_edge(iClk);
+
+    -- EOI cycle: last pixel is a BREAK with non-matching neighbours.
+    -- Expect the A.16 break path: unary+suffix in oRaw* AND RI pixel in oRi*.
+    iEoi         <= '1';
+    iRunHit      <= '0';
+    iRunContinue <= '0';
+    iRunCnt      <= to_unsigned(1, RUN_CNT_WIDTH);
+    iIx          <= to_unsigned(77, BITNESS);
+    iRa          <= to_unsigned(11, BITNESS);
+    iRb          <= to_unsigned(33, BITNESS);
+    wait for 1 ns;
+    check(oRawValid = '1',
+          "T3b EOI: break on last pixel; A.16 break code must be emitted");
+    check(oRiValid = '1',
+          "T3b EOI: break on last pixel; RI pixel must be emitted downstream");
+    check(oRiIx = to_unsigned(77, BITNESS), "T3b EOI: RI pixel Ix passthrough");
+    check(oRiRa = to_unsigned(11, BITNESS), "T3b EOI: RI pixel Ra passthrough");
+    check(oRiRb = to_unsigned(33, BITNESS), "T3b EOI: RI pixel Rb passthrough");
+    wait until rising_edge(iClk);
+    iEoi <= '0';
+
+    -- Post-EOI: same fresh-pixel check — confirms state reset overrode the
+    -- break path's sRunIndexNext := sRunIndex - 1 assignment.
+    iRunHit      <= '1';
+    iRunContinue <= '1';
+    iRunCnt      <= to_unsigned(1, RUN_CNT_WIDTH);
+    wait for 1 ns;
+    check(oRawValid = '1',
+          "T3b post-EOI: state should be reset; count=1 should hit sNextBound=1");
+    check(oRiValid = '0',
+          "T3b post-EOI: no RI on boundary hit");
     wait until rising_edge(iClk);
 
     iModeIsRun <= '0';
