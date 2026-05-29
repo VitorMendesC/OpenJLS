@@ -324,11 +324,14 @@ begin
       iBsWord <= word;
 
       if (n_words = 0) then
-        -- No payload: EOI alone
-        iBsWordValid  <= '0';
+        -- No payload: emit the zero-byte EOI beat that byte_stuffer produces
+        -- in sCleanEndPending (iBsWordValid='1', iBsValidBytes=0, iEoi='1').
+        iBsWord       <= (others => '0');
         iBsValidBytes <= (others => '0');
+        iBsWordValid  <= '1';
         iEoi          <= '1';
         wait until rising_edge(iClk);
+        iBsWordValid  <= '0';
         iEoi          <= '0';
         return;
       end if;
@@ -433,10 +436,16 @@ begin
     wait for CLK_PERIOD * 4;
     wait until rising_edge(iClk);
 
-    -- EOI for image 1
-    iEoi <= '1';
+    -- EOI for image 1 — pair with iBsWordValid='1', iBsValidBytes=0 (zero-byte
+    -- EOI beat, matching byte_stuffer's sCleanEndPending behavior; framer's
+    -- WRITE block only honors iEoi when iValid='1').
+    iBsWord       <= (others => '0');
+    iBsValidBytes <= (others => '0');
+    iBsWordValid  <= '1';
+    iEoi          <= '1';
     wait until rising_edge(iClk);
-    iEoi <= '0';
+    iBsWordValid  <= '0';
+    iEoi          <= '0';
 
     -- iStart for image 2 arrives the very next cycle
     iStart <= '1';
@@ -454,9 +463,13 @@ begin
     wait for CLK_PERIOD * 4;
     wait until rising_edge(iClk);
 
-    iEoi <= '1';
+    iBsWord       <= (others => '0');
+    iBsValidBytes <= (others => '0');
+    iBsWordValid  <= '1';
+    iEoi          <= '1';
     wait until rising_edge(iClk);
-    iEoi <= '0';
+    iBsWordValid  <= '0';
+    iEoi          <= '0';
 
     wait_image_done;
 
@@ -490,9 +503,13 @@ begin
     wait for CLK_PERIOD * 4;
     wait until rising_edge(iClk);
 
-    iEoi <= '1';
+    iBsWord       <= (others => '0');
+    iBsValidBytes <= (others => '0');
+    iBsWordValid  <= '1';
+    iEoi          <= '1';
     wait until rising_edge(iClk);
-    iEoi <= '0';
+    iBsWordValid  <= '0';
+    iEoi          <= '0';
 
     wait_image_done;
 
