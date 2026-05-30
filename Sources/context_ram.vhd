@@ -35,7 +35,10 @@ entity context_ram is
     C_WIDTH     : positive := CO_CQ_WIDTH;
     N_WIDTH     : positive := CO_NQ_WIDTH_STD;
     NN_WIDTH    : positive := CO_NNQ_WIDTH_STD;
-    TOTAL_WIDTH : positive := CO_TOTAL_WIDTH_STD
+    TOTAL_WIDTH : positive := CO_TOTAL_WIDTH_STD;
+    -- RAM implementation hint passed to the vendor attribute. Vendor-specific
+    -- value: "auto"/"block"/"distributed" (AMD), "M20K" (Intel), etc.
+    RAM_STYLE   : string   := "auto"
   );
   port (
     iClk        : in    std_logic;
@@ -70,6 +73,10 @@ architecture behavioral of context_ram is
   signal sUseInitReg   : std_logic;                                -- Registered flag aligning with BRAM RdLatency=1.
   signal sBramRdData   : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
 
+  -- Same-cycle write->read forwarding: rebuilds WBR on top of an RBW BRAM.
+  signal sFwdSameReg   : std_logic;
+  signal sWrDataReg    : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
+
 begin
 
   olo_base_ram_sdp_inst : entity openlogic_base.olo_base_ram_sdp(rtl)
@@ -78,8 +85,8 @@ begin
       WIDTH_G         => TOTAL_WIDTH,
       ISASYNC_G       => false,
       RDLATENCY_G     => 1,
-      RAMSTYLE_G      => "auto",
-      RAMBEHAVIOR_G   => "WBR",
+      RAMSTYLE_G      => RAM_STYLE,
+      RAMBEHAVIOR_G   => "RBW",
       USEBYTEENABLE_G => false,
       INITSTRING_G    => "",
       INITFORMAT_G    => "NONE"
@@ -110,7 +117,23 @@ begin
 
   end process p_init_tracker;
 
+  p_fwd : process (iClk) is
+  begin
+
+    if rising_edge(iClk) then
+      if (iRst = '1') then
+        sFwdSameReg <= '0';
+        sWrDataReg  <= (others => '0');
+      elsif (iRdEn = '1') then
+        sFwdSameReg <= iWrEn and bool2bit(iWrAddr = iRdAddr);
+        sWrDataReg  <= iWrData;
+      end if;
+    end if;
+
+  end process p_fwd;
+
   oRdData <= CTX_INIT when sUseInitReg = '1' else
+             sWrDataReg when sFwdSameReg = '1' else
              sBramRdData;
 
 end architecture behavioral;
