@@ -6,7 +6,7 @@ It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — the best-p
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform. It is currently tested on Xilinx Zynq 7020.
 
-> **Status:** Active development. Lossless encoder is integrated end-to-end with AXI4-Stream interfaces and verified bit-exact against the ISO/IEC 14495-1 reference (TEST16, 12-bit grayscale). Current focus is timing closure. Check the [roadmap](Docs/ROADMAP.md) file for more details.
+> **Status:** Active development. Lossless encoder is integrated end-to-end with AXI4-Stream interfaces and verified bit-exact against the ISO/IEC 14495-1 reference (TEST16, 12-bit grayscale). Current focus is timing closure. Check the [roadmap](Docs/roadmap.md) file for more details.
 
 ---
 
