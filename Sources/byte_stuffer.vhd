@@ -31,11 +31,12 @@
 --             prev_FF and selects the correct candidate flag/bits via a
 --             small mux.
 --
---       End-of-image partial-byte drain (sub-byte residue, or a pending
---       stuff bit with no follow-up data) is split into its own cycle via
---       sDrainPending: the padded byte is assembled, latched, and emitted
---       on the following beat. Adds at most 1 cycle of latency per image
---       boundary and keeps the pad-byte assembly off the critical path.
+--       The end-of-image terminal beat (sub-byte residue, a pending stuff
+--       bit with no follow-up data, or a byte-aligned clean end) is split
+--       into its own cycle via sLastPending: the final byte (or 0-byte beat)
+--       is assembled, latched, and emitted on the following beat. Adds at
+--       most 1 cycle of latency per image boundary and keeps the pad-byte
+--       assembly off the critical path.
 --
 --   Flush protocol (iFlush, single-cycle pulse from upstream on the cycle
 --   the bit_packer presents the image's last word):
@@ -179,14 +180,12 @@ architecture behavioral of byte_stuffer is
   signal sPrevFF                  : std_logic;
   signal sOutWordReg              : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal sOutValidReg             : std_logic;
-  signal sOutBytesReg             : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
+  signal sOutBytesValidReg        : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
   signal sFlushDone               : std_logic;
 
-  -- End-of-image partial-byte drain
-  signal sDrainPending            : std_logic;
-
-  -- End-of-image clean-end
-  signal sCleanEndPending         : std_logic;
+  -- End-of-image terminal beat: sub-byte residue, dangling stuff bit, or
+  -- byte-aligned clean end
+  signal sLastPending             : std_logic;
 
 begin
 
@@ -200,7 +199,7 @@ begin
 
   oWord       <= sOutWordReg;
   oWordValid  <= sOutValidReg;
-  oValidBytes <= sOutBytesReg;
+  oValidBytes <= sOutBytesValidReg;
   oFlushDone  <= sFlushDone;
   oAlmostFull <= sFifoAlmFull;
 
@@ -249,7 +248,7 @@ begin
     variable vAccumCountBitsFlush : natural range 0 to ACCUM_BITS;
     variable vFlushBytes          : natural range 0 to 2 * FIFO_BYTES;
     variable vValidLenInt         : natural;
-    variable vFlushPend           : std_logic;
+    variable vFlushPending        : std_logic;
     variable vAccept              : boolean;
     variable vPadBits             : natural;
     variable vLastFlag            : std_logic;
@@ -277,7 +276,7 @@ begin
         vAccumCountBitsFlush := to_integer(sAccumCountBitsFlush);
         vFlushBytes          := to_integer(sFlushBytes);
         vValidLenInt         := to_integer(sInValidLen);
-        vFlushPend           := sFlushPending;
+        vFlushPending        := sFlushPending;
         vAccept              := sFifoFull = '0' and iStall = '0';
 
         sFifoInValid    <= '0';
@@ -312,7 +311,7 @@ begin
         -- FIFO_BITS multiple so every drain becomes a constant FIFO_BITS
         -- shift downstream.
         if (sInFlush = '1' and vAccept) then
-          assert vFlushPend = '0'
+          assert vFlushPending = '0'
             report "byte_stuffer: iFlush asserted while a flush is already pending"
             severity failure;
 
@@ -340,7 +339,7 @@ begin
           end if;
 
           vAccumCountBitsFlush := vAccumCountBits;
-          vFlushPend           := '1';
+          vFlushPending        := '1';
         end if;
 
         ---------------------------------------------------------------------------------
@@ -351,12 +350,12 @@ begin
         -- the sideband queue; non-last writes carry the implicit FIFO_BYTES.
 
         if (sFifoFull = '0') then
-          if (vFlushPend = '1') then
+          if (vFlushPending = '1') then
             if (vAccumCountBitsFlush = FIFO_BITS) then
               vLastFlag       := '1';
               sBvQueueInValid <= '1';
               sBvQueueInData  <= std_logic_vector(to_unsigned(vFlushBytes, BYTE_VALID_WIDTH));
-              vFlushPend      := '0';
+              vFlushPending   := '0';
             else
               vLastFlag := '0';
             end if;
@@ -384,7 +383,7 @@ begin
         sAccumCountBits      <= to_unsigned(vAccumCountBits, sAccumCountBits'length);
         sAccumCountBitsFlush <= to_unsigned(vAccumCountBitsFlush, sAccumCountBitsFlush'length);
         sFlushBytes          <= to_unsigned(vFlushBytes, sFlushBytes'length);
-        sFlushPending        <= vFlushPend;
+        sFlushPending        <= vFlushPending;
 
         assert vAccumCountBits <= ACCUM_BITS
           report "byte_stuffer: stage 1 accumulator overflow"
@@ -470,8 +469,7 @@ begin
   sStgTaken <= '1' when sStgValid = '1'
                         and sStuffBufferBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sStuffBufferBits'length)
                         and iReady = '1'
-                        and sDrainPending = '0'
-                        and sCleanEndPending = '0' else
+                        and sLastPending = '0' else
                '0';
   -- Pop FIFO when the skid buffer is empty or being drained this cycle.
   sFifoOutReady <= '1' when sStgValid = '0' or sStgTaken = '1' else
@@ -535,39 +533,19 @@ begin
 
     if rising_edge(iClk) then
       if (iRst = '1') then
-        sStuffBuffer     <= (others => '0');
-        sStuffBufferBits <= (others => '0');
-        sStuffBufferLast <= '0';
-        sPrevFF          <= '0';
-        sOutWordReg      <= (others => '0');
-        sOutValidReg     <= '0';
-        sOutBytesReg     <= (others => '0');
-        sFlushDone       <= '0';
-        sDrainPending    <= '0';
-        sCleanEndPending <= '0';
-      elsif (sCleanEndPending = '1') then
-        -- 0-byte EOI beat: framer (jls_framer.vhd:488-510) treats
-        -- iValid='1' AND iByteEnable=0 AND iEOI='1' as "push FF D9 at
-        -- current count" with no data copy.
-
-        if (iReady = '1') then
-          sOutWordReg      <= (others => '0');
-          sOutBytesReg     <= (others => '0');
-          sOutValidReg     <= '1';
-          sFlushDone       <= '1';
-          sStuffBufferLast <= '0';
-          sCleanEndPending <= '0';
-        else
-          sOutValidReg <= '0';
-          sFlushDone   <= '0';
-        end if;
-      elsif (sDrainPending = '1') then
-        -- Assemble the partial pad byte combinationally from the residue
-        -- left in sStuffBuffer / sStuffBufferBits / sPrevFF by the previous (drain-entry)
-        -- cycle, then emit. The assembly is short (variable shift of at
-        -- most 7 bits + zero pad + optional MSB stuff '0') and runs in
-        -- isolation from the main 4-slot chain, so it does not extend
-        -- the main-cycle critical path.
+        sStuffBuffer      <= (others => '0');
+        sStuffBufferBits  <= (others => '0');
+        sStuffBufferLast  <= '0';
+        sPrevFF           <= '0';
+        sOutWordReg       <= (others => '0');
+        sOutValidReg      <= '0';
+        sOutBytesValidReg <= (others => '0');
+        sFlushDone        <= '0';
+        sLastPending      <= '0';
+      elsif (sLastPending = '1') then
+        -- EOI terminal beat, assembled outside the main chain (1 extra cycle,
+        -- absorbed by the stage 2 FIFO). Sub-byte residue or dangling 0xFF
+        -- emits one padded byte; a byte-aligned clean end emits a 0-byte beat.
 
         if (iReady = '1') then
           vStuffBufferBits := to_integer(sStuffBufferBits);
@@ -578,21 +556,26 @@ begin
             if (vStuffBufferBits > 0) then
               vPadByte(6 downto 7 - vStuffBufferBits) := sStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - vStuffBufferBits);
             end if;
-          else
-            -- Real bits at MSB, zero pad in LSBs.
+          elsif (vStuffBufferBits > 0) then
             vPadByte(7 downto 8 - vStuffBufferBits) := sStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - vStuffBufferBits);
           end if;
 
-          sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= vPadByte;
-          sOutWordReg(OUT_WIDTH - 9 downto 0)             <= (others => '0');
-          sOutBytesReg                                    <= to_unsigned(1, sOutBytesReg'length);
-          sOutValidReg                                    <= '1';
-          sFlushDone                                      <= '1';
-          sDrainPending                                   <= '0';
-          sStuffBufferLast                                <= '0';
-          sPrevFF                                         <= '0';
-          sStuffBuffer                                    <= (others => '0');
-          sStuffBufferBits                                <= (others => '0');
+          if (vStuffBufferBits = 0 and sPrevFF = '0') then
+            sOutWordReg       <= (others => '0');
+            sOutBytesValidReg <= (others => '0');
+          else
+            sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= vPadByte;
+            sOutWordReg(OUT_WIDTH - 9 downto 0)             <= (others => '0');
+            sOutBytesValidReg                               <= to_unsigned(1, sOutBytesValidReg'length);
+          end if;
+
+          sOutValidReg     <= '1';
+          sFlushDone       <= '1';
+          sLastPending     <= '0';
+          sStuffBufferLast <= '0';
+          sPrevFF          <= '0';
+          sStuffBuffer     <= (others => '0');
+          sStuffBufferBits <= (others => '0');
         else
           sOutValidReg <= '0';
           sFlushDone   <= '0';
@@ -623,6 +606,7 @@ begin
 
             for k in 0 to FIFO_BYTES - 1 loop
 
+              -- Write partial word to buffer
               if (k < vPopBytes) then
                 vStuffBuffer(HOLD_BITS - 1 - vStuffBufferBits - k * 8 downto HOLD_BITS - vStuffBufferBits - (k + 1) * 8)
  := vPopData(FIFO_BITS - 1 - k * 8 downto FIFO_BITS - (k + 1) * 8);
@@ -820,7 +804,7 @@ begin
         end if;
 
         ----------------------------------------------------------------------
-        -- (5) Pack output and shift hold by the total bits consumed.
+        -- (5) Pack output and shift buffer by the total bits consumed.
         ----------------------------------------------------------------------
         for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
 
@@ -838,27 +822,20 @@ begin
         -- (6) Output register and flush-done / drain entry.
         ----------------------------------------------------------------------
         if (vEmitBytes > 0) then
-          sOutWordReg  <= vEmitData;
-          sOutBytesReg <= to_unsigned(vEmitBytes, sOutBytesReg'length);
-          sOutValidReg <= '1';
-
-          if (vStuffBufferLast = '1' and vStuffBufferBits = 0 and vPrevFF = '0') then
-            sCleanEndPending <= '1';
-          end if;
+          sOutWordReg       <= vEmitData;
+          sOutBytesValidReg <= to_unsigned(vEmitBytes, sOutBytesValidReg'length);
+          sOutValidReg      <= '1';
         else
           sOutValidReg <= '0';
         end if;
 
-        -- Partial-residue / pending-stuff drain: flag drain and let the
-        -- residue stay in sStuffBuffer / sStuffBufferBits / sPrevFF. The drain cycle
-        -- reads those regs and assembles the padded byte combinationally
-        -- (see the elsif sDrainPending branch). Keeping the assembly out
-        -- of this cycle removes 4-5 LUT levels from the main critical path.
+        -- Once the last word is consumed and only a sub-byte residue remains
+        -- (bits < 8, including the bits=0 clean end), hand off to the
+        -- sLastPending branch which assembles the final beat off this path.
         if (iReady = '1'
             and vStuffBufferLast = '1'
-            and vStuffBufferBits < 8
-            and (vStuffBufferBits > 0 or vPrevFF = '1')) then
-          sDrainPending <= '1';
+            and vStuffBufferBits < 8) then
+          sLastPending <= '1';
         end if;
 
         sStuffBuffer     <= vStuffBuffer;
