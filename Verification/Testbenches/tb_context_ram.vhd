@@ -140,6 +140,21 @@ begin
     check(oRdData = std_logic_vector(to_unsigned(16#BEBEBEE#, TOTAL_WIDTH)),
           "Second read should return stored data");
 
+    -- Same-cycle write + read to addr 0 (marker already cleared above):
+    -- the bypass must forward the just-written word, not the stale stored data.
+    iWrAddr <= (others => '0');
+    iRdAddr <= (others => '0');
+    iWrData <= std_logic_vector(to_unsigned(16#CAFECAF#, TOTAL_WIDTH));
+    iWrEn   <= '1';
+    iRdEn   <= '1';
+    wait until rising_edge(iClk);
+    iWrEn   <= '0';
+    iRdEn   <= '0';
+    wait until rising_edge(iClk);
+    wait for 1 ns;
+    check(oRdData = std_logic_vector(to_unsigned(16#CAFECAF#, TOTAL_WIDTH)),
+          "Same-cycle write/read collision must forward the written word");
+
     wait for CSTDWAIT;
 
     if (errCount > 0) then
