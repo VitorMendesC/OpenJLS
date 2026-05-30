@@ -165,17 +165,17 @@ architecture behavioral of byte_stuffer is
   ----------------------------------------------------------------------------
   -- Stage 3 (FF stuffer + emit) state.
   --
-  --   sHold/sHoldBits — bit-level holding buffer for input bits awaiting
+  --   sStuffBuffer/sStuffBufferBits — bit-level holding buffer for input bits awaiting
   --                     emission. Bits are stored MSB-first at the top.
-  --   sHoldLast       — sticky: latched when a FIFO word with last_flag=1
+  --   sStuffBufferLast       — sticky: latched when a FIFO word with last_flag=1
   --                     has been popped. Cleared after the final beat.
   --   sPrevFF         — '1' iff the last *output* byte (post-stuff) was
   --                     0xFF, meaning the next bit emitted to the output
   --                     stream must be the stuffed '0'.
   ----------------------------------------------------------------------------
-  signal sHold                    : std_logic_vector(HOLD_BITS - 1 downto 0);
-  signal sHoldBits                : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
-  signal sHoldLast                : std_logic;
+  signal sStuffBuffer             : std_logic_vector(HOLD_BITS - 1 downto 0);
+  signal sStuffBufferBits         : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
+  signal sStuffBufferLast         : std_logic;
   signal sPrevFF                  : std_logic;
   signal sOutWordReg              : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal sOutValidReg             : std_logic;
@@ -239,6 +239,8 @@ begin
   -------------------------------------------------------------------------------------------------------------------------
   -- Accumulates the variable length word from bit packer until its wide enough to fit
   -- in the data FIFO, pack them as byte-valid + last_flag.
+  --
+  -- NOTE: Flush can take up to 2 cycles
 
   stage1_proc : process (iClk) is
 
@@ -287,8 +289,6 @@ begin
         -- Append input bits (MSB-first)
 
         if (sInValid = '1' and vAccept) then
-          -- TODO: Needs testing
-
           vWide                                              := (others => '0');
           vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sInWord;
           vMaskTop                                           := (others => '0');
@@ -367,6 +367,7 @@ begin
             vAccumBuffer         := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
             vAccumCountBits      := vAccumCountBits - FIFO_BITS;
             vAccumCountBitsFlush := vAccumCountBitsFlush - FIFO_BITS;
+
             if (vLastFlag = '0') then
               vFlushBytes := vFlushBytes - FIFO_BYTES;
             end if;
@@ -448,11 +449,9 @@ begin
   -------------------------------------------------------------------------------------------------------------------------
   -- STAGE 3: FF stuffer + output emit
   -------------------------------------------------------------------------------------------------------------------------
-  -- The stuffer operates on the unstuffed input bitstream and constructs
-  -- output bytes one at a time. T.87 requires the stuff '0' bit to follow
-  -- every *output* byte whose value is 0xFF, so FF detection is done on the
-  -- constructed output byte (not the input byte) — after the first stuff,
-  -- input and output byte alignments diverge.
+  -- Stuffs a '0' bit after a 0xFF byte in data, this is required by the
+  -- standard T.87 since a byte 0xFF followed by a bit '1' denotes a
+  -- marker and markers aren't allowed on the payload
   --
   -- Per output byte:
   --   * if prev_FF='1' (last output byte was FF), the next output byte's
@@ -461,13 +460,15 @@ begin
   --   * else: consume 8 bits straight from the holding buffer.
   --   Then prev_FF := (byte == 0xFF).
   --
-  -- Final-flush drain (vHoldLast='1' and vHoldBits=0):
+  -- Final-flush drain (vStuffBufferLast='1' and vStuffBufferBits=0):
   --   * if prev_FF='1': emit one final 0x00 byte (the stuff '0' + 7-bit pad).
   --   * pulse oFlushDone on the beat that carries the last data byte.
+  --
+  -- NOTE: Flush can take up to 2 cycles
 
   -- Stage 3 drains the skid buffer when it has data and the hold has room.
   sStgTaken <= '1' when sStgValid = '1'
-                        and sHoldBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sHoldBits'length)
+                        and sStuffBufferBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sStuffBufferBits'length)
                         and iReady = '1'
                         and sDrainPending = '0'
                         and sCleanEndPending = '0' else
@@ -498,10 +499,10 @@ begin
 
   stage3_proc : process (iClk) is
 
-    variable vHold     : std_logic_vector(HOLD_BITS - 1 downto 0);
-    variable vHoldBits : natural range 0 to HOLD_BITS;
-    variable vHoldLast : std_logic;
-    variable vPrevFF   : std_logic;
+    variable vStuffBuffer     : std_logic_vector(HOLD_BITS - 1 downto 0);
+    variable vStuffBufferBits : natural range 0 to HOLD_BITS;
+    variable vStuffBufferLast : std_logic;
+    variable vPrevFF          : std_logic;
 
     variable vPopBytes : natural range 0 to FIFO_BYTES;
     variable vPopLast  : std_logic;
@@ -515,10 +516,6 @@ begin
     variable ff3a       : std_logic;
     variable ff3b       : std_logic;
     variable ff3c       : std_logic; -- offsets 22, 23, 24
-
-    -- Per-slot chain state. With the log-depth parallel resolver below,
-    -- each output is expressed directly as a function of (vPrevFF, ff
-    -- flags, vHold); no per-slot offsets or cons values are materialized.
 
     type byte_array is array (natural range <>) of std_logic_vector(7 downto 0);
 
@@ -538,9 +535,9 @@ begin
 
     if rising_edge(iClk) then
       if (iRst = '1') then
-        sHold            <= (others => '0');
-        sHoldBits        <= (others => '0');
-        sHoldLast        <= '0';
+        sStuffBuffer     <= (others => '0');
+        sStuffBufferBits <= (others => '0');
+        sStuffBufferLast <= '0';
         sPrevFF          <= '0';
         sOutWordReg      <= (others => '0');
         sOutValidReg     <= '0';
@@ -552,12 +549,13 @@ begin
         -- 0-byte EOI beat: framer (jls_framer.vhd:488-510) treats
         -- iValid='1' AND iByteEnable=0 AND iEOI='1' as "push FF D9 at
         -- current count" with no data copy.
+
         if (iReady = '1') then
           sOutWordReg      <= (others => '0');
           sOutBytesReg     <= (others => '0');
           sOutValidReg     <= '1';
           sFlushDone       <= '1';
-          sHoldLast        <= '0';
+          sStuffBufferLast <= '0';
           sCleanEndPending <= '0';
         else
           sOutValidReg <= '0';
@@ -565,46 +563,49 @@ begin
         end if;
       elsif (sDrainPending = '1') then
         -- Assemble the partial pad byte combinationally from the residue
-        -- left in sHold / sHoldBits / sPrevFF by the previous (drain-entry)
+        -- left in sStuffBuffer / sStuffBufferBits / sPrevFF by the previous (drain-entry)
         -- cycle, then emit. The assembly is short (variable shift of at
         -- most 7 bits + zero pad + optional MSB stuff '0') and runs in
         -- isolation from the main 4-slot chain, so it does not extend
         -- the main-cycle critical path.
+
         if (iReady = '1') then
-          vHoldBits := to_integer(sHoldBits);
-          vPadByte  := (others => '0');
+          vStuffBufferBits := to_integer(sStuffBufferBits);
+          vPadByte         := (others => '0');
+
           if (sPrevFF = '1') then
             -- Stuff '0' at MSB, up to 7 real bits below it, zero pad.
-            if (vHoldBits > 0) then
-              vPadByte(6 downto 7 - vHoldBits) := sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
+            if (vStuffBufferBits > 0) then
+              vPadByte(6 downto 7 - vStuffBufferBits) := sStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - vStuffBufferBits);
             end if;
           else
             -- Real bits at MSB, zero pad in LSBs.
-            vPadByte(7 downto 8 - vHoldBits) := sHold(HOLD_BITS - 1 downto HOLD_BITS - vHoldBits);
+            vPadByte(7 downto 8 - vStuffBufferBits) := sStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - vStuffBufferBits);
           end if;
+
           sOutWordReg(OUT_WIDTH - 1 downto OUT_WIDTH - 8) <= vPadByte;
           sOutWordReg(OUT_WIDTH - 9 downto 0)             <= (others => '0');
           sOutBytesReg                                    <= to_unsigned(1, sOutBytesReg'length);
           sOutValidReg                                    <= '1';
           sFlushDone                                      <= '1';
           sDrainPending                                   <= '0';
-          sHoldLast                                       <= '0';
+          sStuffBufferLast                                <= '0';
           sPrevFF                                         <= '0';
-          sHold                                           <= (others => '0');
-          sHoldBits                                       <= (others => '0');
+          sStuffBuffer                                    <= (others => '0');
+          sStuffBufferBits                                <= (others => '0');
         else
           sOutValidReg <= '0';
           sFlushDone   <= '0';
         end if;
       else
-        vHold      := sHold;
-        vHoldBits  := to_integer(sHoldBits);
-        vHoldLast  := sHoldLast;
-        vPrevFF    := sPrevFF;
-        vEmitBytes := 0;
-        vEmitData  := (others => '0');
-        vConsumed  := 0;
-        sFlushDone <= '0';
+        vStuffBuffer     := sStuffBuffer;
+        vStuffBufferBits := to_integer(sStuffBufferBits);
+        vStuffBufferLast := sStuffBufferLast;
+        vPrevFF          := sPrevFF;
+        vEmitBytes       := 0;
+        vEmitData        := (others => '0');
+        vConsumed        := 0;
+        sFlushDone       <= '0';
 
         ----------------------------------------------------------------------
         -- (1) Refill: drain the skid buffer into the holding buffer.
@@ -615,22 +616,22 @@ begin
           vPopData := sStgData(FIFO_WIDTH - 1 downto DATA_LSB);
 
           if (vPopLast = '0') then
-            vHold(HOLD_BITS - 1 - vHoldBits downto HOLD_BITS - vHoldBits - FIFO_BITS) := vPopData;
-            vHoldBits                                                                 := vHoldBits + FIFO_BITS;
+            vStuffBuffer(HOLD_BITS - 1 - vStuffBufferBits downto HOLD_BITS - vStuffBufferBits - FIFO_BITS) := vPopData;
+            vStuffBufferBits                                                                               := vStuffBufferBits + FIFO_BITS;
           else
             vPopBytes := to_integer(unsigned(sBvQueueOutData));
 
             for k in 0 to FIFO_BYTES - 1 loop
 
               if (k < vPopBytes) then
-                vHold(HOLD_BITS - 1 - vHoldBits - k * 8 downto HOLD_BITS - vHoldBits - (k + 1) * 8)
+                vStuffBuffer(HOLD_BITS - 1 - vStuffBufferBits - k * 8 downto HOLD_BITS - vStuffBufferBits - (k + 1) * 8)
  := vPopData(FIFO_BITS - 1 - k * 8 downto FIFO_BITS - (k + 1) * 8);
               end if;
 
             end loop;
 
-            vHoldBits := vHoldBits + vPopBytes * 8;
-            vHoldLast := '1';
+            vStuffBufferBits := vStuffBufferBits + vPopBytes * 8;
+            vStuffBufferLast := '1';
           end if;
         end if;
 
@@ -638,17 +639,17 @@ begin
         -- (2) Parallel-precompute FF flags for the 8 fixed candidate byte
         --     windows.
         ----------------------------------------------------------------------
-        ff0  := bool2bit(vHold(HOLD_BITS - 1 downto HOLD_BITS - 8) = x"FF");
-        ff1a := bool2bit(vHold(HOLD_BITS - 8 downto HOLD_BITS - 15) = x"FF");
-        ff1b := bool2bit(vHold(HOLD_BITS - 9 downto HOLD_BITS - 16) = x"FF");
-        ff2a := bool2bit(vHold(HOLD_BITS - 16 downto HOLD_BITS - 23) = x"FF");
-        ff2b := bool2bit(vHold(HOLD_BITS - 17 downto HOLD_BITS - 24) = x"FF");
-        ff3a := bool2bit(vHold(HOLD_BITS - 23 downto HOLD_BITS - 30) = x"FF");
-        ff3b := bool2bit(vHold(HOLD_BITS - 24 downto HOLD_BITS - 31) = x"FF");
-        ff3c := bool2bit(vHold(HOLD_BITS - 25 downto HOLD_BITS - 32) = x"FF");
+        ff0  := bool2bit(vStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - 8) = x"FF");
+        ff1a := bool2bit(vStuffBuffer(HOLD_BITS - 8 downto HOLD_BITS - 15) = x"FF");
+        ff1b := bool2bit(vStuffBuffer(HOLD_BITS - 9 downto HOLD_BITS - 16) = x"FF");
+        ff2a := bool2bit(vStuffBuffer(HOLD_BITS - 16 downto HOLD_BITS - 23) = x"FF");
+        ff2b := bool2bit(vStuffBuffer(HOLD_BITS - 17 downto HOLD_BITS - 24) = x"FF");
+        ff3a := bool2bit(vStuffBuffer(HOLD_BITS - 23 downto HOLD_BITS - 30) = x"FF");
+        ff3b := bool2bit(vStuffBuffer(HOLD_BITS - 24 downto HOLD_BITS - 31) = x"FF");
+        ff3c := bool2bit(vStuffBuffer(HOLD_BITS - 25 downto HOLD_BITS - 32) = x"FF");
 
         ----------------------------------------------------------------------
-        -- (3) Resolve the 4-slot stuffer chain from (vPrevFF, ff flags, vHold).
+        -- (3) Resolve the 4-slot stuffer chain from (vPrevFF, ff flags, vStuffBuffer).
         --
         --     The serial 4-step chain is flattened into 8 reachable
         --     stuff/no-stuff trajectories. Each leaf assigns every output
@@ -667,11 +668,11 @@ begin
           when '1' =>
 
             -- byte0 stuffs: '0' + 7 real bits at offset 0.
-            vByte(0)    := '0' & vHold(HOLD_BITS - 1 downto HOLD_BITS - 7);
+            vByte(0)    := '0' & vStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - 7);
             vStuffed(0) := '0';
             vCumu(0)    := 7;
             -- byte1 reads 8 bits at offset 7.
-            vByte(1)    := vHold(HOLD_BITS - 8 downto HOLD_BITS - 15);
+            vByte(1)    := vStuffBuffer(HOLD_BITS - 8 downto HOLD_BITS - 15);
             vStuffed(1) := ff1a;
             vCumu(1)    := 15;
 
@@ -680,17 +681,17 @@ begin
               when '1' =>
 
                 -- byte1 = FF → byte2 stuffs at offset 15 (7 bits).
-                vByte(2)    := '0' & vHold(HOLD_BITS - 16 downto HOLD_BITS - 22);
+                vByte(2)    := '0' & vStuffBuffer(HOLD_BITS - 16 downto HOLD_BITS - 22);
                 vStuffed(2) := '0';
                 vCumu(2)    := 22;
-                vByte(3)    := vHold(HOLD_BITS - 23 downto HOLD_BITS - 30);
+                vByte(3)    := vStuffBuffer(HOLD_BITS - 23 downto HOLD_BITS - 30);
                 vStuffed(3) := ff3a;
                 vCumu(3)    := 30;
 
               when others =>
 
                 -- byte1 ≠ FF → byte2 reads 8 bits at offset 15.
-                vByte(2)    := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
+                vByte(2)    := vStuffBuffer(HOLD_BITS - 16 downto HOLD_BITS - 23);
                 vStuffed(2) := ff2a;
                 vCumu(2)    := 23;
 
@@ -698,13 +699,13 @@ begin
 
                   when '1' =>
 
-                    vByte(3)    := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
+                    vByte(3)    := '0' & vStuffBuffer(HOLD_BITS - 24 downto HOLD_BITS - 30);
                     vStuffed(3) := '0';
                     vCumu(3)    := 30;
 
                   when others =>
 
-                    vByte(3)    := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
+                    vByte(3)    := vStuffBuffer(HOLD_BITS - 24 downto HOLD_BITS - 31);
                     vStuffed(3) := ff3b;
                     vCumu(3)    := 31;
 
@@ -715,7 +716,7 @@ begin
           when others =>
 
             -- byte0 reads 8 bits at offset 0.
-            vByte(0)    := vHold(HOLD_BITS - 1 downto HOLD_BITS - 8);
+            vByte(0)    := vStuffBuffer(HOLD_BITS - 1 downto HOLD_BITS - 8);
             vStuffed(0) := ff0;
             vCumu(0)    := 8;
 
@@ -724,10 +725,10 @@ begin
               when '1' =>
 
                 -- byte0 = FF → byte1 stuffs at offset 8 (7 bits).
-                vByte(1)    := '0' & vHold(HOLD_BITS - 9 downto HOLD_BITS - 15);
+                vByte(1)    := '0' & vStuffBuffer(HOLD_BITS - 9 downto HOLD_BITS - 15);
                 vStuffed(1) := '0';
                 vCumu(1)    := 15;
-                vByte(2)    := vHold(HOLD_BITS - 16 downto HOLD_BITS - 23);
+                vByte(2)    := vStuffBuffer(HOLD_BITS - 16 downto HOLD_BITS - 23);
                 vStuffed(2) := ff2a;
                 vCumu(2)    := 23;
 
@@ -735,13 +736,13 @@ begin
 
                   when '1' =>
 
-                    vByte(3)    := '0' & vHold(HOLD_BITS - 24 downto HOLD_BITS - 30);
+                    vByte(3)    := '0' & vStuffBuffer(HOLD_BITS - 24 downto HOLD_BITS - 30);
                     vStuffed(3) := '0';
                     vCumu(3)    := 30;
 
                   when others =>
 
-                    vByte(3)    := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
+                    vByte(3)    := vStuffBuffer(HOLD_BITS - 24 downto HOLD_BITS - 31);
                     vStuffed(3) := ff3b;
                     vCumu(3)    := 31;
 
@@ -750,7 +751,7 @@ begin
               when others =>
 
                 -- byte0 ≠ FF → byte1 reads 8 bits at offset 8.
-                vByte(1)    := vHold(HOLD_BITS - 9 downto HOLD_BITS - 16);
+                vByte(1)    := vStuffBuffer(HOLD_BITS - 9 downto HOLD_BITS - 16);
                 vStuffed(1) := ff1b;
                 vCumu(1)    := 16;
 
@@ -759,17 +760,17 @@ begin
                   when '1' =>
 
                     -- byte1 = FF → byte2 stuffs at offset 16.
-                    vByte(2)    := '0' & vHold(HOLD_BITS - 17 downto HOLD_BITS - 23);
+                    vByte(2)    := '0' & vStuffBuffer(HOLD_BITS - 17 downto HOLD_BITS - 23);
                     vStuffed(2) := '0';
                     vCumu(2)    := 23;
-                    vByte(3)    := vHold(HOLD_BITS - 24 downto HOLD_BITS - 31);
+                    vByte(3)    := vStuffBuffer(HOLD_BITS - 24 downto HOLD_BITS - 31);
                     vStuffed(3) := ff3b;
                     vCumu(3)    := 31;
 
                   when others =>
 
                     -- byte1 ≠ FF → byte2 reads 8 bits at offset 16.
-                    vByte(2)    := vHold(HOLD_BITS - 17 downto HOLD_BITS - 24);
+                    vByte(2)    := vStuffBuffer(HOLD_BITS - 17 downto HOLD_BITS - 24);
                     vStuffed(2) := ff2b;
                     vCumu(2)    := 24;
 
@@ -777,13 +778,13 @@ begin
 
                       when '1' =>
 
-                        vByte(3)    := '0' & vHold(HOLD_BITS - 25 downto HOLD_BITS - 31);
+                        vByte(3)    := '0' & vStuffBuffer(HOLD_BITS - 25 downto HOLD_BITS - 31);
                         vStuffed(3) := '0';
                         vCumu(3)    := 31;
 
                       when others =>
 
-                        vByte(3)    := vHold(HOLD_BITS - 25 downto HOLD_BITS - 32);
+                        vByte(3)    := vStuffBuffer(HOLD_BITS - 25 downto HOLD_BITS - 32);
                         vStuffed(3) := ff3c;
                         vCumu(3)    := 32;
 
@@ -797,7 +798,7 @@ begin
 
         ----------------------------------------------------------------------
         -- (4) Pick emit count from how much of the chain's consumption is
-        --     covered by vHoldBits. This is the *only* place sHoldBits gates
+        --     covered by vStuffBufferBits. This is the *only* place sStuffBufferBits gates
         --     output, so partial fills naturally degrade to 1..3 byte beats.
         ----------------------------------------------------------------------
         vEmitBytes  := 0;
@@ -808,7 +809,7 @@ begin
 
           for i in 0 to OUT_BYTES_PER_CYCLE - 1 loop
 
-            if (vHoldBits >= vCumu(i)) then
+            if (vStuffBufferBits >= vCumu(i)) then
               vEmitBytes  := i + 1;
               vConsumed   := vCumu(i);
               vEmitLastFF := vStuffed(i);
@@ -828,9 +829,9 @@ begin
         end loop;
 
         if (vEmitBytes > 0) then
-          vHold     := std_logic_vector(shift_left(unsigned(vHold), vConsumed));
-          vHoldBits := vHoldBits - vConsumed;
-          vPrevFF   := vEmitLastFF;
+          vStuffBuffer     := std_logic_vector(shift_left(unsigned(vStuffBuffer), vConsumed));
+          vStuffBufferBits := vStuffBufferBits - vConsumed;
+          vPrevFF          := vEmitLastFF;
         end if;
 
         ----------------------------------------------------------------------
@@ -841,7 +842,7 @@ begin
           sOutBytesReg <= to_unsigned(vEmitBytes, sOutBytesReg'length);
           sOutValidReg <= '1';
 
-          if (vHoldLast = '1' and vHoldBits = 0 and vPrevFF = '0') then
+          if (vStuffBufferLast = '1' and vStuffBufferBits = 0 and vPrevFF = '0') then
             sCleanEndPending <= '1';
           end if;
         else
@@ -849,21 +850,21 @@ begin
         end if;
 
         -- Partial-residue / pending-stuff drain: flag drain and let the
-        -- residue stay in sHold / sHoldBits / sPrevFF. The drain cycle
+        -- residue stay in sStuffBuffer / sStuffBufferBits / sPrevFF. The drain cycle
         -- reads those regs and assembles the padded byte combinationally
         -- (see the elsif sDrainPending branch). Keeping the assembly out
         -- of this cycle removes 4-5 LUT levels from the main critical path.
         if (iReady = '1'
-            and vHoldLast = '1'
-            and vHoldBits < 8
-            and (vHoldBits > 0 or vPrevFF = '1')) then
+            and vStuffBufferLast = '1'
+            and vStuffBufferBits < 8
+            and (vStuffBufferBits > 0 or vPrevFF = '1')) then
           sDrainPending <= '1';
         end if;
 
-        sHold     <= vHold;
-        sHoldBits <= to_unsigned(vHoldBits, sHoldBits'length);
-        sHoldLast <= vHoldLast;
-        sPrevFF   <= vPrevFF;
+        sStuffBuffer     <= vStuffBuffer;
+        sStuffBufferBits <= to_unsigned(vStuffBufferBits, sStuffBufferBits'length);
+        sStuffBufferLast <= vStuffBufferLast;
+        sPrevFF          <= vPrevFF;
       end if;
     end if;
 
