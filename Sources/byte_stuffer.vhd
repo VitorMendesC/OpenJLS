@@ -120,9 +120,9 @@ architecture behavioral of byte_stuffer is
   constant STALL_CUSHION_ENTRIES  : natural := 5;
   constant ALM_FULL_LEVEL         : natural := BURST_DEPTH - STALL_CUSHION_ENTRIES;
 
-  -- Stage 3 holding register: one FIFO pop + 2 bytes headroom to sustain peak
-  -- emit. Bits stored MSB-first (oldest emitted first).
-  constant HOLD_BYTES             : natural := FIFO_BYTES + 2;
+  -- Stage 3 holding register: one FIFO pop + 1 byte (deadlock floor). Bits
+  -- stored MSB-first (oldest emitted first).
+  constant HOLD_BYTES             : natural := FIFO_BYTES + 1;
   constant HOLD_BITS              : natural := HOLD_BYTES * 8;
 
   -- Signals ---------------------------------------------------------------------
