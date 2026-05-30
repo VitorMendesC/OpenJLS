@@ -68,7 +68,8 @@ entity openjls_top is
     BITNESS          : positive range 8 to 16    := 12;
     MAX_IMAGE_WIDTH  : positive range 4 to 65536 := 4096;
     MAX_IMAGE_HEIGHT : positive range 1 to 65536 := 4096;
-    OUT_WIDTH        : positive range 32 to 1024 := 64
+    OUT_WIDTH        : positive range 32 to 1024 := 64;
+    CONTEXT_RAM_TYPE : string                    := "auto"
   );
   port (
     iClk             : in    std_logic;
@@ -848,7 +849,8 @@ begin
       C_WIDTH     => C_STORED,
       N_WIDTH     => N_STORED,
       NN_WIDTH    => NN_STORED,
-      TOTAL_WIDTH => TOTAL_WIDTH
+      TOTAL_WIDTH => TOTAL_WIDTH,
+      RAM_STYLE   => CONTEXT_RAM_TYPE
     )
     port map (
       iClk        => iClk,
