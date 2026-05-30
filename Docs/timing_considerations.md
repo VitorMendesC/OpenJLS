@@ -22,20 +22,21 @@ cluster.
 
 - **Context RAM**: BRAM (`RAM_STYLE="block"`) closed ~219 MHz; `"auto"` maps to LUTRAM
   and closes ~213 MHz. The difference is minor; the design sits on `"auto"`.
-- **byte_stuffer stage 3 is the wall**, ~**210 MHz** (WNS -0.746 ns @ 4 ns). This is the
-  accepted RTL ceiling for the current structure.
+- **byte_stuffer stage 3 is the wall**, ~**217 MHz** (WNS -0.614 ns @ 4 ns) after
+  narrowing the hold buffer (see below). Was ~210 MHz (WNS -0.746) at the old buffer size.
 
 ## The byte_stuffer stage-3 wall (the hard one)
 
 Stage 3 (FF stuffer + emit) is a single combinational cycle with a **feedback loop on
-the holding buffer** (`sStuffBuffer` ~176 bits + `sStuffBufferBits` bit-count). Each
-cycle it refills from the skid buffer, runs the FF-equality precompute + the flattened
-4-slot stuff chain, picks an emit count, then **variable-shifts the whole buffer** by the
+the holding buffer** (`sStuffBuffer` + `sStuffBufferBits` bit-count). Each cycle it
+refills from the skid buffer, runs the FF-equality precompute + the flattened 4-slot
+stuff chain, picks an emit count, then **variable-shifts the whole buffer** by the
 consumed bit count and feeds it back. All worst paths start at `sStuffBufferBits_reg`.
 
 The key measured fact: **this path is routing-bound, not logic-bound.** At the wall it is
 ~64% routing, and the dominant cost is the wide, high-fanout variable (barrel) shift on
-the ~176-bit buffer inside the recurrence — not the logic depth of the FF chain.
+the buffer inside the recurrence — not the logic depth of the FF chain. The fix is to
+shrink the buffer width (see "What DID help" below).
 
 ### What was tried and did NOT help
 
@@ -58,6 +59,27 @@ the ~176-bit buffer inside the recurrence — not the logic depth of the FF chai
 
 The buffer recurrence is routing-bound on a wide feedback net. Reducing logic depth
 (byte-align, fewer lanes) cannot move a path whose cost is ~70% wires. Confirmed twice.
+
+### What DID help: narrow the buffer
+
+The lever that worked was cutting the *width* of the routing-bound nets, not their logic
+depth. The hold buffer was `2*FIFO_BYTES`; the deadlock floor is `FIFO_BYTES + 1` (one
+FIFO pop plus 1 byte of headroom so a refill can land when only a sub-byte remainder is
+left). Shrinking it narrows the consume-shift and refill nets directly: ~210 -> ~217 MHz,
+worst-path routing 2.97 -> ~2.7 ns. After this the refill and consume sides are
+co-critical (the cluster spans WNS -0.596 to -0.614).
+
+Sizing rationale (`HOLD_BYTES = FIFO_BYTES + 1`):
+- `FIFO_BYTES` derives from LIMIT, so it scales with bitness (8b->4, 12b->6, 16b->8);
+  HOLD is 5/7/9 bytes respectively. No hardcoding.
+- Headroom is always 8 bits >= the worst 7-bit sub-byte remainder, for any bitness, so
+  the deadlock floor holds everywhere. Stuffing needs no room (buffer holds pre-stuff
+  bits; a stuffed byte consumes only 7).
+- Throughput at the floor: peak drops below OUT_BYTES_PER_CYCLE for buffer sizes that
+  aren't a clean multiple of the emit width (12b: ~3 B/cyc; 16b: full 4 B/cyc), but all
+  cases stay far above the ~0.46 B/cyc average load and the stage-2 FIFO absorbs bursts.
+  `FIFO_BYTES + OUT_BYTES_PER_CYCLE` would guarantee peak for any bitness, at the cost of
+  wider nets (gives back some of the timing win).
 
 ### What WOULD move it (and why we didn't)
 
