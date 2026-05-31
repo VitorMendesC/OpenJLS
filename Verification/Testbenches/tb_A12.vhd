@@ -206,13 +206,13 @@ begin
     for i in 0 to 999 loop
 
       lfsr := lfsr_next(lfsr);
-      errv := to_integer(signed(lfsr(BITNESS downto 0)));
+      errv := to_integer(signed(lfsr(BITNESS - 1 downto 0)));         -- [-2^(bpp-1), 2^(bpp-1)-1]: modulo-reduced Errval range
 
       lfsr := lfsr_next(lfsr);
-      aqv  := to_integer(unsigned(lfsr(19 downto 0)));
+      aqv  := to_integer(unsigned(lfsr(A_WIDTH - 2 downto 0)));       -- leaves headroom for aq + |errv| within A_WIDTH
 
       lfsr := lfsr_next(lfsr);
-      bqv  := to_integer(signed(lfsr(20 downto 0)));
+      bqv  := to_integer(signed(lfsr(BITNESS - 1 downto 0)));         -- keeps bq + errv within B_WIDTH
 
       lfsr := lfsr_next(lfsr);
       nqv  := (to_integer(unsigned(lfsr(7 downto 0))) mod RESET) + 1;

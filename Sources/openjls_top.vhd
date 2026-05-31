@@ -558,7 +558,6 @@ begin
           sImageWidth <= vImageWidthUnsi;
         end if;
 
-        -- TODO: Given how line buffer was constructed, I think 1px image height is also unsupported
         if (vImageHeightUnsi < CO_MIN_IMAGE_HEIGHT) then
           assert false
             report "iImageHeight smaller than the minimum allowed: " & integer'image(CO_MIN_IMAGE_HEIGHT) & ", using max value instead: " & integer'image(MAX_IMAGE_HEIGHT)

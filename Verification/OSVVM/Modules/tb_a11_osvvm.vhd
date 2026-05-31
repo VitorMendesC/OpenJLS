@@ -23,11 +23,9 @@ architecture sim of tb_a11_osvvm is
   constant ERR_MIN : integer := -(2 ** (ERROR_WIDTH - 1));
   constant ERR_MAX : integer :=  (2 ** (ERROR_WIDTH - 1)) - 1;
   constant N_MAX   : integer := (2 ** N_WIDTH) - 1;
-  -- B_WIDTH is 32 bits in CO_BQ_WIDTH_STD which overflows GHDL integer.
-  -- Stimulus only needs to exercise the 2*B vs -N comparison, so bound
-  -- to a safe range that still spans both sides of zero.
-  constant B_MIN   : integer := -(2 ** 20);
-  constant B_MAX   : integer :=  (2 ** 20) - 1;
+  -- B only feeds the 2*B vs -N comparison; sweep the full signed B_WIDTH range.
+  constant B_MIN   : integer := -(2 ** (B_WIDTH - 1));
+  constant B_MAX   : integer :=  (2 ** (B_WIDTH - 1)) - 1;
   constant K_MAX   : integer := (2 ** K_WIDTH) - 1;
 
   signal sK              : unsigned(K_WIDTH - 1 downto 0)     := (others => '0');

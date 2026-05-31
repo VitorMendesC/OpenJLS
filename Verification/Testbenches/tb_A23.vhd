@@ -28,6 +28,7 @@ architecture bench of tb_a23 is
 
   constant A_WIDTH         : natural := CO_AQ_WIDTH_STD;
   constant N_WIDTH         : natural := CO_NQ_WIDTH_STD;
+  constant NN_WIDTH        : natural := CO_NNQ_WIDTH_STD;
   constant ERR_W           : natural := CO_ERROR_VALUE_WIDTH_STD;
   constant RESET_V         : natural := CO_RESET_STD;
 
@@ -35,11 +36,11 @@ architecture bench of tb_a23 is
   signal iRI               : std_logic;
   signal iAq               : unsigned(A_WIDTH - 1 downto 0);
   signal iNq               : unsigned(N_WIDTH - 1 downto 0);
-  signal iNn               : unsigned(N_WIDTH - 1 downto 0);
+  signal iNn               : unsigned(NN_WIDTH - 1 downto 0);
 
   signal oAq               : unsigned(A_WIDTH - 1 downto 0);
   signal oNq               : unsigned(N_WIDTH - 1 downto 0);
-  signal oNn               : unsigned(N_WIDTH - 1 downto 0);
+  signal oNn               : unsigned(NN_WIDTH - 1 downto 0);
 
   -- Reference model using Mert 2018 Fig. 9 equivalent: A[Q] += abs(Errval) - RItype
 
@@ -132,6 +133,7 @@ begin
     generic map (
       A_WIDTH     => A_WIDTH,
       N_WIDTH     => N_WIDTH,
+      NN_WIDTH    => NN_WIDTH,
       ERROR_WIDTH => ERR_W,
       RESET       => RESET_V
     )

@@ -16,8 +16,6 @@
 -- Revision 0.01 - File Created
 -- Additional Comments:
 --
---                          TODO: everything here needs to be thoroughly checked
---
 ----------------------------------------------------------------------------------
 
 library ieee;
@@ -135,19 +133,18 @@ package common is
   constant CO_MIN_CQ            : integer := - 128;
   constant CO_NEAR_MAX_STD      : natural := math_min(255, CO_MAX_VAL_STD / 2);
 
-  -- TODO: needs to be checked
-  constant CO_RESET_STD : natural := 64;
+  constant CO_RESET_STD : natural := 64;                                        -- T.87 default RESET
 
-  -- Unspecified by T.87
-  -- TODO: needs to be checked
-  constant CO_UNARY_WIDTH_STD     : natural := 16;                         -- enough to hold LIMIT - QBPP - 1
-  constant CO_SUFFIX_WIDTH_STD    : natural := 16;                         -- max(qbpp, max_k)
-  constant CO_SUFFIXLEN_WIDTH_STD : natural := 16;                         -- bits to encode suffix length (up to 31)
-  constant CO_AQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
-  constant CO_BQ_WIDTH_STD        : natural := CO_BITNESS_MAX_WIDTH * 2;
-  constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD) + 1;
-  constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
-  constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD) + 1; -- Counts up to RESET
+  -- Unspecified by T.87. Widths mirror openjls_top's T.87 / Murat-2018 derivation
+  -- (pipeline arithmetic widths) for the standard reference config.
+  constant CO_AQ_WIDTH_STD        : natural := CO_BPP_STD + log2ceil(CO_RESET_STD);            -- A < RESET*2^(bpp-1), +1 sum headroom
+  constant CO_BQ_WIDTH_STD        : natural := CO_BPP_STD + 1;                                 -- B signed, holds B+Errval
+  constant CO_K_WIDTH_STD         : natural := log2ceil(CO_BPP_STD + log2ceil(CO_RESET_STD));  -- k <= bpp-1+log2(RESET)
+  constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD + 1);                     -- N counts up to RESET
+  constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD);                         -- Nn counts up to RESET
+  constant CO_UNARY_WIDTH_STD     : natural := log2ceil(CO_LIMIT_STD + 1);                     -- unary prefix <= LIMIT
+  constant CO_SUFFIX_WIDTH_STD    : natural := CO_BPP_STD + log2ceil(CO_RESET_STD);            -- suffix <= max(k_max, qbpp)
+  constant CO_SUFFIXLEN_WIDTH_STD : natural := math_max(CO_K_WIDTH_STD, log2ceil(15 + 2));     -- T.87 J max = 15
   constant CO_TOTAL_WIDTH_STD     : natural := CO_AQ_WIDTH_STD + CO_BQ_WIDTH_STD + CO_CQ_WIDTH + CO_NQ_WIDTH_STD;
 
   -- Bit-packer / byte-stuffer / framer interface widths -------------------------

@@ -175,7 +175,7 @@ begin
       errV := to_integer(signed(lfsr(BITNESS downto 0)));
 
       lfsr := lfsr_next(lfsr);
-      bqV  := to_integer(signed(lfsr(15 downto 0)));
+      bqV  := to_integer(signed(lfsr(B_WIDTH - 1 downto 0)));        -- B only feeds the 2*Bq <= -Nq test; full signed B_WIDTH range
 
       lfsr := lfsr_next(lfsr);
       nqV  := to_integer(unsigned(lfsr(N_WIDTH - 1 downto 0)));
