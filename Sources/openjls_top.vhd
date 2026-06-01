@@ -104,10 +104,10 @@ architecture rtl of openjls_top is
   -- Widths computed locally from generics
   constant ERROR_WIDTH                      : natural  := BITNESS + 1;
   constant MAPPED_ERROR_VAL_WIDTH           : natural  := BITNESS + 2;
-  constant RAM_DEPTH                        : positive := 367;                -- 365 contexts + 2 RI-specific contexts
-  constant RESET                            : natural  := 64;                 -- T.87
-  constant MAX_C                            : integer  := 127;                -- T.87
-  constant MIN_C                            : integer  := - 128;              -- T.87
+  constant RAM_DEPTH                        : positive := 367;                                        -- 365 contexts + 2 RI-specific contexts
+  constant RESET                            : natural  := 64;                                         -- T.87
+  constant MAX_C                            : integer  := 127;                                        -- T.87
+  constant MIN_C                            : integer  := - 128;                                      -- T.87
   constant ABS_MIN_C                        : natural  := - MIN_C;
   constant ABS_MAX_C                        : natural  := MAX_C;
 
@@ -139,8 +139,8 @@ architecture rtl of openjls_top is
   constant C_WIDTH                          : natural := C_STORED;
   constant N_WIDTH                          : natural := log2ceil(RESET + 1);
   constant NN_WIDTH                         : natural := NN_STORED;
-  constant MAX_K                            : natural := A_WIDTH;                          -- A10 saturates Golomb k here (max k = bit-width of A)
-  constant K_WIDTH                          : natural := log2ceil(MAX_K + 1);              -- holds k in [0, MAX_K]
+  constant MAX_K                            : natural := A_WIDTH;                                     -- A10 saturates Golomb k here (max k = bit-width of A)
+  constant K_WIDTH                          : natural := log2ceil(MAX_K + 1);                         -- holds k in [0, MAX_K]
   constant TOTAL_WIDTH                      : natural := A_STORED + B_STORED + C_STORED + N_STORED;
 
   --------------------------------------------------------------------------------------------
@@ -154,10 +154,10 @@ architecture rtl of openjls_top is
 
   -- Run length bounded by image width (run cannot cross EOL).
   constant RUN_CNT_WIDTH                    : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
-  constant J_MAX_BITS                       : natural := 15;                  -- T.87 A.2.1, J[31] = 15
-  constant UNARY_WIDTH                      : natural := log2ceil(LIMIT - QBPP);          -- regular quotient / escape threshold; max = LIMIT-QBPP-1
-  constant SUFFIX_WIDTH                     : natural := math_max(MAX_K, RUN_CNT_WIDTH);  -- regular k bits / escape QBPP bits, both <= MAX_K
-  constant SUFFIXLEN_WIDTH                  : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2));  -- regular k / escape QBPP, both <= K_WIDTH
+  constant J_MAX_BITS                       : natural := 15;                                          -- T.87 A.2.1, J[31] = 15
+  constant UNARY_WIDTH                      : natural := log2ceil(LIMIT - QBPP);                      -- regular quotient / escape threshold; max = LIMIT-QBPP-1
+  constant SUFFIX_WIDTH                     : natural := math_max(MAX_K, RUN_CNT_WIDTH);              -- regular k bits / escape QBPP bits, both <= MAX_K
+  constant SUFFIXLEN_WIDTH                  : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2)); -- regular k / escape QBPP, both <= K_WIDTH
 
   --------------------------------------------------------------------------------------------
   -- Bit packer / byte stuffer / framer interface widths.
@@ -171,8 +171,8 @@ architecture rtl of openjls_top is
   -- BYTE_STUFFER_BURST_DEPTH: consecutive worst-case words absorbed without
   -- stalling. 64 covers all natural images plus comfortable margin.
   --------------------------------------------------------------------------------------------
-  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4;                   -- Hardcoded, fixed
-  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;                  -- Can be tuned
+  constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4;                                           -- Hardcoded, fixed
+  constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;                                          -- Can be tuned
   constant BYTE_STUFFER_OUT_WIDTH           : natural := BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
   constant MIN_OUT_WIDTH_WORST_CASE         : natural := BYTE_STUFFER_OUT_WIDTH + 8;
 
@@ -257,7 +257,6 @@ architecture rtl of openjls_top is
   -- as the idle-power gate together with each stage's valid bits: a register
   -- only updates when (NOT sStall) AND (current_valid OR upstream_valid), so a
   -- bubble propagates exactly once and then the register stops toggling.
-  -- TODO: More testing needed on the new added register latency of the stall control signals
   signal sFramerReady                       : std_logic;
   signal sBsAlmostFullReg                   : std_logic;
   signal sStall                             : std_logic;
@@ -293,7 +292,7 @@ architecture rtl of openjls_top is
   signal sPixel                             : unsigned(BITNESS - 1 downto 0);
   signal sImageWidth                        : unsigned(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
   signal sImageHeight                       : unsigned(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
-  signal sValid                             : std_logic;                      -- iValid & sReady
+  signal sValid                             : std_logic;                                              -- iValid & sReady
   signal sLbRa                              : unsigned(BITNESS - 1 downto 0);
   signal sLbRb                              : unsigned(BITNESS - 1 downto 0);
   signal sLbRc                              : unsigned(BITNESS - 1 downto 0);
@@ -392,7 +391,7 @@ architecture rtl of openjls_top is
 
   -- Stage 4
   signal sS4K                               : unsigned(K_WIDTH - 1 downto 0);
-  signal sS4AqSel                           : unsigned(A_WIDTH - 1 downto 0); -- iAq mux for shared A.10
+  signal sS4AqSel                           : unsigned(A_WIDTH - 1 downto 0);                         -- iAq mux for shared A.10
   signal sS4AqNew                           : unsigned(A_WIDTH - 1 downto 0);
   signal sS4BqMid                           : signed(B_WIDTH - 1 downto 0);
   signal sS4NqNew                           : unsigned(N_WIDTH - 1 downto 0);
