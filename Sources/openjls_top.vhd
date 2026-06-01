@@ -139,7 +139,7 @@ architecture rtl of openjls_top is
   constant C_WIDTH                          : natural := C_STORED;
   constant N_WIDTH                          : natural := log2ceil(RESET + 1);
   constant NN_WIDTH                         : natural := NN_STORED;
-  constant K_WIDTH                          : natural := log2ceil(BPP + log2ceil(RESET));
+  constant K_WIDTH                          : natural := log2ceil(A_WIDTH + 1);            -- holds k in [0, MAX_K]; A10 saturates k at MAX_K = A_WIDTH
   constant TOTAL_WIDTH                      : natural := A_STORED + B_STORED + C_STORED + N_STORED;
 
   --------------------------------------------------------------------------------------------
@@ -153,7 +153,6 @@ architecture rtl of openjls_top is
 
   -- Run length bounded by image width (run cannot cross EOL).
   constant RUN_CNT_WIDTH                    : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
-  -- TODO: Verify this, maybe make them all LIMIT to simplify
   constant J_MAX_BITS                       : natural := 15;                  -- T.87 A.2.1, J[31] = 15
   constant UNARY_WIDTH                      : natural := log2ceil(LIMIT + 1);
   constant SUFFIX_WIDTH                     : natural := math_max(BPP + log2ceil(RESET), RUN_CNT_WIDTH);

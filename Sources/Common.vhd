@@ -139,7 +139,7 @@ package common is
   -- (pipeline arithmetic widths) for the standard reference config.
   constant CO_AQ_WIDTH_STD        : natural := CO_BPP_STD + log2ceil(CO_RESET_STD);            -- A < RESET*2^(bpp-1), +1 sum headroom
   constant CO_BQ_WIDTH_STD        : natural := CO_BPP_STD + 1;                                 -- B signed, holds B+Errval
-  constant CO_K_WIDTH_STD         : natural := log2ceil(CO_BPP_STD + log2ceil(CO_RESET_STD));  -- k <= bpp-1+log2(RESET)
+  constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD + 1);                  -- holds k in [0, MAX_K = A_WIDTH]
   constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD + 1);                     -- N counts up to RESET
   constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD);                         -- Nn counts up to RESET
   constant CO_UNARY_WIDTH_STD     : natural := log2ceil(CO_LIMIT_STD + 1);                     -- unary prefix <= LIMIT
