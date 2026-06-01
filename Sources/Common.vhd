@@ -142,8 +142,8 @@ package common is
   constant CO_K_WIDTH_STD         : natural := log2ceil(CO_AQ_WIDTH_STD + 1);                  -- holds k in [0, MAX_K = A_WIDTH]
   constant CO_NQ_WIDTH_STD        : natural := log2ceil(CO_RESET_STD + 1);                     -- N counts up to RESET
   constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD);                         -- Nn counts up to RESET
-  constant CO_UNARY_WIDTH_STD     : natural := log2ceil(CO_LIMIT_STD + 1);                     -- unary prefix <= LIMIT
-  constant CO_SUFFIX_WIDTH_STD    : natural := CO_BPP_STD + log2ceil(CO_RESET_STD);            -- suffix <= max(k_max, qbpp)
+  constant CO_UNARY_WIDTH_STD     : natural := log2ceil(CO_LIMIT_STD - CO_QBPP_STD);           -- regular quotient / escape threshold (LIMIT-QBPP-1)
+  constant CO_SUFFIX_WIDTH_STD    : natural := CO_AQ_WIDTH_STD;                                -- regular k bits / escape QBPP, both <= MAX_K (= A_WIDTH)
   constant CO_SUFFIXLEN_WIDTH_STD : natural := math_max(CO_K_WIDTH_STD, log2ceil(15 + 2));     -- T.87 J max = 15
   constant CO_TOTAL_WIDTH_STD     : natural := CO_AQ_WIDTH_STD + CO_BQ_WIDTH_STD + CO_CQ_WIDTH + CO_NQ_WIDTH_STD;
 

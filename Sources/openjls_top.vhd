@@ -139,7 +139,8 @@ architecture rtl of openjls_top is
   constant C_WIDTH                          : natural := C_STORED;
   constant N_WIDTH                          : natural := log2ceil(RESET + 1);
   constant NN_WIDTH                         : natural := NN_STORED;
-  constant K_WIDTH                          : natural := log2ceil(A_WIDTH + 1);            -- holds k in [0, MAX_K]; A10 saturates k at MAX_K = A_WIDTH
+  constant MAX_K                            : natural := A_WIDTH;                          -- A10 saturates Golomb k here (max k = bit-width of A)
+  constant K_WIDTH                          : natural := log2ceil(MAX_K + 1);              -- holds k in [0, MAX_K]
   constant TOTAL_WIDTH                      : natural := A_STORED + B_STORED + C_STORED + N_STORED;
 
   --------------------------------------------------------------------------------------------
@@ -147,16 +148,16 @@ architecture rtl of openjls_top is
   --------------------------------------------------------------------------------------------
   --   Raw  : oRawSuffixVal up to RUN_CNT_WIDTH bits, oRawSuffixLen up to
   --          J_MAX+1 = 16 distinct values (vJ+1, vJ ∈ [0..15] from T.87 J).
-  --   Gol. : suffix up to max(k_max, qbpp) = BPP + log2ceil(RESET) - 1 bits;
-  --          length ≤ k_max + 1, fits in K_WIDTH.
-  -- Unary capped by LIMIT (T.87 escape rule).
+  --   Gol. : regular suffix = k low bits (k <= MAX_K), escape suffix = QBPP bits;
+  --          both fit in MAX_K. Unary zeros <= LIMIT - QBPP - 1 (escape
+  --          threshold; regular quotient is strictly smaller).
 
   -- Run length bounded by image width (run cannot cross EOL).
   constant RUN_CNT_WIDTH                    : natural := log2ceil(MAX_IMAGE_WIDTH + 1);
   constant J_MAX_BITS                       : natural := 15;                  -- T.87 A.2.1, J[31] = 15
-  constant UNARY_WIDTH                      : natural := log2ceil(LIMIT + 1);
-  constant SUFFIX_WIDTH                     : natural := math_max(BPP + log2ceil(RESET), RUN_CNT_WIDTH);
-  constant SUFFIXLEN_WIDTH                  : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2));
+  constant UNARY_WIDTH                      : natural := log2ceil(LIMIT - QBPP);          -- regular quotient / escape threshold; max = LIMIT-QBPP-1
+  constant SUFFIX_WIDTH                     : natural := math_max(MAX_K, RUN_CNT_WIDTH);  -- regular k bits / escape QBPP bits, both <= MAX_K
+  constant SUFFIXLEN_WIDTH                  : natural := math_max(K_WIDTH, log2ceil(J_MAX_BITS + 2));  -- regular k / escape QBPP, both <= K_WIDTH
 
   --------------------------------------------------------------------------------------------
   -- Bit packer / byte stuffer / framer interface widths.
