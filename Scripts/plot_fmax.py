@@ -60,7 +60,7 @@ plt.xlabel("Image size (px)")
 plt.ylabel("Max. frequency  (MHz)")
 # Bold headline + small grey subtitle keeps the provenance without the clutter.
 fig.suptitle("OpenJLS — Max. frequency vs Image size", fontsize=13, fontweight="bold")
-ax.set_title("xczu7eg-fbvb900-1-e · Vivado 2025.2",
+ax.set_title("xczu7eg-fbvb900-1-e · Vivado 2025.2 · 12-bit depth",
              fontsize=9, color="0.4")
 plt.grid(True, which="major", ls=":", alpha=0.5)
 plt.legend(title="Implementation strategy")

@@ -53,7 +53,7 @@ ax1.set_ylim(bottom=0)
 ax2.set_ylim(bottom=0)
 
 fig.suptitle("OpenJLS — Resource usage vs Image size", fontsize=13, fontweight="bold")
-ax1.set_title("xczu7eg-fbvb900-1-e · Vivado 2025.2 · default implementation",
+ax1.set_title("xczu7eg-fbvb900-1-e · Vivado 2025.2 · 12-bit depth · default implementation",
               fontsize=9, color="0.4")
 ax1.grid(True, which="major", ls=":", alpha=0.5)
 ax1.legend(handles=[l_lut, l_ff, l_bram], title="Resource", loc="center left")
