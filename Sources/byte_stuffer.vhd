@@ -104,8 +104,6 @@ architecture behavioral of byte_stuffer is
   --   bit  [0]              : last_flag
   --   bits [1 .. FIFO_BITS] : data (MSB-first packed bytes; last word is
   --                           zero-padded below the valid region)
-  --   Byte-valid count for last-flag words lives sideband in sByteValidQ
-  --   (only written/read on last_flag events).
   constant LAST_POS               : natural := 0;
   constant DATA_LSB               : natural := 1;
   constant FIFO_WIDTH             : natural := FIFO_BITS + 1;
@@ -151,10 +149,12 @@ architecture behavioral of byte_stuffer is
   signal sFifoFull                : std_logic;
 
   -- Skid buffer between FIFO output and Stage 3 consume
-  -- Helps timing
-  signal sStgData                 : std_logic_vector(FIFO_WIDTH - 1 downto 0);
-  signal sStgValid                : std_logic;
-  signal sStgTaken                : std_logic;
+  -- Helps timing on FPGAs with poor interconnects
+  signal sSkidWord                : std_logic_vector(FIFO_WIDTH - 1 downto 0);
+  signal sSkidData                : std_logic_vector(FIFO_BITS - 1 downto 0);
+  signal sSkidValid               : std_logic;
+  signal sSkidTaken               : std_logic;
+  signal sSkidLast                : std_logic;
 
   -- Byte Valid queue (FIFO) signals
   signal sBvQueueInValid          : std_logic;
@@ -162,17 +162,7 @@ architecture behavioral of byte_stuffer is
   signal sBvQueueOutReady         : std_logic;
   signal sBvQueueOutData          : std_logic_vector(BYTE_VALID_WIDTH - 1 downto 0);
 
-  ----------------------------------------------------------------------------
   -- Stage 3 (FF stuffer + emit) state.
-  --
-  --   sStuffBuffer/sStuffBufferBits — bit-level holding buffer for input bits awaiting
-  --                     emission. Bits are stored MSB-first at the top.
-  --   sStuffBufferLast       — sticky: latched when a FIFO word with last_flag=1
-  --                     has been popped. Cleared after the final beat.
-  --   sPrevFF         — '1' iff the last *output* byte (post-stuff) was
-  --                     0xFF, meaning the next bit emitted to the output
-  --                     stream must be the stuffed '0'.
-  ----------------------------------------------------------------------------
   signal sStuffBuffer             : std_logic_vector(HOLD_BITS - 1 downto 0);
   signal sStuffBufferBits         : unsigned(log2ceil(HOLD_BITS + 1) - 1 downto 0);
   signal sStuffBufferLast         : std_logic;
@@ -182,8 +172,7 @@ architecture behavioral of byte_stuffer is
   signal sOutBytesValidReg        : unsigned(log2ceil(OUT_BYTES_PER_CYCLE + 1) - 1 downto 0);
   signal sFlushDone               : std_logic;
 
-  -- End-of-image terminal beat: sub-byte residue, dangling stuff bit, or
-  -- byte-aligned clean end
+  -- End-of-image terminal beat
   signal sLastPending             : std_logic;
 
 begin
@@ -331,7 +320,8 @@ begin
 
           vFlushBytes := vAccumCountBits / 8;
 
-          -- FIFO_BITS-multiple pad
+          -- FIFO_BITS-multiple "pad"
+          -- Not actually padded with 0, will be discardad on the read side
           if ((vAccumCountBits mod FIFO_BITS) /= 0) then
             vPadBits        := FIFO_BITS - (vAccumCountBits mod FIFO_BITS);
             vAccumCountBits := vAccumCountBits + vPadBits;
@@ -344,9 +334,7 @@ begin
         ---------------------------------------------------------------------------------
         -- READ from Accumulator to FIFO
         ---------------------------------------------------------------------------------
-        -- Single constant-shift drain. Flush drains carry last_flag='1' on
-        -- the final FIFO_BITS chunk and forward the byte-valid count via
-        -- the sideband queue; non-last writes carry the implicit FIFO_BYTES.
+        -- Single constant-shift drain.
 
         if (sFifoFull = '0') then
           if (vFlushPending = '1') then
@@ -419,10 +407,8 @@ begin
       AlmEmpty       => open
     );
 
-  -- Sideband byte-valid queue
-  -- Pop combinationally on the cycle Stage 3 takes a last_flag entry, so
-  -- back-to-back last_flag pops advance the head correctly.
-  sBvQueueOutReady <= sStgTaken and sStgData(LAST_POS);
+  -- Read Byte Valid FIFO on Last word
+  sBvQueueOutReady <= sSkidTaken and sSkidLast;
 
   byte_valid_fifo_inst : entity openlogic_base.olo_base_fifo_sync(rtl)
     generic map (
@@ -451,43 +437,35 @@ begin
   -- standard T.87 since a byte 0xFF followed by a bit '1' denotes a
   -- marker and markers aren't allowed on the payload
   --
-  -- Per output byte:
-  --   * if prev_FF='1' (last output byte was FF), the next output byte's
-  --     MSB is the stuffed '0'; consume 7 bits from the holding buffer to
-  --     fill the remaining 7 bits.
-  --   * else: consume 8 bits straight from the holding buffer.
-  --   Then prev_FF := (byte == 0xFF).
-  --
-  -- Final-flush drain (vStuffBufferLast='1' and vStuffBufferBits=0):
-  --   * if prev_FF='1': emit one final 0x00 byte (the stuff '0' + 7-bit pad).
-  --   * pulse oFlushDone on the beat that carries the last data byte.
-  --
   -- NOTE: Flush can take up to 2 cycles
 
   -- Stage 3 drains the skid buffer when it has data and the hold has room.
-  sStgTaken <= '1' when sStgValid = '1'
-                        and sStuffBufferBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sStuffBufferBits'length)
-                        and iReady = '1'
-                        and sLastPending = '0' else
-               '0';
+  sSkidTaken <= '1' when sSkidValid = '1'
+                         and sStuffBufferBits <= to_unsigned(HOLD_BITS - FIFO_BITS, sStuffBufferBits'length)
+                         and iReady = '1'
+                         and sLastPending = '0' else
+                '0';
   -- Pop FIFO when the skid buffer is empty or being drained this cycle.
-  sFifoOutReady <= '1' when sStgValid = '0' or sStgTaken = '1' else
+  sFifoOutReady <= '1' when sSkidValid = '0' or sSkidTaken = '1' else
                    '0';
+
+  sSkidData <= sSkidWord(FIFO_WIDTH - 1 downto DATA_LSB);
+  sSkidLast <= sSkidWord(LAST_POS);
 
   skid_proc : process (iClk) is
   begin
 
     if rising_edge(iClk) then
       if (iRst = '1') then
-        sStgValid <= '0';
-        sStgData  <= (others => '0');
+        sSkidValid <= '0';
+        sSkidWord  <= (others => '0');
       else
-        if (sStgTaken = '1') then
-          sStgValid <= '0';
+        if (sSkidTaken = '1') then
+          sSkidValid <= '0';
         end if;
         if (sFifoOutValid = '1' and sFifoOutReady = '1') then
-          sStgData  <= sFifoOutData;
-          sStgValid <= '1';
+          sSkidWord  <= sFifoOutData;
+          sSkidValid <= '1';
         end if;
       end if;
     end if;
@@ -501,9 +479,7 @@ begin
     variable vStuffBufferLast : std_logic;
     variable vPrevFF          : std_logic;
 
-    variable vPopBytes : natural range 0 to FIFO_BYTES;
-    variable vPopLast  : std_logic;
-    variable vPopData  : std_logic_vector(FIFO_BITS - 1 downto 0);
+    variable vValidBytesInt : natural range 0 to FIFO_BYTES;
 
     -- Parallel-precomputed FF-equality flags for the 8 fixed candidate
     -- byte windows the chain can ever pick from.
@@ -593,27 +569,26 @@ begin
         -- (1) Refill: drain the skid buffer into the holding buffer.
         -- Only the final word may be partial.
         ----------------------------------------------------------------------
-        if (sStgTaken = '1') then
-          vPopLast := sStgData(LAST_POS);
-          vPopData := sStgData(FIFO_WIDTH - 1 downto DATA_LSB);
-
-          if (vPopLast = '0') then
-            vStuffBuffer(HOLD_BITS - 1 - vStuffBufferBits downto HOLD_BITS - vStuffBufferBits - FIFO_BITS) := vPopData;
+        if (sSkidTaken = '1') then
+          if (sSkidLast = '0') then
+            vStuffBuffer(HOLD_BITS - 1 - vStuffBufferBits downto HOLD_BITS - vStuffBufferBits - FIFO_BITS) := sSkidData;
             vStuffBufferBits                                                                               := vStuffBufferBits + FIFO_BITS;
           else
-            vPopBytes := to_integer(unsigned(sBvQueueOutData));
+            -- Last data beat, may be partial
+
+            vValidBytesInt := to_integer(unsigned(sBvQueueOutData));
 
             for k in 0 to FIFO_BYTES - 1 loop
 
               -- Write partial word to buffer
-              if (k < vPopBytes) then
+              if (k < vValidBytesInt) then
                 vStuffBuffer(HOLD_BITS - 1 - vStuffBufferBits - k * 8 downto HOLD_BITS - vStuffBufferBits - (k + 1) * 8)
- := vPopData(FIFO_BITS - 1 - k * 8 downto FIFO_BITS - (k + 1) * 8);
+ := sSkidData(FIFO_BITS - 1 - k * 8 downto FIFO_BITS - (k + 1) * 8);
               end if;
 
             end loop;
 
-            vStuffBufferBits := vStuffBufferBits + vPopBytes * 8;
+            vStuffBufferBits := vStuffBufferBits + vValidBytesInt * 8;
             vStuffBufferLast := '1';
           end if;
         end if;
@@ -633,18 +608,6 @@ begin
 
         ----------------------------------------------------------------------
         -- (3) Resolve the 4-slot stuffer chain from (vPrevFF, ff flags, vStuffBuffer).
-        --
-        --     The serial 4-step chain is flattened into 8 reachable
-        --     stuff/no-stuff trajectories. Each leaf assigns every output
-        --     of this stage (byte0..byte3, stuffed1..stuffed4, cumu1..cumu3, vCumu(3))
-        --     for one trajectory, so the chain reads top-to-bottom inside
-        --     one leaf instead of as a 4-deep dependency walk.
-        --
-        --     Invariant: a slot that stuffs starts its output byte with
-        --     '0', so it cannot equal 0xFF and the next slot's prev_FF_in
-        --     is forced to '0'. This eliminates two-adjacent-stuffs and
-        --     bounds each slot's offset candidate set to 2..3 values,
-        --     keeping the tree to 8 leaves.
         ----------------------------------------------------------------------
         case vPrevFF is
 
