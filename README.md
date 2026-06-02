@@ -2,17 +2,17 @@
 
 OpenJLS is a **JPEG-LS encoder IP core for FPGAs**, written in VHDL.
 
-It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — the best-performing lossless image compression algorithm available, delivering compression ratios comparable to JPEG 2000 lossless at a fraction of the complexity, with no external memory required.
+It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
 
-OpenJLS is vendor-agnostic, targeting any FPGA platform. It is currently tested on Xilinx Zynq 7020.
+OpenJLS is vendor-agnostic, targeting any FPGA platform.
 
-> **Status:** Active development. Lossless encoder is integrated end-to-end with AXI4-Stream interfaces and verified bit-exact against the ISO/IEC 14495-1 reference (TEST16, 12-bit grayscale). Current focus is timing closure. Check the [roadmap](Docs/roadmap.md) file for more details.
+> **Status:** Active development. The lossless encoder is integrated end-to-end with AXI4-Stream interfaces, verified bit-exact against the ISO/IEC 14495-1 reference (TEST16, 12-bit grayscale), and characterized for timing and resources (~250 MHz on UltraScale+, see below). Current focus is completing verification with [OSVVM](https://osvvm.org/) (constrained-random + functional coverage). Check the [roadmap](Docs/roadmap.md) file for more details.
 
 ---
 
 ## Why JPEG-LS?
 
-JPEG-LS consistently outperforms other lossless compression standards in both compression ratio and implementation efficiency. It is the standard of choice for applications where lossless fidelity is non-negotiable: satellite imaging, medical imaging (DICOM), industrial machine vision, and scientific instrumentation.
+JPEG-LS hits a sweet spot for hardware: Close to state-of-the-art lossless ratios from a single-pass, low-memory algorithm that needs no external RAM. It matches or beats older standards like PNG and lossless JPEG 2000, and while heavier modern codecs (JPEG XL, FLIF) compress somewhat tighter, they cost far more logic and memory than an embedded pipeline can spare. That makes JPEG-LS the standard of choice where lossless fidelity and bounded resources both matter — satellite and medical imaging (DICOM).
 
 ---
 
@@ -39,7 +39,7 @@ Planned
 
 ## Architecture
 
-<!-- TODO: Add block diagram -->
+![OpenJLS Architecture](Docs/Images/OpenJLS_arch.png)
 
 OpenJLS follows the JPEG-LS encoding pipeline:
 
@@ -53,31 +53,39 @@ OpenJLS follows the JPEG-LS encoding pipeline:
 
 ## Performance & Resources
 
-Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock (`fmax = 1000 / (period − WNS)`), not a met-constraint floor. Results are RTL-only (no floorplanning) and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s (4K30 with margin).
+Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning and vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s (4K30fps with margin).
 
 ### Maximum frequency vs image size
 
 ![Maximum frequency vs image size](Docs/Images/fmax_vs_size.png)
 
-The encoder holds ~250 MHz largely independent of image size with a congestion-aware strategy. The byte-stuffer back-end is congestion-bound, so `Congestion_SpreadLogic_high` (which spreads logic) wins consistently; the default strategy trails by ~15 MHz and `Performance_Explore` is less predictable on large images. Full analysis in [timing_considerations.md](Docs/timing_considerations.md).
+The encoder holds ~250 MHz largely independent of image size with a congestion-aware strategy. The byte-stuffer back-end is congestion-bound, so `Congestion_SpreadLogic_high` (which spreads logic) wins consistently; the default strategy trails by ~15 MHz and `Performance_Explore` is less predictable on large images.
+
+| Image width | Default | Performance_Explore | Congestion_SpreadLogic_high |
+|------------:|--------:|--------------------:|----------------------------:|
+| 4096 | 243.9 | 238.7 | **258.0** |
+| 8192 | 240.0 | 243.0 | **252.8** |
+| 12288 | 243.5 | **248.5** | 247.9 |
+| 16384 | 235.9 | 244.1 | **256.7** |
+| 32768 | 232.2 | 212.8 | **247.5** |
+
+Maximum frequency (MHz) by image width and implementation strategy; best per row in bold.
 
 ### Resource usage vs image size
 
 ![Resource usage vs image size](Docs/Images/util_vs_size.png)
 
-Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~2.1k) are set by the encoder, not the image. Only Block RAM scales: the line buffer holds one image row (`depth = image width`), so it grows ~linearly with width.
+Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~2.1k) are set by the encoder, not the image. Only Block RAM scales: the line buffer holds one image row, so it grows ~linearly with image width and pixel bit depth.
 
-### Measured values
+| Image width | LUTs | FFs | BRAM tiles |
+|------------:|-----:|----:|-----------:|
+| 4096 | 8048 | 2059 | 1.5 |
+| 8192 | 7930 | 2062 | 3.0 |
+| 12288 | 7855 | 2087 | 4.5 |
+| 16384 | 7877 | 2089 | 5.5 |
+| 32768 | 7990 | 2095 | 11.0 |
 
-| Image width | LUTs | FFs | BRAM tiles | fmax Default | fmax Performance_Explore | fmax Congestion_SpreadLogic_high |
-|------------:|-----:|----:|-----------:|-------------:|-------------------------:|---------------------------------:|
-| 4096 | 8048 | 2059 | 1.5 | 243.9 | 238.7 | **258.0** |
-| 8192 | 7930 | 2062 | 3.0 | 240.0 | 243.0 | **252.8** |
-| 12288 | 7855 | 2087 | 4.5 | 243.5 | **248.5** | 247.9 |
-| 16384 | 7877 | 2089 | 5.5 | 235.9 | 244.1 | **256.7** |
-| 32768 | 7990 | 2095 | 11.0 | 232.2 | 212.8 | **247.5** |
-
-Frequencies in MHz; resource columns are for the default strategy (synthesis-bound, near-identical across strategies). Reproduce with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
+Resource usage by image width (default strategy; near-identical across strategies). Reproduce both tables with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
 
 ---
 

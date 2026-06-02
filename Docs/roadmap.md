@@ -18,8 +18,9 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 
 - [x] Module-level testbenches for all blocks
 - [x] Bitstream compliance verification against reference software (ISO 14495-1)
+- [x] Resource utilization and timing benchmarks (published in README)
+- [ ] OSVVM constrained-random + functional-coverage verification (per-module and top-level control-plane stress)
 - [ ] Full compliance test suite with standard test images
-- [ ] Resource utilization and timing benchmarks (published in README)
 - [ ] Bit-accurate software reference model
 
 ## Phase 3 — Platform Expansion
@@ -30,4 +31,4 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 
 ---
 
-*Last updated: May 2026*
+*Last updated: June 2026*
