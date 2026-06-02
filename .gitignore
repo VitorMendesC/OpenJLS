@@ -8,6 +8,15 @@ Verification/Reference\ Images
 Verification/Output
 build/
 
+# OSVVM (source-built; see Verification/OSVVM)
+Verification/OSVVM/osvvm-lib/
+Verification/OSVVM/tb_support-lib/
+Verification/OSVVM/work-lib/
+Verification/OSVVM/OsvvmLibraries/
+
+# Python
+__pycache__/
+
 # Files
 settings.json
 
@@ -15,3 +24,6 @@ settings.json
 *.log
 *.jou
 *.pb
+*.cf
+*.o
+*.exe
