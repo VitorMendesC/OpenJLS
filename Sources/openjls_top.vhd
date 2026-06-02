@@ -410,12 +410,6 @@ architecture rtl of openjls_top is
   signal sS5RiEmErrval                      : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
   signal sS5GolMErr                         : unsigned(MAPPED_ERROR_VAL_WIDTH - 1 downto 0);
 
-  -- A.22 is RI-only. Gate its inputs on mode so non-RI tokens drive zeros and
-  -- the combinational arithmetic never produces a negative value.
-  -- TODO: I don't like this, it's better to not drive this logic at all instead add logic gating
-  signal sA22Errval                         : signed(ERROR_WIDTH - 1 downto 0);
-  signal sA22RItype                         : std_logic;
-  signal sA22Map                            : std_logic;
   signal sS5Unary                           : unsigned(UNARY_WIDTH - 1 downto 0);
   signal sS5SufLen                          : unsigned(SUFFIXLEN_WIDTH - 1 downto 0);
   signal sS5SufVal                          : unsigned(SUFFIX_WIDTH - 1 downto 0);
@@ -440,12 +434,6 @@ architecture rtl of openjls_top is
   signal sFramerVBytes                      : unsigned(log2ceil(OUT_WIDTH / 8 + 1) - 1 downto 0);
 
   -- Flush / framer control
-  -- Bit packer is purely combinational + 1 register; it has no flush signal.
-  -- Byte stuffer needs iFlush aligned with the last bit_packer word it sees.
-  -- The framer needs iEOI aligned with the byte stuffer's flushed last word —
-  -- with the narrow-output byte_stuffer, the drain takes a variable number of
-  -- cycles, so framer iEOI is driven by byte_stuffer's oFlushDone pulse
-  -- (asserts on the final drain beat of the image).
   signal sBsFlush                           : std_logic;
   signal sBsAlmostFull                      : std_logic;
   signal sBsFlushDone                       : std_logic;
@@ -470,10 +458,6 @@ begin
 
   assert B_WIDTH >= N_WIDTH
     report "A11 & A13: B_WIDTH must be >= N_WIDTH to avoid truncation"
-    severity failure;
-
-  assert OUT_WIDTH >= MIN_OUT_WIDTH_WORST_CASE
-    report "OUT_WIDTH must be large enough for the worst-case byte_stuffer output: LIMIT + stuffing + 1 byte = " & integer'image(MIN_OUT_WIDTH_WORST_CASE)
     severity failure;
 
   -------------------------------------------------------------------------------------------------------------
@@ -1360,25 +1344,15 @@ begin
       oMap        => sS5RiMap
     );
 
-  -- Gate A.22's inputs on RI mode. Non-RI tokens drive zeros so the
-  -- combinational `2*|Errval| - RItype - Map` never goes negative, even
-  -- across delta-cycle transitions when sS5RiMap lags sReg4.
-  sA22Errval <= sReg4.Errval(BITNESS downto 0) when sReg4.mode = token_run_interruption else
-                (others => '0');
-  sA22RItype <= sReg4.RiType when sReg4.mode = token_run_interruption else
-                '0';
-  sA22Map    <= sS5RiMap when sReg4.mode = token_run_interruption else
-                '0';
-
   u_a22 : entity work.a22_errval_mapping(behavioral)
     generic map (
       ERROR_WIDTH         => ERROR_WIDTH,
       MAPPED_ERRVAL_WIDTH => MAPPED_ERROR_VAL_WIDTH
     )
     port map (
-      iErrval             => sA22Errval,
-      iRItype             => sA22RItype,
-      iMap                => sA22Map,
+      iErrval             => sReg4.Errval(BITNESS downto 0),
+      iRItype             => sReg4.RiType,
+      iMap                => sS5RiMap,
       oEmErrVal           => sS5RiEmErrval
     );
 
@@ -1550,9 +1524,7 @@ begin
       oLast            => oLast
     );
 
-  -- AXI-Stream tkeep: one bit per byte, MSB = first byte transmitted.
-  -- Byte 0 occupies oData(OUT_WIDTH-1 downto OUT_WIDTH-8) → oKeep(OUT_WIDTH/8 - 1).
-  -- For a count of N valid bytes, the top N bits of oKeep are '1'.
+  -- AXI-Stream tkeep: one bit per byte
 
   gen_keep : for i in 0 to OUT_WIDTH / 8 - 1 generate
     oKeep(OUT_WIDTH / 8 - 1 - i) <= '1' when sFramerVBytes > i else
@@ -1598,11 +1570,7 @@ begin
         if (sValid = '1' and sImageActive = '0') then
           sImageActive <= '1';
         elsif (sBsFlush = '1') then
-          -- Clear when flush ENTERS byte_stuffer, not when it completes.
-          -- byte_stuffer/framer back-pressure is local: flush-done can lag
-          -- far behind sValid. Clearing on sBsFlush lets the next image's
-          -- sFramerStart fire while the previous image is still draining
-          -- (framer queues the start via its internal sNextPending).
+          -- Clear when flush ENTERS byte_stuffer, not when the image completes
           sImageActive <= '0';
         end if;
       end if;

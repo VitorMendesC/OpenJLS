@@ -17,8 +17,6 @@
 -- Additional Comments:                 Code segment A.3
 --                                      Local gradient computation for context determination
 --
---                                NOTE: Losless mode specific
---
 ----------------------------------------------------------------------------------
 
 library ieee;

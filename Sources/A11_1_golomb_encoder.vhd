@@ -99,8 +99,7 @@ begin
 
       vSuffixVal := resize(vLowOrder, vSuffixVal'length);
     else
-      -- TODO: Remove after verification
-      -- SIM ONLY ------------------------------------------------------------------
+      -- Assertions ----------------------------------------------------------------
       assert (iMappedErrorVal /= 0)                                               -- Catch impossible case on simulation set
         report "LG(k,LIMIT) escape with MErrval=0 is impossible per T.87/14495-1"
         severity failure;
