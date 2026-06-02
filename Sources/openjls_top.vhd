@@ -1011,17 +1011,6 @@ begin
       oErrorVal => sS3Err7C
     );
 
-  u_a8_c : entity work.a8_error_quantization(behavioral)
-    generic map (
-      BITNESS   => BITNESS, MAX_VAL => MAX_VAL
-    )
-    port map (
-      iErrorVal => sS3Err7C,
-      iPx       => sS3PxC,
-      iSign     => sReg2.Sign,
-      oRx       => open
-    );
-
   u_a9_c : entity work.a9_modulo_reduction(behavioral)
     generic map (
       BITNESS   => BITNESS, RANGE_P => RANGE_P
@@ -1054,17 +1043,6 @@ begin
       oErrorVal => sS3Err7P
     );
 
-  u_a8_p : entity work.a8_error_quantization(behavioral)
-    generic map (
-      BITNESS   => BITNESS, MAX_VAL => MAX_VAL
-    )
-    port map (
-      iErrorVal => sS3Err7P,
-      iPx       => sS3PxP,
-      iSign     => sReg2.Sign,
-      oRx       => open
-    );
-
   u_a9_p : entity work.a9_modulo_reduction(behavioral)
     generic map (
       BITNESS   => BITNESS, RANGE_P => RANGE_P
@@ -1095,17 +1073,6 @@ begin
       iPx       => sS3PxM,
       iSign     => sReg2.Sign,
       oErrorVal => sS3Err7M
-    );
-
-  u_a8_m : entity work.a8_error_quantization(behavioral)
-    generic map (
-      BITNESS   => BITNESS, MAX_VAL => MAX_VAL
-    )
-    port map (
-      iErrorVal => sS3Err7M,
-      iPx       => sS3PxM,
-      iSign     => sReg2.Sign,
-      oRx       => open
     );
 
   u_a9_m : entity work.a9_modulo_reduction(behavioral)
