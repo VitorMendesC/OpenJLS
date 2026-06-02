@@ -32,7 +32,11 @@ architecture behavioral of a20_compute_temp is
 
 begin
 
+  assert A_WIDTH >= N_WIDTH
+    report "A_WIDTH has to be >= than N_WIDTH"
+    severity failure;
+
   oTemp <= iAq when iRItype = '0' else
-           iAq + resize(shift_right(iNq, 1), A_WIDTH); -- NOTE: Assumes Nq width < Aq width
+           iAq + resize(shift_right(iNq, 1), A_WIDTH);
 
 end architecture behavioral;
