@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the OSVVM TBs and run one by name.
-# Usage:  ./build_run.sh tb_a8_osvvm
+# Usage:  ./build_run.sh tb_a11_osvvm
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -9,7 +9,7 @@ OSVVM_LIB="$HERE/osvvm-lib"
 SUPPORT_LIB="$HERE/tb_support-lib"
 WORK_LIB="$HERE/work-lib"
 
-TB="${1:-tb_a8_osvvm}"
+TB="${1:-tb_a11_osvvm}"
 
 if [[ ! -d "$OSVVM_LIB" ]]; then
   echo "OSVVM library missing — run ./build_osvvm.sh first" >&2
@@ -43,7 +43,6 @@ SRC="$ROOT/Sources"
 SRC_FILES=(
   Common.vhd
   A1_gradient_comp.vhd
-  A2_mode_selection.vhd
   A3_mode_selection.vhd
   A4_quantization_gradients.vhd
   A4_1_quant_gradient_merging.vhd
@@ -51,7 +50,6 @@ SRC_FILES=(
   A5_edge_detecting_predictor.vhd
   A6_prediction_correction.vhd
   A7_prediction_error.vhd
-  A8_error_quantization.vhd
   A9_modulo_reduction.vhd
   A10_compute_k.vhd
   A11_error_mapping.vhd
