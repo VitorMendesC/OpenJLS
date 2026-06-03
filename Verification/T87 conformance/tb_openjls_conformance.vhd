@@ -8,8 +8,8 @@
   -- Verification/T87 conformance/Output/, then byte-for-byte compares against
   -- a golden reference .jls file.
   --
-  -- Behavioral simulation only: BITNESS=12 here does not match the synthesised
-  -- netlist (BITNESS=8). Run from the repo root so the relative paths resolve.
+  -- Behavioral (GHDL) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
+  -- Run from the repo root so the relative paths resolve.
   --
   -- Test image: Verification/T87 conformance/Reference Images/TEST16.PGM (256x256, 12-bit)
   -- Golden JLS: Verification/T87 conformance/Reference Images/T16E0.JLS  (NEAR=0)
@@ -28,8 +28,13 @@ library openlogic_base;
 
 entity tb_openjls_conformance is
   generic (
-    REPO_ROOT           : string  := "/home/Vitor/Repos/OpenJLS/";
-    POST_SYNTH_FRIENDLY : boolean := true -- if true remove generic map, top level must match the expected generic values
+    -- Repo root, with trailing '/'. The launcher injects it (build_run.sh passes
+    -- -gREPO_ROOT); empty default => paths resolve relative to CWD (run from repo root).
+    REPO_ROOT           : string  := "/home/Vitor/Repos/OpenJLS";
+    -- true: instantiate the top bare (no generic map) for post-synthesis netlist
+    -- sim, where the netlist is already specialized. false: behavioral sim with
+    -- the explicit generic map below (GHDL flow).
+    POST_SYNTH_FRIENDLY : boolean := false
   );
 end entity tb_openjls_conformance;
 
@@ -78,6 +83,9 @@ architecture bench of tb_openjls_conformance is
   signal oKeep                   : std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
   signal oLast                   : std_logic;
   signal iReady                  : std_logic;
+
+  -- Stim -> output-ready controller: pulse high to arm one backpressure episode.
+  signal sBpReq                  : std_logic := '0';
 
   -- Collection
   shared variable collected      : byte_array_t(0 to COLLECT_CAP - 1);
@@ -301,6 +309,44 @@ begin
 
   end process collect;
 
+  -- Output-ready control. Sole driver of iReady: normally high, but when stim
+  -- asserts sBpReq it runs one backpressure episode — hold iReady low until the
+  -- stall propagates upstream (oReady=0), keep it low a few more cycles, then
+  -- release. Re-arms once sBpReq returns low.
+  bp_ctrl : process is
+
+    constant BP_TIMEOUT : natural := 100000; -- safety cap waiting for oReady low
+    constant BP_EXTRA   : natural := 8;       -- extra fully-stalled cycles after the stall lands
+
+  begin
+
+    iReady <= '1';
+    wait until rising_edge(iClk);
+
+    if (sBpReq = '1') then
+      iReady <= '0';
+
+      for i in 0 to BP_TIMEOUT loop
+
+        wait until rising_edge(iClk);
+        exit when oReady = '0';
+
+      end loop;
+
+      check(oReady = '0', "Backpressure did not propagate upstream (oReady stayed high)");
+
+      for i in 0 to BP_EXTRA - 1 loop
+
+        wait until rising_edge(iClk);
+
+      end loop;
+
+      iReady <= '1';
+      wait until sBpReq = '0';
+    end if;
+
+  end process bp_ctrl;
+
   -- Stimulus
   stim : process is
 
@@ -426,7 +472,8 @@ begin
     end procedure load_jls;
 
     procedure save_collected (
-      path : string
+      path : string;
+      n    : natural
     ) is
 
       file f : char_file_t;
@@ -435,14 +482,14 @@ begin
 
       file_open(f, path, write_mode);
 
-      for i in 0 to collectedCount - 1 loop
+      for i in 0 to n - 1 loop
 
         write_byte(f, collected(i));
 
       end loop;
 
       file_close(f);
-      report "Wrote " & integer'image(collectedCount) & " bytes to " & path;
+      report "Wrote " & integer'image(n) & " bytes to " & path;
 
     end procedure save_collected;
 
@@ -461,27 +508,72 @@ begin
 
     end procedure feed_image;
 
-    procedure wait_image is
+    procedure wait_images (
+      n : natural
+    ) is
     begin
 
-      for i in 0 to 1000000 loop
+      for i in 0 to 2000000 loop
 
-        exit when lastCount >= 1;
+        exit when lastCount >= n;
         wait until rising_edge(iClk);
 
       end loop;
 
-    end procedure wait_image;
+    end procedure wait_images;
 
-    variable diffLogged : natural;
+    -- Compare refLen collected bytes starting at `base` against the reference.
+    procedure compare_slice (
+      base : natural;
+      tag  : string
+    ) is
+
+      variable logged : natural;
+
+    begin
+
+      for i in 0 to refLen - 1 loop
+
+        if (base + i < collectedCount) then
+          if (collected(base + i) /= refbuf(i)) then
+            if (logged < MAX_DIFF_LOG) then
+              report tag & " byte " & integer'image(i) &
+                     " mismatch: exp=" & hex2(refbuf(i)) &
+                     " got=" & hex2(collected(base + i))
+                severity error;
+              logged := logged + 1;
+            end if;
+            errCount := errCount + 1;
+          end if;
+        end if;
+
+      end loop;
+
+    end procedure compare_slice;
 
   begin
 
-    -- Initial values for signals (no defaults — set explicitly here)
+    -- Initial values for signals (no defaults — set explicitly here).
+    -- iReady is driven solely by the bp_ctrl process.
     iRst   <= '1';
     iValid <= '0';
     iPixel <= (others => '0');
-    iReady <= '1';
+    sBpReq <= '0';
+
+    -- Config guard. The pixel port width is fixed in a post-synth netlist; if it
+    -- disagrees with BITNESS the netlist was built with different generics, so
+    -- fail loudly here instead of producing a confusing byte mismatch later.
+    report "DUT config: BITNESS=" & integer'image(BITNESS) &
+           " OUT_WIDTH=" & integer'image(OUT_WIDTH) &
+           " MAX_IMAGE=" & integer'image(MAX_IMAGE_WIDTH) & "x" & integer'image(MAX_IMAGE_HEIGHT);
+    assert iPixel'length = BITNESS
+      report "iPixel width (" & integer'image(iPixel'length) &
+             ") /= BITNESS (" & integer'image(BITNESS) &
+             ") - DUT generics do not match the testbench"
+      severity failure;
+    assert IMG_W <= MAX_IMAGE_WIDTH and IMG_H <= MAX_IMAGE_HEIGHT
+      report "Test image exceeds MAX_IMAGE_WIDTH/HEIGHT"
+      severity failure;
 
     report "Loading PGM: " & PGM_PATH;
     load_pgm(PGM_PATH);
@@ -490,34 +582,32 @@ begin
     load_jls(JLS_PATH);
 
     do_reset;
-    report "Feeding " & integer'image(N_PIX) & " pixels";
+
+    -- =========================================================================
+    -- Image 1 (conformance), immediately followed by image 2 (back-to-back, no
+    -- input stall, same pixels). During image 2 the output AXI is backpressured:
+    -- bp_ctrl holds iReady low until the stall propagates upstream (oReady=0),
+    -- keeps it low a few more cycles, then releases. One flow exercises
+    -- conformance, back-to-back framing, and stall propagation/recovery; both
+    -- images must reproduce the reference stream.
+    -- =========================================================================
+    report "Image 1: feeding " & integer'image(N_PIX) & " pixels (conformance)";
     feed_image;
-    wait_image;
 
+    sBpReq <= '1';   -- arm one output-backpressure episode for image 2
+    report "Image 2: back-to-back, with output backpressure";
+    feed_image;
+    sBpReq <= '0';
+
+    wait_images(2);
     report "Encoder produced " & integer'image(collectedCount) & " bytes";
+    save_collected(OUT_PATH, refLen);   -- conformance artifact = image 1 only
 
-    save_collected(OUT_PATH);
-
-    -- Compare full stream byte-for-byte (header is bit-identical for our framer
-    -- given matching P/Y/X, so no marker-skip needed)
-    check(collectedCount = refLen,
+    check(collectedCount = 2 * refLen,
           "Byte count mismatch: got " & integer'image(collectedCount) &
-          " expected " & integer'image(refLen));
-
-    for i in 0 to math_min(collectedCount, refLen) - 1 loop
-
-      if (collected(i) /= refbuf(i)) then
-        if (diffLogged < MAX_DIFF_LOG) then
-          report "Byte " & integer'image(i) &
-                 " mismatch: exp=" & hex2(refbuf(i)) &
-                 " got=" & hex2(collected(i))
-            severity error;
-          diffLogged := diffLogged + 1;
-        end if;
-        errCount := errCount + 1;
-      end if;
-
-    end loop;
+          " expected " & integer'image(2 * refLen));
+    compare_slice(0,      "Image 1");
+    compare_slice(refLen, "Image 2");
 
     if (errCount > 0) then
       report "tb_openjls_conformance RESULT: FAIL (" &
