@@ -64,7 +64,10 @@ begin
   sErrorValExt <= resize(iErrorVal, sErrorValExt'length);
   -- Extend and compare: 2*B <= -N with one extra bit to prevent overflow
   sBExt <= resize(iBq, sBExt'length);
-  sNExt <= resize(signed(iNq), sBExt'length);
+  -- Zero-extend N before the signed reinterpretation: N reaches RESET (64), whose
+  -- bit pattern sets the MSB of the N_WIDTH-bit vector, so signed(iNq) would read
+  -- it as negative and wrongly trigger the special map. Widen first => sign bit 0.
+  sNExt <= signed(resize(iNq, sBExt'length));
 
   sSpecialMap <= '1' when (iK = 0 and 2 * sBExt <= - sNExt) else
                  '0';
