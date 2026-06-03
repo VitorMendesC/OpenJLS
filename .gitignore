@@ -17,6 +17,12 @@ Verification/OSVVM/OsvvmLibraries/
 # GHDL compile cache
 Verification/T87 conformance/work-lib/
 
+# Golden model (CharLS built from source; minted goldens + OpenJLS results)
+Verification/Golden model/charls-src/
+Verification/Golden model/Output/
+Verification/Golden model/work-lib/
+Verification/Golden model/charlstest
+
 # Python
 __pycache__/
 
