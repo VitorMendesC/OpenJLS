@@ -40,11 +40,9 @@ l_lut,  = ax1.plot(sizes, lut, marker="o", color="C0", label="LUTs")
 l_ff,   = ax1.plot(sizes, ff,  marker="s", color="C1", label="Flip-flops")
 l_bram, = ax2.plot(sizes, bram, marker="^", color="C2", label="Block RAM")
 
-# X axis: log2 spacing, labelled 4k, 8k, ...
-ax1.set_xscale("log", base=2)
+# X axis: linear spacing so the BRAM line (~proportional to width) reads straight.
 ax1.set_xticks(sizes)
 ax1.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{int(round(x / 1024))}k"))
-ax1.minorticks_off()
 
 ax1.set_xlabel("Image size (px)")
 ax1.set_ylabel("LUT / FF  (count)")

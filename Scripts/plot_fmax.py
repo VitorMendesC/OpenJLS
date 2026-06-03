@@ -51,11 +51,9 @@ for strat, pts in series.items():
 
 all_sizes = sorted({p[0] for pts in series.values() for p in pts})
 ax = plt.gca()
-ax.set_xscale("log", base=2)
 ax.set_xticks(all_sizes)
-# Label ticks as 4k, 8k, 12k, ... instead of raw 2^n values
+# Label ticks as 4k, 8k, 12k, ... instead of raw pixel counts
 ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{int(round(x / 1024))}k"))
-ax.minorticks_off()  # suppress the 2^n minor-tick labels the log scale adds
 plt.xlabel("Image size (px)")
 plt.ylabel("Max. frequency  (MHz)")
 # Bold headline + small grey subtitle keeps the provenance without the clutter.
