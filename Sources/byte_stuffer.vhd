@@ -129,12 +129,12 @@ architecture behavioral of byte_stuffer is
   constant HOLD_BITS              : natural := HOLD_BYTES * 8;
 
   -- Signals ---------------------------------------------------------------------
-  -- Input registers
-  signal sInWord                  : std_logic_vector(IN_WIDTH - 1 downto 0);
-  signal sInValidLen              : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
-  signal sInValid                 : std_logic;
-  signal sInFlush                 : std_logic;
-  signal sInTake                  : std_logic;
+  -- Input skid (bit_packer -> stage 1)
+  signal sInSkidWord                  : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal sInSkidValidLen              : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+  signal sInSkidFull                 : std_logic;
+  signal sInSkidFlush                 : std_logic;
+  signal sInSkidDrain                  : std_logic;
 
   -- Stage 1 accumulator
   signal sAccumBuffer             : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -198,39 +198,39 @@ begin
   oAlmostFull <= sFifoAlmFull;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- INPUT REGISTERS
+  -- INPUT SKID
   -------------------------------------------------------------------------------------------------------------------------
   -- Helps timing; iStall is intentionally NOT registered; Works as a skid buffer
 
-  sInTake <= '1' when sInValid = '1'
+  sInSkidDrain <= '1' when sInSkidFull = '1'
                       and iStall = '0'
                       and sFlushPending = '0'
                       and sFifoFull = '0' else
              '0';
 
-  input_reg_proc : process (iClk) is
+  input_skid_proc : process (iClk) is
   begin
 
     if rising_edge(iClk) then
       if (iRst = '1') then
-        sInWord     <= (others => '0');
-        sInValidLen <= (others => '0');
-        sInValid    <= '0';
-        sInFlush    <= '0';
+        sInSkidWord     <= (others => '0');
+        sInSkidValidLen <= (others => '0');
+        sInSkidFull    <= '0';
+        sInSkidFlush    <= '0';
       -- iStall gate: never pull a new word from the bit_packer while stalled.
       -- The bit_packer holds its output for the whole stall and only advances
       -- on the release edge, so latching an empty skid mid-stall captures a
       -- word the bit_packer then re-presents at release -> the same token gets
       -- written twice. Latching only when iStall='0' keeps it single-consumed.
-      elsif (iStall = '0' and (sInValid = '0' or sInTake = '1')) then
-        sInWord     <= iWord;
-        sInValidLen <= iValidLen;
-        sInValid    <= iWordValid;
-        sInFlush    <= iFlush;
+      elsif (iStall = '0' and (sInSkidFull = '0' or sInSkidDrain = '1')) then
+        sInSkidWord     <= iWord;
+        sInSkidValidLen <= iValidLen;
+        sInSkidFull    <= iWordValid;
+        sInSkidFlush    <= iFlush;
       end if;
     end if;
 
-  end process input_reg_proc;
+  end process input_skid_proc;
 
   -------------------------------------------------------------------------------------------------------------------------
   -- STAGE 1: Accumulator
@@ -277,7 +277,7 @@ begin
         vAccumCountBitsFlush := to_integer(sAccumCountBitsFlush);
         vFlushBytes          := to_integer(sFlushBytes);
         vFlushValidBits      := to_integer(sFlushValidBits);
-        vValidLenInt         := to_integer(sInValidLen);
+        vValidLenInt         := to_integer(sInSkidValidLen);
         vFlushPending        := sFlushPending;
         vAccept              := sFifoFull = '0' and iStall = '0';
 
@@ -289,9 +289,9 @@ begin
         ---------------------------------------------------------------------------------
         -- Append input bits (MSB-first)
 
-        if (sInValid = '1' and vAccept) then
+        if (sInSkidFull = '1' and vAccept) then
           vWide                                              := (others => '0');
-          vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sInWord;
+          vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sInSkidWord;
           vMaskTop                                           := (others => '0');
 
           for i in 0 to IN_WIDTH - 1 loop
@@ -312,7 +312,7 @@ begin
         -- byte count for the last-drain BV, then pad up to the next
         -- FIFO_BITS multiple so every drain becomes a constant FIFO_BITS
         -- shift downstream.
-        if (sInFlush = '1' and vAccept) then
+        if (sInSkidFlush = '1' and vAccept) then
           assert vFlushPending = '0'
             report "byte_stuffer: iFlush asserted while a flush is already pending"
             severity failure;
