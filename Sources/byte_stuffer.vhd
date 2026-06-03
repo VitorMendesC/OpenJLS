@@ -217,7 +217,12 @@ begin
         sInValidLen <= (others => '0');
         sInValid    <= '0';
         sInFlush    <= '0';
-      elsif (sInValid = '0' or sInTake = '1') then
+      -- iStall gate: never pull a new word from the bit_packer while stalled.
+      -- The bit_packer holds its output for the whole stall and only advances
+      -- on the release edge, so latching an empty skid mid-stall captures a
+      -- word the bit_packer then re-presents at release -> the same token gets
+      -- written twice. Latching only when iStall='0' keeps it single-consumed.
+      elsif (iStall = '0' and (sInValid = '0' or sInTake = '1')) then
         sInWord     <= iWord;
         sInValidLen <= iValidLen;
         sInValid    <= iWordValid;
