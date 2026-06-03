@@ -174,7 +174,6 @@ architecture rtl of openjls_top is
   constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4;                                           -- Hardcoded, fixed
   constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;                                          -- Can be tuned
   constant BYTE_STUFFER_OUT_WIDTH           : natural := BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
-  constant MIN_OUT_WIDTH_WORST_CASE         : natural := BYTE_STUFFER_OUT_WIDTH + 8;
 
   --------------------------------------------------------------------------------------------
   -- Packed context RAM word slicing
@@ -487,8 +486,12 @@ begin
   -- Pipeline stall is sourced only from byte_stuffer's FIFO (the main design
   -- buffer). Framer back-pressure is absorbed by the byte_stuffer FIFO via a
   -- local ready/valid handshake (sFramerReady -> byte_stuffer.iReady).
-  sStall         <= sBsAlmostFullReg;
-  sStallUpstream <= sStall;
+  sStall <= sBsAlmostFullReg;
+  -- Gating oReady on sStall alone leaves a one-cycle window where oReady='1'
+  -- but the latch is still frozen, which silently drops the pixel handshaken
+  -- in that cycle. OR-ing both keeps oReady low until acceptance is truly
+  -- re-enabled.
+  sStallUpstream <= sStall or sStallLogic;
 
   -- Per-stage clock-enable: update register only when not stalled AND there
   -- is a real token to load OR a real token to retire (transition to bubble).
@@ -1554,7 +1557,7 @@ begin
   begin
 
     if rising_edge(iClk) then
-      if (iRst = '0' and sReg6V = '1' and DEBUG_MODE = true) then
+      if (iRst = '0' and sReg6V = '1' and sStallLogic = '0' and DEBUG_MODE = true) then
 
         case sReg6.mode is
 
