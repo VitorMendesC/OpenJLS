@@ -282,6 +282,18 @@ architecture rtl of openjls_top is
   signal sReg2Eoi                           : std_logic;
   signal sReg3Eoi                           : std_logic;
   signal sReg4Eoi                           : std_logic;
+
+  -- Per-image parity ("colour"): 1 bit assigned at Reg1, flipped at each EOI,
+  -- carried to the writeback stage. A finished image's trailing context updates
+  -- (writeback + Q3==Q4 forwarding) still drain while the next image starts
+  -- reading; refusing any update whose colour no longer owns the context RAM
+  -- stops the stale context bleeding into the next image (back-to-back).
+  signal sGenPar                            : std_logic;
+  signal sReg1Par                           : std_logic;
+  signal sReg2Par                           : std_logic;
+  signal sReg3Par                           : std_logic;
+  signal sCtxOwnerPar                       : std_logic; -- sticky: colour owning the ctx RAM (held thru bubbles)
+  signal sCtxRdPar                          : std_logic; -- effective owner this cycle (combinational)
   signal sReg1ModeRun                       : std_logic;
   signal sReg1D1                            : signed(BITNESS downto 0);
   signal sReg1D2                            : signed(BITNESS downto 0);
@@ -634,6 +646,8 @@ begin
         sReg1D1  <= (others => '0');
         sReg1D2  <= (others => '0');
         sReg1D3  <= (others => '0');
+        sGenPar  <= '0';
+        sReg1Par <= '0';
       elsif (sCE1 = '1') then
         if (sLbValid = '1' and (sS1ModeRun = '1' or sS1InRunNext = '1')) then
           v.mode := token_run;
@@ -654,6 +668,12 @@ begin
         sReg1V   <= sValid;
         sReg1Eol <= sLbValid and sLbEol;
         sReg1Eoi <= sLbValid and sLbEoi;
+        -- Tag this token with the current colour; flip after an EOI so the next
+        -- image's first token (and onward) carries the opposite colour.
+        sReg1Par <= sGenPar;
+        if (sLbValid = '1' and sLbEoi = '1') then
+          sGenPar <= not sGenPar;
+        end if;
         sReg1D1  <= sS1D1;
         sReg1D2  <= sS1D2;
         sReg1D3  <= sS1D3;
@@ -799,7 +819,29 @@ begin
           to_unsigned(366, 9) when sS2RItype = '1' else
           to_unsigned(365, 9);
 
+  -- Sticky context-RAM owner: remembers the colour of the last valid token that
+  -- issued a read, held across read-stage bubbles. The effective owner this
+  -- cycle is the live Reg1 colour when valid, else the held value.
+  p_ctx_owner : process (iClk) is
+  begin
+
+    if rising_edge(iClk) then
+      if (iRst = '1') then
+        sCtxOwnerPar <= '0';
+      elsif (sReg1V = '1') then
+        sCtxOwnerPar <= sReg1Par;
+      end if;
+    end if;
+
+  end process p_ctx_owner;
+
+  sCtxRdPar <= sReg1Par when sReg1V = '1' else
+               sCtxOwnerPar;
+
+  -- Refuse a writeback whose colour no longer owns the context RAM: it is a
+  -- straggler from a finished image and would corrupt the next image's contexts.
   sCtxWrEn <= sReg3V and
+              bool2bit(sReg3Par = sCtxRdPar) and
               (bool2bit(sReg3.mode = token_regular) or
                bool2bit(sReg3.mode = token_run_interruption));
 
@@ -904,6 +946,7 @@ begin
         sReg2V   <= '0';
         sReg2Eoi <= '0';
         sReg2Px  <= (others => '0');
+        sReg2Par <= '0';
       elsif (sCE2 = '1') then
         -- Build Reg2 per mode. Fields not meaningful for the current mode
         -- stay at CO_TOKEN_NONE defaults so downstream mode-specific logic
@@ -953,6 +996,7 @@ begin
         sReg2V   <= sReg1V and bool2bit(sS2TokenMode /= token_none);
         sReg2Eoi <= sReg1Eoi;
         sReg2Px  <= sS2Px;
+        sReg2Par <= sReg1Par;
       end if;
     end if;
 
@@ -968,12 +1012,17 @@ begin
   -- Forwarding hits: Stage 2 read Q matches Stage 4 writeback Q.
   -- Stage-4 mode selects which update output to forward; Stage-2 mode is
   -- implied by the Q match (regular Q < 365, RI Q ∈ {365,366}).
+  -- Same-colour guard: never forward an update across an image boundary (the
+  -- two tokens can alias on the same Q — e.g. the run contexts — when one is a
+  -- straggler from the previous image).
   sFwdRegHit <= '1' when sReg2V = '1' and sReg3V = '1'
+                         and sReg2Par = sReg3Par
                          and sReg2.Q = sReg3.Q
                          and sReg3.mode = token_regular else
                 '0';
 
   sFwdRiHit <= '1' when sReg2V = '1' and sReg3V = '1'
+                        and sReg2Par = sReg3Par
                         and sReg2.Q = sReg3.Q
                         and sReg3.mode = token_run_interruption else
                '0';
@@ -1143,6 +1192,7 @@ begin
         sReg3    <= CO_TOKEN_NONE;
         sReg3V   <= '0';
         sReg3Eoi <= '0';
+        sReg3Par <= '0';
       elsif (sCE3 = '1') then
         v      := sReg2;
         v.Aq   := sS3Aq;
@@ -1176,6 +1226,7 @@ begin
         sReg3    <= v;
         sReg3V   <= sReg2V;
         sReg3Eoi <= sReg2Eoi;
+        sReg3Par <= sReg2Par;
       end if;
     end if;
 
