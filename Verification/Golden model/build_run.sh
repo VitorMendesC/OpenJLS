@@ -100,29 +100,53 @@ done
 ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$HERE/$TB.vhd"
 ghdl -e "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
 
-# 4. Per-image: mint golden with CharLS, run OpenJLS, compare (in-TB byte check).
-#    All 8-bit, so BITNESS stays at the TB default (8) — no runtime override.
-IMAGES=(TEST8R TEST8G TEST8B TEST8GR4 TEST8BS2)
-fail=0
-for img in "${IMAGES[@]}"; do
+# 4. Per-image: discover normalized PGMs in Images/, mint the golden with
+#    CharLS, run OpenJLS, byte-compare (in-TB). BITNESS is derived from each
+#    image's maxval (255 => 8, 65535 => 16). Images above MAX_MP megapixels are
+#    skipped to keep GHDL sim time bounded — override e.g. MAX_MP=4 ./build_run.sh
+#    Populate Images/ with ./prepare_images.sh (fetch curated sets and/or drop
+#    in your own images, any format/color — normalize.py folds them in).
+PREP="$HERE/imageprep"
+IMAGES_DIR="$HERE/Images"
+MAX_MP="${MAX_MP:-0.5}"
+
+shopt -s nullglob
+PGMS=("$IMAGES_DIR"/*.pgm)
+shopt -u nullglob
+if [ "${#PGMS[@]}" -eq 0 ]; then
+  echo "No images in $IMAGES_DIR — run ./prepare_images.sh first." >&2
+  exit 1
+fi
+
+pass=0; fail=0; skip=0
+for pgm in "${PGMS[@]}"; do
+  stem="$(basename "${pgm%.pgm}")"
+  read -r W H MX BITS < <(python3 "$PREP/pgm_info.py" "$pgm")
+  mp=$(awk -v w="$W" -v h="$H" 'BEGIN{printf "%.3f", w*h/1e6}')
   echo "=============================================================="
-  echo "Image: $img"
-  "$CLI" encode "$REF_DIR/$img.PGM" "$GOLDEN/${img}_charls.jls" >/dev/null
+  if awk -v mp="$mp" -v cap="$MAX_MP" 'BEGIN{exit !(mp>cap)}'; then
+    echo "Image: $stem (${W}x${H}, ${mp} MP, ${BITS}-bit) — SKIP (> ${MAX_MP} MP cap)"
+    skip=$((skip + 1)); continue
+  fi
+  echo "Image: $stem (${W}x${H}, ${mp} MP, ${BITS}-bit)"
+  "$CLI" encode "$pgm" "$GOLDEN/${stem}_charls.jls" >/dev/null
   if ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" \
+      --ieee-asserts=disable \
       -gREPO_ROOT="$ROOT/" \
-      -gPGM_PATH="Verification/T87 conformance/Reference Images/$img.PGM" \
-      -gJLS_PATH="Verification/Golden model/Output/Golden/${img}_charls.jls" \
-      -gOUT_PATH="Verification/Golden model/Output/OpenJLS/${img}_OPENJLS.jls"; then
-    echo "$img: PASS"
+      -gPGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
+      -gJLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
+      -gOUT_PATH="Verification/Golden model/Output/OpenJLS/${stem}_OPENJLS.jls" \
+      -gBITNESS="$BITS"; then
+    echo "$stem: PASS"; pass=$((pass + 1))
   else
-    echo "$img: FAIL"
-    fail=1
+    echo "$stem: FAIL"; fail=$((fail + 1))
   fi
 done
 
 echo "=============================================================="
+echo "Golden-model suite: PASS=$pass FAIL=$fail SKIP=$skip (cap ${MAX_MP} MP)"
 if [ "$fail" -ne 0 ]; then
   echo "Golden-model suite: FAIL"
   exit 1
 fi
-echo "Golden-model suite: PASS (all images)"
+echo "Golden-model suite: PASS"
