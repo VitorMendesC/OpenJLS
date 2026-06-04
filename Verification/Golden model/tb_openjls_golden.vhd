@@ -60,8 +60,13 @@ architecture bench of tb_openjls_golden is
 
   -- Test configuration
   constant CLK_PERIOD            : time     := 10 ns;
-  constant MAX_IMAGE_WIDTH       : positive := 4096;
-  constant MAX_IMAGE_HEIGHT      : positive := 4096;
+  -- DUT architectural maximum (openjls_top caps both at 65536). The line buffer
+  -- is the only memory that scales with width and is ~one row, so sizing to the
+  -- max is cheap; full-image pixel/byte buffers are heap-allocated to the actual
+  -- image (see below). This lets the suite run the largest images in the set
+  -- (and ~100 MB-class images) without an artificial width/height cap.
+  constant MAX_IMAGE_WIDTH       : positive := 65536;
+  constant MAX_IMAGE_HEIGHT      : positive := 65536;
   constant OUT_WIDTH             : natural  := 64;
   constant BYTES_PER_WORD        : natural  := OUT_WIDTH / 8;
 
