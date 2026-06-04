@@ -77,10 +77,10 @@ entity byte_stuffer is
   port (
     iClk                : in    std_logic;
     iRst                : in    std_logic;
-    iStall              : in    std_logic;
+    iStall              : in    std_logic;                                -- Acts as oReady, always ready to receive data unless stalled
     iWord               : in    std_logic_vector(IN_WIDTH - 1 downto 0);
     iWordValid          : in    std_logic;
-    iValidLen           : in    unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+    iWordValidLen       : in    unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
     iFlush              : in    std_logic;
     oWord               : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
     oWordValid          : out   std_logic;
@@ -107,8 +107,7 @@ architecture behavioral of byte_stuffer is
 
   -- FIFO entry layout (LSB-first):
   --   bit  [0]              : last_flag
-  --   bits [1 .. FIFO_BITS] : data (MSB-first packed bytes; last word is
-  --                           zero-padded below the valid region)
+  --   bits [1 .. FIFO_BITS] : data
   constant LAST_POS               : natural := 0;
   constant DATA_LSB               : natural := 1;
   constant FIFO_WIDTH             : natural := FIFO_BITS + 1;
@@ -129,12 +128,11 @@ architecture behavioral of byte_stuffer is
   constant HOLD_BITS              : natural := HOLD_BYTES * 8;
 
   -- Signals ---------------------------------------------------------------------
-  -- Input skid (bit_packer -> stage 1)
-  signal sInSkidWord                  : std_logic_vector(IN_WIDTH - 1 downto 0);
-  signal sInSkidValidLen              : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
-  signal sInSkidFull                 : std_logic;
-  signal sInSkidFlush                 : std_logic;
-  signal sInSkidDrain                  : std_logic;
+  -- Input register
+  signal sWord                    : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal sWordValidLen            : unsigned(log2ceil(IN_WIDTH + 1) - 1 downto 0);
+  signal sWordValid               : std_logic;
+  signal sFlush                   : std_logic;
 
   -- Stage 1 accumulator
   signal sAccumBuffer             : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -183,6 +181,7 @@ architecture behavioral of byte_stuffer is
 
 begin
 
+  -- ASSERTIONS --------------------------------------------------------------------
   assert OUT_BYTES_PER_CYCLE = 4
     report "byte_stuffer: OUT_BYTES_PER_CYCLE must be 4 (stuffing arrays are hardcoded to 4 lanes)"
     severity failure;
@@ -191,6 +190,11 @@ begin
     report "byte_stuffer: BURST_DEPTH must exceed STALL_CUSHION_ENTRIES"
     severity failure;
 
+  assert not (sFifoInValid = '1' and sFifoInReady = '0')
+    report "byte_stuffer: FIFO write dropped - AlmFull cushion undersized vs stall latency"
+    severity failure;
+  ---------------------------------------------------------------------------------
+
   oWord       <= sOutWordReg;
   oWordValid  <= sOutValidReg;
   oValidBytes <= sOutBytesValidReg;
@@ -198,39 +202,30 @@ begin
   oAlmostFull <= sFifoAlmFull;
 
   -------------------------------------------------------------------------------------------------------------------------
-  -- INPUT SKID
+  -- INPUT REGISTER
   -------------------------------------------------------------------------------------------------------------------------
-  -- Helps timing; iStall is intentionally NOT registered; Works as a skid buffer
+  -- Retimes bit_packer output. Latches only on iStall='0' (bit_packer holds its
+  -- output across a stall, so one latch == one consume). Not a skid: the
+  -- accumulator can't backpressure, so iStall is the only legal gate.
 
-  sInSkidDrain <= '1' when sInSkidFull = '1'
-                      and iStall = '0'
-                      and sFlushPending = '0'
-                      and sFifoFull = '0' else
-             '0';
-
-  input_skid_proc : process (iClk) is
+  input_reg_proc : process (iClk) is
   begin
 
     if rising_edge(iClk) then
       if (iRst = '1') then
-        sInSkidWord     <= (others => '0');
-        sInSkidValidLen <= (others => '0');
-        sInSkidFull    <= '0';
-        sInSkidFlush    <= '0';
-      -- iStall gate: never pull a new word from the bit_packer while stalled.
-      -- The bit_packer holds its output for the whole stall and only advances
-      -- on the release edge, so latching an empty skid mid-stall captures a
-      -- word the bit_packer then re-presents at release -> the same token gets
-      -- written twice. Latching only when iStall='0' keeps it single-consumed.
-      elsif (iStall = '0' and (sInSkidFull = '0' or sInSkidDrain = '1')) then
-        sInSkidWord     <= iWord;
-        sInSkidValidLen <= iValidLen;
-        sInSkidFull    <= iWordValid;
-        sInSkidFlush    <= iFlush;
+        sWord         <= (others => '0');
+        sWordValidLen <= (others => '0');
+        sWordValid    <= '0';
+        sFlush        <= '0';
+      elsif (iStall = '0') then
+        sWord         <= iWord;
+        sWordValidLen <= iWordValidLen;
+        sWordValid    <= iWordValid;
+        sFlush        <= iFlush;
       end if;
     end if;
 
-  end process input_skid_proc;
+  end process input_reg_proc;
 
   -------------------------------------------------------------------------------------------------------------------------
   -- STAGE 1: Accumulator
@@ -249,7 +244,6 @@ begin
     variable vFlushValidBits      : natural range 0 to FIFO_BITS;
     variable vValidLenInt         : natural;
     variable vFlushPending        : std_logic;
-    variable vAccept              : boolean;
     variable vPadBits             : natural;
     variable vLastFlag            : std_logic;
     variable vWide                : std_logic_vector(ACCUM_BITS - 1 downto 0);
@@ -277,9 +271,8 @@ begin
         vAccumCountBitsFlush := to_integer(sAccumCountBitsFlush);
         vFlushBytes          := to_integer(sFlushBytes);
         vFlushValidBits      := to_integer(sFlushValidBits);
-        vValidLenInt         := to_integer(sInSkidValidLen);
+        vValidLenInt         := to_integer(sWordValidLen);
         vFlushPending        := sFlushPending;
-        vAccept              := sFifoFull = '0' and iStall = '0';
 
         sFifoInValid    <= '0';
         sBvQueueInValid <= '0';
@@ -289,9 +282,9 @@ begin
         ---------------------------------------------------------------------------------
         -- Append input bits (MSB-first)
 
-        if (sInSkidFull = '1' and vAccept) then
+        if (sWordValid = '1' and iStall = '0') then
           vWide                                              := (others => '0');
-          vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sInSkidWord;
+          vWide(ACCUM_BITS - 1 downto ACCUM_BITS - IN_WIDTH) := sWord;
           vMaskTop                                           := (others => '0');
 
           for i in 0 to IN_WIDTH - 1 loop
@@ -312,14 +305,11 @@ begin
         -- byte count for the last-drain BV, then pad up to the next
         -- FIFO_BITS multiple so every drain becomes a constant FIFO_BITS
         -- shift downstream.
-        if (sInSkidFlush = '1' and vAccept) then
+        if (sFlush = '1' and iStall = '0') then
           assert vFlushPending = '0'
             report "byte_stuffer: iFlush asserted while a flush is already pending"
             severity failure;
 
-          -- Real entropy bit count of the final word, before any padding.
-          -- This is what stage 3 must account for; the pad bits below must not
-          -- reach the output.
           vFlushValidBits := vAccumCountBits;
 
           -- byte-boundary pad
@@ -339,8 +329,7 @@ begin
 
           vFlushBytes := vAccumCountBits / 8;
 
-          -- FIFO_BITS-multiple "pad"
-          -- Not actually padded with 0, will be discardad on the read side
+          -- FIFO_BITS-multiple pseudo-pad (no bit is written)
           if ((vAccumCountBits mod FIFO_BITS) /= 0) then
             vPadBits        := FIFO_BITS - (vAccumCountBits mod FIFO_BITS);
             vAccumCountBits := vAccumCountBits + vPadBits;
@@ -353,7 +342,11 @@ begin
         ---------------------------------------------------------------------------------
         -- READ from Accumulator to FIFO
         ---------------------------------------------------------------------------------
-        -- Single constant-shift drain.
+        -- Single constant-shift drain
+
+        assert not (sFifoFull = '1' and (vFlushPending = '1' or vAccumCountBits >= FIFO_BITS))
+          report "byte_stuffer: FIFO full but accumulator didn't stall"
+          severity failure;
 
         if (sFifoFull = '0') then
           if (vFlushPending = '1') then
