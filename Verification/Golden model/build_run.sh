@@ -40,6 +40,9 @@ echo "CharLS gate: reproduces official T16E0.JLS byte-exact OK"
 
 # -frelaxed: OpenLogic uses shared variables of non-protected types.
 STD_FLAGS=(--std=08 -frelaxed -P"$WORK_LIB")
+# Native (LLVM/GCC) backends generate code at analyze/elaborate time; -O2 gives
+# a large runtime speedup over the mcode JIT. Applied to -a/-e only, not -r.
+OPT_FLAGS=(-O2)
 
 # 1. OpenLogic base (compile order matters — dependency chain)
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
@@ -55,7 +58,7 @@ OL_FILES=(
   olo_base_fifo_sync.vhd
 )
 for f in "${OL_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" --work=openlogic_base --workdir="$WORK_LIB" "$OL_SRC/$f"
+  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=openlogic_base --workdir="$WORK_LIB" "$OL_SRC/$f"
 done
 
 # 2. Project sources (Common first, openjls_top last)
@@ -93,12 +96,12 @@ SRC_FILES=(
   openjls_top.vhd
 )
 for f in "${SRC_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
+  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
 done
 
 # 3. Golden-model TB
-ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$HERE/$TB.vhd"
-ghdl -e "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
+ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$HERE/$TB.vhd"
+ghdl -e "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
 
 # 4. Per-image: discover normalized PGMs in Images/, mint the golden with
 #    CharLS, run OpenJLS, byte-compare (in-TB). BITNESS is derived from each
@@ -159,7 +162,7 @@ run_image() {
     echo "[t$w] FAIL $stem (charls encode)"; echo "$stem" >>"$TMPD/failures"; return 1
   fi
   if ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" \
-      --ieee-asserts=disable \
+      --ieee-asserts=disable --max-stack-alloc=0 \
       -gREPO_ROOT="$ROOT/" \
       -gPGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
       -gJLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
