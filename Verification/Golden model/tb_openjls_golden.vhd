@@ -65,14 +65,18 @@ architecture bench of tb_openjls_golden is
   constant OUT_WIDTH             : natural  := 64;
   constant BYTES_PER_WORD        : natural  := OUT_WIDTH / 8;
 
-  -- Pixel buffer cap (naturals). Holds the largest test image; asserted below.
-  constant PIX_CAP               : natural := 262144;
-
-  -- Buffers
+  -- Buffers are heap-allocated at runtime to fit the actual image, so there is
+  -- no fixed pixel/byte ceiling: the suite scales to large (e.g. satellite)
+  -- images, bounded only by the DUT's MAX_IMAGE_WIDTH/HEIGHT (asserted in
+  -- load_pgm). Pointers are sized once the PGM header / golden length is known.
   type pixel_array_t is array (natural range <>) of natural;
   type byte_array_t is array (natural range <>) of std_logic_vector(7 downto 0);
+  type pixel_ptr_t is access pixel_array_t;
+  type byte_ptr_t is access byte_array_t;
 
-  constant COLLECT_CAP           : natural := 262144; -- output cap, plenty for the test set x2
+  -- Output headroom over the expected 2x reference length, so an encoder that
+  -- overproduces is captured (and flagged) instead of silently truncated.
+  constant COLLECT_MARGIN        : natural := 4096;
 
   -- DUT ports
   signal iClk                    : std_logic;
@@ -97,7 +101,7 @@ architecture bench of tb_openjls_golden is
   signal sBpReq                  : std_logic := '0';
 
   -- Collection
-  shared variable collected      : byte_array_t(0 to COLLECT_CAP - 1);
+  shared variable collected      : byte_ptr_t;  -- allocated by stim before feeding
   shared variable collectedCount : natural;
   shared variable lastCount      : natural;
 
@@ -302,8 +306,8 @@ begin
         for i in 0 to BYTES_PER_WORD - 1 loop
 
           if (oKeep(BYTES_PER_WORD - 1 - i) = '1') then
-            if (collectedCount < collected'length) then
-              collected(collectedCount) := oData(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
+            if (collectedCount < collected.all'length) then
+              collected.all(collectedCount) := oData(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
             end if;
             collectedCount := collectedCount + 1;
           end if;
@@ -359,8 +363,8 @@ begin
   -- Stimulus
   stim : process is
 
-    variable pixels : pixel_array_t(0 to PIX_CAP - 1);
-    variable refbuf : byte_array_t(0 to COLLECT_CAP - 1);
+    variable pixels : pixel_ptr_t;
+    variable refbuf : byte_ptr_t;
     variable refLen : natural;
     variable nPix   : natural;
 
@@ -427,12 +431,10 @@ begin
              " maxval=" & integer'image(mx);
 
       np := w * h;
-      assert np <= PIX_CAP
-        report "PGM pixel count exceeds PIX_CAP"
-        severity failure;
       assert w <= MAX_IMAGE_WIDTH and h <= MAX_IMAGE_HEIGHT
         report "Test image exceeds MAX_IMAGE_WIDTH/HEIGHT"
         severity failure;
+      pixels := new pixel_array_t(0 to np - 1);
       assert mx = (2 ** BITNESS) - 1
         report "PGM maxval does not match BITNESS"
         severity failure;
@@ -458,7 +460,7 @@ begin
         assert pix <= mx
           report "PGM: pixel exceeds maxval"
           severity failure;
-        pixels(i) := pix;
+        pixels.all(i) := pix;
 
       end loop;
 
@@ -480,21 +482,32 @@ begin
 
     begin
 
+      -- Pass 1: count bytes so refbuf can be sized exactly. Pass 2: read them.
       file_open(f, path, read_mode);
+      n := 0;
 
       loop
 
         read_byte(f, b, eof);
         exit when eof;
-        assert n < refbuf'length
-          report "Reference JLS exceeds buffer"
-          severity failure;
-        refbuf(n) := b;
-        n         := n + 1;
+        n := n + 1;
 
       end loop;
 
+      file_close(f);
+
       refLen := n;
+      refbuf := new byte_array_t(0 to n - 1);
+
+      file_open(f, path, read_mode);
+
+      for i in 0 to n - 1 loop
+
+        read_byte(f, b, eof);
+        refbuf.all(i) := b;
+
+      end loop;
+
       file_close(f);
       report "Reference JLS bytes=" & integer'image(refLen);
 
@@ -513,7 +526,7 @@ begin
 
       for i in 0 to n - 1 loop
 
-        write_byte(f, collected(i));
+        write_byte(f, collected.all(i));
 
       end loop;
 
@@ -527,7 +540,7 @@ begin
 
       for i in 0 to nPix - 1 loop
 
-        iPixel <= std_logic_vector(to_unsigned(pixels(i), BITNESS));
+        iPixel <= std_logic_vector(to_unsigned(pixels.all(i), BITNESS));
         iValid <= '1';
         wait until oReady = '1' and rising_edge(iClk);
 
@@ -563,12 +576,12 @@ begin
 
       for i in 0 to refLen - 1 loop
 
-        if (base + i < collectedCount) then
-          if (collected(base + i) /= refbuf(i)) then
+        if (base + i < collectedCount and base + i < collected.all'length) then
+          if (collected.all(base + i) /= refbuf.all(i)) then
             if (logged < MAX_DIFF_LOG) then
               report tag & " byte " & integer'image(i) &
-                     " mismatch: exp=" & hex2(refbuf(i)) &
-                     " got=" & hex2(collected(base + i))
+                     " mismatch: exp=" & hex2(refbuf.all(i)) &
+                     " got=" & hex2(collected.all(base + i))
                 severity error;
               logged := logged + 1;
             end if;
@@ -611,6 +624,9 @@ begin
 
     report "Loading golden JLS: " & FULL_JLS_PATH;
     load_jls(FULL_JLS_PATH);
+
+    -- Size the output buffer to the expected back-to-back length (+margin).
+    collected := new byte_array_t(0 to 2 * refLen + COLLECT_MARGIN - 1);
 
     do_reset;
 
