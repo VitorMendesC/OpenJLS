@@ -242,6 +242,7 @@ begin
     variable vAccumCountBitsFlush : natural range 0 to ACCUM_BITS;
     variable vFlushBytes          : natural range 0 to 2 * FIFO_BYTES;
     variable vFlushValidBits      : natural range 0 to FIFO_BITS;
+    variable vFlushRawBits        : natural range 0 to ACCUM_BITS;
     variable vValidLenInt         : natural;
     variable vFlushPending        : std_logic;
     variable vPadBits             : natural;
@@ -310,7 +311,11 @@ begin
             report "byte_stuffer: iFlush asserted while a flush is already pending"
             severity failure;
 
-          vFlushValidBits := vAccumCountBits;
+          -- Raw valid-bit count at flush (before any padding). The valid bits
+          -- of the final FIFO word are derived from this once the FIFO_BITS pad
+          -- is known (below) — using the full count here is only correct for a
+          -- single-word flush and overflows on a multi-word flush.
+          vFlushRawBits := vAccumCountBits;
 
           -- byte-boundary pad
           if ((vAccumCountBits mod 8) /= 0) then
@@ -336,7 +341,13 @@ begin
           end if;
 
           vAccumCountBitsFlush := vAccumCountBits;
-          vFlushPending        := '1';
+
+          -- Real bits carried by the final FIFO word: the raw bits falling in
+          -- the last FIFO_BITS slice. Single-word flush -> equals vFlushRawBits;
+          -- multi-word flush -> the remainder, always in (0, FIFO_BITS].
+          vFlushValidBits := vFlushRawBits + FIFO_BITS - vAccumCountBitsFlush;
+
+          vFlushPending := '1';
         end if;
 
         ---------------------------------------------------------------------------------
