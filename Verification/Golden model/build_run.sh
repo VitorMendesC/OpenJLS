@@ -106,9 +106,19 @@ ghdl -e "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
 #    skipped to keep GHDL sim time bounded — override e.g. MAX_MP=4 ./build_run.sh
 #    Populate Images/ with ./prepare_images.sh (fetch curated sets and/or drop
 #    in your own images, any format/color — normalize.py folds them in).
+#
+#    GHDL's runtime is single-threaded, so the per-image runs are fanned out
+#    across NUMBER_OF_THREADS processes (default 1). Build/elaboration above is
+#    shared; ghdl -r only reads the work library, and every run writes a unique
+#    per-image golden/output, so concurrent runs are independent. Eligible images
+#    are sharded by file size (LPT greedy) so each worker gets a similar byte
+#    budget — e.g. 100 MB of images over 4 threads ≈ 25 MB each.
 PREP="$HERE/imageprep"
 IMAGES_DIR="$HERE/Images"
 MAX_MP="${MAX_MP:-0.5}"
+NUMBER_OF_THREADS="${NUMBER_OF_THREADS:-1}"
+LOGD="$HERE/Output/logs"
+mkdir -p "$LOGD"
 
 shopt -s nullglob
 PGMS=("$IMAGES_DIR"/*.pgm)
@@ -118,34 +128,98 @@ if [ "${#PGMS[@]}" -eq 0 ]; then
   exit 1
 fi
 
-pass=0; fail=0; skip=0
+# Eligible images (under the MP cap), tagged with file size for balancing.
+skip=0
+ELIG=()   # entries: "<size_bytes>\t<pgm_path>\t<bits>"
 for pgm in "${PGMS[@]}"; do
   stem="$(basename "${pgm%.pgm}")"
   read -r W H MX BITS < <(python3 "$PREP/pgm_info.py" "$pgm")
   mp=$(awk -v w="$W" -v h="$H" 'BEGIN{printf "%.3f", w*h/1e6}')
-  echo "=============================================================="
   if awk -v mp="$mp" -v cap="$MAX_MP" 'BEGIN{exit !(mp>cap)}'; then
-    echo "Image: $stem (${W}x${H}, ${mp} MP, ${BITS}-bit) — SKIP (> ${MAX_MP} MP cap)"
+    echo "SKIP $stem (${W}x${H}, ${mp} MP > ${MAX_MP} cap)"
     skip=$((skip + 1)); continue
   fi
-  echo "Image: $stem (${W}x${H}, ${mp} MP, ${BITS}-bit)"
-  "$CLI" encode "$pgm" "$GOLDEN/${stem}_charls.jls" >/dev/null
+  ELIG+=("$(stat -c%s "$pgm")"$'\t'"$pgm"$'\t'"$BITS")
+done
+NELIG="${#ELIG[@]}"
+
+# Clamp worker count to [1, NELIG].
+NT="$NUMBER_OF_THREADS"
+[ "$NT" -lt 1 ] && NT=1
+[ "$NELIG" -gt 0 ] && [ "$NT" -gt "$NELIG" ] && NT="$NELIG"
+
+TMPD="$(mktemp -d)"
+trap 'rm -rf "$TMPD"' EXIT
+
+# One image: mint golden, run the DUT, byte-compare (log to $LOGD/<stem>.log).
+run_image() {
+  local w="$1" pgm="$2" bits="$3" stem
+  stem="$(basename "${pgm%.pgm}")"
+  if ! "$CLI" encode "$pgm" "$GOLDEN/${stem}_charls.jls" >"$LOGD/$stem.log" 2>&1; then
+    echo "[t$w] FAIL $stem (charls encode)"; echo "$stem" >>"$TMPD/failures"; return 1
+  fi
   if ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" \
       --ieee-asserts=disable \
       -gREPO_ROOT="$ROOT/" \
       -gPGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
       -gJLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
       -gOUT_PATH="Verification/Golden model/Output/OpenJLS/${stem}_OPENJLS.jls" \
-      -gBITNESS="$BITS"; then
-    echo "$stem: PASS"; pass=$((pass + 1))
-  else
-    echo "$stem: FAIL"; fail=$((fail + 1))
+      -gBITNESS="$bits" >>"$LOGD/$stem.log" 2>&1; then
+    echo "[t$w] PASS $stem"; return 0
   fi
-done
+  echo "[t$w] FAIL $stem"; echo "$stem" >>"$TMPD/failures"; return 1
+}
+
+# A worker drains its assigned shard, tallying pass/fail to $TMPD/wN.res.
+run_worker() {
+  local w="$1" wpass=0 wfail=0 pgm bits
+  while IFS=$'\t' read -r pgm bits; do
+    [ -z "$pgm" ] && continue
+    if run_image "$w" "$pgm" "$bits"; then wpass=$((wpass + 1)); else wfail=$((wfail + 1)); fi
+  done < "$TMPD/w$w.list"
+  echo "$wpass $wfail" > "$TMPD/w$w.res"
+}
+
+pass=0; fail=0
+if [ "$NELIG" -gt 0 ]; then
+  # LPT greedy balance: assign largest images first to the least-loaded worker.
+  declare -a LOAD
+  for ((w = 0; w < NT; w++)); do LOAD[w]=0; : > "$TMPD/w$w.list"; done
+  while IFS=$'\t' read -r sz pgm bits; do
+    min=0
+    for ((w = 1; w < NT; w++)); do
+      [ "${LOAD[w]}" -lt "${LOAD[min]}" ] && min=$w
+    done
+    printf '%s\t%s\n' "$pgm" "$bits" >> "$TMPD/w$min.list"
+    LOAD[min]=$((LOAD[min] + sz))
+  done < <(printf '%s\n' "${ELIG[@]}" | sort -t$'\t' -k1,1nr)
+
+  echo "Running $NELIG image(s) across $NT thread(s), balanced by size:"
+  for ((w = 0; w < NT; w++)); do
+    printf '  t%d: %d image(s), %s MB\n' "$w" "$(wc -l < "$TMPD/w$w.list")" \
+      "$(awk -v b="${LOAD[w]}" 'BEGIN{printf "%.2f", b/1048576}')"
+  done
+  echo "=============================================================="
+
+  for ((w = 0; w < NT; w++)); do run_worker "$w" & done
+  wait
+
+  for ((w = 0; w < NT; w++)); do
+    [ -f "$TMPD/w$w.res" ] || continue
+    read -r wp wf < "$TMPD/w$w.res"
+    pass=$((pass + wp)); fail=$((fail + wf))
+  done
+fi
 
 echo "=============================================================="
-echo "Golden-model suite: PASS=$pass FAIL=$fail SKIP=$skip (cap ${MAX_MP} MP)"
+echo "Golden-model suite: PASS=$pass FAIL=$fail SKIP=$skip (cap ${MAX_MP} MP, ${NT} thread(s))"
 if [ "$fail" -ne 0 ]; then
+  if [ -f "$TMPD/failures" ]; then
+    echo "Failing images (logs under $LOGD):"
+    while IFS= read -r s; do
+      echo "  -- $s"; grep -iE "RESULT|mismatch|error" "$LOGD/$s.log" 2>/dev/null | head -4 | sed 's/^/     /' || true
+    done < "$TMPD/failures"
+  fi
   echo "Golden-model suite: FAIL"
   exit 1
 fi
