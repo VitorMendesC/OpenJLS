@@ -1458,7 +1458,7 @@ begin
       iStall              => sStallLogic,
       iWord               => sBpWord,
       iWordValid          => sBpWordV,
-      iValidLen           => sBpValidLen,
+      iWordValidLen       => sBpValidLen,
       iFlush              => sBsFlush,
       oWord               => sBsWord,
       oWordValid          => sBsWordV,
