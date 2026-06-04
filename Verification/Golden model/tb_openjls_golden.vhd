@@ -333,7 +333,12 @@ begin
   -- release. Re-arms once sBpReq returns low.
   bp_ctrl : process is
 
-    constant BP_TIMEOUT : natural := 100000; -- safety cap waiting for oReady low
+    -- The output FIFO fills only as fast as the encoder emits bytes; for a highly
+    -- compressible image that can take most of the image's pixels (~1 cycle each)
+    -- to accumulate, so the wait for oReady to drop must scale with image size.
+    -- 2x pixel count + a fixed floor covers feed + pipeline + FIFO latency.
+    variable bp_timeout : natural;
+    constant BP_FLOOR   : natural := 100000;  -- safety floor for tiny images
     constant BP_EXTRA   : natural := 8;       -- extra fully-stalled cycles after the stall lands
 
   begin
@@ -343,8 +348,9 @@ begin
 
     if (sBpReq = '1') then
       iReady <= '0';
+      bp_timeout := BP_FLOOR + 2 * sImgW * sImgH;
 
-      for i in 0 to BP_TIMEOUT loop
+      for i in 0 to bp_timeout loop
 
         wait until rising_edge(iClk);
         exit when oReady = '0';
