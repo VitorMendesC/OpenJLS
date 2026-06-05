@@ -13,6 +13,8 @@ Verification/OSVVM/osvvm-lib/
 Verification/OSVVM/tb_support-lib/
 Verification/OSVVM/work-lib/
 Verification/OSVVM/OsvvmLibraries/
+# elaborated TB executables (ghdl -e output lands in Verification/OSVVM/)
+Verification/OSVVM/tb_*_osvvm
 
 # GHDL compile cache
 Verification/T87 conformance/work-lib/

@@ -19,6 +19,10 @@ fi
 mkdir -p "$SUPPORT_LIB" "$WORK_LIB"
 
 STD_FLAGS=(--std=08 -frelaxed -P"$OSVVM_LIB" -P"$SUPPORT_LIB" -P"$WORK_LIB")
+# LLVM/GCC backend optimization for analyze + elaborate (not run); matches the
+# golden flow. -r instead heap-allocates large stack objects (LLVM 128 kB cap).
+OPT_FLAGS=(-O2)
+RUN_FLAGS=(--max-stack-alloc=0 --ieee-asserts=disable)
 
 # 1. OpenLogic base
 OL_LIB="$WORK_LIB"
@@ -35,7 +39,7 @@ OL_FILES=(
   olo_base_fifo_sync.vhd
 )
 for f in "${OL_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" --work=openlogic_base --workdir="$OL_LIB" "$OL_SRC/$f"
+  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=openlogic_base --workdir="$OL_LIB" "$OL_SRC/$f"
 done
 
 # 2. Project sources
@@ -73,18 +77,18 @@ SRC_FILES=(
   openjls_top.vhd
 )
 for f in "${SRC_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
+  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
 done
 
 # 3. Support package (own library so TBs can `library tb_support`)
-ghdl -a "${STD_FLAGS[@]}" --work=tb_support --workdir="$SUPPORT_LIB" \
+ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=tb_support --workdir="$SUPPORT_LIB" \
   "$HERE/Support/tb_support_pkg.vhd"
 
 # 4. Module TBs
 for f in "$HERE"/Modules/*.vhd; do
-  ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$f"
+  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$f"
 done
 
 # 5. Elaborate + run
-ghdl -e "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
-ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
+ghdl -e "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
+ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" "${RUN_FLAGS[@]}" "${@:2}"
