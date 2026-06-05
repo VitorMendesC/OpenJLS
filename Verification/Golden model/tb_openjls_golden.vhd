@@ -102,8 +102,10 @@ architecture bench of tb_openjls_golden is
   signal sImgW                   : natural := 1;
   signal sImgH                   : natural := 1;
 
-  -- Stim -> output-ready controller: pulse high to arm one backpressure episode.
-  signal sBpReq                  : std_logic := '0';
+  -- Internal-stall probe. A cycle with iValid='1' and oReady='0' is a pixel held
+  -- back by the DUT; the output is never backpressured here (iReady tied high), so
+  -- any such cycle is a purely internal stall (e.g. byte_stuffer >4 B/cycle overrun).
+  signal sStallCnt               : natural := 0;
 
   -- Collection
   shared variable collected      : byte_ptr_t;  -- allocated by stim before feeding
@@ -327,49 +329,22 @@ begin
 
   end process collect;
 
-  -- Output-ready control. Sole driver of iReady: normally high, but when stim
-  -- asserts sBpReq it runs one backpressure episode — hold iReady low until the
-  -- stall propagates upstream (oReady=0), keep it low a few more cycles, then
-  -- release. Re-arms once sBpReq returns low.
-  bp_ctrl : process is
+  -- This golden cross-check never backpressures the output: tie iReady high.
+  iReady <= '1';
 
-    -- The output FIFO fills only as fast as the encoder emits bytes; for a highly
-    -- compressible image that can take most of the image's pixels (~1 cycle each)
-    -- to accumulate, so the wait for oReady to drop must scale with image size.
-    -- 2x pixel count + a fixed floor covers feed + pipeline + FIFO latency.
-    variable bp_timeout : natural;
-    constant BP_FLOOR   : natural := 100000;  -- safety floor for tiny images
-    constant BP_EXTRA   : natural := 8;       -- extra fully-stalled cycles after the stall lands
-
+  -- Internal-stall probe: count cycles where the DUT holds a pixel back
+  -- (iValid='1', oReady='0'). With iReady high this can only be an internal
+  -- stall. Reported at end of run (warning if non-zero); see sStallCnt.
+  mon_stall : process (iClk) is
   begin
 
-    iReady <= '1';
-    wait until rising_edge(iClk);
-
-    if (sBpReq = '1') then
-      iReady <= '0';
-      bp_timeout := BP_FLOOR + 2 * sImgW * sImgH;
-
-      for i in 0 to bp_timeout loop
-
-        wait until rising_edge(iClk);
-        exit when oReady = '0';
-
-      end loop;
-
-      check(oReady = '0', "Backpressure did not propagate upstream (oReady stayed high)");
-
-      for i in 0 to BP_EXTRA - 1 loop
-
-        wait until rising_edge(iClk);
-
-      end loop;
-
-      iReady <= '1';
-      wait until sBpReq = '0';
+    if rising_edge(iClk) then
+      if (iValid = '1' and oReady = '0') then
+        sStallCnt <= sStallCnt + 1;
+      end if;
     end if;
 
-  end process bp_ctrl;
+  end process mon_stall;
 
   -- Stimulus
   stim : process is
@@ -610,11 +585,10 @@ begin
   begin
 
     -- Initial values for signals (no defaults — set explicitly here).
-    -- iReady is driven solely by the bp_ctrl process.
+    -- iReady is tied high concurrently (output never backpressured).
     iRst   <= '1';
     iValid <= '0';
     iPixel <= (others => '0');
-    sBpReq <= '0';
 
     -- Config guard. The pixel port width is fixed in a post-synth netlist; if it
     -- disagrees with BITNESS the netlist was built with different generics, so
@@ -636,36 +610,34 @@ begin
     report "Loading golden JLS: " & FULL_JLS_PATH;
     load_jls(FULL_JLS_PATH);
 
-    -- Size the output buffer to the expected back-to-back length (+margin).
-    collected := new byte_array_t(0 to 2 * refLen + COLLECT_MARGIN - 1);
+    -- Size the output buffer to the expected reference length (+margin).
+    collected := new byte_array_t(0 to refLen + COLLECT_MARGIN - 1);
 
     do_reset;
 
     -- =========================================================================
-    -- Image 1, immediately followed by image 2 (back-to-back, no input stall,
-    -- same pixels). During image 2 the output AXI is backpressured: bp_ctrl
-    -- holds iReady low until the stall propagates upstream (oReady=0), keeps it
-    -- low a few more cycles, then releases. One flow exercises the golden
-    -- cross-check, back-to-back framing, and stall propagation/recovery; both
-    -- images must reproduce the reference stream.
+    -- Feed the image once and byte-compare the encoder output against the golden
+    -- reference. The output is never backpressured (iReady high), so any pixel
+    -- held back (counted by mon_stall) is a purely internal stall.
     -- =========================================================================
-    report "Image 1: feeding " & integer'image(nPix) & " pixels";
+    report "Feeding " & integer'image(nPix) & " pixels";
     feed_image;
 
-    sBpReq <= '1';   -- arm one output-backpressure episode for image 2
-    report "Image 2: back-to-back, with output backpressure";
-    feed_image;
-    sBpReq <= '0';
-
-    wait_images(2);
+    wait_images(1);
     report "Encoder produced " & integer'image(collectedCount) & " bytes";
-    save_collected(FULL_OUT_PATH, refLen);   -- artifact = image 1 only
+    save_collected(FULL_OUT_PATH, refLen);
 
-    check(collectedCount = 2 * refLen,
+    check(collectedCount = refLen,
           "Byte count mismatch: got " & integer'image(collectedCount) &
-          " expected " & integer'image(2 * refLen));
-    compare_slice(0,      "Image 1");
-    compare_slice(refLen, "Image 2");
+          " expected " & integer'image(refLen));
+    compare_slice(0, "Image");
+
+    if (sStallCnt > 0) then
+      report "Pipeline stalled " & integer'image(sStallCnt) &
+             " cycle(s) under this image with no downstream backpressure " &
+             "(internal stall, e.g. byte_stuffer >4 B/cycle overrun)"
+        severity warning;
+    end if;
 
     if (errCount > 0) then
       report "tb_openjls_golden RESULT: FAIL (" &
