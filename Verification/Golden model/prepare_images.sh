@@ -36,4 +36,17 @@ fi
 echo "== normalize =="
 python3 "$PREP/normalize.py" "$IMAGES"
 
+# Random 16-bit probe images: deterministic max-entropy noise, several seeds.
+# Built to try to overrun the byte_stuffer's 4 B/cycle cap; the pipeline does NOT
+# stall on them (k-adaptation + buffering hold the sustained rate under the cap),
+# so they serve as a robustness probe and as incompressible/random inputs.
+# Generated after normalize (already in target form; must not be down-converted).
+# See imageprep/gen_stress.py.
+echo "== random 16-bit probes =="
+i=1
+for seed in 0x0FF5 0x1234 0xBEEF; do
+  python3 "$PREP/gen_stress.py" "$IMAGES/synth-rand16_$i.pgm" --seed "$seed"
+  i=$((i + 1))
+done
+
 echo "Images ready: $(find "$IMAGES" -name '*.pgm' | wc -l) PGM(s) in $IMAGES"
