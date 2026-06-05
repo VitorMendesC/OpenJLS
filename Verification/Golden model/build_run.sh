@@ -156,7 +156,7 @@ trap 'rm -rf "$TMPD"' EXIT
 
 # One image: mint golden, run the DUT, byte-compare (log to $LOGD/<stem>.log).
 run_image() {
-  local w="$1" pgm="$2" bits="$3" stem
+  local w="$1" pgm="$2" bits="$3" stem rc st
   stem="$(basename "${pgm%.pgm}")"
   if ! "$CLI" encode "$pgm" "$GOLDEN/${stem}_charls.jls" >"$LOGD/$stem.log" 2>&1; then
     echo "[t$w] FAIL $stem (charls encode)"; echo "$stem" >>"$TMPD/failures"; return 1
@@ -167,9 +167,14 @@ run_image() {
       -gPGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
       -gJLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
       -gOUT_PATH="Verification/Golden model/Output/OpenJLS/${stem}_OPENJLS.jls" \
-      -gBITNESS="$bits" >>"$LOGD/$stem.log" 2>&1; then
-    echo "[t$w] PASS $stem"; return 0
+      -gBITNESS="$bits" >>"$LOGD/$stem.log" 2>&1; then rc=0; else rc=1; fi
+  # Surface the TB's internal-stall warning regardless of pass/fail.
+  st="$(grep -m1 -ao 'Pipeline stalled.*' "$LOGD/$stem.log" 2>/dev/null || true)"
+  if [ -n "$st" ]; then
+    echo "[t$w] STALL $stem: $st"
+    printf '%s\t%s\n' "$stem" "$st" >>"$TMPD/stalls"
   fi
+  if [ "$rc" -eq 0 ]; then echo "[t$w] PASS $stem"; return 0; fi
   echo "[t$w] FAIL $stem"; echo "$stem" >>"$TMPD/failures"; return 1
 }
 
@@ -216,6 +221,10 @@ fi
 
 echo "=============================================================="
 echo "Golden-model suite: PASS=$pass FAIL=$fail SKIP=$skip (cap ${MAX_MP} MP, ${NT} thread(s))"
+if [ -f "$TMPD/stalls" ]; then
+  echo "Internal stalls (pipeline back-pressured with no downstream stall):"
+  while IFS=$'\t' read -r s msg; do echo "  -- $s: $msg"; done < "$TMPD/stalls"
+fi
 if [ "$fail" -ne 0 ]; then
   if [ -f "$TMPD/failures" ]; then
     echo "Failing images (logs under $LOGD):"
