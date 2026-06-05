@@ -42,8 +42,7 @@
 --   Flush protocol (iFlush, single-cycle pulse from upstream on the cycle
 --   the bit_packer presents the image's last word):
 --     - Stage 1 pads its sub-byte residue and tags the final FIFO write
---       with last_flag=1. If the accumulator was already empty, it emits
---       a count=0 sentinel with last_flag=1.
+--       with last_flag=1.
 --     - Stage 3 latches the last_flag when it pops that word. Once the
 --       holding register drains, it inserts a final stuff '0' if the last
 --       payload byte was 0xFF, zero-pads the output accumulator to a byte
@@ -138,7 +137,6 @@ architecture behavioral of byte_stuffer is
   signal sAccumBuffer             : std_logic_vector(ACCUM_BITS - 1 downto 0);
   signal sAccumCountBits          : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
   signal sAccumCountBitsFlush     : unsigned(log2ceil(ACCUM_BITS + 1) - 1 downto 0);
-  signal sFlushBytes              : unsigned(log2ceil(2 * FIFO_BYTES + 1) - 1 downto 0);
   signal sFlushValidBits          : unsigned(LAST_BITS_WIDTH - 1 downto 0);
   signal sFlushPending            : std_logic;
 
@@ -240,7 +238,6 @@ begin
     variable vAccumBuffer         : std_logic_vector(ACCUM_BITS - 1 downto 0);
     variable vAccumCountBits      : natural range 0 to ACCUM_BITS;
     variable vAccumCountBitsFlush : natural range 0 to ACCUM_BITS;
-    variable vFlushBytes          : natural range 0 to 2 * FIFO_BYTES;
     variable vFlushValidBits      : natural range 0 to FIFO_BITS;
     variable vFlushRawBits        : natural range 0 to ACCUM_BITS;
     variable vValidLenInt         : natural;
@@ -259,7 +256,6 @@ begin
         sAccumBuffer         <= (others => '0');
         sAccumCountBits      <= (others => '0');
         sAccumCountBitsFlush <= (others => '0');
-        sFlushBytes          <= (others => '0');
         sFlushValidBits      <= (others => '0');
         sFlushPending        <= '0';
         sFifoInValid         <= '0';
@@ -270,7 +266,6 @@ begin
         vAccumBuffer         := sAccumBuffer;
         vAccumCountBits      := to_integer(sAccumCountBits);
         vAccumCountBitsFlush := to_integer(sAccumCountBitsFlush);
-        vFlushBytes          := to_integer(sFlushBytes);
         vFlushValidBits      := to_integer(sFlushValidBits);
         vValidLenInt         := to_integer(sWordValidLen);
         vFlushPending        := sFlushPending;
@@ -302,10 +297,9 @@ begin
           vAccumCountBits := vAccumCountBits + vValidLenInt;
         end if;
 
-        -- Flush entry: pad sub-byte residue to byte boundary, snapshot the
-        -- byte count for the last-drain BV, then pad up to the next
-        -- FIFO_BITS multiple so every drain becomes a constant FIFO_BITS
-        -- shift downstream.
+        -- Flush entry: pad sub-byte residue to byte boundary, then pad up to
+        -- the next FIFO_BITS multiple so every drain becomes a constant
+        -- FIFO_BITS shift downstream.
         if (sFlush = '1' and iStall = '0') then
           assert vFlushPending = '0'
             report "byte_stuffer: iFlush asserted while a flush is already pending"
@@ -331,8 +325,6 @@ begin
             end loop;
 
           end if;
-
-          vFlushBytes := vAccumCountBits / 8;
 
           -- FIFO_BITS-multiple pseudo-pad (no bit is written)
           if ((vAccumCountBits mod FIFO_BITS) /= 0) then
@@ -376,10 +368,6 @@ begin
             vAccumBuffer         := std_logic_vector(shift_left(unsigned(vAccumBuffer), FIFO_BITS));
             vAccumCountBits      := vAccumCountBits - FIFO_BITS;
             vAccumCountBitsFlush := vAccumCountBitsFlush - FIFO_BITS;
-
-            if (vLastFlag = '0') then
-              vFlushBytes := vFlushBytes - FIFO_BYTES;
-            end if;
           elsif (vAccumCountBits >= FIFO_BITS) then
             sFifoInData  <= vAccumBuffer(ACCUM_BITS - 1 downto ACCUM_BITS - FIFO_BITS) & '0';
             sFifoInValid <= '1';
@@ -392,7 +380,6 @@ begin
         sAccumBuffer         <= vAccumBuffer;
         sAccumCountBits      <= to_unsigned(vAccumCountBits, sAccumCountBits'length);
         sAccumCountBitsFlush <= to_unsigned(vAccumCountBitsFlush, sAccumCountBitsFlush'length);
-        sFlushBytes          <= to_unsigned(vFlushBytes, sFlushBytes'length);
         sFlushValidBits      <= to_unsigned(vFlushValidBits, sFlushValidBits'length);
         sFlushPending        <= vFlushPending;
 
