@@ -110,6 +110,11 @@ rule:
     case: 'lower'
   type_mark_500:
     case: 'lower'
+    # OSVVM protected/record types keep their canonical PascalCase.
+    case_exceptions:
+      - 'RandomPType'
+      - 'CovPType'
+      - 'ScoreBoardPType'
   subtype_501:
     case: 'lower'
   function_017:
@@ -168,9 +173,15 @@ rule:
     case: 'lower'
   use_clause_501:
     case: 'lower'
+    # OSVVM package names keep their canonical PascalCase.
+    case_exceptions:
+      - 'ScoreboardPkg_slv'
   use_clause_502:
     case: 'lower'
   context_ref_500:
     case: 'lower'
   context_ref_501:
     case: 'lower'
+    # OSVVM context keeps its canonical PascalCase.
+    case_exceptions:
+      - 'OsvvmContext'

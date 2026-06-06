@@ -49,65 +49,73 @@ end entity tb_byte_stuffer_osvvm;
 architecture sim of tb_byte_stuffer_osvvm is
 
   -- DUT config -----------------------------------------------------------------
-  constant OUT_BYTES   : natural := 4;
-  constant OUT_WIDTH   : natural := OUT_BYTES * 8;
-  constant BURST_DEPTH : natural := 16;
-  constant VLEN_W      : natural := log2ceil(IN_WIDTH + 1);
-  constant OBYTES_W    : natural := log2ceil(OUT_BYTES + 1);
+  constant OUT_BYTES       : natural := 4;
+  constant OUT_WIDTH       : natural := OUT_BYTES * 8;
+  constant BURST_DEPTH     : natural := 16;
+  constant VLEN_W          : natural := log2ceil(IN_WIDTH + 1);
+  constant OBYTES_W        : natural := log2ceil(OUT_BYTES + 1);
 
   -- Stimulus sizing
-  constant CLK_PERIOD  : time    := CLK_PERIOD_DEFAULT;
-  constant N_RANDOM    : natural := 60;   -- random images
-  constant MAX_BEATS   : natural := 40;   -- beats per random image
+  constant CLK_PERIOD      : time    := CLK_PERIOD_DEFAULT;
+  constant N_RANDOM        : natural := 60; -- random images
+  constant MAX_BEATS       : natural := 40; -- beats per random image
 
   -- DUT interface --------------------------------------------------------------
-  signal clk           : std_logic := '0';
-  signal rst           : std_logic := '1';
-  signal iStall        : std_logic := '0';
-  signal iWord         : std_logic_vector(IN_WIDTH - 1 downto 0)        := (others => '0');
-  signal iWordValid    : std_logic := '0';
-  signal iWordValidLen : unsigned(VLEN_W - 1 downto 0)                  := (others => '0');
-  signal iFlush        : std_logic := '0';
-  signal oWord         : std_logic_vector(OUT_WIDTH - 1 downto 0);
-  signal oWordValid    : std_logic;
-  signal oValidBytes   : unsigned(OBYTES_W - 1 downto 0);
-  signal iReady        : std_logic := '1';
-  signal oAlmostFull   : std_logic;
-  signal oFlushDone    : std_logic;
+  signal clk               : std_logic;
+  signal rst               : std_logic;
+  signal iStall            : std_logic;
+  signal iWord             : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal iWordValid        : std_logic;
+  signal iWordValidLen     : unsigned(VLEN_W - 1 downto 0);
+  signal iFlush            : std_logic;
+  signal oWord             : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal oWordValid        : std_logic;
+  signal oValidBytes       : unsigned(OBYTES_W - 1 downto 0);
+  signal iReady            : std_logic;
+  signal oAlmostFull       : std_logic;
+  signal oFlushDone        : std_logic;
 
   -- TB plumbing ----------------------------------------------------------------
   -- Expected output bytes, pushed in emission order by the driver model.
   shared variable sb       : ScoreBoardPType;
   -- Coverage.
-  shared variable covEmit  : CovPType;   -- bytes emitted per accepted beat (0..4)
-  shared variable covFlush : CovPType;   -- flush terminal type (0..3)
-  shared variable covCross : CovPType;   -- (emitBytes>0) x (oAlmostFull)
+  shared variable covEmit  : CovPType;      -- bytes emitted per accepted beat (0..4)
+  shared variable covFlush : CovPType;      -- flush terminal type (0..3)
+  shared variable covCross : CovPType;      -- (emitBytes>0) x (oAlmostFull)
 
   -- Driver -> monitor image handshake.
-  signal sImagesSent : natural := 0;   -- flushes presented by the driver
-  signal sFlushDone  : natural := 0;   -- oFlushDone beats seen by the monitor
-  signal sDriverDone : boolean := false;
+  signal sImagesSent       : natural;       -- flushes presented by the driver
+  signal sFlushDone        : natural;       -- oFlushDone beats seen by the monitor
+  signal sDriverDone       : boolean;
 
   -- Random upstream-stall enable (ORed with oAlmostFull, driven by stall proc).
-  signal sRandStall  : std_logic := '0';
+  signal sRandStall        : std_logic;
 
   -- Flush-type codes (coverage + sanity).
-  constant FT_EMPTY    : integer := 0;   -- flush with no payload bits
-  constant FT_CLEAN    : integer := 1;   -- byte-aligned, no residue
-  constant FT_RESIDUE  : integer := 2;   -- sub-byte real residue padded
-  constant FT_DANGLING : integer := 3;   -- trailing 0xFF -> stuffed 0x00 byte
+  constant FT_EMPTY        : integer := 0;  -- flush with no payload bits
+  constant FT_CLEAN        : integer := 1;  -- byte-aligned, no residue
+  constant FT_RESIDUE      : integer := 2;  -- sub-byte real residue padded
+  constant FT_DANGLING     : integer := 3;  -- trailing 0xFF -> stuffed 0x00 byte
 
 begin
 
   -----------------------------------------------------------------------------
   -- Clock
   -----------------------------------------------------------------------------
-  clk <= not clk after CLK_PERIOD / 2;
+  clk_proc : process is
+  begin
+
+    clk <= '1';
+    wait for CLK_PERIOD / 2;
+    clk <= '0';
+    wait for CLK_PERIOD / 2;
+
+  end process clk_proc;
 
   -----------------------------------------------------------------------------
   -- DUT
   -----------------------------------------------------------------------------
-  dut : entity work.byte_stuffer
+  dut : entity work.byte_stuffer(behavioral)
     generic map (
       IN_WIDTH            => IN_WIDTH,
       OUT_BYTES_PER_CYCLE => OUT_BYTES,
@@ -115,19 +123,19 @@ begin
       BURST_DEPTH         => BURST_DEPTH
     )
     port map (
-      iClk          => clk,
-      iRst          => rst,
-      iStall        => iStall,
-      iWord         => iWord,
-      iWordValid    => iWordValid,
-      iWordValidLen => iWordValidLen,
-      iFlush        => iFlush,
-      oWord         => oWord,
-      oWordValid    => oWordValid,
-      oValidBytes   => oValidBytes,
-      iReady        => iReady,
-      oAlmostFull   => oAlmostFull,
-      oFlushDone    => oFlushDone
+      iClk                => clk,
+      iRst                => rst,
+      iStall              => iStall,
+      iWord               => iWord,
+      iWordValid          => iWordValid,
+      iWordValidLen       => iWordValidLen,
+      iFlush              => iFlush,
+      oWord               => oWord,
+      oWordValid          => oWordValid,
+      oValidBytes         => oValidBytes,
+      iReady              => iReady,
+      oAlmostFull         => oAlmostFull,
+      oFlushDone          => oFlushDone
     );
 
   -----------------------------------------------------------------------------
@@ -137,6 +145,7 @@ begin
   -----------------------------------------------------------------------------
   stall_proc : process (clk) is
   begin
+
     if rising_edge(clk) then
       if (rst = '1') then
         iStall <= '0';
@@ -144,15 +153,21 @@ begin
         iStall <= oAlmostFull or sRandStall;
       end if;
     end if;
+
   end process stall_proc;
 
   rand_stall_proc : process is
+
     variable rv : RandomPType;
+
   begin
+
     rv.InitSeed("stall");
     sRandStall <= '0';
     wait until rst = '0';
+
     loop
+
       wait until rising_edge(clk);
       -- ~20% extra upstream stall.
       if (rv.DistValInt(((1, 20), (0, 80))) = 1) then
@@ -160,10 +175,14 @@ begin
       else
         sRandStall <= '0';
       end if;
+
       exit when sDriverDone;
+
     end loop;
+
     sRandStall <= '0';
     wait;
+
   end process rand_stall_proc;
 
   -----------------------------------------------------------------------------
@@ -171,22 +190,31 @@ begin
   -- not-ready bursts to fill the FIFO and exercise oAlmostFull / iStall.
   -----------------------------------------------------------------------------
   ready_proc : process is
+
     variable rv    : RandomPType;
     variable burst : integer;
+
   begin
+
     rv.InitSeed("ready");
     iReady <= '1';
     wait until rst = '0';
+
     loop
+
       wait until rising_edge(clk);
       -- 1-in-12 cycles, hold not-ready for a multi-cycle burst.
       if (rv.DistValInt(((1, 1), (0, 11))) = 1) then
         iReady <= '0';
         burst  := rv.RandInt(2, 2 * BURST_DEPTH);
+
         for i in 1 to burst loop
+
           wait until rising_edge(clk);
           exit when sDriverDone;
+
         end loop;
+
         iReady <= '1';
       elsif (rv.DistValInt(((1, 3), (0, 1))) = 1) then
         -- ~75% ready otherwise.
@@ -194,10 +222,14 @@ begin
       else
         iReady <= '0';
       end if;
+
       exit when sDriverDone;
+
     end loop;
+
     iReady <= '1';
     wait;
+
   end process ready_proc;
 
   -----------------------------------------------------------------------------
@@ -207,26 +239,44 @@ begin
   -- end of an image.
   -----------------------------------------------------------------------------
   monitor_proc : process is
-    variable nb     : natural;
-    variable byte   : std_logic_vector(7 downto 0);
-    variable cnt    : natural := 0;
-    variable af     : integer;
+
+    variable nb      : natural;
+    variable byte    : std_logic_vector(7 downto 0);
+    variable cnt     : natural;
+    variable af      : integer;
     variable hasData : integer;
+
   begin
+
+    cnt := 0;
     wait until rst = '0';
+
     loop
+
       wait until rising_edge(clk);
 
       if (oWordValid = '1') then
         nb := to_integer(oValidBytes);
-        if (oAlmostFull = '1') then af := 1; else af := 0; end if;
-        if (nb > 0) then hasData := 1; else hasData := 0; end if;
+        if (oAlmostFull = '1') then
+          af := 1;
+        else
+          af := 0;
+        end if;
+        if (nb > 0) then
+          hasData := 1;
+        else
+          hasData := 0;
+        end if;
         covEmit.ICover(nb);
         covCross.ICover((hasData, af));
+
         for i in 0 to nb - 1 loop
+
           byte := oWord(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
           sb.Check(byte);
+
         end loop;
+
       end if;
 
       if (oFlushDone = '1') then
@@ -236,8 +286,11 @@ begin
       end if;
 
       exit when sDriverDone and sFlushDone = sImagesSent and sb.Empty;
+
     end loop;
+
     wait;
+
   end process monitor_proc;
 
   -----------------------------------------------------------------------------
@@ -250,27 +303,32 @@ begin
     constant ZERO_W : std_logic_vector(IN_WIDTH - 1 downto 0) := (others => '0');
 
     -- Reference FF-stuffer state (one image).
-    variable curByte    : std_logic_vector(7 downto 0) := (others => '0');
-    variable bitsInByte : natural range 0 to 8          := 0;
-    variable anyBits    : boolean                       := false;
-    variable lastEmitFF : boolean                       := false;
-    variable realSince  : boolean                       := false;  -- real bit since last emit
+    variable curByte    : std_logic_vector(7 downto 0);
+    variable bitsInByte : natural range 0 to 8;
+    variable anyBits    : boolean;
+    variable lastEmitFF : boolean;
+    variable realSince  : boolean;       -- real bit since last emit
 
     -- Append one payload bit (MSB-first) and emit expected bytes, stuffing a
     -- '0' after every completed 0xFF byte (the stuff bit becomes the next
     -- byte's MSB, so a stuffed byte can never itself be 0xFF).
-    procedure push_bit (b : std_logic) is
+
+    procedure push_bit (
+      b : std_logic
+    ) is
     begin
+
       curByte(7 - bitsInByte) := b;
       bitsInByte              := bitsInByte + 1;
       anyBits                 := true;
       realSince               := true;
+
       if (bitsInByte = 8) then
         sb.Push(curByte);
         if (curByte = x"FF") then
           lastEmitFF := true;
           realSince  := false;
-          curByte    := (others => '0');   -- stuff '0' at MSB
+          curByte    := (others => '0'); -- stuff '0' at MSB
           bitsInByte := 1;
         else
           lastEmitFF := false;
@@ -278,22 +336,35 @@ begin
           bitsInByte := 0;
         end if;
       end if;
-    end procedure;
+
+    end procedure push_bit;
 
     -- Append the top `len` bits of a word (MSB-first), matching the DUT which
     -- takes the top valid bits of iWord.
-    procedure push_word (w : std_logic_vector; len : natural) is
+
+    procedure push_word (
+      w   : std_logic_vector;
+      len : natural
+    ) is
     begin
+
       for i in 0 to len - 1 loop
+
         push_bit(w(IN_WIDTH - 1 - i));
+
       end loop;
-    end procedure;
+
+    end procedure push_word;
 
     -- Finalize the image at flush: push the padded final byte (if any), record
     -- the terminal type for coverage, and reset for the next image.
+
     procedure finish_image is
+
       variable ft : integer;
+
     begin
+
       if (not anyBits) then
         ft := FT_EMPTY;
       elsif (bitsInByte = 0) then
@@ -305,8 +376,9 @@ begin
       end if;
 
       if (bitsInByte > 0) then
-        sb.Push(curByte);   -- unfilled low bits are already '0' (post-stuffing pad)
+        sb.Push(curByte);                -- unfilled low bits are already '0' (post-stuffing pad)
       end if;
+
       covFlush.ICover(ft);
 
       curByte    := (others => '0');
@@ -314,10 +386,12 @@ begin
       anyBits    := false;
       lastEmitFF := false;
       realSince  := false;
-    end procedure;
+
+    end procedure finish_image;
 
     -- Present one beat and advance only when iStall='0' on a rising edge
     -- (== one DUT latch/consume; bit_packer holds its output across a stall).
+
     procedure send_beat (
       w     : std_logic_vector;
       len   : natural;
@@ -325,70 +399,114 @@ begin
       flush : std_logic
     ) is
     begin
+
       iWord         <= w;
       iWordValidLen <= to_unsigned(len, VLEN_W);
       iWordValid    <= valid;
       iFlush        <= flush;
+
       loop
+
         wait until rising_edge(clk);
         exit when iStall = '0';
+
       end loop;
+
       -- consumed on this edge; update reference model in DUT order (append then flush)
       if (valid = '1') then
         push_word(w, len);
       end if;
+
       if (flush = '1') then
         finish_image;
       end if;
+
       iWordValid <= '0';
       iFlush     <= '0';
-    end procedure;
+
+    end procedure send_beat;
 
     -- One image: random beats; flush rides the LAST valid word (the DUT
     -- contract -- iFlush pulses on the cycle the final word is presented, never
     -- on an empty beat). Then wait for full drain before the next image.
-    procedure send_image (beats : natural) is
+
+    procedure send_image (
+      beats : natural
+    ) is
+
       variable w   : std_logic_vector(IN_WIDTH - 1 downto 0);
       variable len : natural;
+
     begin
+
       for n in 1 to beats loop
+
         -- ~30% all-ones words to manufacture 0xFF output bytes and stuff runs.
         if (rv.DistValInt(((1, 3), (0, 7))) = 1) then
           w := (others => '1');
         else
           w := (others => '0');
+
           for k in 0 to IN_WIDTH / 8 - 1 loop
+
             if (rv.DistValInt(((1, 1), (0, 7))) = 1) then
               w(IN_WIDTH - 1 - k * 8 downto IN_WIDTH - (k + 1) * 8) := x"FF";
             else
-              w(IN_WIDTH - 1 - k * 8 downto IN_WIDTH - (k + 1) * 8) :=
-                std_logic_vector(to_unsigned(rv.RandInt(0, 255), 8));
+              w(IN_WIDTH - 1 - k * 8 downto IN_WIDTH - (k + 1) * 8) := rv.RandSlv(0, 255, 8);
             end if;
+
           end loop;
+
         end if;
+
         len := rv.RandInt(1, IN_WIDTH);
+
         if (n = beats) then
           send_beat(w, len, '1', '1');   -- flush rides the final word
         else
           send_beat(w, len, '1', '0');
         end if;
+
       end loop;
+
       sImagesSent <= sImagesSent + 1;
       -- serialize images: wait for full drain before the next one
       wait until sFlushDone = sImagesSent;
-    end procedure;
+
+    end procedure send_image;
 
     -- Directed beat helper: a single word of `len` valid bits.
-    procedure directed (w : std_logic_vector(IN_WIDTH - 1 downto 0); len : natural) is
+
+    procedure directed (
+      w   : std_logic_vector(IN_WIDTH - 1 downto 0);
+      len : natural
+    ) is
     begin
+
       send_beat(w, len, '1', '1');
       sImagesSent <= sImagesSent + 1;
       wait until sFlushDone = sImagesSent;
-    end procedure;
+
+    end procedure directed;
 
     variable ones : std_logic_vector(IN_WIDTH - 1 downto 0);
     variable wtmp : std_logic_vector(IN_WIDTH - 1 downto 0);
+
   begin
+
+    -- Stim-driven inputs (no signal defaults; assign before reset).
+    iWord         <= ZERO_W;
+    iWordValid    <= '0';
+    iWordValidLen <= (others => '0');
+    iFlush        <= '0';
+
+    -- Reference FF-stuffer state.
+    curByte    := (others => '0');
+    bitsInByte := 0;
+    anyBits    := false;
+    lastEmitFF := false;
+    realSince  := false;
+
     SetAlertLogName("tb_byte_stuffer_osvvm");
     SetLogEnable(PASSED, FALSE);
     sb.SetAlertLogID("byte_stuffer SB");
@@ -401,10 +519,10 @@ begin
     -- (The 0-byte terminal beat only fires after the FIFO has drained, so
     -- 0-byte x almostFull is unreachable and deliberately not a bin.)
     covCross.AddCross(
-      "data x almostFull",
-      GenBin(1, 1, 1),   -- data beat (emitBytes > 0)
-      GenBin(0, 1, 2)    -- oAlmostFull
-    );
+                      "data x almostFull",
+                      GenBin(1, 1, 1),                                                    -- data beat (emitBytes > 0)
+                      GenBin(0, 1, 2)                                                     -- oAlmostFull
+                    );
 
     apply_reset(clk, rst, 6, '1');
     ones := (others => '1');
@@ -419,17 +537,17 @@ begin
     -- word, so the accumulator is never empty at flush.
 
     -- Single non-FF byte, byte-aligned clean end.
-    wtmp := (others => '0');
+    wtmp                                   := (others => '0');
     wtmp(IN_WIDTH - 1 downto IN_WIDTH - 8) := x"5A";
     directed(wtmp, 8);
 
     -- Single 0xFF byte -> trailing stuffed 0x00 (dangling-FF terminal).
-    wtmp := (others => '0');
+    wtmp                                   := (others => '0');
     wtmp(IN_WIDTH - 1 downto IN_WIDTH - 8) := x"FF";
     directed(wtmp, 8);
 
     -- Sub-byte residue (5 real bits) padded post-stuffing.
-    wtmp := (others => '0');
+    wtmp                                   := (others => '0');
     wtmp(IN_WIDTH - 1 downto IN_WIDTH - 5) := "10101";
     directed(wtmp, 5);
 
@@ -441,23 +559,26 @@ begin
     -- final partial beat (regression for the multi-word valid-bits overflow).
     send_beat(ones, IN_WIDTH, '1', '0');
     send_beat(ones, IN_WIDTH, '1', '0');
-    wtmp := (others => '0');
+    wtmp                                    := (others => '0');
     wtmp(IN_WIDTH - 1 downto IN_WIDTH - 12) := x"FF" & "0101";
     directed(wtmp, 12);
 
     -- Back-to-back tiny images (context reset between flushes).
     for n in 1 to 4 loop
-      wtmp := (others => '0');
-      wtmp(IN_WIDTH - 1 downto IN_WIDTH - 8) :=
-        std_logic_vector(to_unsigned(n * 32, 8));
+
+      wtmp                                   := (others => '0');
+      wtmp(IN_WIDTH - 1 downto IN_WIDTH - 8) := std_logic_vector(to_unsigned(n * 32, 8));
       directed(wtmp, 8);
+
     end loop;
 
     --------------------------------------------------------------------------
     -- Constrained-random images.
     --------------------------------------------------------------------------
     for img in 1 to N_RANDOM loop
+
       send_image(rv.RandInt(1, MAX_BEATS));
+
     end loop;
 
     --------------------------------------------------------------------------
@@ -479,6 +600,7 @@ begin
 
     end_of_test("tb_byte_stuffer_osvvm");
     wait;
+
   end process stim_proc;
 
   -----------------------------------------------------------------------------
@@ -486,9 +608,11 @@ begin
   -----------------------------------------------------------------------------
   watchdog_proc : process is
   begin
+
     wait for 20 ms;
     Alert("tb_byte_stuffer_osvvm: watchdog timeout", FAILURE);
     std.env.stop;
+
   end process watchdog_proc;
 
 end architecture sim;
