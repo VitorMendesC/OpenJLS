@@ -2,8 +2,19 @@ standard = "2008"
 preferred_case = "lower"
 
 [libraries]
-lib.files = ['Sources/*.vhd']
-tb.files = ['Verification/Testbenches/*.vhd']
-openlogic_base.files = ['ThirdParty/open-logic/src/base/vhdl/*.vhd']
+# Sources and every TB compile into one library (GHDL --work=work), so `work`
+# resolves to `common` and the DUT entities from any TB file.
+lib.files = [
+    'Sources/*.vhd',
+    'Verification/Testbenches/*.vhd',
+    'Verification/OSVVM/Modules/*.vhd',
+    'Verification/OSVVM/Top/*.vhd',
+]
 
+openlogic_base.files = ['ThirdParty/open-logic/src/base/vhdl/*.vhd']
 openlogic_base.is_third_party = true
+
+osvvm.files = ['ThirdParty/osvvm/*.vhd', 'ThirdParty/osvvm/deprecated/*.vhd']
+osvvm.is_third_party = true
+
+tb_support.files = ['Verification/OSVVM/Support/*.vhd']

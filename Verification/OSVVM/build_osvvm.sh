@@ -3,7 +3,8 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-SRC="$HERE/OsvvmLibraries/osvvm"
+ROOT="$(cd "$HERE/../.." && pwd)"
+SRC="$ROOT/ThirdParty/osvvm"   # vendored by ThirdParty/fetch_third_party.sh
 OUT="$HERE/osvvm-lib"
 
 mkdir -p "$OUT"
