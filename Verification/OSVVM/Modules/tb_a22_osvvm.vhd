@@ -2,11 +2,20 @@
 -- OSVVM testbench: a22_errval_mapping (combinational).
 --
 -- T.87 Code segment A.22: EMErrval = 2*abs(Errval) - RItype - map. The C model
--- has no clamp; the RTL clamps at 0 only to absorb delta-cycle transients on
--- coherent inputs, where EMErrval is always >= 0. So the reference is the pure C
--- formula and the check is restricted to its valid (non-negative) domain; the
--- clamp region is non-occurring and not asserted. Coverage crosses RItype x map
--- and includes the EMErrval==0 boundary.
+-- has no clamp; the RTL clamps at 0. That clamp is provably a no-op for any
+-- T.87-coherent input, so the reference is the pure (unclamped) C formula and
+-- the check covers its full valid domain.
+--
+-- Proof that EMErrval >= 0 for coherent inputs (so EMErrval<0 is unreachable):
+--   EMErrval<0 needs |Errval|=0 AND RItype+map>=1. But
+--     (1) a run-interruption sample is the breaking sample, so Ix/=Ra; with
+--         RItype=1 (A.17: Ra=Rb) A.18 gives Px=Ra and Errval=Ix-Ra/=0, and A.19
+--         ModRange keeps it nonzero -> RItype=1 implies |Errval|>=1; and
+--     (2) A.21 forces map=0 whenever Errval=0 (every map=1 clause needs Errval/=0).
+--   So |Errval|=0 with RItype+map>=1 cannot occur; EMErrval>=0 always, with =0
+--   reachable only at (RItype=0, map=0, Errval=0) -- which is driven and checked.
+-- Skipped (EMErrval<0) vectors are asserted to be exactly that forbidden combo.
+-- Coverage crosses RItype x map and includes the EMErrval==0 boundary.
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -88,7 +97,7 @@ begin
       wait for 1 ns;
 
       exp := ref_em(ev, riv, mpv);
-      -- Only the coherent (non-negative) domain is comparable to the C model.
+
       if (exp >= 0) then
         AffirmIfEqual(to_integer(sEm), exp,
                       msg & " err=" & integer'image(ev) &
@@ -100,6 +109,12 @@ begin
         end if;
         covCross.ICover((riv, mpv));
         covZero.ICover(z);
+      else
+        -- EMErrval<0 is T.87-unreachable: it requires Errval=0 with RItype or map
+        -- set, but RItype=1 => Errval/=0 and Errval=0 => map=0 (see header).
+        -- Guard against ever skipping a coherent vector by changing the formula.
+        AffirmIf(ev = 0 and (riv = 1 or mpv = 1),
+                 "EMErrval<0 only on T.87-non-coherent inputs (Errval=0 with RItype/map set)");
       end if;
 
     end procedure drive_check;

@@ -10,8 +10,19 @@
 -- Mert Fig.9 equivalence (A += abs(Errval) - RItype). The reference deliberately
 -- keeps the *standard* map-dependent form and drives map as a free random input
 -- not fed to the DUT, so a passing check also proves the equivalence holds for
--- both map values. Vectors that would drive a variable out of range (non-coherent
--- A<0 / Nn overflow) are skipped. Coverage crosses RESET x Errval-sign x RItype.
+-- both map values.
+--
+-- Every result is representable for T.87-coherent inputs:
+--   A_new = A + |Errval| - RItype >= 0: RItype=0 => A+|Errval|>=0; RItype=1 =>
+--     |Errval|>=1 (a run-interruption sample has Ix/=Ra, see tb_a22) => A_new>=A>=0.
+--   Nn_new <= RESET-1: the invariant N-Nn>=1 holds from init (N=1,Nn=0) and is
+--     preserved by the update (N+1, Nn+<=1) and the rescale (floor halving), so
+--     input Nn<=N-1 and Nn_new = Nn+1 <= N <= RESET-1 (N=RESET takes the halving).
+--   N_new <= RESET+1 < 2^N_WIDTH.
+-- The stimulus also sweeps non-coherent inputs (random Nn/N/Errval); any that
+-- drive a variable out of range are skipped AND asserted to violate the specific
+-- T.87 invariant above, so the skip can never silently swallow a coherent vector.
+-- Coverage crosses RESET x Errval-sign x RItype.
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -137,8 +148,24 @@ begin
         nNew := nv + 1;
       end if;
 
-      if (aNew < 0 or nnNew > NN_MAX or nNew > (2 ** N_WIDTH) - 1) then
-        return;                                      -- non-coherent, skip
+      -- Non-coherent guard: results are representable for any coherent input
+      -- (header). A randomly generated vector that lands out of range is skipped,
+      -- but only after asserting it violates the specific T.87 invariant -- so the
+      -- skip can never silently swallow a coherent vector.
+      if (aNew < 0) then
+        AffirmIf(riv = 1 and errv = 0,
+                 "A_new<0 only when RItype=1 & Errval=0 -- T.87: RItype=1 => Errval/=0");
+        return;
+      end if;
+      if (nnNew > NN_MAX) then
+        AffirmIf(nnv >= nv,
+                 "Nn overflow only when input Nn>=N -- T.87 invariant N-Nn>=1 forbids it");
+        return;
+      end if;
+      if (nNew > (2 ** N_WIDTH) - 1) then
+        AffirmIf(nv > RESET,
+                 "N overflow only when input N>RESET -- T.87: N in [1,RESET]");
+        return;
       end if;
 
       sErr <= to_signed(errv, ERROR_WIDTH);
