@@ -84,8 +84,8 @@ done
 ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=tb_support --workdir="$SUPPORT_LIB" \
   "$HERE/Support/tb_support_pkg.vhd"
 
-# 4. Module TBs
-for f in "$HERE"/Modules/*.vhd; do
+# 4. Module + top-level TBs
+for f in "$HERE"/Modules/*.vhd "$HERE"/Top/*.vhd; do
   ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$f"
 done
 
