@@ -196,6 +196,13 @@ begin
       iValid <= '0';
       iPixel <= (others => '0');
       clk_tick(clk, 4);
+
+      -- Reset must clear the output stream (matters when injected mid-image:
+      -- any in-flight beats must be dropped, not emitted after recovery).
+      wait for 1 ns;
+      AffirmIf(oValid = '0', "reset: output stream idle");
+      AffirmIf(oLast = '0', "reset: oLast cleared");
+
       rst <= '0';
       wait until rising_edge(clk);
 
