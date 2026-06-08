@@ -1,0 +1,335 @@
+--------------------------------------------------------------------------------
+-- OSVVM testbench: jls_framer (stateful AXI-stream framer).
+--
+-- Wraps the byte-stuffed payload with the JPEG-LS frame: 25-byte header
+-- (SOI + SOF55 + SOS, with runtime precision/height/width/NEAR) before the data
+-- and the EOI footer FF D9 after it. The reference is the JPEG-LS frame format
+-- (T.87): for each image the expected output byte stream is
+--   header(W,H) ++ payload_bytes ++ 0xFF 0xD9
+-- pushed to an OSVVM scoreboard in emission order. The monitor pops every output
+-- byte (oByteEnable bytes per beat, MSB-first) on the AXI handshake and checks it,
+-- and asserts oLast lands exactly on the trailing 0xD9 beat. Upstream oReady and
+-- downstream random iReady backpressure are both honoured. Images are serialized
+-- (drain before the next) so dimensions stay coherent.
+--------------------------------------------------------------------------------
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.common.all;
+
+library openlogic_base;
+  use openlogic_base.olo_base_pkg_math.log2ceil;
+
+library osvvm;
+  context osvvm.OsvvmContext;
+  use osvvm.ScoreboardPkg_slv.all;
+
+library tb_support;
+  use tb_support.tb_support_pkg.all;
+
+entity tb_jls_framer_osvvm is
+end entity tb_jls_framer_osvvm;
+
+architecture sim of tb_jls_framer_osvvm is
+
+  constant BITNESS    : natural := CO_BITNESS_STD;
+  constant IN_WIDTH   : natural := CO_BYTE_STUFFER_OUT_WIDTH;   -- 32
+  constant OUT_WIDTH  : natural := CO_OUT_WIDTH_STD;            -- 72
+  constant MAX_W      : natural := 4096;
+  constant MAX_H      : natural := 4096;
+  constant BYTES_IN   : natural := IN_WIDTH / 8;
+  constant BYTES_OUT  : natural := OUT_WIDTH / 8;
+  constant WDIM       : natural := log2ceil(MAX_W + 1);
+  constant HDIM       : natural := log2ceil(MAX_H + 1);
+  constant BE_IN_W    : natural := log2ceil(IN_WIDTH / 8 + 1);
+  constant BE_OUT_W   : natural := log2ceil(OUT_WIDTH / 8 + 1);
+  constant CLK_PERIOD : time    := CLK_PERIOD_DEFAULT;
+  constant N_IMAGES   : natural := 30;
+
+  signal clk      : std_logic := '0';
+  signal rst      : std_logic;
+  signal iStart   : std_logic;
+  signal iWidth   : unsigned(WDIM - 1 downto 0);
+  signal iHeight  : unsigned(HDIM - 1 downto 0);
+  signal iEoi     : std_logic;
+  signal iWord    : std_logic_vector(IN_WIDTH - 1 downto 0);
+  signal iValid   : std_logic;
+  signal iByteEn  : unsigned(BE_IN_W - 1 downto 0);
+  signal oReady   : std_logic;
+  signal oWord    : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal oValid   : std_logic;
+  signal oByteEn  : unsigned(BE_OUT_W - 1 downto 0);
+  signal oLast    : std_logic;
+  signal iReady   : std_logic;
+
+  shared variable sb       : ScoreBoardPType;
+  signal sImagesSent       : natural;
+  signal sImagesDone       : natural;
+  signal sDriverDone       : boolean;
+
+  -- JPEG-LS frame header (T.87), transcribed independently of the RTL ROM.
+  function header_byte (
+    idx : natural;
+    w   : natural;
+    h   : natural
+  ) return std_logic_vector is
+  begin
+
+    case idx is
+
+      when 0  => return x"FF";                                           -- SOI
+      when 1  => return x"D8";
+      when 2  => return x"FF";                                           -- SOF55
+      when 3  => return x"F7";
+      when 4  => return x"00";                                           -- Lf = 11
+      when 5  => return x"0B";
+      when 6  => return std_logic_vector(to_unsigned(BITNESS, 8));       -- P
+      when 7  => return std_logic_vector(to_unsigned(h / 256, 8));       -- Y hi
+      when 8  => return std_logic_vector(to_unsigned(h mod 256, 8));     -- Y lo
+      when 9  => return std_logic_vector(to_unsigned(w / 256, 8));       -- X hi
+      when 10 => return std_logic_vector(to_unsigned(w mod 256, 8));     -- X lo
+      when 11 => return x"01";                                           -- Nf
+      when 12 => return x"01";                                           -- C1
+      when 13 => return x"11";                                           -- H1V1
+      when 14 => return x"00";                                           -- Tq1
+      when 15 => return x"FF";                                           -- SOS
+      when 16 => return x"DA";
+      when 17 => return x"00";                                           -- Ls = 8
+      when 18 => return x"08";
+      when 19 => return x"01";                                           -- Ns
+      when 20 => return x"01";                                           -- Cs1
+      when 21 => return x"00";                                           -- Tm1
+      when 22 => return x"00";                                           -- NEAR
+      when 23 => return x"00";                                           -- ILV
+      when others => return x"00";                                       -- Al/Ah
+    end case;
+
+  end function header_byte;
+
+begin
+
+  clk_proc : process is
+  begin
+
+    clk <= '1';
+    wait for CLK_PERIOD / 2;
+    clk <= '0';
+    wait for CLK_PERIOD / 2;
+
+  end process clk_proc;
+
+  dut : entity work.jls_framer(behavioral)
+    generic map (
+      BITNESS          => BITNESS,
+      IN_WIDTH         => IN_WIDTH,
+      OUT_WIDTH        => OUT_WIDTH,
+      MAX_IMAGE_WIDTH  => MAX_W,
+      MAX_IMAGE_HEIGHT => MAX_H
+    )
+    port map (
+      iClk         => clk,
+      iRst         => rst,
+      iStart       => iStart,
+      iImageWidth  => iWidth,
+      iImageHeight => iHeight,
+      iEoi         => iEoi,
+      iWord        => iWord,
+      iValid       => iValid,
+      iByteEnable  => iByteEn,
+      oReady       => oReady,
+      oWord        => oWord,
+      oValid       => oValid,
+      oByteEnable  => oByteEn,
+      oLast        => oLast,
+      iReady       => iReady
+    );
+
+  -----------------------------------------------------------------------------
+  -- Driver: per image push header(W,H) ++ payload ++ FF D9 to the scoreboard,
+  -- then stream the payload words (honouring oReady) with iEoi on the last.
+  -----------------------------------------------------------------------------
+  driver : process is
+
+    variable rv     : RandomPType;
+    variable w      : natural;
+    variable h      : natural;
+    variable nWords : natural;
+    variable be     : natural;
+    variable word   : std_logic_vector(IN_WIDTH - 1 downto 0);
+
+    -- Wait for an oReady cycle, present the word, push it on the edge.
+    procedure push_word (
+      wd    : std_logic_vector(IN_WIDTH - 1 downto 0);
+      nbe   : natural;
+      eoi   : std_logic;
+      start : std_logic
+    ) is
+    begin
+
+      loop
+
+        wait until rising_edge(clk);
+        wait for 1 ns;
+        exit when oReady = '1';
+
+      end loop;
+
+      iValid  <= '1';
+      iWord   <= wd;
+      iByteEn <= to_unsigned(nbe, BE_IN_W);
+      iEoi    <= eoi;
+      iStart  <= start;
+      wait until rising_edge(clk);
+      iValid  <= '0';
+      iEoi    <= '0';
+      iStart  <= '0';
+
+    end procedure push_word;
+
+  begin
+
+    rst      <= '0';
+    iStart   <= '0';
+    iWidth   <= to_unsigned(8, WDIM);
+    iHeight  <= to_unsigned(8, HDIM);
+    iEoi     <= '0';
+    iWord    <= (others => '0');
+    iValid   <= '0';
+    iByteEn  <= (others => '0');
+
+    SetAlertLogName("tb_jls_framer_osvvm");
+    SetLogEnable(PASSED, FALSE);
+    sb.SetAlertLogID("framer SB");
+    rv.InitSeed(rv'instance_name);
+
+    apply_reset(clk, rst, 4, '1');
+
+    for img in 1 to N_IMAGES loop
+
+      w := rv.RandInt(4, MAX_W);
+      h := rv.RandInt(1, MAX_H);
+      iWidth  <= to_unsigned(w, WDIM);
+      iHeight <= to_unsigned(h, HDIM);
+      wait until rising_edge(clk);
+
+      -- Expected header bytes.
+      for k in 0 to 24 loop
+
+        sb.Push(header_byte(k, w, h));
+
+      end loop;
+
+      nWords := rv.RandInt(1, 24);
+
+      for n in 1 to nWords loop
+
+        word := rv.RandSlv(IN_WIDTH);
+
+        if (n = nWords) then
+          be := rv.RandInt(0, BYTES_IN);     -- last word may be partial / empty
+        else
+          be := rv.RandInt(1, BYTES_IN);
+        end if;
+
+        -- Expected payload bytes (MSB-first).
+        for i in 0 to be - 1 loop
+
+          sb.Push(word(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8));
+
+        end loop;
+
+        if (n = nWords) then
+          sb.Push(x"FF");                    -- footer
+          sb.Push(x"D9");
+          push_word(word, be, '1', bool2bit(n = 1));
+        else
+          push_word(word, be, '0', bool2bit(n = 1));
+        end if;
+
+      end loop;
+
+      sImagesSent <= img;
+      -- Serialize: drain this image before the next (keeps dims coherent).
+      wait until sImagesDone = img;
+
+    end loop;
+
+    sDriverDone <= true;
+    wait;
+
+  end process driver;
+
+  -----------------------------------------------------------------------------
+  -- Monitor: random downstream backpressure; check every output byte and that
+  -- oLast coincides with the trailing 0xD9.
+  -----------------------------------------------------------------------------
+  monitor : process is
+
+    variable rv      : RandomPType;
+    variable nb      : natural;
+    variable byte    : std_logic_vector(7 downto 0);
+    variable lastByte : std_logic_vector(7 downto 0);
+    variable done    : natural;
+    variable covBeat : CovPType;
+
+  begin
+
+    iReady <= '1';
+    done   := 0;
+    covBeat.AddBins("partialBeat", GenBin(1, BYTES_OUT - 1, 1));
+    covBeat.AddBins("fullBeat", GenBin(BYTES_OUT, BYTES_OUT));
+    rv.InitSeed(rv'instance_name);
+    wait until rst = '0';
+
+    loop
+
+      -- ~80% ready.
+      iReady <= bool2bit(rv.DistValInt(((1, 4), (0, 1))) = 1);
+      wait for 1 ns;
+
+      if (oValid = '1' and iReady = '1') then
+        nb := to_integer(oByteEn);
+        covBeat.ICover(nb);
+
+        for i in 0 to nb - 1 loop
+
+          byte     := oWord(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
+          lastByte := byte;
+          sb.Check(byte);
+
+        end loop;
+
+        if (oLast = '1') then
+          AffirmIfEqual(lastByte, std_logic_vector'(x"D9"), "oLast must land on the 0xD9 footer byte");
+          done        := done + 1;
+          sImagesDone <= done;
+        end if;
+      end if;
+
+      wait until rising_edge(clk);
+
+      exit when sDriverDone and done = sImagesSent and sb.Empty;
+
+    end loop;
+
+    AffirmIf(sb.Empty, "scoreboard drained");
+    AffirmIfEqual(sb.GetErrorCount, 0, "scoreboard mismatches");
+    covBeat.WriteBin;
+    AffirmIf(covBeat.IsCovered, "output beat-size coverage closed");
+
+    end_of_test("tb_jls_framer_osvvm");
+    wait;
+
+  end process monitor;
+
+  watchdog : process is
+  begin
+
+    wait for 100 ms;
+    Alert("tb_jls_framer_osvvm: watchdog timeout", FAILURE);
+    std.env.stop;
+
+  end process watchdog;
+
+end architecture sim;
