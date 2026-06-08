@@ -1,0 +1,163 @@
+--------------------------------------------------------------------------------
+-- OSVVM testbench: a21_compute_map (combinational).
+--
+-- T.87 Code segment A.21 map computation, transcribed verbatim. Coverage closes
+-- which clause fired (the two positive paths, the k!=0 negative path, and the
+-- else), biasing k, Errval sign and the 2*Nn vs Nq relation to reach all four.
+--------------------------------------------------------------------------------
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.common.all;
+
+library osvvm;
+  context osvvm.OsvvmContext;
+
+library tb_support;
+  use tb_support.tb_support_pkg.all;
+
+entity tb_a21_osvvm is
+end entity tb_a21_osvvm;
+
+architecture sim of tb_a21_osvvm is
+
+  constant K_WIDTH     : natural := CO_K_WIDTH_STD;
+  constant N_WIDTH     : natural := CO_NQ_WIDTH_STD;
+  constant ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
+  constant K_MAX       : integer := (2 ** K_WIDTH) - 1;
+  constant N_MAX       : integer := (2 ** N_WIDTH) - 1;
+  constant ERR_MIN     : integer := -(2 ** (ERROR_WIDTH - 1));
+  constant ERR_MAX     : integer := (2 ** (ERROR_WIDTH - 1)) - 1;
+
+  signal sK      : unsigned(K_WIDTH - 1 downto 0);
+  signal sErrval : signed(ERROR_WIDTH - 1 downto 0);
+  signal sNn     : unsigned(N_WIDTH - 1 downto 0);
+  signal sNq     : unsigned(N_WIDTH - 1 downto 0);
+  signal sMap    : std_logic;
+
+  -- clause: 0 = first, 1 = second, 2 = third, 3 = else (per A.21 order).
+  function clause_of (
+    k   : integer;
+    err : integer;
+    nn  : integer;
+    nq  : integer
+  ) return integer is
+  begin
+
+    if ((k = 0) and (err > 0) and (2 * nn < nq)) then
+      return 0;
+    elsif ((err < 0) and (2 * nn >= nq)) then
+      return 1;
+    elsif ((err < 0) and (k /= 0)) then
+      return 2;
+    else
+      return 3;
+    end if;
+
+  end function clause_of;
+
+  function ref_map (
+    k   : integer;
+    err : integer;
+    nn  : integer;
+    nq  : integer
+  ) return std_logic is
+  begin
+
+    if (clause_of(k, err, nn, nq) = 3) then
+      return '0';
+    else
+      return '1';
+    end if;
+
+  end function ref_map;
+
+begin
+
+  dut : entity work.a21_compute_map(behavioral)
+    generic map (
+      K_WIDTH     => K_WIDTH,
+      N_WIDTH     => N_WIDTH,
+      ERROR_WIDTH => ERROR_WIDTH
+    )
+    port map (
+      iK      => sK,
+      iErrval => sErrval,
+      iNn     => sNn,
+      iNq     => sNq,
+      oMap    => sMap
+    );
+
+  stim : process is
+
+    variable rv      : RandomPType;
+    variable cov     : CovPType;
+    variable k       : integer;
+    variable err     : integer;
+    variable nn      : integer;
+    variable nq      : integer;
+    constant N_RAND  : natural := 8000;
+
+    procedure drive_check (
+      k   : integer;
+      err : integer;
+      nn  : integer;
+      nq  : integer;
+      msg : string
+    ) is
+    begin
+
+      sK      <= to_unsigned(k, K_WIDTH);
+      sErrval <= to_signed(err, ERROR_WIDTH);
+      sNn     <= to_unsigned(nn, N_WIDTH);
+      sNq     <= to_unsigned(nq, N_WIDTH);
+      wait for 1 ns;
+      AffirmIfEqual(std_to_int(sMap), std_to_int(ref_map(k, err, nn, nq)),
+                    msg & " k=" & integer'image(k) & " err=" & integer'image(err) &
+                    " nn=" & integer'image(nn) & " nq=" & integer'image(nq));
+      cov.ICover(clause_of(k, err, nn, nq));
+
+    end procedure drive_check;
+
+  begin
+
+    SetAlertLogName("tb_a21_osvvm");
+    SetLogEnable(PASSED, FALSE);
+    rv.InitSeed(rv'instance_name);
+
+    cov.AddBins("clause", GenBin(0, 3, 4));
+
+    -- Directed: one per clause.
+    drive_check(0, 5, 1, 10, "clause1");
+    drive_check(2, -5, 10, 5, "clause2");
+    drive_check(2, -5, 1, 10, "clause3");
+    drive_check(0, 5, 10, 5, "else pos");
+    drive_check(3, 0, 4, 4, "else zero");
+
+    -- Random sweep with small-k and signed-Errval bias.
+    for i in 1 to N_RAND loop
+
+      if (rv.RandInt(0, 1) = 0) then
+        k := rv.RandInt(0, 2);            -- bias small k
+      else
+        k := rv.RandInt(0, K_MAX);
+      end if;
+      err := rv.RandInt(ERR_MIN, ERR_MAX);
+      nn  := rv.RandInt(0, N_MAX);
+      nq  := rv.RandInt(0, N_MAX);
+      drive_check(k, err, nn, nq, "rand");
+
+      exit when cov.IsCovered and i > 400;
+
+    end loop;
+
+    cov.WriteBin;
+    AffirmIf(cov.IsCovered, "clause coverage closed");
+
+    end_of_test("tb_a21_osvvm");
+    wait;
+
+  end process stim;
+
+end architecture sim;
