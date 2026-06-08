@@ -253,6 +253,29 @@ begin
     run_image(16, 6, false);    -- max width, last-col replication
     run_image(7, 3, true);
 
+    --------------------------------------------------------------------------
+    -- Mid-image iRst: drive ~1.5 rows (so the FSM is past preload and the
+    -- context window holds real pixels), assert iRst, then a fresh image must
+    -- produce correct T.87 border neighbours from scratch. Stale counters or a
+    -- stale window would corrupt row 0/1 of the next image.
+    --------------------------------------------------------------------------
+    iWidth  <= to_unsigned(6, W_W);
+    iHeight <= to_unsigned(6, H_W);
+
+    for k in 0 to 8 loop
+
+      iPixel <= to_unsigned(rv.RandInt(0, PX_MAX), BITNESS);
+      iValid <= '1';
+      wait until rising_edge(clk);
+
+    end loop;
+
+    iValid <= '0';
+    apply_reset(clk, rst, 4, '1');
+    wait for 1 ns;
+    AffirmIf(oValid = '0', "mid-image reset: oValid low while idle");
+    run_image(5, 4, false);     -- fresh image must be byte-correct from scratch
+
     cov.WriteBin;
     AffirmIf(cov.IsCovered, "row x col position coverage closed");
 

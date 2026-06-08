@@ -357,6 +357,24 @@ begin
     end loop;
 
     --------------------------------------------------------------------------
+    -- Mid-operation iRst (distinct from the iEoi path): RUNindex is high after
+    -- the climb; assert iRst and confirm the FSM goes cold (no spurious output,
+    -- sInRun cleared) and the next run encodes from RUNindex=0 again -- the
+    -- bitstream check with carried=0 proves the state register was cleared.
+    --------------------------------------------------------------------------
+    iModeIsRun <= '0';
+    iRunHit    <= '0';
+    iRunCont   <= '0';
+    iEoi       <= '0';
+    apply_reset(clk, rst, 4, '1');
+    wait for 1 ns;
+    AffirmIf(oRawValid = '0', "mid-op reset: no spurious raw output");
+    AffirmIf(oInRunNext = '0', "mid-op reset: sInRun cleared");
+    iModeIsRun <= '1';
+    carried    := 0;
+    do_run(3, T_BREAK, '0', "post-reset recovery");
+
+    --------------------------------------------------------------------------
     -- Constrained-random runs.
     --------------------------------------------------------------------------
     for r in 1 to 400 loop

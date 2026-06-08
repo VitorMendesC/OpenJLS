@@ -179,6 +179,21 @@ begin
 
     end procedure pulse_eoi;
 
+    -- Mid-operation iRst: re-arms init for every address (keeps BRAM), same as EOI.
+    procedure pulse_rst is
+    begin
+
+      iRdEn <= '0';
+      iWrEn <= '0';
+      rst   <= '1';
+      clk_tick(clk, 2);
+      rst   <= '0';
+      ini := (others => true);                    -- re-arm init, keep mem
+      wait until rising_edge(clk);
+      wait for 1 ns;
+
+    end procedure pulse_rst;
+
     variable a    : natural;
     variable d    : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
     constant ZERO : std_logic_vector(TOTAL_WIDTH - 1 downto 0) := (others => '0');
@@ -217,6 +232,13 @@ begin
     pulse_eoi;
     step('1', 7, '0', 0, ZERO, "addr7 after EOI = CTX_INIT");
 
+    -- Mid-operation iRst re-arms init exactly like EOI: addr 7 (written/read
+    -- above, so on the BRAM path) must revert to CTX_INIT after a reset.
+    pulse_rst;
+    step('1', 7, '0', 0, ZERO, "addr7 after mid-op iRst = CTX_INIT");
+    -- And a fresh address is still an init read post-reset.
+    step('1', 13, '0', 0, ZERO, "addr13 after iRst = CTX_INIT");
+
     --------------------------------------------------------------------------
     -- Constrained-random: random addresses, always read-modify-write so the
     -- modelled and real BRAM stay in sync.
@@ -230,9 +252,11 @@ begin
       -- read addr a and write it back with new data.
       step('1', a, '1', a, d, "rand rmw a=" & integer'image(a));
 
-      -- Occasional EOI to re-exercise the init path.
+      -- Occasional EOI or mid-stream iRst to re-exercise the init path.
       if (rv.DistValInt(((1, 1), (0, 60))) = 1) then
         pulse_eoi;
+      elsif (rv.DistValInt(((1, 1), (0, 80))) = 1) then
+        pulse_rst;
       end if;
 
       exit when cov.IsCovered and i > 200;

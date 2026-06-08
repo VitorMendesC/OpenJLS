@@ -223,6 +223,12 @@ begin
 
     apply_reset(clk, rst, 4, '1');
 
+    -- Reset must drive the registered outputs to their defined reset values.
+    wait for 1 ns;
+    AffirmIf(oWordValid = '0', "reset: oWordValid cleared");
+    AffirmIfEqual(to_integer(oValidLen), 0, "reset: oValidLen cleared");
+    AffirmIf(oWord = std_logic_vector'(oWord'range => '0'), "reset: oWord cleared");
+
     -- Directed: each case.
     beat('0', 0, to_unsigned(0, SUFFIX_W), '0', 0, 0, to_unsigned(0, SUFFIX_W), "neither");
     beat('1', 8, to_unsigned(16#A5#, SUFFIX_W), '0', 0, 0, to_unsigned(0, SUFFIX_W), "rawOnly");
@@ -263,6 +269,22 @@ begin
     wait until rising_edge(clk);
     wait for 1 ns;
     AffirmIfEqual(to_integer(oValidLen), 3, "post-stall latch len");
+
+    --------------------------------------------------------------------------
+    -- Mid-operation reset: latch a beat, assert reset, confirm the output is
+    -- cleared, then confirm a fresh beat is packed correctly (recovery).
+    --------------------------------------------------------------------------
+    beat('1', 9, to_unsigned(16#1AA#, SUFFIX_W), '1', 4, 6, to_unsigned(16#33#, SUFFIX_W), "pre-reset beat");
+    -- Go idle so the post-reset latch captures no new beat, then reset.
+    iRawValid  <= '0';
+    iGolombVal <= '0';
+    iStall     <= '0';
+    apply_reset(clk, rst, 3, '1');
+    wait for 1 ns;
+    AffirmIf(oWordValid = '0', "mid-op reset: oWordValid cleared");
+    AffirmIfEqual(to_integer(oValidLen), 0, "mid-op reset: oValidLen cleared");
+    AffirmIf(oWord = std_logic_vector'(oWord'range => '0'), "mid-op reset: oWord cleared");
+    beat('1', 7, to_unsigned(16#5C#, SUFFIX_W), '0', 0, 0, to_unsigned(0, SUFFIX_W), "post-reset recovery");
 
     --------------------------------------------------------------------------
     -- Constrained-random beats (field sums bounded <= OUT_WIDTH).

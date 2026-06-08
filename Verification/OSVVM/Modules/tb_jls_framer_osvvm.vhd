@@ -67,6 +67,8 @@ architecture sim of tb_jls_framer_osvvm is
   signal sImagesSent       : natural;
   signal sImagesDone       : natural;
   signal sDriverDone       : boolean;
+  -- Monitor ignores output during an aborted (reset-interrupted) image.
+  signal sIgnore           : boolean := false;
 
   -- JPEG-LS frame header (T.87), transcribed independently of the RTL ROM.
   function header_byte (
@@ -151,12 +153,7 @@ begin
   -----------------------------------------------------------------------------
   driver : process is
 
-    variable rv     : RandomPType;
-    variable w      : natural;
-    variable h      : natural;
-    variable nWords : natural;
-    variable be     : natural;
-    variable word   : std_logic_vector(IN_WIDTH - 1 downto 0);
+    variable rv : RandomPType;
 
     -- Wait for an oReady cycle, present the word, push it on the edge.
     procedure push_word (
@@ -187,6 +184,57 @@ begin
 
     end procedure push_word;
 
+    -- Push one full image: header(w,h) ++ payload ++ FF D9 to the scoreboard
+    -- and stream the matching payload words (iEoi on the last).
+    procedure send_image (
+      w      : natural;
+      h      : natural;
+      nWords : natural
+    ) is
+
+      variable word : std_logic_vector(IN_WIDTH - 1 downto 0);
+      variable be   : natural;
+
+    begin
+
+      iWidth  <= to_unsigned(w, WDIM);
+      iHeight <= to_unsigned(h, HDIM);
+      wait until rising_edge(clk);
+
+      for k in 0 to 24 loop
+
+        sb.Push(header_byte(k, w, h));
+
+      end loop;
+
+      for n in 1 to nWords loop
+
+        word := rv.RandSlv(IN_WIDTH);
+
+        if (n = nWords) then
+          be := rv.RandInt(0, BYTES_IN);
+        else
+          be := rv.RandInt(1, BYTES_IN);
+        end if;
+
+        for i in 0 to be - 1 loop
+
+          sb.Push(word(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8));
+
+        end loop;
+
+        if (n = nWords) then
+          sb.Push(x"FF");
+          sb.Push(x"D9");
+          push_word(word, be, '1', bool2bit(n = 1));
+        else
+          push_word(word, be, '0', bool2bit(n = 1));
+        end if;
+
+      end loop;
+
+    end procedure send_image;
+
   begin
 
     rst      <= '0';
@@ -207,53 +255,34 @@ begin
 
     for img in 1 to N_IMAGES loop
 
-      w := rv.RandInt(4, MAX_W);
-      h := rv.RandInt(1, MAX_H);
-      iWidth  <= to_unsigned(w, WDIM);
-      iHeight <= to_unsigned(h, HDIM);
-      wait until rising_edge(clk);
-
-      -- Expected header bytes.
-      for k in 0 to 24 loop
-
-        sb.Push(header_byte(k, w, h));
-
-      end loop;
-
-      nWords := rv.RandInt(1, 24);
-
-      for n in 1 to nWords loop
-
-        word := rv.RandSlv(IN_WIDTH);
-
-        if (n = nWords) then
-          be := rv.RandInt(0, BYTES_IN);     -- last word may be partial / empty
-        else
-          be := rv.RandInt(1, BYTES_IN);
-        end if;
-
-        -- Expected payload bytes (MSB-first).
-        for i in 0 to be - 1 loop
-
-          sb.Push(word(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8));
-
-        end loop;
-
-        if (n = nWords) then
-          sb.Push(x"FF");                    -- footer
-          sb.Push(x"D9");
-          push_word(word, be, '1', bool2bit(n = 1));
-        else
-          push_word(word, be, '0', bool2bit(n = 1));
-        end if;
-
-      end loop;
-
+      send_image(rv.RandInt(4, MAX_W), rv.RandInt(1, MAX_H), rv.RandInt(1, 24));
       sImagesSent <= img;
       -- Serialize: drain this image before the next (keeps dims coherent).
       wait until sImagesDone = img;
 
     end loop;
+
+    --------------------------------------------------------------------------
+    -- Mid-operation iRst: start an image and abort it with iRst before the
+    -- footer. The aborted output is ignored (never pushed to the scoreboard);
+    -- after reset the framer must be idle, and the next image must frame
+    -- correctly. Recovery goes through the scoreboard normally.
+    --------------------------------------------------------------------------
+    sIgnore <= true;
+    iWidth  <= to_unsigned(64, WDIM);
+    iHeight <= to_unsigned(64, HDIM);
+    push_word(rv.RandSlv(IN_WIDTH), 4, '0', '1');   -- iStart + first word, no sb push
+    push_word(rv.RandSlv(IN_WIDTH), 4, '0', '0');
+    push_word(rv.RandSlv(IN_WIDTH), 4, '0', '0');
+    apply_reset(clk, rst, 4, '1');
+    wait for 1 ns;
+    AffirmIf(oValid = '0', "mid-op reset: framer output idle after iRst");
+    sIgnore <= false;
+    wait until rising_edge(clk);
+
+    send_image(rv.RandInt(4, MAX_W), rv.RandInt(1, MAX_H), rv.RandInt(1, 24));
+    sImagesSent <= N_IMAGES + 1;
+    wait until sImagesDone = N_IMAGES + 1;
 
     sDriverDone <= true;
     wait;
@@ -288,7 +317,7 @@ begin
       iReady <= bool2bit(rv.DistValInt(((1, 4), (0, 1))) = 1);
       wait for 1 ns;
 
-      if (oValid = '1' and iReady = '1') then
+      if (oValid = '1' and iReady = '1' and not sIgnore) then
         nb := to_integer(oByteEn);
         covBeat.ICover(nb);
 

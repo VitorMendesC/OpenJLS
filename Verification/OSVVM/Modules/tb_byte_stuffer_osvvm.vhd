@@ -91,6 +91,9 @@ architecture sim of tb_byte_stuffer_osvvm is
   -- Random upstream-stall enable (ORed with oAlmostFull, driven by stall proc).
   signal sRandStall        : std_logic;
 
+  -- Monitor ignores output during a reset-aborted (mid-image) sequence.
+  signal sIgnore           : boolean := false;
+
   -- Flush-type codes (coverage + sanity).
   constant FT_EMPTY        : integer := 0;  -- flush with no payload bits
   constant FT_CLEAN        : integer := 1;  -- byte-aligned, no residue
@@ -255,7 +258,7 @@ begin
 
       wait until rising_edge(clk);
 
-      if (oWordValid = '1') then
+      if (oWordValid = '1' and not sIgnore) then
         nb := to_integer(oValidBytes);
         if (oAlmostFull = '1') then
           af := 1;
@@ -279,7 +282,7 @@ begin
 
       end if;
 
-      if (oFlushDone = '1') then
+      if (oFlushDone = '1' and not sIgnore) then
         AffirmIf(oWordValid = '1', "oFlushDone must coincide with oWordValid");
         cnt        := cnt + 1;
         sFlushDone <= cnt;
@@ -580,6 +583,51 @@ begin
       send_image(rv.RandInt(1, MAX_BEATS));
 
     end loop;
+
+    --------------------------------------------------------------------------
+    -- Mid-operation iRst: drive a partial image (valid beats, no flush) then
+    -- assert iRst before the flush. The aborted bits are never scored (sIgnore);
+    -- after reset the byte_stuffer must be idle, and a fresh image must come out
+    -- byte-exact. The reference FF-stuffer state is clean here (last image was
+    -- flushed) and is re-initialised below to mirror the reset.
+    --------------------------------------------------------------------------
+    sIgnore <= true;
+
+    for k in 1 to 4 loop
+
+      iWord         <= rv.RandSlv(IN_WIDTH);
+      iWordValidLen <= to_unsigned(IN_WIDTH, VLEN_W);
+      iWordValid    <= '1';
+      iFlush        <= '0';
+
+      loop
+
+        wait until rising_edge(clk);
+        exit when iStall = '0';
+
+      end loop;
+
+    end loop;
+
+    iWordValid <= '0';
+    iFlush     <= '0';
+    apply_reset(clk, rst, 6, '1');
+    wait for 1 ns;
+    AffirmIf(oWordValid = '0', "mid-op reset: byte_stuffer output cleared");
+    AffirmIf(oFlushDone = '0', "mid-op reset: no flush-done after reset");
+
+    -- Re-initialise the reference FF-stuffer state to mirror the reset.
+    curByte    := (others => '0');
+    bitsInByte := 0;
+    anyBits    := false;
+    lastEmitFF := false;
+    realSince  := false;
+
+    sIgnore <= false;
+    wait until rising_edge(clk);
+
+    -- Recovery: a fresh image must encode byte-exact through the scoreboard.
+    send_image(rv.RandInt(1, MAX_BEATS));
 
     --------------------------------------------------------------------------
     -- Done: every image already drained (each send_image/directed waits for its
