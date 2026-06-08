@@ -1,0 +1,292 @@
+--------------------------------------------------------------------------------
+-- OSVVM testbench: a11_2_bit_packer (registered).
+--
+-- Concatenates this cycle's raw + Golomb fields into one MSB-aligned word per
+-- T.87 A.5.3 packing: [raw bits][unary zeros]['1'][suffix]. The reference builds
+-- the expected bit string independently (explicit MSB-first placement, no shared
+-- arithmetic with the RTL) and checks the registered (oWord,oValidLen,oWordValid)
+-- one cycle after each accepted beat. A directed stall sequence confirms the
+-- output holds across iStall. Coverage closes the four raw/Golomb-present cases.
+--------------------------------------------------------------------------------
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.common.all;
+
+library openlogic_base;
+  use openlogic_base.olo_base_pkg_math.log2ceil;
+
+library osvvm;
+  context osvvm.OsvvmContext;
+
+library tb_support;
+  use tb_support.tb_support_pkg.all;
+
+entity tb_a11_2_osvvm is
+end entity tb_a11_2_osvvm;
+
+architecture sim of tb_a11_2_osvvm is
+
+  constant LIMIT       : natural := CO_LIMIT_STD;
+  constant UNARY_W     : natural := CO_UNARY_WIDTH_STD;
+  constant SUFFIX_W    : natural := CO_SUFFIX_WIDTH_STD;
+  constant SUFFIXLEN_W : natural := CO_SUFFIXLEN_WIDTH_STD;
+  constant OUT_WIDTH   : natural := CO_LIMIT_STD;
+  constant LEN_W       : natural := log2ceil(OUT_WIDTH + 1);
+  constant CLK_PERIOD  : time    := CLK_PERIOD_DEFAULT;
+
+  signal clk         : std_logic := '0';
+  signal rst         : std_logic;
+  signal iStall      : std_logic;
+  signal iRawValid   : std_logic;
+  signal iRawLen     : unsigned(SUFFIXLEN_W - 1 downto 0);
+  signal iRawVal     : unsigned(SUFFIX_W - 1 downto 0);
+  signal iGolombVal  : std_logic;
+  signal iUnaryZeros : unsigned(UNARY_W - 1 downto 0);
+  signal iSuffixLen  : unsigned(SUFFIXLEN_W - 1 downto 0);
+  signal iSuffixVal  : unsigned(SUFFIX_W - 1 downto 0);
+  signal oWord       : std_logic_vector(OUT_WIDTH - 1 downto 0);
+  signal oWordValid  : std_logic;
+  signal oValidLen   : unsigned(LEN_W - 1 downto 0);
+
+  -- Independent MSB-first assembler. Places raw bits (bit rawLen-1 first), then
+  -- the Golomb field: unaryZeros '0's, a '1', then suffixLen bits of suffixVal.
+  procedure assemble (
+    rawValid : std_logic;
+    rawLen   : natural;
+    rawVal   : unsigned;
+    gV       : std_logic;
+    uz       : natural;
+    sl       : natural;
+    sv       : unsigned;
+    word     : out std_logic_vector(OUT_WIDTH - 1 downto 0);
+    total    : out natural
+  ) is
+
+    variable w   : std_logic_vector(OUT_WIDTH - 1 downto 0);
+    variable idx : integer;
+    variable n   : natural;
+
+  begin
+
+    w   := (others => '0');
+    idx := OUT_WIDTH - 1;
+    n   := 0;
+
+    if (rawValid = '1' and rawLen > 0) then
+      for i in rawLen - 1 downto 0 loop
+
+        w(idx) := rawVal(i);
+        idx    := idx - 1;
+
+      end loop;
+      n := n + rawLen;
+    end if;
+
+    if (gV = '1') then
+      for i in 1 to uz loop
+
+        w(idx) := '0';
+        idx    := idx - 1;
+
+      end loop;
+      w(idx) := '1';
+      idx    := idx - 1;
+
+      for i in sl - 1 downto 0 loop
+
+        w(idx) := sv(i);
+        idx    := idx - 1;
+
+      end loop;
+      n := n + uz + 1 + sl;
+    end if;
+
+    word  := w;
+    total := n;
+
+  end procedure assemble;
+
+begin
+
+  clk_proc : process is
+  begin
+
+    clk <= '1';
+    wait for CLK_PERIOD / 2;
+    clk <= '0';
+    wait for CLK_PERIOD / 2;
+
+  end process clk_proc;
+
+  dut : entity work.a11_2_bit_packer(behavioral)
+    generic map (
+      LIMIT           => LIMIT,
+      UNARY_WIDTH     => UNARY_W,
+      SUFFIX_WIDTH    => SUFFIX_W,
+      SUFFIXLEN_WIDTH => SUFFIXLEN_W,
+      OUT_WIDTH       => OUT_WIDTH
+    )
+    port map (
+      iClk         => clk,
+      iRst         => rst,
+      iStall       => iStall,
+      iRawValid    => iRawValid,
+      iRawLen      => iRawLen,
+      iRawVal      => iRawVal,
+      iGolombValid => iGolombVal,
+      iUnaryZeros  => iUnaryZeros,
+      iSuffixLen   => iSuffixLen,
+      iSuffixVal   => iSuffixVal,
+      oWord        => oWord,
+      oWordValid   => oWordValid,
+      oValidLen    => oValidLen
+    );
+
+  stim : process is
+
+    variable rv      : RandomPType;
+    variable cov     : CovPType;
+    variable rawLen  : integer;
+    variable uz      : integer;
+    variable sl      : integer;
+    variable rawVal  : unsigned(SUFFIX_W - 1 downto 0);
+    variable sufVal  : unsigned(SUFFIX_W - 1 downto 0);
+    variable rValid  : std_logic;
+    variable gValid  : std_logic;
+    constant N_RAND  : natural := 4000;
+
+    -- Present one beat (iStall='0'), then check the registered output.
+    procedure beat (
+      rValid : std_logic;
+      rLen   : natural;
+      rVal   : unsigned;
+      gValid : std_logic;
+      uzv    : natural;
+      slv    : natural;
+      sVal   : unsigned;
+      msg    : string
+    ) is
+
+      variable expWord : std_logic_vector(OUT_WIDTH - 1 downto 0);
+      variable expLen  : natural;
+      variable caseT   : integer;
+
+    begin
+
+      iStall      <= '0';
+      iRawValid   <= rValid;
+      iRawLen     <= to_unsigned(rLen, SUFFIXLEN_W);
+      iRawVal     <= rVal;
+      iGolombVal  <= gValid;
+      iUnaryZeros <= to_unsigned(uzv, UNARY_W);
+      iSuffixLen  <= to_unsigned(slv, SUFFIXLEN_W);
+      iSuffixVal  <= sVal;
+
+      wait until rising_edge(clk);                 -- DUT latches
+      wait for 1 ns;
+
+      assemble(rValid, rLen, rVal, gValid, uzv, slv, sVal, expWord, expLen);
+      AffirmIfEqual(oWord, expWord, msg & " word");
+      AffirmIfEqual(to_integer(oValidLen), expLen, msg & " len");
+      AffirmIfEqual(std_to_int(oWordValid), std_to_int(rValid or gValid), msg & " valid");
+
+      if (rValid = '1' and gValid = '1') then
+        caseT := 3;
+      elsif (gValid = '1') then
+        caseT := 2;
+      elsif (rValid = '1') then
+        caseT := 1;
+      else
+        caseT := 0;
+      end if;
+      cov.ICover(caseT);
+
+    end procedure beat;
+
+  begin
+
+    iStall      <= '0';
+    iRawValid   <= '0';
+    iRawLen     <= (others => '0');
+    iRawVal     <= (others => '0');
+    iGolombVal  <= '0';
+    iUnaryZeros <= (others => '0');
+    iSuffixLen  <= (others => '0');
+    iSuffixVal  <= (others => '0');
+
+    SetAlertLogName("tb_a11_2_osvvm");
+    SetLogEnable(PASSED, FALSE);
+    rv.InitSeed(rv'instance_name);
+    cov.AddBins("case", GenBin(0, 3, 4));
+
+    apply_reset(clk, rst, 4, '1');
+
+    -- Directed: each case.
+    beat('0', 0, to_unsigned(0, SUFFIX_W), '0', 0, 0, to_unsigned(0, SUFFIX_W), "neither");
+    beat('1', 8, to_unsigned(16#A5#, SUFFIX_W), '0', 0, 0, to_unsigned(0, SUFFIX_W), "rawOnly");
+    beat('0', 0, to_unsigned(0, SUFFIX_W), '1', 5, 4, to_unsigned(16#B#, SUFFIX_W), "golombOnly");
+    beat('1', 6, to_unsigned(16#2D#, SUFFIX_W), '1', 3, 5, to_unsigned(16#15#, SUFFIX_W), "both (RI)");
+    -- Max-width Golomb-only (escape-shaped: long unary + qbpp suffix).
+    beat('0', 0, to_unsigned(0, SUFFIX_W), '1', LIMIT - CO_QBPP_STD - 1, CO_QBPP_STD,
+         to_unsigned(16#FFF#, SUFFIX_W), "golomb max");
+
+    --------------------------------------------------------------------------
+    -- Stall hold: latch a beat, then hold across several stalled cycles.
+    --------------------------------------------------------------------------
+    iStall      <= '0';
+    iRawValid   <= '1';
+    iRawLen     <= to_unsigned(7, SUFFIXLEN_W);
+    iRawVal     <= to_unsigned(16#5B#, SUFFIX_W);
+    iGolombVal  <= '0';
+    wait until rising_edge(clk);                    -- latch the 7-bit raw beat
+    wait for 1 ns;
+
+    -- Drive different inputs but stall; output must not change.
+    iStall      <= '1';
+    iRawValid   <= '1';
+    iRawLen     <= to_unsigned(3, SUFFIXLEN_W);
+    iRawVal     <= to_unsigned(16#7#, SUFFIX_W);
+
+    for n in 1 to 5 loop
+
+      wait until rising_edge(clk);
+      wait for 1 ns;
+      AffirmIfEqual(to_integer(oValidLen), 7, "stall holds len");
+      AffirmIf(oWordValid = '1', "stall holds valid");
+
+    end loop;
+
+    -- Release: now the 3-bit beat latches.
+    iStall <= '0';
+    wait until rising_edge(clk);
+    wait for 1 ns;
+    AffirmIfEqual(to_integer(oValidLen), 3, "post-stall latch len");
+
+    --------------------------------------------------------------------------
+    -- Constrained-random beats (field sums bounded <= OUT_WIDTH).
+    --------------------------------------------------------------------------
+    for i in 1 to N_RAND loop
+
+      rValid := bool2bit(rv.RandInt(0, 1) = 1);
+      gValid := bool2bit(rv.RandInt(0, 1) = 1);
+      rawLen := rv.RandInt(0, 12);
+      uz     := rv.RandInt(0, 20);
+      sl     := rv.RandInt(0, 12);
+      rawVal := rv.RandUnsigned(SUFFIX_W);
+      sufVal := rv.RandUnsigned(SUFFIX_W);
+      beat(rValid, rawLen, rawVal, gValid, uz, sl, sufVal, "rand");
+      exit when cov.IsCovered and i > 200;
+
+    end loop;
+
+    cov.WriteBin;
+    AffirmIf(cov.IsCovered, "case coverage closed");
+
+    end_of_test("tb_a11_2_osvvm");
+    wait;
+
+  end process stim;
+
+end architecture sim;
