@@ -1,0 +1,147 @@
+--------------------------------------------------------------------------------
+-- OSVVM testbench: a19_run_interruption_error (combinational).
+--
+-- T.87 Code segment A.19 with NEAR=0 (Quantize is identity, Rx=Ix):
+--   if (RItype==0 && Ra>Rb) { Errval = -Errval; SIGN = -1; } else SIGN = +1;
+--   Errval = ModRange(Errval, RANGE);     -- A.9 inline
+-- Reference applies the sign flip then the A.9 modulo reduction. Coverage
+-- crosses the sign-flip condition with the upper-half subtract of ModRange.
+--------------------------------------------------------------------------------
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.common.all;
+
+library osvvm;
+  context osvvm.OsvvmContext;
+
+library tb_support;
+  use tb_support.tb_support_pkg.all;
+
+entity tb_a19_osvvm is
+end entity tb_a19_osvvm;
+
+architecture sim of tb_a19_osvvm is
+
+  constant BITNESS : natural := CO_BITNESS_STD;
+  constant RANGE_P : natural := CO_RANGE_STD;
+  constant PX_MAX  : integer := (2 ** BITNESS) - 1;
+  constant ERR_LO  : integer := -PX_MAX;
+  constant ERR_HI  : integer := PX_MAX;
+
+  signal sErrIn  : signed(BITNESS downto 0);
+  signal sRItype : std_logic;
+  signal sRaPix     : unsigned(BITNESS - 1 downto 0);
+  signal sRbPix     : unsigned(BITNESS - 1 downto 0);
+  signal sErrOut : signed(BITNESS downto 0);
+  signal sSign   : std_logic;
+
+begin
+
+  dut : entity work.a19_run_interruption_error(behavioral)
+    generic map (
+      BITNESS => BITNESS,
+      RANGE_P => RANGE_P
+    )
+    port map (
+      iErrval => sErrIn,
+      iRItype => sRItype,
+      iRa     => sRaPix,
+      iRb     => sRbPix,
+      oErrval => sErrOut,
+      oSign   => sSign
+    );
+
+  stim : process is
+
+    variable rv      : RandomPType;
+    variable cov     : CovPType;
+    constant N_RAND  : natural := 6000;
+
+    procedure drive_check (
+      err : integer;
+      ri  : std_logic;
+      ra  : integer;
+      rb  : integer;
+      msg : string
+    ) is
+
+      variable flip   : boolean;
+      variable e      : integer;
+      variable adj    : integer;
+      variable result : integer;
+      variable eSign  : std_logic;
+      variable gh     : integer;
+
+    begin
+
+      sErrIn  <= to_signed(err, BITNESS + 1);
+      sRItype <= ri;
+      sRaPix     <= to_unsigned(ra, BITNESS);
+      sRbPix     <= to_unsigned(rb, BITNESS);
+      wait for 1 ns;
+
+      flip := (ri = '0') and (ra > rb);
+      if (flip) then
+        e     := -err;
+        eSign := CO_SIGN_NEG;
+      else
+        e     := err;
+        eSign := CO_SIGN_POS;
+      end if;
+
+      adj := e;
+      if (adj < 0) then
+        adj := adj + RANGE_P;
+      end if;
+      if (adj >= (RANGE_P + 1) / 2) then
+        result := adj - RANGE_P;
+        gh     := 1;
+      else
+        result := adj;
+        gh     := 0;
+      end if;
+
+      AffirmIfEqual(to_integer(sErrOut), result, msg & " err");
+      AffirmIfEqual(std_to_int(sSign), std_to_int(eSign), msg & " sign");
+      cov.ICover((std_to_int(eSign), gh));
+
+    end procedure drive_check;
+
+  begin
+
+    SetAlertLogName("tb_a19_osvvm");
+    SetLogEnable(PASSED, FALSE);
+    rv.InitSeed(rv'instance_name);
+    cov.AddCross("sign x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
+
+    -- Directed corners.
+    drive_check(0, '0', 5, 1, "flip err0");           -- flip, e=0
+    drive_check(ERR_HI, '0', 5, 1, "flip max");       -- flip large
+    drive_check(ERR_LO, '1', 5, 1, "no flip (ri1)");
+    drive_check(ERR_HI, '0', 1, 5, "no flip (ra<rb)");
+
+    for i in 1 to N_RAND loop
+
+      -- Bias the flip condition (ri=0, Ra>Rb) so both sign bins fill.
+      if (rv.RandInt(0, 1) = 0) then
+        drive_check(rv.RandInt(ERR_LO, ERR_HI), '0', 100, 50, "rand flip");
+      else
+        drive_check(rv.RandInt(ERR_LO, ERR_HI),
+                    bool2bit(rv.RandInt(0, 1) = 1),
+                    rv.RandInt(0, PX_MAX), rv.RandInt(0, PX_MAX), "rand");
+      end if;
+      exit when cov.IsCovered and i > 300;
+
+    end loop;
+
+    cov.WriteBin;
+    AffirmIf(cov.IsCovered, "sign x geHalf coverage closed");
+
+    end_of_test("tb_a19_osvvm");
+    wait;
+
+  end process stim;
+
+end architecture sim;
