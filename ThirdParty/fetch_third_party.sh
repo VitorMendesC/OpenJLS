@@ -17,6 +17,12 @@ OL_TAG="4.5.0"
 OSVVM_URL="https://github.com/OSVVM/OSVVM.git"   # core utility library only
 OSVVM_TAG="2026.01"
 
+OSVVM_SCRIPTS_URL="https://github.com/OSVVM/OSVVM-Scripts.git"   # tcl script flow (reports)
+OSVVM_SCRIPTS_TAG="2026.01"                                      # keep in lockstep with OSVVM_TAG
+
+TCLLIB_URL="https://github.com/tcltk/tcllib.git"   # fileutil + yaml, required by OSVVM-Scripts
+TCLLIB_TAG="tcllib-2-0"
+
 # --- open-logic: base packages + RAM/FIFO primitives the RTL instantiates ---
 OL_DST="$HERE/open-logic"
 OL_FILES=(
@@ -84,6 +90,8 @@ OSVVM_FILES=(
   ReportPkg.vhd
   deprecated/RandomPkg2019_c.vhd
   OsvvmContext.vhd
+  osvvm.pro
+  OsvvmVhdlSettings.pro
 )
 
 echo "==> OSVVM $OSVVM_TAG"
@@ -94,5 +102,31 @@ for f in "${OSVVM_FILES[@]}"; do
   cp "$TMP/osvvm/$f" "$OSVVM_DST/$f"
 done
 cp "$TMP/osvvm/LICENSE.md" "$OSVVM_DST/"
+
+# --- OSVVM-Scripts: tcl script flow (build/.pro, YAML -> HTML reports) -------
+# All top-level files; doc/ and images/ are documentation only.
+SCRIPTS_DST="$HERE/osvvm-scripts"
+
+echo "==> OSVVM-Scripts $OSVVM_SCRIPTS_TAG"
+git clone --quiet --depth 1 --branch "$OSVVM_SCRIPTS_TAG" -c advice.detachedHead=false "$OSVVM_SCRIPTS_URL" "$TMP/osvvm-scripts"
+rm -rf "$SCRIPTS_DST"
+mkdir -p "$SCRIPTS_DST"
+find "$TMP/osvvm-scripts" -maxdepth 1 -type f ! -name '.*' -exec cp {} "$SCRIPTS_DST/" \;
+
+# --- tcllib: pure-tcl modules OSVVM-Scripts requires (not packaged on Arch) --
+# fileutil depends on cmdline; yaml bundles its huddle dependency.
+# build_reports.sh points TCLLIBPATH here.
+TCLLIB_DST="$HERE/tcllib"
+TCLLIB_MODULES=(fileutil cmdline yaml)
+
+echo "==> tcllib $TCLLIB_TAG"
+git clone --quiet --depth 1 --branch "$TCLLIB_TAG" -c advice.detachedHead=false "$TCLLIB_URL" "$TMP/tcllib"
+rm -rf "$TCLLIB_DST"
+mkdir -p "$TCLLIB_DST"
+for m in "${TCLLIB_MODULES[@]}"; do
+  mkdir -p "$TCLLIB_DST/$m"
+  find "$TMP/tcllib/modules/$m" -maxdepth 1 -name '*.tcl' -exec cp {} "$TCLLIB_DST/$m/" \;
+done
+cp "$TMP/tcllib/license.terms" "$TCLLIB_DST/"
 
 echo "Done. Review with: git status ThirdParty"
