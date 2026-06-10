@@ -88,6 +88,14 @@ architecture behavioral of a15_a16_encode_run is
 
 begin
 
+  -- Contract assertions in PSL (active in GHDL sims via -fpsl, plain comments
+  -- to synthesis): run state and RUNindex must clear one cycle after iEoi
+  -- (T.87: RUNindex persists across runs within a scan only); tokens only
+  -- fire in run mode.
+  -- psl default clock is rising_edge(iClk);
+  -- psl assert always ((iRst = '1' or iEoi = '1') -> next (sInRun = '0' and sRunIndex = 0)) report "a15_a16: run state must clear one cycle after iEoi/reset";
+  -- psl assert always (iModeIsRun = '0' -> (oRawValid = '0' and oRiValid = '0')) report "a15_a16: no tokens outside run mode";
+
   -- ── Combinational: outputs and next-state ─────────────────────────────────
   p_comb : process (sRunIndex, sNextBound, sInRun,
                     iRunCnt, iRunHit, iRunContinue, iModeIsRun, iEoi, iRst,

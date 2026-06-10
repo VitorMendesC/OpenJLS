@@ -20,9 +20,12 @@
 # warning-clean: -Wno-shared (shared variables are intentional -frelaxed use),
 # -Wno-elaboration (GHDL false positive on olo math functions in Common.vhd
 # package constants).
-SetExtendedAnalyzeOptions   {-frelaxed -O2 -Wno-shared -Wno-elaboration}
+# -fpsl activates the "-- psl" contract assertions in Sources/;
+# --assert-level=error makes a violated contract fail the test (default: the
+# violation prints but the sim keeps running and exits 0).
+SetExtendedAnalyzeOptions   {-frelaxed -O2 -fpsl -Wno-shared -Wno-elaboration}
 SetExtendedElaborateOptions {-frelaxed -O2}
-SetExtendedRunOptions       {--max-stack-alloc=0 --ieee-asserts=disable}
+SetExtendedRunOptions       {--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error}
 
 # open-logic base: packages + RAM/FIFO primitives the RTL instantiates.
 library openlogic_base

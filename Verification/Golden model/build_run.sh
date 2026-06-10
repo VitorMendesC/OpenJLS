@@ -39,7 +39,8 @@ fi
 echo "CharLS gate: reproduces official T16E0.JLS byte-exact OK"
 
 # -frelaxed: OpenLogic uses shared variables of non-protected types.
-STD_FLAGS=(--std=08 -frelaxed -P"$WORK_LIB")
+# -fpsl activates the "-- psl" contract assertions embedded in Sources/.
+STD_FLAGS=(--std=08 -frelaxed -fpsl -P"$WORK_LIB")
 # Native (LLVM/GCC) backends generate code at analyze/elaborate time; -O2 gives
 # a large runtime speedup over the mcode JIT. Applied to -a/-e only, not -r.
 OPT_FLAGS=(-O2)
@@ -162,7 +163,7 @@ run_image() {
     echo "[t$w] FAIL $stem (charls encode)"; echo "$stem" >>"$TMPD/failures"; return 1
   fi
   if ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" \
-      --ieee-asserts=disable --max-stack-alloc=0 \
+      --ieee-asserts=disable --max-stack-alloc=0 --assert-level=error \
       -gREPO_ROOT="$ROOT/" \
       -gPGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
       -gJLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \

@@ -307,6 +307,33 @@ top-level TB injects mid-image reset end-to-end.
 
 ---
 
+## Assertion conventions
+
+The RTL under `Sources/` carries three kinds of assertions, each chosen by
+what it checks — the mix is a policy, not an accident:
+
+| What it checks | Mechanism | Why |
+|---|---|---|
+| Static parameter contract (generics) | VHDL `assert` at elaboration | Evaluated once, before time zero; stops bad instantiations in any tool |
+| Invariant on a process variable | VHDL `assert` inside the process | PSL sees only signals; the in-place assert checks the variable at its point of truth |
+| Temporal contract between signals | PSL (`-- psl …` comment form) | Evaluated every clock cycle in **every** simulation — module TBs, top TB, golden suite, conformance — regardless of stimulus |
+
+The PSL contracts live next to the entity's output wiring (e.g.
+`jls_framer`: AXIS `oValid` held until accepted, `oLast` only on a valid
+beat; `byte_stuffer`: `oFlushDone` only on a valid beat and strictly one
+cycle; `a15_a16`: run state clears one cycle after `iEoi`). They are written
+as comments so synthesis sees nothing; GHDL activates them with `-fpsl` and
+`--assert-level=error` makes a violation fatal (without it the violation
+prints but the sim still exits 0). All four build flows set both flags.
+
+GHDL notes: the PSL built-in functions (`prev()`, `stable()`) are not
+implemented in the LLVM codegen — properties must be plain boolean
+expressions under `always`/`never`/`next`. And with `-fpsl` active, any
+comment whose first word is `psl` is *parsed as PSL*, so prose comments must
+not start with that word.
+
+---
+
 ## Requirements registry
 
 Two ID families. `T87.*` is conformance: the RTL matches the reference derived

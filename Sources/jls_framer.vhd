@@ -386,6 +386,14 @@ begin
 
   sAxiHandshake <= (iReady and sOutValid) = '1';
 
+  -- Contract assertions in PSL: the output side is an AXI-Stream master —
+  -- these hold for any downstream behaviour (active in GHDL sims via -fpsl,
+  -- plain comments to synthesis).
+  -- psl default clock is rising_edge(iClk);
+  -- psl assert always (iRst = '1' -> next (oValid = '0' and oLast = '0')) report "jls_framer: reset must clear the output stream";
+  -- psl assert always ((iRst = '0' and oValid = '1' and iReady = '0') -> next (oValid = '1')) report "jls_framer: oValid must hold until the beat is accepted (AXIS)";
+  -- psl assert never (oLast = '1' and oValid = '0') report "jls_framer: oLast is only meaningful on a valid beat";
+
   oWord       <= sOutWord;
   oValid      <= sOutValid;
   oByteEnable <= sValidBytes;

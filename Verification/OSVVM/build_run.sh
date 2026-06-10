@@ -18,11 +18,14 @@ fi
 
 mkdir -p "$SUPPORT_LIB" "$WORK_LIB"
 
-STD_FLAGS=(--std=08 -frelaxed -Wno-shared -Wno-elaboration -P"$OSVVM_LIB" -P"$SUPPORT_LIB" -P"$WORK_LIB")
+# -fpsl activates the "-- psl" contract assertions embedded in Sources/.
+STD_FLAGS=(--std=08 -frelaxed -fpsl -Wno-shared -Wno-elaboration -P"$OSVVM_LIB" -P"$SUPPORT_LIB" -P"$WORK_LIB")
 # LLVM/GCC backend optimization for analyze + elaborate (not run); matches the
 # golden flow. -r instead heap-allocates large stack objects (LLVM 128 kB cap).
 OPT_FLAGS=(-O2)
-RUN_FLAGS=(--max-stack-alloc=0 --ieee-asserts=disable)
+# --assert-level=error makes PSL contract violations fatal (default: sim
+# keeps running and exits 0 — the assertions would be advisory only).
+RUN_FLAGS=(--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error)
 
 # 1. OpenLogic base
 OL_LIB="$WORK_LIB"

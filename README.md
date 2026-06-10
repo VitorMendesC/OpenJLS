@@ -28,6 +28,7 @@ Specifications
 - **Throughput** — One pixel per clock cycle
 - **Interface** — AXI4-Stream input/output
 - **Conformance** — Bit-exact against the ISO/IEC 14495-1 reference and gold-model [CharLS](https://github.com/team-charls/charls) 
+- **Design contracts** — Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked in every simulation
 - **Portability** — Vendor-agnostic VHDL, portable across FPGA families via [open-logic](https://github.com/open-logic/open-logic)
 
 Planned

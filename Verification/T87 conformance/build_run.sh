@@ -16,7 +16,8 @@ TB="tb_openjls_conformance"
 mkdir -p "$WORK_LIB" "$HERE/Output"
 
 # -frelaxed: OpenLogic uses shared variables of non-protected types.
-STD_FLAGS=(--std=08 -frelaxed -P"$WORK_LIB")
+# -fpsl activates the "-- psl" contract assertions embedded in Sources/.
+STD_FLAGS=(--std=08 -frelaxed -fpsl -P"$WORK_LIB")
 
 # 1. OpenLogic base (compile order matters — dependency chain)
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
@@ -78,4 +79,4 @@ ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$HERE/$TB.vhd"
 
 # 4. Elaborate + run (REPO_ROOT points the TB at the in-repo test images)
 ghdl -e "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
-ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" -gREPO_ROOT="$ROOT/"
+ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" --assert-level=error -gREPO_ROOT="$ROOT/"
