@@ -57,6 +57,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     constant N_RAND  : natural := 6000;
 
     procedure drive_check (
@@ -103,8 +104,8 @@ begin
         gh     := 0;
       end if;
 
-      AffirmIfEqual(to_integer(sErrOut), result, msg & " err");
-      AffirmIfEqual(std_to_int(sSign), std_to_int(eSign), msg & " sign");
+      AffirmIfEqual(req, to_integer(sErrOut), result, msg & " err");
+      AffirmIfEqual(req, std_to_int(sSign), std_to_int(eSign), msg & " sign");
       ICover(cov, (std_to_int(eSign), gh));
 
     end procedure drive_check;
@@ -114,6 +115,7 @@ begin
     SetAlertLogName("tb_a19_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A19", 300);
     cov := NewID("sign x geHalf");
     AddCross(cov, "sign x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
 

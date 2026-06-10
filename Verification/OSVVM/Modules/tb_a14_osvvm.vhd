@@ -59,6 +59,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable ra      : integer;
     variable ix      : integer;
     variable rc      : integer;
@@ -95,9 +96,9 @@ begin
         expC := rcv;
       end if;
 
-      AffirmIfEqual(to_integer(sRunCntO), expC, msg & " runCnt");
-      AffirmIfEqual(std_to_int(sRunHit), hit, msg & " runHit");
-      AffirmIfEqual(std_to_int(sRunCont), hit * std_to_int(not eol), msg & " continue");
+      AffirmIfEqual(req, to_integer(sRunCntO), expC, msg & " runCnt");
+      AffirmIfEqual(req, std_to_int(sRunHit), hit, msg & " runHit");
+      AffirmIfEqual(req, std_to_int(sRunCont), hit * std_to_int(not eol), msg & " continue");
       ICover(cov, (hit, std_to_int(eol)));
 
     end procedure drive_check;
@@ -107,6 +108,7 @@ begin
     SetAlertLogName("tb_a14_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A14", 100);
     cov := NewID("runHit x eol");
     AddCross(cov, "runHit x eol", GenBin(0, 1, 2), GenBin(0, 1, 2));
 

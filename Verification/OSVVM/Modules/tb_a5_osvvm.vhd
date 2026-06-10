@@ -96,6 +96,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable a       : integer;
     variable b       : integer;
     variable c       : integer;
@@ -115,7 +116,7 @@ begin
       sB <= to_unsigned(bv, BITNESS);
       sC <= to_unsigned(cv, BITNESS);
       wait for 1 ns;
-      AffirmIfEqual(to_integer(sPx), predict(av, bv, cv), msg &
+      AffirmIfEqual(req, to_integer(sPx), predict(av, bv, cv), msg &
                     " A=" & integer'image(av) &
                     " B=" & integer'image(bv) &
                     " C=" & integer'image(cv));
@@ -128,6 +129,7 @@ begin
     SetAlertLogName("tb_a5_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A5", 200);
 
     cov := NewID("branch");
     AddBins(cov, "branch", GenBin(0, 2, 3));

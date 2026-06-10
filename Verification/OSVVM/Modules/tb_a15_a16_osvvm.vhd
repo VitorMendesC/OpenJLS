@@ -184,6 +184,7 @@ begin
     variable covImm  : CoverageIDType;
     variable covEoi  : CoverageIDType;
     variable covIdx  : CoverageIDType;
+    variable req     : AlertLogIDType;
 
     variable actBuf  : string(1 to MAXBITS);
     variable actLen  : natural;
@@ -255,19 +256,19 @@ begin
         cycle_collect('1', '0', m, RUNVAL, RUNVAL, eoi);
       end if;
 
-      AffirmIf(oRiValid = bool2bit(riFires), msg & " RI-valid");
+      AffirmIf(req, oRiValid = bool2bit(riFires), msg & " RI-valid");
       if (term = T_BREAK) then
-        AffirmIfEqual(to_integer(oRiIx), BRKPIX, msg & " RI Ix");
-        AffirmIfEqual(to_integer(oRiRa), RUNVAL, msg & " RI Ra");
+        AffirmIfEqual(req, to_integer(oRiIx), BRKPIX, msg & " RI Ix");
+        AffirmIfEqual(req, to_integer(oRiRa), RUNVAL, msg & " RI Ra");
       end if;
       wait until rising_edge(clk);
 
       iEoi <= '0';
 
       -- Compare the collected run-segment bitstream.
-      AffirmIfEqual(actLen, expLen, msg & " bit-length");
+      AffirmIfEqual(req, actLen, expLen, msg & " bit-length");
       if (actLen = expLen) then
-        AffirmIfEqual(actBuf(1 to actLen), expBuf(1 to expLen), msg & " bitstream");
+        AffirmIfEqual(req, actBuf(1 to actLen), expBuf(1 to expLen), msg & " bitstream");
       end if;
 
       -- Coverage and carried-index update.
@@ -325,6 +326,7 @@ begin
     SetAlertLogName("tb_a15_a16_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A15-A16", 100);
 
     covTerm := NewID("terminal");
     AddBins(covTerm, "terminal", GenBin(0, 1, 2));

@@ -74,6 +74,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable ix      : integer;
     variable px      : integer;
     variable sgnIn   : integer;
@@ -96,7 +97,7 @@ begin
       sSign <= sgv;
       wait for 1 ns;
       e := ref_err(ixv, pxv, sgv);
-      AffirmIfEqual(to_integer(sErrorVal), e, msg);
+      AffirmIfEqual(req, to_integer(sErrorVal), e, msg);
       ICover(cov, (std_to_int(sgv), sgn(e)));
 
     end procedure drive_check;
@@ -106,6 +107,7 @@ begin
     SetAlertLogName("tb_a7_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A7", 200);
 
     cov := NewID("signIn x signErr");
     AddCross(cov, "signIn x signErr", GenBin(0, 1, 2), GenBin(0, 1, 2));

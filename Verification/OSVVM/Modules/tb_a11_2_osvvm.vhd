@@ -148,6 +148,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable rawLen  : integer;
     variable uz      : integer;
     variable sl      : integer;
@@ -188,9 +189,9 @@ begin
       wait for 1 ns;
 
       assemble(rValid, rLen, rVal, gValid, uzv, slv, sVal, expWord, expLen);
-      AffirmIfEqual(oWord, expWord, msg & " word");
-      AffirmIfEqual(to_integer(oValidLen), expLen, msg & " len");
-      AffirmIfEqual(std_to_int(oWordValid), std_to_int(rValid or gValid), msg & " valid");
+      AffirmIfEqual(req, oWord, expWord, msg & " word");
+      AffirmIfEqual(req, to_integer(oValidLen), expLen, msg & " len");
+      AffirmIfEqual(req, std_to_int(oWordValid), std_to_int(rValid or gValid), msg & " valid");
 
       if (rValid = '1' and gValid = '1') then
         caseT := 3;
@@ -219,6 +220,7 @@ begin
     SetAlertLogName("tb_a11_2_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A11.2", 100);
     cov := NewID("case");
     AddBins(cov, "case", GenBin(0, 3, 4));
 

@@ -70,6 +70,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     constant N_RAND  : natural := 8000;
 
     procedure drive_check (
@@ -113,9 +114,9 @@ begin
         nNew := n + 1;
       end if;
 
-      AffirmIfEqual(to_integer(sAqO), aNew, msg & " A");
-      AffirmIfEqual(to_integer(sBqO), bNew, msg & " B");
-      AffirmIfEqual(to_integer(sNqO), nNew, msg & " N");
+      AffirmIfEqual(req, to_integer(sAqO), aNew, msg & " A");
+      AffirmIfEqual(req, to_integer(sBqO), bNew, msg & " B");
+      AffirmIfEqual(req, to_integer(sNqO), nNew, msg & " N");
 
       if (rescale) then
         rsc := 1;
@@ -136,6 +137,7 @@ begin
     SetAlertLogName("tb_a12_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A12", 300);
 
     cov := NewID("rescale x bSumSign");
     AddCross(cov, "rescale x bSumSign", GenBin(0, 1, 2), GenBin(0, 1, 2));

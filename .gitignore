@@ -49,3 +49,6 @@ settings.json
 *.cf
 *.o
 *.exe
+
+# GHDL-elaborated TB binaries (build_run.sh output)
+/Verification/OSVVM/tb_*

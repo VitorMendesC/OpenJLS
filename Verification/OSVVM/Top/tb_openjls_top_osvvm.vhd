@@ -28,6 +28,13 @@
 -- upstream stall propagation, back-to-back (clean / stressed), reset
 -- (mid-feed / mid-feed-under-stress / mid-drain).
 --
+-- Requirements tracked (see Verification/OSVVM/README.md registry):
+--   T87.H3               output byte-identical to the Annex H.3 golden stream
+--   OJLS.BackToBack      next image accepted while the previous one drains
+--   OJLS.NoStallCompress oReady never drops during a clean feed (byte_stuffer
+--                        buffer must not fill while compressing)
+--   OJLS.NoStallEOL      ... including across line / image boundaries
+--
 -- Restores the output-backpressure / stall-recovery coverage the golden TB
 -- dropped (project-backpressure-coverage-gap).
 --------------------------------------------------------------------------------
@@ -110,6 +117,10 @@ architecture sim of tb_openjls_top_osvvm is
   -- Downstream backpressure mode: 0 always ready, 1 random (~33% ready),
   -- 2 one-shot hold (iReady low for HOLD_CYCLES, then high until mode change).
   signal sBpMode : natural range 0 to 2;
+
+  -- Arms the no-stall requirements monitor. Only clean feeds (no downstream
+  -- backpressure, no input gaps) may arm it: stalls are legal under stress.
+  signal sNoStall : boolean := false;
 
   shared variable collected      : byte_array_t(0 to 32767);
   shared variable collectedCount : natural;
@@ -201,6 +212,49 @@ begin
   end process stall_mon;
 
   -----------------------------------------------------------------------------
+  -- No-stall requirements monitor. While armed, every offered pixel must be
+  -- accepted immediately (OJLS.NoStallCompress: the byte_stuffer buffer never
+  -- fills while compressing), including the first pixel after a line or image
+  -- boundary (OJLS.NoStallEOL). Goals are conservative lower bounds of the
+  -- guaranteed armed check counts, so a vacuous run fails the requirement.
+  -----------------------------------------------------------------------------
+  nostall_mon : process (clk) is
+
+    variable reqCompress : AlertLogIDType := ALERTLOG_ID_NOT_ASSIGNED;
+    variable reqEol      : AlertLogIDType := ALERTLOG_ID_NOT_ASSIGNED;
+    variable pxIdx       : natural;
+
+  begin
+
+    if rising_edge(clk) then
+      if (reqCompress = ALERTLOG_ID_NOT_ASSIGNED) then
+        reqCompress := GetReqID("OJLS.NoStallCompress", 5000);
+        reqEol      := GetReqID("OJLS.NoStallEOL", 100);
+      end if;
+
+      if (rst = '1' or not sNoStall) then
+        pxIdx := 0;
+      else
+        if (iValid = '1') then
+          AffirmIf(reqCompress, oReady = '1',
+                   "clean-feed stall at pixel " & integer'image(pxIdx));
+
+          if (pxIdx > 0 and pxIdx mod sImgW = 0) then
+            AffirmIf(reqEol, oReady = '1',
+                     "clean-feed stall at line/image boundary, pixel " &
+                     integer'image(pxIdx));
+          end if;
+        end if;
+
+        if (iValid = '1' and oReady = '1') then
+          pxIdx := pxIdx + 1;
+        end if;
+      end if;
+    end if;
+
+  end process nostall_mon;
+
+  -----------------------------------------------------------------------------
   -- Downstream backpressure driver.
   -----------------------------------------------------------------------------
   ready_proc : process is
@@ -264,6 +318,8 @@ begin
     variable refBuf     : byte_array_t(0 to 8191);
     variable refLen     : natural;
     variable vStallSnap : natural;
+    variable reqH3      : AlertLogIDType;
+    variable reqB2B     : AlertLogIDType;
 
     procedure do_reset is
     begin
@@ -344,27 +400,28 @@ begin
     ) is
     begin
 
-      base    := collectedCount;
-      baseL   := lastCount;
-      sBpMode <= bp;
+      base     := collectedCount;
+      baseL    := lastCount;
+      sBpMode  <= bp;
+      sNoStall <= bp = 0 and not stall;
       for k in 1 to images loop
 
         feed(PIXELS, stall, PIXELS'length);
         -- Image k's last pixel entered one cycle ago, so its oLast cannot
         -- have fired: image k+1 is fed while image k is still draining.
         if (k = 1 and images > 1) then
-          AffirmIf(lastCount = baseL, msg & ": b2b overlap");
+          AffirmIf(reqB2B, lastCount = baseL, msg & ": b2b overlap");
         end if;
 
       end loop;
 
       wait_images(images);
 
-      AffirmIfEqual(collectedCount - base, images * EXP_BYTES, msg & " byte count");
+      AffirmIfEqual(reqH3, collectedCount - base, images * EXP_BYTES, msg & " byte count");
       for i in 0 to images * EXP_BYTES - 1 loop
 
         if (base + i < collectedCount) then
-          AffirmIfEqual(collected(base + i), EXPECTED(i mod EXP_BYTES),
+          AffirmIfEqual(reqH3, collected(base + i), EXPECTED(i mod EXP_BYTES),
                         msg & " byte " & integer'image(i));
         end if;
 
@@ -413,6 +470,11 @@ begin
     covRst := NewID("reset midFeed/midFeedStress/midDrain");
     AddBins(covRst, "reset midFeed/midFeedStress/midDrain", GenBin(0, 2, 3));
 
+    -- Requirement goals: H.3 = at least one full golden image; BackToBack = the
+    -- three directed b2b runs (b2b x3, B5 stressed, C minimal).
+    reqH3  := GetReqID("T87.H3", EXP_BYTES);
+    reqB2B := GetReqID("OJLS.BackToBack", 3);
+
     do_reset;
 
     --------------------------------------------------------------------------
@@ -441,7 +503,8 @@ begin
     ICover(covRst, 0);
 
     -- Reset injection while under backpressure, then recover.
-    sBpMode <= 1;
+    sBpMode  <= 1;
+    sNoStall <= false;
     feed(PIXELS, true, 6);
     do_reset;
     run_check(1, true, 1, "post-reset recovery under stress");
@@ -462,7 +525,8 @@ begin
       nImages := 1;
 
       if (pt(3) = 1) then
-        sBpMode <= pt(1);
+        sBpMode  <= pt(1);
+        sNoStall <= pt(1) = 0 and pt(2) = 0;
         feed(PIXELS, pt(2) = 1, rv.RandInt(1, PIXELS'length - 1));
         do_reset;
       elsif (pt(3) = 2) then
@@ -493,9 +557,10 @@ begin
     end loop;
 
     -- B1: clean reference run.
-    base    := collectedCount;
-    baseL   := lastCount;
-    sBpMode <= 0;
+    base     := collectedCount;
+    baseL    := lastCount;
+    sBpMode  <= 0;
+    sNoStall <= true;
     feed(bigImg, false, bigImg'length);
     wait_images(1);
     refLen := collectedCount - base;
@@ -537,6 +602,7 @@ begin
     base       := collectedCount;
     baseL      := lastCount;
     sBpMode    <= 2;
+    sNoStall   <= false;
     feed(bigImg, false, bigImg'length);
     wait_images(1);
     sBpMode <= 0;
@@ -558,7 +624,7 @@ begin
     baseL   := lastCount;
     sBpMode <= 1;
     feed(bigImg, true, bigImg'length);
-    AffirmIf(lastCount = baseL, "B5: image 2 fed while image 1 still draining");
+    AffirmIf(reqB2B, lastCount = baseL, "B5: image 2 fed while image 1 still draining");
     feed(bigImg, true, bigImg'length);
     wait_images(2);
     sBpMode <= 0;
@@ -586,9 +652,10 @@ begin
     do_reset;
 
     -- Clean single run captures the 4x1 reference (header + payload + FF D9).
-    base    := collectedCount;
-    baseL   := lastCount;
-    sBpMode <= 0;
+    base     := collectedCount;
+    baseL    := lastCount;
+    sBpMode  <= 0;
+    sNoStall <= true;
     feed(PIXELS, false, 4);
     wait_images(1);
     refLen := collectedCount - base;
@@ -603,7 +670,7 @@ begin
     base  := collectedCount;
     baseL := lastCount;
     feed(PIXELS, false, 4);
-    AffirmIf(lastCount = baseL, "C b2b: image 2 fed while image 1 still draining");
+    AffirmIf(reqB2B, lastCount = baseL, "C b2b: image 2 fed while image 1 still draining");
     feed(PIXELS, false, 4);
     feed(PIXELS, false, 4);
     wait_images(3);

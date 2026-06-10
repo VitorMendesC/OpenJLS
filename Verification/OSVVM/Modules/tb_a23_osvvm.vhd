@@ -100,6 +100,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable err     : integer;
     variable a       : integer;
     variable n       : integer;
@@ -175,9 +176,9 @@ begin
       sNn  <= to_unsigned(nnv, NN_WIDTH);
       wait for 1 ns;
 
-      AffirmIfEqual(to_integer(sAqO), aNew, msg & " A");
-      AffirmIfEqual(to_integer(sNqO), nNew, msg & " N");
-      AffirmIfEqual(to_integer(sNnO), nnNew, msg & " Nn");
+      AffirmIfEqual(req, to_integer(sAqO), aNew, msg & " A");
+      AffirmIfEqual(req, to_integer(sNqO), nNew, msg & " N");
+      AffirmIfEqual(req, to_integer(sNnO), nnNew, msg & " Nn");
 
       if (rescale) then
         rsc := 1;
@@ -198,6 +199,7 @@ begin
     SetAlertLogName("tb_a23_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A23", 600);
 
     cov := NewID("rescale x errNeg x RItype");
     AddCross(cov, "rescale x errNeg x RItype", GenBin(0, 1, 2), GenBin(0, 1, 2), GenBin(0, 1, 2));

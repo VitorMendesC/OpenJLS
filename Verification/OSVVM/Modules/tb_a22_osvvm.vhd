@@ -74,6 +74,7 @@ begin
     variable rv       : RandomPType;
     variable covCross : CoverageIDType;        -- RItype x map (all 4 reachable)
     variable covZero  : CoverageIDType;        -- EMErrval == 0 boundary seen
+    variable req      : AlertLogIDType;
     variable err      : integer;
     variable ri       : integer;
     variable mp       : integer;
@@ -99,7 +100,7 @@ begin
       exp := ref_em(ev, riv, mpv);
 
       if (exp >= 0) then
-        AffirmIfEqual(to_integer(sEm), exp,
+        AffirmIfEqual(req, to_integer(sEm), exp,
                       msg & " err=" & integer'image(ev) &
                       " ri=" & integer'image(riv) & " map=" & integer'image(mpv));
         if (exp = 0) then
@@ -124,6 +125,7 @@ begin
     SetAlertLogName("tb_a22_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A22", 300);
 
     covCross := NewID("ri x map");
     AddCross(covCross, "ri x map", GenBin(0, 1, 2), GenBin(0, 1, 2));

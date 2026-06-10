@@ -97,7 +97,7 @@ lists in `build_run.sh` and `OpenJls.pro` in sync.
 A passing run ends with:
 
 ```
-%%  205 ns    DONE   PASSED   tb_a5_osvvm  Passed: 209  Affirmations Checked: 209
+%%  205 ns    DONE   PASSED   tb_a5_osvvm  Passed: 209  Affirmations Checked: 209  Requirements Passed: 1 of 1
 ... tb_support_pkg.vhd:63 (report note): tb_a5_osvvm: PASS
 ```
 
@@ -238,6 +238,32 @@ per-test HTML shows the scoreboard's check/error totals. Used by
 `tb_jls_framer_osvvm` (expected stream = `header ++ payload ++ FF D9`) and
 `tb_byte_stuffer_osvvm`.
 
+### Requirements — spec-to-test traceability
+
+A requirement is a named AlertLog ID with a passing goal, declared with
+`GetReqID`; existing checks are attributed to it by passing the ID as the
+first argument:
+
+```vhdl
+req := GetReqID("T87.A5", 200);                       -- declare, set goal
+AffirmIfEqual(req, dut_out, reference(inputs), msg);  -- same check, attributed
+```
+
+A requirement fails its test if any attributed check fails **or** if it
+collects fewer passing checks than its goal (`FailOnRequirementErrors`
+defaults true) — so the goals double as anti-vacuity guards. Each goal here
+is a guaranteed lower bound of the checks the TB performs by construction
+(directed vectors plus the random loop's minimum-iteration exit guard): if a
+future edit silently stops checking, the requirement — and the test — fails.
+
+`EndOfTestReports` writes a `<tb>_req.yml` next to the other per-test YAML;
+the build merges them into the **Requirements** tab of the build HTML and
+into `reports/OSVVM_OpenJls_req.csv`, a requirement-by-requirement
+traceability matrix (goal, passed count, errors) suitable for handing to a
+customer or auditor. The registry below lists every ID. Reference:
+`Modules/tb_a5_osvvm.vhd` (module pattern), `Top/tb_openjls_top_osvvm.vhd`
+(monitor-based product requirements).
+
 ### tb_support_pkg — shared helpers
 
 `Support/tb_support_pkg.vhd` provides `clk_tick(clk, n)` (wait n edges),
@@ -278,6 +304,52 @@ defined reset values, and that a reset injected mid-operation recovers cleanly
 `sIgnore` signal so the monitor skips the aborted transaction's output (which is
 never pushed to the scoreboard); the recovery transaction then runs normally. The
 top-level TB injects mid-image reset end-to-end.
+
+---
+
+## Requirements registry
+
+Two ID families. `T87.*` is conformance: the RTL matches the reference derived
+from the T.87 spec (clause numbers follow the project's module decomposition,
+e.g. `A4.1`/`A11.2` are sub-blocks of clauses A.4/A.11). `OJLS.*` are product
+requirements on top of the standard. Goals are the guaranteed minimum check
+counts described above.
+
+| ID | Requirement | Covered by | Goal |
+|---|---|---|---:|
+| `T87.A1` | Local gradient computation | `tb_a1_osvvm` | 200 |
+| `T87.A3` | Run/regular mode selection | `tb_a3_osvvm` | 100 |
+| `T87.A4` | Gradient quantization | `tb_a4_osvvm` | 200 |
+| `T87.A4.1` | Quantized-gradient sign merging | `tb_a4_1_osvvm` | 729 |
+| `T87.A4.2` | Context mapping Q (total, one-to-one, in range) | `tb_a4_2_osvvm` | 365 |
+| `T87.A5` | Edge-detecting (MED) predictor | `tb_a5_osvvm` | 200 |
+| `T87.A6` | Prediction correction | `tb_a6_osvvm` | 300 |
+| `T87.A7` | Prediction error | `tb_a7_osvvm` | 200 |
+| `T87.A9` | Modulo reduction | `tb_a9_osvvm` | 200 |
+| `T87.A10` | Golomb parameter k | `tb_a10_osvvm` | 400 |
+| `T87.A11` | Error mapping (incl. special case) | `tb_a11_osvvm` | 500 |
+| `T87.A11.1` | Golomb encoding (incl. escape) | `tb_a11_1_osvvm` | 400 |
+| `T87.A11.2` | Bit packing | `tb_a11_2_osvvm` | 100 |
+| `T87.A12` | Context variables update (A, B, N) | `tb_a12_osvvm` | 300 |
+| `T87.A13` | Bias update (B, C) | `tb_a13_osvvm` | 300 |
+| `T87.A14` | Run-length determination | `tb_a14_osvvm` | 100 |
+| `T87.A15-A16` | Run encoding | `tb_a15_a16_osvvm` | 100 |
+| `T87.A17` | Run interruption type | `tb_a17_osvvm` | 100 |
+| `T87.A18` | Run interruption prediction error | `tb_a18_osvvm` | 200 |
+| `T87.A19` | Run interruption error computation | `tb_a19_osvvm` | 300 |
+| `T87.A20` | Temp computation | `tb_a20_osvvm` | 50 |
+| `T87.A21` | Map computation | `tb_a21_osvvm` | 400 |
+| `T87.A22` | RI errval mapping | `tb_a22_osvvm` | 300 |
+| `T87.A23` | Run interruption update | `tb_a23_osvvm` | 600 |
+| `T87.H3` | Output byte-identical to the Annex H.3 golden stream under every Phase A stress | `tb_openjls_top_osvvm` | 57 |
+| `OJLS.BackToBack` | Next image accepted while the previous one is still draining — no inter-image gap required | `tb_openjls_top_osvvm` | 3 |
+| `OJLS.NoStallCompress` | With downstream ready, `oReady` never drops during a feed: the byte_stuffer buffer must not fill while compressing | `tb_openjls_top_osvvm` | 5000 |
+| `OJLS.NoStallEOL` | …including across every line and image boundary | `tb_openjls_top_osvvm` | 100 |
+
+The infrastructure TBs (`tb_jls_framer`, `tb_byte_stuffer`, `tb_context_ram`,
+`tb_line_buffer`) carry no requirement IDs: they verify implementation detail,
+and their standard-facing behaviour is covered end-to-end by the golden suite
+and `T87.H3`.
 
 ---
 

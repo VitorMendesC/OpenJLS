@@ -66,6 +66,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable a       : integer;
     variable b       : integer;
     variable c       : integer;
@@ -86,9 +87,9 @@ begin
       sC <= to_unsigned(cv, BITNESS);
       sD <= to_unsigned(dv, BITNESS);
       wait for 1 ns;
-      AffirmIfEqual(to_integer(sD1), dv - bv, msg & " D1");
-      AffirmIfEqual(to_integer(sD2), bv - cv, msg & " D2");
-      AffirmIfEqual(to_integer(sD3), cv - av, msg & " D3");
+      AffirmIfEqual(req, to_integer(sD1), dv - bv, msg & " D1");
+      AffirmIfEqual(req, to_integer(sD2), bv - cv, msg & " D2");
+      AffirmIfEqual(req, to_integer(sD3), cv - av, msg & " D3");
       ICover(cov, (sgn(dv - bv), sgn(bv - cv), sgn(cv - av)));
 
     end procedure drive_check;
@@ -98,6 +99,7 @@ begin
     SetAlertLogName("tb_a1_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A1", 200);
 
     cov := NewID("sgnD1 x sgnD2 x sgnD3");
     AddCross(cov, 

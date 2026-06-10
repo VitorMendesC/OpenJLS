@@ -83,6 +83,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable err     : integer;
     variable exp     : integer;
     variable wn      : integer;
@@ -101,7 +102,7 @@ begin
 
       sErrIn <= to_signed(ev, BITNESS + 1);
       wait for 1 ns;
-      AffirmIfEqual(to_integer(sErrOut), ref_mod(ev), msg & " err=" & integer'image(ev));
+      AffirmIfEqual(req, to_integer(sErrOut), ref_mod(ev), msg & " err=" & integer'image(ev));
 
       if (ev < 0) then
         w := 1;
@@ -122,6 +123,7 @@ begin
     SetAlertLogName("tb_a9_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A9", 200);
 
     cov := NewID("wrapNeg x geHalf");
     AddCross(cov, "wrapNeg x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));

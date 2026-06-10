@@ -46,6 +46,7 @@ begin
     variable nSeen  : natural := 0;
     variable q      : integer;
     variable expQ   : integer;
+    variable req    : AlertLogIDType;
 
     procedure drive_check (
       q1 : integer;
@@ -63,17 +64,17 @@ begin
       wait for 1 ns;
 
       e := 81 * q1 + 9 * q2 + q3;                 -- documented design mapping
-      AffirmIfEqual(to_integer(sQ), e,
+      AffirmIfEqual(req, to_integer(sQ), e,
                     "map Q1=" & integer'image(q1) &
                     " Q2=" & integer'image(q2) &
                     " Q3=" & integer'image(q3));
 
       -- Property: range [0..364].
-      AffirmIf(e >= 0 and e <= 364, "Q in range for vector");
+      AffirmIf(req, e >= 0 and e <= 364, "Q in range for vector");
 
       -- Property: one-to-one.
       if (e >= 0 and e <= 364) then
-        AffirmIf(seen(e) = -1,
+        AffirmIf(req, seen(e) = -1,
                  "Q=" & integer'image(e) & " collides with vector index " &
                  integer'image(seen(e)));
         if (seen(e) = -1) then
@@ -88,6 +89,7 @@ begin
 
     SetAlertLogName("tb_a4_2_osvvm");
     SetLogEnable(PASSED, FALSE);
+    req := GetReqID("T87.A4.2", 365);
 
     -- Exhaustive over the post-merge domain (leading non-zero non-negative).
     for q1 in 0 to 4 loop
@@ -111,7 +113,7 @@ begin
 
     end loop;
 
-    AffirmIfEqual(nSeen, 365, "all 365 contexts mapped (total + complete)");
+    AffirmIfEqual(req, nSeen, 365, "all 365 contexts mapped (total + complete)");
 
     end_of_test("tb_a4_2_osvvm");
     wait;

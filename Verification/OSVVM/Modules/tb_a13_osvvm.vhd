@@ -59,6 +59,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     constant N_RAND  : natural := 8000;
 
     -- event: 0 neg-noclamp, 1 neg-clamp, 2 pos-noclamp, 3 pos-clamp, 4 none.
@@ -108,8 +109,8 @@ begin
         end if;
       end if;
 
-      AffirmIfEqual(to_integer(sBqO), bNew, msg & " B");
-      AffirmIfEqual(to_integer(sCqO), cNew, msg & " C");
+      AffirmIfEqual(req, to_integer(sBqO), bNew, msg & " B");
+      AffirmIfEqual(req, to_integer(sCqO), cNew, msg & " C");
       ICover(cov, ev);
 
     end procedure drive_check;
@@ -119,6 +120,7 @@ begin
     SetAlertLogName("tb_a13_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A13", 300);
 
     cov := NewID("event");
     AddBins(cov, "event", GenBin(0, 4, 5));

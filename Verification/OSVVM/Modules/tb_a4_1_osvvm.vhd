@@ -79,6 +79,7 @@ begin
 
     variable rv  : RandomPType;
     variable cov : CoverageIDType;
+    variable req : AlertLogIDType;
 
     procedure drive_check (
       q1  : integer;
@@ -104,15 +105,15 @@ begin
         eS := CO_SIGN_POS;
       end if;
 
-      AffirmIfEqual(std_to_int(sSign), std_to_int(eS), msg & " sign");
+      AffirmIfEqual(req, std_to_int(sSign), std_to_int(eS), msg & " sign");
       if (flip) then
-        AffirmIfEqual(to_integer(sQ1o), -q1, msg & " Q1");
-        AffirmIfEqual(to_integer(sQ2o), -q2, msg & " Q2");
-        AffirmIfEqual(to_integer(sQ3o), -q3, msg & " Q3");
+        AffirmIfEqual(req, to_integer(sQ1o), -q1, msg & " Q1");
+        AffirmIfEqual(req, to_integer(sQ2o), -q2, msg & " Q2");
+        AffirmIfEqual(req, to_integer(sQ3o), -q3, msg & " Q3");
       else
-        AffirmIfEqual(to_integer(sQ1o), q1, msg & " Q1");
-        AffirmIfEqual(to_integer(sQ2o), q2, msg & " Q2");
-        AffirmIfEqual(to_integer(sQ3o), q3, msg & " Q3");
+        AffirmIfEqual(req, to_integer(sQ1o), q1, msg & " Q1");
+        AffirmIfEqual(req, to_integer(sQ2o), q2, msg & " Q2");
+        AffirmIfEqual(req, to_integer(sQ3o), q3, msg & " Q3");
       end if;
 
       ICover(cov, decider_of(q1, q2, q3));
@@ -124,6 +125,7 @@ begin
     SetAlertLogName("tb_a4_1_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A4.1", 729);
 
     cov := NewID("decider");
     AddBins(cov, "decider", GenBin(0, 3, 4));

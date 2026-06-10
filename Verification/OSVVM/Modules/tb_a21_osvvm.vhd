@@ -93,6 +93,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable k       : integer;
     variable err     : integer;
     variable nn      : integer;
@@ -113,7 +114,7 @@ begin
       sNn     <= to_unsigned(nn, N_WIDTH);
       sNq     <= to_unsigned(nq, N_WIDTH);
       wait for 1 ns;
-      AffirmIfEqual(std_to_int(sMap), std_to_int(ref_map(k, err, nn, nq)),
+      AffirmIfEqual(req, std_to_int(sMap), std_to_int(ref_map(k, err, nn, nq)),
                     msg & " k=" & integer'image(k) & " err=" & integer'image(err) &
                     " nn=" & integer'image(nn) & " nq=" & integer'image(nq));
       ICover(cov, clause_of(k, err, nn, nq));
@@ -125,6 +126,7 @@ begin
     SetAlertLogName("tb_a21_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A21", 400);
 
     cov := NewID("clause");
     AddBins(cov, "clause", GenBin(0, 3, 4));

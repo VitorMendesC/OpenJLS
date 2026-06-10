@@ -87,6 +87,7 @@ begin
 
     variable rv       : RandomPType;
     variable cov      : CoverageIDType;
+    variable req      : AlertLogIDType;
     variable kVal     : integer;
     variable bVal     : integer;
     variable nVal     : integer;
@@ -103,6 +104,7 @@ begin
     SetLogEnable(PASSED, FALSE);
 
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A11", 500);
 
     -- The interesting axis is (special_map, err_sign). Special map only fires
     -- when k=0 AND 2*B <= -N, which is rare under uniform random — bias it.
@@ -121,12 +123,12 @@ begin
     sNq       <= to_unsigned(0, sNq'length);
     sErrorVal <= to_signed(0, sErrorVal'length);
     wait for 1 ns;
-    AffirmIfEqual(to_integer(sMappedErrorVal), 1, "corner all-zero (special fires)");
+    AffirmIfEqual(req, to_integer(sMappedErrorVal), 1, "corner all-zero (special fires)");
 
     -- True regular path with err=0: k=1 disables special
     sK <= to_unsigned(1, sK'length);
     wait for 1 ns;
-    AffirmIfEqual(to_integer(sMappedErrorVal), 0, "corner k=1 err=0 regular");
+    AffirmIfEqual(req, to_integer(sMappedErrorVal), 0, "corner k=1 err=0 regular");
 
     -- Special path at err=0 → expect 2*0 - 2 in unsigned wrap? No — err>=0 branch: 2*0+1 = 1
     -- 2*(-1) <= -1 → special path.
@@ -135,12 +137,12 @@ begin
     sNq       <= to_unsigned(1, sNq'length);
     sErrorVal <= to_signed(0, sErrorVal'length);
     wait for 1 ns;
-    AffirmIfEqual(to_integer(sMappedErrorVal), 1, "corner special err=0");
+    AffirmIfEqual(req, to_integer(sMappedErrorVal), 1, "corner special err=0");
 
     -- Special path at err=-1 → 2*1 - 2 = 0
     sErrorVal <= to_signed(-1, sErrorVal'length);
     wait for 1 ns;
-    AffirmIfEqual(to_integer(sMappedErrorVal), 0, "corner special err=-1");
+    AffirmIfEqual(req, to_integer(sMappedErrorVal), 0, "corner special err=-1");
 
     -- Regular path at err=ERR_MAX (k=1 forces regular).
     sK        <= to_unsigned(1, sK'length);
@@ -148,12 +150,12 @@ begin
     sNq       <= to_unsigned(0, sNq'length);
     sErrorVal <= to_signed(ERR_MAX, sErrorVal'length);
     wait for 1 ns;
-    AffirmIfEqual(to_integer(sMappedErrorVal), 2 * ERR_MAX, "corner regular err=ERR_MAX");
+    AffirmIfEqual(req, to_integer(sMappedErrorVal), 2 * ERR_MAX, "corner regular err=ERR_MAX");
 
     -- Regular path at err=ERR_MIN
     sErrorVal <= to_signed(ERR_MIN, sErrorVal'length);
     wait for 1 ns;
-    AffirmIfEqual(to_integer(sMappedErrorVal), 2 * (-ERR_MIN) - 1, "corner regular err=ERR_MIN");
+    AffirmIfEqual(req, to_integer(sMappedErrorVal), 2 * (-ERR_MIN) - 1, "corner regular err=ERR_MIN");
 
     -- Random sweep, biased so special-map fires often enough to close coverage.
     for i in 1 to N_RAND loop
@@ -180,7 +182,7 @@ begin
 
       expected := ref_map(kVal, bVal, nVal, errVal);
       actual   := to_integer(sMappedErrorVal);
-      AffirmIfEqual(actual, expected,
+      AffirmIfEqual(req, actual, expected,
                     "k=" & integer'image(kVal) &
                     " b=" & integer'image(bVal) &
                     " n=" & integer'image(nVal) &

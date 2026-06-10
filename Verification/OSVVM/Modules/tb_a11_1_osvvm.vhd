@@ -89,6 +89,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable k       : integer;
     variable merr    : integer;
     variable ridx    : integer;
@@ -134,9 +135,9 @@ begin
         escape := 1;
       end if;
 
-      AffirmIfEqual(to_integer(sUnary), expUn, msg & " unary");
-      AffirmIfEqual(to_integer(sSuffixLen), expLen, msg & " sufLen");
-      AffirmIfEqual(to_integer(sSuffixVal), expVal, msg & " sufVal");
+      AffirmIfEqual(req, to_integer(sUnary), expUn, msg & " unary");
+      AffirmIfEqual(req, to_integer(sSuffixLen), expLen, msg & " sufLen");
+      AffirmIfEqual(req, to_integer(sSuffixVal), expVal, msg & " sufVal");
 
       ICover(cov, (std_to_int(ri), escape));
 
@@ -147,6 +148,7 @@ begin
     SetAlertLogName("tb_a11_1_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A11.1", 400);
 
     cov := NewID("riMode x escape");
     AddCross(cov, "riMode x escape", GenBin(0, 1, 2), GenBin(0, 1, 2));

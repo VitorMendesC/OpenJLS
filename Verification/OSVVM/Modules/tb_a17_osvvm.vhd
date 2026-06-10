@@ -44,6 +44,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable ra      : integer;
     variable rb      : integer;
     constant N_RAND  : natural := 3000;
@@ -67,7 +68,7 @@ begin
       else
         e := 0;
       end if;
-      AffirmIfEqual(std_to_int(sRItype), e, msg);
+      AffirmIfEqual(req, std_to_int(sRItype), e, msg);
       ICover(cov, e);
 
     end procedure drive_check;
@@ -77,6 +78,7 @@ begin
     SetAlertLogName("tb_a17_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A17", 100);
     cov := NewID("RItype");
     AddBins(cov, "RItype", GenBin(0, 1, 2));
 

@@ -48,6 +48,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     variable d1      : integer;
     variable d2      : integer;
     variable d3      : integer;
@@ -75,7 +76,7 @@ begin
       else
         run := 0;
       end if;
-      AffirmIfEqual(std_to_int(sModeRun), run, msg);
+      AffirmIfEqual(req, std_to_int(sModeRun), run, msg);
       ICover(cov, run);
 
     end procedure drive_check;
@@ -85,6 +86,7 @@ begin
     SetAlertLogName("tb_a3_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A3", 100);
 
     cov := NewID("modeRun");
     AddBins(cov, "modeRun", GenBin(0, 1, 2));

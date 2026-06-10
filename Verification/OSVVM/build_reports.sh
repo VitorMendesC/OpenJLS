@@ -7,6 +7,8 @@
 #   VHDL_LIBS/            compiled libraries (incremental between runs)
 #   logs/, reports/       per-test transcripts, YAML and HTML
 #   OpenJls.html, index.html   build summary / report index
+#   reports/OSVVM_OpenJls_req.csv   requirements traceability matrix (also
+#                                   the Requirements tab of the build HTML)
 #
 # Requires tclsh (Arch: pacman -S tcl). build_run.sh stays the fast,
 # tcl-free inner loop for a single TB.

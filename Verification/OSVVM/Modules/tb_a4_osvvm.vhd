@@ -104,6 +104,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     constant N_RAND  : natural := 6000;
 
     procedure drive_check (
@@ -118,9 +119,9 @@ begin
       sD2 <= to_signed(d2, BITNESS + 1);
       sD3 <= to_signed(d3, BITNESS + 1);
       wait for 1 ns;
-      AffirmIfEqual(to_integer(sQ1), quantize(d1), msg & " Q1 d=" & integer'image(d1));
-      AffirmIfEqual(to_integer(sQ2), quantize(d2), msg & " Q2 d=" & integer'image(d2));
-      AffirmIfEqual(to_integer(sQ3), quantize(d3), msg & " Q3 d=" & integer'image(d3));
+      AffirmIfEqual(req, to_integer(sQ1), quantize(d1), msg & " Q1 d=" & integer'image(d1));
+      AffirmIfEqual(req, to_integer(sQ2), quantize(d2), msg & " Q2 d=" & integer'image(d2));
+      AffirmIfEqual(req, to_integer(sQ3), quantize(d3), msg & " Q3 d=" & integer'image(d3));
       ICover(cov, quantize(d1));
       ICover(cov, quantize(d2));
       ICover(cov, quantize(d3));
@@ -132,6 +133,7 @@ begin
     SetAlertLogName("tb_a4_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A4", 200);
 
     cov := NewID("Qi");
     AddBins(cov, "Qi", GenBin(-4, 4, 9));

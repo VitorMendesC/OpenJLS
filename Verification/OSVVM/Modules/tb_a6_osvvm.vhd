@@ -102,6 +102,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable req     : AlertLogIDType;
     constant N_RAND  : natural := 5000;
 
     procedure drive_check (
@@ -116,7 +117,7 @@ begin
       sSign <= sg;
       sCq   <= to_signed(cq, CO_CQ_WIDTH);
       wait for 1 ns;
-      AffirmIfEqual(to_integer(sPxOut), corrected(px, sg, cq),
+      AffirmIfEqual(req, to_integer(sPxOut), corrected(px, sg, cq),
                     msg & " px=" & integer'image(px) & " cq=" & integer'image(cq));
       ICover(cov, (std_to_int(sg), region_of(px, sg, cq)));
 
@@ -127,6 +128,7 @@ begin
     SetAlertLogName("tb_a6_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
+    req := GetReqID("T87.A6", 300);
 
     cov := NewID("sign x region");
     AddCross(cov, "sign x region", GenBin(0, 1, 2), GenBin(0, 2, 3));
