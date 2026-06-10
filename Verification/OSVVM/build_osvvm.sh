@@ -2,6 +2,11 @@
 # Compile OSVVM into ./osvvm-lib so GHDL can use it via -P./osvvm-lib --work=osvvm
 set -euo pipefail
 
+command -v ghdl >/dev/null || {
+  echo "ghdl not found — install it (Arch: ghdl-llvm-git from the AUR)" >&2
+  exit 1
+}
+
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SRC="$ROOT/ThirdParty/osvvm"   # vendored by ThirdParty/fetch_third_party.sh

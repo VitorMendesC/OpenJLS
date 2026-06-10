@@ -17,6 +17,10 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
+command -v ghdl >/dev/null || {
+  echo "ghdl not found — install it (Arch: ghdl-llvm-git from the AUR)" >&2
+  exit 1
+}
 command -v tclsh >/dev/null || {
   echo "tclsh not found — install tcl (Arch: sudo pacman -S tcl)" >&2
   exit 1

@@ -31,6 +31,24 @@ flow under `ThirdParty/osvvm-scripts/`, both pinned to the same release (see
 `ThirdParty/fetch_third_party.sh`). A fresh checkout runs `./build_osvvm.sh`
 once for the fast flow; the script flow builds its own libraries.
 
+## Dependencies
+
+OSVVM publishes no dependency manifest; its scripts just `package require`
+what they need. Everything tcl-side is vendored in this repo, so a fresh
+clone needs only two system packages:
+
+- **ghdl** — both flows (Arch: `ghdl-llvm-git` from the AUR)
+- **tcl** ≥ 8.6 — script flow only (Arch: `sudo pacman -S tcl`)
+
+The tcllib modules the scripts require (`fileutil`, `yaml`) are vendored in
+`ThirdParty/tcllib/` and picked up via `TCLLIBPATH`; OSVVM and OSVVM-Scripts
+are vendored alongside. `build_osvvm.sh` and `build_reports.sh` check for
+the system tools and print these hints if one is missing.
+
+Optional: the HTML reports mark not-applicable cells with U+2E3B (⸻); if it
+renders as a missing-glyph box, install a font that covers it (Arch:
+`sudo pacman -S noto-fonts`).
+
 ## Running
 
 Two flows over the same TBs:
@@ -49,8 +67,7 @@ elaborates and runs the named TB from `sim-out/` (scratch, gitignored).
 ### Script flow — full regression with HTML reports
 
 ```bash
-./build_reports.sh        # requires tclsh only (Arch: sudo pacman -S tcl);
-                          # the tcllib modules it needs are in ThirdParty/tcllib
+./build_reports.sh        # needs tcl in addition to ghdl (see Dependencies)
 ```
 
 This is "the OSVVM intended way": `OpenJls.pro` drives the vendored tcl
