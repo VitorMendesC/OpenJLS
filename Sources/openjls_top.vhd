@@ -449,7 +449,7 @@ architecture rtl of openjls_top is
   signal sBsAlmostFull                      : std_logic;
   signal sBsFlushDone                       : std_logic;
   signal sFramerEoi                         : std_logic;
-  signal sImageActive                       : std_logic;
+  signal sFirstPixel                        : std_logic;
   signal sFramerStart                       : std_logic;
   signal sReadyOut                          : std_logic;
 
@@ -1581,25 +1581,25 @@ begin
 
   sFramerEoi <= sBsFlushDone;
 
-  p_image_active : process (iClk) is
+  -- First-pixel tracker. line_buffer flags EOI combinationally on the image's
+  -- last accepted pixel, so the next accepted pixel starts the following
+  -- image. Deriving iStart from the pixel stream itself (rather than from the
+  -- previous image's flush, as before) cannot lose a start when images
+  -- shorter than the flush latency are fed back-to-back.
+  p_first_pixel : process (iClk) is
   begin
 
     if rising_edge(iClk) then
       if (iRst = '1') then
-        sImageActive <= '0';
-      elsif (sStallLogic = '0') then
-        if (sValid = '1' and sImageActive = '0') then
-          sImageActive <= '1';
-        elsif (sBsFlush = '1') then
-          -- Clear when flush ENTERS byte_stuffer, not when the image completes
-          sImageActive <= '0';
-        end if;
+        sFirstPixel <= '1';
+      elsif (sValid = '1') then
+        sFirstPixel <= sLbEoi;
       end if;
     end if;
 
-  end process p_image_active;
+  end process p_first_pixel;
 
-  sFramerStart <= sReadyOut and sValid and not sImageActive;
+  sFramerStart <= sValid and sFirstPixel;
 
   -------------------------------------------------------------------------------------------------------------
   -- DEBUG: per-valid-token trace at Reg6 boundary
