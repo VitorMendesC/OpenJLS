@@ -100,6 +100,22 @@ OpenJLS is dual-licensed:
 
 ---
 
+## Dependencies
+
+All third-party components are vendored under `ThirdParty/` with their license texts, pinned to fixed releases by `fetch_third_party.sh`. Only open-logic is part of the synthesizable IP; everything else is verification tooling and is never distributed in a product.
+
+| Component | License | Scope | Notes |
+|---|---|---|---|
+| [open-logic](https://github.com/open-logic/open-logic) | LGPL-2.1+ with PSI HDL exception | Synthesized RTL | Memory and FIFO primitives. Weak copyleft confined to its own files; the exception explicitly permits distributing FPGA bitstreams under the user's own terms. |
+| [OSVVM](https://github.com/OSVVM/OSVVM) | Apache-2.0 | Verification only | VHDL verification library used by the testbench suite. |
+| [OSVVM-Scripts](https://github.com/OSVVM/OSVVM-Scripts) | Apache-2.0 | Verification only | Regression and report-generation script flow. |
+| [tcllib](https://github.com/tcltk/tcllib) | Tcl/BSD-style | Verification only | `fileutil` and `yaml` modules required by the report scripts. |
+| [CharLS](https://github.com/team-charls/charls) | BSD-3-Clause | Verification only | Golden reference encoder for conformance testing; built from source, not vendored or redistributed. |
+
+No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution of the repository or the IP must retain the third-party copyright notices and license texts in `ThirdParty/`.
+
+---
+
 ## References
 
 - [ISO/IEC 14495-1](https://www.itu.int/rec/T-REC-T.87) — JPEG-LS standard specification (ITU-T T.87)
