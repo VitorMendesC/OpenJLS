@@ -77,11 +77,11 @@ architecture sim of tb_byte_stuffer_osvvm is
 
   -- TB plumbing ----------------------------------------------------------------
   -- Expected output bytes, pushed in emission order by the driver model.
-  shared variable sb       : ScoreBoardPType;
+  constant SB_ID : ScoreboardIDType := NewID("byte_stuffer SB");
   -- Coverage.
-  shared variable covEmit  : CovPType;      -- bytes emitted per accepted beat (0..4)
-  shared variable covFlush : CovPType;      -- flush terminal type (0..3)
-  shared variable covCross : CovPType;      -- (emitBytes>0) x (oAlmostFull)
+  shared variable covEmit  : CoverageIDType;      -- bytes emitted per accepted beat (0..4)
+  shared variable covFlush : CoverageIDType;      -- flush terminal type (0..3)
+  shared variable covCross : CoverageIDType;      -- (emitBytes>0) x (oAlmostFull)
 
   -- Driver -> monitor image handshake.
   signal sImagesSent       : natural;       -- flushes presented by the driver
@@ -270,13 +270,13 @@ begin
         else
           hasData := 0;
         end if;
-        covEmit.ICover(nb);
-        covCross.ICover((hasData, af));
+        ICover(covEmit, nb);
+        ICover(covCross, (hasData, af));
 
         for i in 0 to nb - 1 loop
 
           byte := oWord(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
-          sb.Check(byte);
+          Check(SB_ID, byte);
 
         end loop;
 
@@ -288,7 +288,7 @@ begin
         sFlushDone <= cnt;
       end if;
 
-      exit when sDriverDone and sFlushDone = sImagesSent and sb.Empty;
+      exit when sDriverDone and sFlushDone = sImagesSent and IsEmpty(SB_ID);
 
     end loop;
 
@@ -327,7 +327,7 @@ begin
       realSince               := true;
 
       if (bitsInByte = 8) then
-        sb.Push(curByte);
+        Push(SB_ID, curByte);
         if (curByte = x"FF") then
           lastEmitFF := true;
           realSince  := false;
@@ -379,10 +379,10 @@ begin
       end if;
 
       if (bitsInByte > 0) then
-        sb.Push(curByte);                -- unfilled low bits are already '0' (post-stuffing pad)
+        Push(SB_ID, curByte);                -- unfilled low bits are already '0' (post-stuffing pad)
       end if;
 
-      covFlush.ICover(ft);
+      ICover(covFlush, ft);
 
       curByte    := (others => '0');
       bitsInByte := 0;
@@ -512,16 +512,18 @@ begin
 
     SetAlertLogName("tb_byte_stuffer_osvvm");
     SetLogEnable(PASSED, FALSE);
-    sb.SetAlertLogID("byte_stuffer SB");
     rv.InitSeed(rv'instance_name);
 
-    covEmit.AddBins("emitBytes", GenBin(0, OUT_BYTES, OUT_BYTES + 1));
+    covEmit := NewID("emitBytes");
+    AddBins(covEmit, "emitBytes", GenBin(0, OUT_BYTES, OUT_BYTES + 1));
     -- FT_EMPTY is unreachable (see directed-corner note) and excluded.
-    covFlush.AddBins("flushType", GenBin(FT_CLEAN, FT_DANGLING, 3));
+    covFlush := NewID("flushType");
+    AddBins(covFlush, "flushType", GenBin(FT_CLEAN, FT_DANGLING, 3));
     -- Require seeing data output BOTH with and without almost-full backpressure.
     -- (The 0-byte terminal beat only fires after the FIFO has drained, so
     -- 0-byte x almostFull is unreachable and deliberately not a bin.)
-    covCross.AddCross(
+    covCross := NewID("data x almostFull");
+    AddCross(covCross,
                       "data x almostFull",
                       GenBin(1, 1, 1),                                                    -- data beat (emitBytes > 0)
                       GenBin(0, 1, 2)                                                     -- oAlmostFull
@@ -636,15 +638,15 @@ begin
     sDriverDone <= true;
     wait for 10 * CLK_PERIOD;
 
-    AffirmIf(sb.Empty, "scoreboard drained (all expected bytes consumed)");
-    AffirmIfEqual(sb.GetErrorCount, 0, "scoreboard mismatches");
+    AffirmIf(IsEmpty(SB_ID), "scoreboard drained (all expected bytes consumed)");
+    AffirmIfEqual(GetErrorCount(SB_ID), 0, "scoreboard mismatches");
 
-    covEmit.WriteBin;
-    covFlush.WriteBin;
-    covCross.WriteBin;
-    AffirmIf(covEmit.IsCovered, "emitBytes coverage closed");
-    AffirmIf(covFlush.IsCovered, "flushType coverage closed");
-    AffirmIf(covCross.IsCovered, "data x almostFull coverage closed");
+    WriteBin(covEmit);
+    WriteBin(covFlush);
+    WriteBin(covCross);
+    AffirmIf(IsCovered(covEmit), "emitBytes coverage closed");
+    AffirmIf(IsCovered(covFlush), "flushType coverage closed");
+    AffirmIf(IsCovered(covCross), "data x almostFull coverage closed");
 
     end_of_test("tb_byte_stuffer_osvvm");
     wait;

@@ -71,7 +71,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 6000;
 
     procedure drive_check (
@@ -86,7 +86,7 @@ begin
       wait for 1 ns;
       AffirmIfEqual(to_integer(sK), ref_k(n, a),
                     msg & " N=" & integer'image(n) & " A=" & integer'image(a));
-      cov.ICover(ref_k(n, a));
+      ICover(cov, ref_k(n, a));
 
     end procedure drive_check;
 
@@ -96,9 +96,10 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("kZero", GenBin(0, 0));
-    cov.AddBins("kMid",  GenBin(1, MAX_K - 1, 1));
-    cov.AddBins("kMax",  GenBin(MAX_K, MAX_K));
+    cov := NewID("kZero");
+    AddBins(cov, "kZero", GenBin(0, 0));
+    AddBins(cov, "kMid",  GenBin(1, MAX_K - 1, 1));
+    AddBins(cov, "kMax",  GenBin(MAX_K, MAX_K));
 
     -- Directed corners.
     drive_check(64, 0, "A=0 -> k=0");
@@ -111,12 +112,12 @@ begin
     for i in 1 to N_RAND loop
 
       drive_check(rv.RandInt(1, N_MAX), rv.RandInt(0, A_MAX), "rand");
-      exit when cov.IsCovered and i > 400;
+      exit when IsCovered(cov) and i > 400;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "k range coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "k range coverage closed");
 
     end_of_test("tb_a10_osvvm");
     wait;

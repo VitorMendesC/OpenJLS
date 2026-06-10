@@ -69,7 +69,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 8000;
 
     procedure drive_check (
@@ -127,7 +127,7 @@ begin
       else
         bSgn := 1;
       end if;
-      cov.ICover((rsc, bSgn));
+      ICover(cov, (rsc, bSgn));
 
     end procedure drive_check;
 
@@ -137,7 +137,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross("rescale x bSumSign", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("rescale x bSumSign");
+    AddCross(cov, "rescale x bSumSign", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, 0, 0, 1, "min no-rescale");
@@ -155,12 +156,12 @@ begin
         drive_check(rv.RandInt(ERR_LO, ERR_HI), rv.RandInt(0, A_HI),
                     rv.RandInt(-B_LIM, B_LIM), rv.RandInt(1, RESET), "rand");
       end if;
-      exit when cov.IsCovered and i > 300;
+      exit when IsCovered(cov) and i > 300;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "rescale x bSign coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "rescale x bSign coverage closed");
 
     end_of_test("tb_a12_osvvm");
     wait;

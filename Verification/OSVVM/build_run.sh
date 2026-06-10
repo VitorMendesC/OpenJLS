@@ -18,7 +18,7 @@ fi
 
 mkdir -p "$SUPPORT_LIB" "$WORK_LIB"
 
-STD_FLAGS=(--std=08 -frelaxed -P"$OSVVM_LIB" -P"$SUPPORT_LIB" -P"$WORK_LIB")
+STD_FLAGS=(--std=08 -frelaxed -Wno-shared -Wno-elaboration -P"$OSVVM_LIB" -P"$SUPPORT_LIB" -P"$WORK_LIB")
 # LLVM/GCC backend optimization for analyze + elaborate (not run); matches the
 # golden flow. -r instead heap-allocates large stack objects (LLVM 128 kB cap).
 OPT_FLAGS=(-O2)
@@ -89,6 +89,9 @@ for f in "$HERE"/Modules/*.vhd "$HERE"/Top/*.vhd; do
   ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$f"
 done
 
-# 5. Elaborate + run
+# 5. Elaborate + run from a scratch dir: the executable and the OSVVM YAML
+#    droppings (OsvvmTemp*, OsvvmRun.yml from EndOfTestReports) stay contained.
+mkdir -p "$HERE/sim-out"
+cd "$HERE/sim-out"
 ghdl -e "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
 ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" "${RUN_FLAGS[@]}" "${@:2}"

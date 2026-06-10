@@ -101,7 +101,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 5000;
 
     procedure drive_check (
@@ -118,7 +118,7 @@ begin
       wait for 1 ns;
       AffirmIfEqual(to_integer(sPxOut), corrected(px, sg, cq),
                     msg & " px=" & integer'image(px) & " cq=" & integer'image(cq));
-      cov.ICover((std_to_int(sg), region_of(px, sg, cq)));
+      ICover(cov, (std_to_int(sg), region_of(px, sg, cq)));
 
     end procedure drive_check;
 
@@ -128,7 +128,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross("sign x region", GenBin(0, 1, 2), GenBin(0, 2, 3));
+    cov := NewID("sign x region");
+    AddCross(cov, "sign x region", GenBin(0, 1, 2), GenBin(0, 2, 3));
 
     -- Directed corners.
     drive_check(0, CO_SIGN_POS, CQ_MIN, "low sat pos");
@@ -145,12 +146,12 @@ begin
       else
         drive_check(rv.RandInt(0, MAX_VAL), CO_SIGN_NEG, rv.RandInt(CQ_MIN, CQ_MAX), "rand");
       end if;
-      exit when cov.IsCovered and i > 300;
+      exit when IsCovered(cov) and i > 300;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "sign x region coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "sign x region coverage closed");
 
     end_of_test("tb_a6_osvvm");
     wait;

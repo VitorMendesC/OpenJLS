@@ -94,7 +94,7 @@ begin
   stim : process is
 
     variable rv  : RandomPType;
-    variable cov : CovPType;
+    variable cov : CoverageIDType;
     variable img : image_t;
 
     -- T.87 A.2.1 reference neighbour (0 outside the image).
@@ -219,7 +219,7 @@ begin
           else
             ct := 1;
           end if;
-          cov.ICover((rt, ct));
+          ICover(cov, (rt, ct));
 
           wait until rising_edge(clk);
 
@@ -241,7 +241,8 @@ begin
     SetAlertLogName("tb_line_buffer_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddCross("rowPos x colPos", GenBin(0, 1, 2), GenBin(0, 2, 3));
+    cov := NewID("rowPos x colPos");
+    AddCross(cov, "rowPos x colPos", GenBin(0, 1, 2), GenBin(0, 2, 3));
 
     apply_reset(clk, rst, 4, '1');
 
@@ -276,8 +277,8 @@ begin
     AffirmIf(oValid = '0', "mid-image reset: oValid low while idle");
     run_image(5, 4, false);     -- fresh image must be byte-correct from scratch
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "row x col position coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "row x col position coverage closed");
 
     end_of_test("tb_line_buffer_osvvm");
     wait;

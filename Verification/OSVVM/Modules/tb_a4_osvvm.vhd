@@ -103,7 +103,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 6000;
 
     procedure drive_check (
@@ -121,9 +121,9 @@ begin
       AffirmIfEqual(to_integer(sQ1), quantize(d1), msg & " Q1 d=" & integer'image(d1));
       AffirmIfEqual(to_integer(sQ2), quantize(d2), msg & " Q2 d=" & integer'image(d2));
       AffirmIfEqual(to_integer(sQ3), quantize(d3), msg & " Q3 d=" & integer'image(d3));
-      cov.ICover(quantize(d1));
-      cov.ICover(quantize(d2));
-      cov.ICover(quantize(d3));
+      ICover(cov, quantize(d1));
+      ICover(cov, quantize(d2));
+      ICover(cov, quantize(d3));
 
     end procedure drive_check;
 
@@ -133,7 +133,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("Qi", GenBin(-4, 4, 9));
+    cov := NewID("Qi");
+    AddBins(cov, "Qi", GenBin(-4, 4, 9));
 
     -- Directed threshold boundaries (both signs).
     drive_check(0, 1, -1, "near-zero");
@@ -147,12 +148,12 @@ begin
     for i in 1 to N_RAND loop
 
       drive_check(rv.RandInt(D_MIN, D_MAX), rv.RandInt(D_MIN, D_MAX), rv.RandInt(D_MIN, D_MAX), "rand");
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "Qi level coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "Qi level coverage closed");
 
     end_of_test("tb_a4_osvvm");
     wait;

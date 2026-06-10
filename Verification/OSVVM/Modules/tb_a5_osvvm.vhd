@@ -95,7 +95,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable a       : integer;
     variable b       : integer;
     variable c       : integer;
@@ -119,7 +119,7 @@ begin
                     " A=" & integer'image(av) &
                     " B=" & integer'image(bv) &
                     " C=" & integer'image(cv));
-      cov.ICover(branch_of(av, bv, cv));
+      ICover(cov, branch_of(av, bv, cv));
 
     end procedure drive_check;
 
@@ -129,7 +129,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("branch", GenBin(0, 2, 3));
+    cov := NewID("branch");
+    AddBins(cov, "branch", GenBin(0, 2, 3));
 
     -- Directed corners.
     drive_check(10, 5, 10, "c=max");
@@ -147,12 +148,12 @@ begin
       b := rv.RandInt(0, PX_MAX);
       c := rv.RandInt(0, PX_MAX);
       drive_check(a, b, c, "rand");
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "branch coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "branch coverage closed");
 
     end_of_test("tb_a5_osvvm");
     wait;

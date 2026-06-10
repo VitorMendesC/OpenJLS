@@ -63,7 +63,7 @@ architecture sim of tb_jls_framer_osvvm is
   signal oLast    : std_logic;
   signal iReady   : std_logic;
 
-  shared variable sb       : ScoreBoardPType;
+  constant SB_ID : ScoreboardIDType := NewID("framer SB");
   signal sImagesSent       : natural;
   signal sImagesDone       : natural;
   signal sDriverDone       : boolean;
@@ -203,7 +203,7 @@ begin
 
       for k in 0 to 24 loop
 
-        sb.Push(header_byte(k, w, h));
+        Push(SB_ID, header_byte(k, w, h));
 
       end loop;
 
@@ -219,13 +219,13 @@ begin
 
         for i in 0 to be - 1 loop
 
-          sb.Push(word(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8));
+          Push(SB_ID, word(IN_WIDTH - 1 - i * 8 downto IN_WIDTH - (i + 1) * 8));
 
         end loop;
 
         if (n = nWords) then
-          sb.Push(x"FF");
-          sb.Push(x"D9");
+          Push(SB_ID, x"FF");
+          Push(SB_ID, x"D9");
           push_word(word, be, '1', bool2bit(n = 1));
         else
           push_word(word, be, '0', bool2bit(n = 1));
@@ -248,7 +248,6 @@ begin
 
     SetAlertLogName("tb_jls_framer_osvvm");
     SetLogEnable(PASSED, FALSE);
-    sb.SetAlertLogID("framer SB");
     rv.InitSeed(rv'instance_name);
 
     apply_reset(clk, rst, 4, '1');
@@ -300,14 +299,15 @@ begin
     variable byte    : std_logic_vector(7 downto 0);
     variable lastByte : std_logic_vector(7 downto 0);
     variable done    : natural;
-    variable covBeat : CovPType;
+    variable covBeat : CoverageIDType;
 
   begin
 
     iReady <= '1';
     done   := 0;
-    covBeat.AddBins("partialBeat", GenBin(1, BYTES_OUT - 1, 1));
-    covBeat.AddBins("fullBeat", GenBin(BYTES_OUT, BYTES_OUT));
+    covBeat := NewID("partialBeat");
+    AddBins(covBeat, "partialBeat", GenBin(1, BYTES_OUT - 1, 1));
+    AddBins(covBeat, "fullBeat", GenBin(BYTES_OUT, BYTES_OUT));
     rv.InitSeed(rv'instance_name);
     wait until rst = '0';
 
@@ -319,13 +319,13 @@ begin
 
       if (oValid = '1' and iReady = '1' and not sIgnore) then
         nb := to_integer(oByteEn);
-        covBeat.ICover(nb);
+        ICover(covBeat, nb);
 
         for i in 0 to nb - 1 loop
 
           byte     := oWord(OUT_WIDTH - 1 - i * 8 downto OUT_WIDTH - (i + 1) * 8);
           lastByte := byte;
-          sb.Check(byte);
+          Check(SB_ID, byte);
 
         end loop;
 
@@ -338,14 +338,14 @@ begin
 
       wait until rising_edge(clk);
 
-      exit when sDriverDone and done = sImagesSent and sb.Empty;
+      exit when sDriverDone and done = sImagesSent and IsEmpty(SB_ID);
 
     end loop;
 
-    AffirmIf(sb.Empty, "scoreboard drained");
-    AffirmIfEqual(sb.GetErrorCount, 0, "scoreboard mismatches");
-    covBeat.WriteBin;
-    AffirmIf(covBeat.IsCovered, "output beat-size coverage closed");
+    AffirmIf(IsEmpty(SB_ID), "scoreboard drained");
+    AffirmIfEqual(GetErrorCount(SB_ID), 0, "scoreboard mismatches");
+    WriteBin(covBeat);
+    AffirmIf(IsCovered(covBeat), "output beat-size coverage closed");
 
     end_of_test("tb_jls_framer_osvvm");
     wait;

@@ -50,7 +50,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 3000;
 
     procedure drive_check (
@@ -75,7 +75,7 @@ begin
         e := a + (n / 2);
       end if;
       AffirmIfEqual(to_integer(sTemp), e, msg & " a=" & integer'image(a) & " n=" & integer'image(n));
-      cov.ICover(std_to_int(ri));
+      ICover(cov, std_to_int(ri));
 
     end procedure drive_check;
 
@@ -84,7 +84,8 @@ begin
     SetAlertLogName("tb_a20_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddBins("RItype", GenBin(0, 1, 2));
+    cov := NewID("RItype");
+    AddBins(cov, "RItype", GenBin(0, 1, 2));
 
     drive_check('0', 0, 0, "ri0 zero");
     drive_check('0', A_MAX, N_MAX, "ri0 max (N unused)");
@@ -99,12 +100,12 @@ begin
       else
         drive_check('1', rv.RandInt(0, A_MAX - N_MAX), rv.RandInt(0, N_MAX), "rand ri1");
       end if;
-      exit when cov.IsCovered and i > 50;
+      exit when IsCovered(cov) and i > 50;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "RItype coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "RItype coverage closed");
 
     end_of_test("tb_a20_osvvm");
     wait;

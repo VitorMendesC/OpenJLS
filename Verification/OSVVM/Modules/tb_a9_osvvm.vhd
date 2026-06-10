@@ -82,7 +82,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable err     : integer;
     variable exp     : integer;
     variable wn      : integer;
@@ -113,7 +113,7 @@ begin
       else
         g := 0;
       end if;
-      cov.ICover((w, g));
+      ICover(cov, (w, g));
 
     end procedure drive_check;
 
@@ -123,7 +123,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross("wrapNeg x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("wrapNeg x geHalf");
+    AddCross(cov, "wrapNeg x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, "zero");
@@ -138,12 +139,12 @@ begin
 
       err := rv.RandInt(ERR_MIN, ERR_MAX);
       drive_check(err, "rand");
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "wrap/half cross coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "wrap/half cross coverage closed");
 
     end_of_test("tb_a9_osvvm");
     wait;

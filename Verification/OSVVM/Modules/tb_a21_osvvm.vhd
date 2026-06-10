@@ -92,7 +92,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable k       : integer;
     variable err     : integer;
     variable nn      : integer;
@@ -116,7 +116,7 @@ begin
       AffirmIfEqual(std_to_int(sMap), std_to_int(ref_map(k, err, nn, nq)),
                     msg & " k=" & integer'image(k) & " err=" & integer'image(err) &
                     " nn=" & integer'image(nn) & " nq=" & integer'image(nq));
-      cov.ICover(clause_of(k, err, nn, nq));
+      ICover(cov, clause_of(k, err, nn, nq));
 
     end procedure drive_check;
 
@@ -126,7 +126,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("clause", GenBin(0, 3, 4));
+    cov := NewID("clause");
+    AddBins(cov, "clause", GenBin(0, 3, 4));
 
     -- Directed: one per clause.
     drive_check(0, 5, 1, 10, "clause1");
@@ -148,12 +149,12 @@ begin
       nq  := rv.RandInt(0, N_MAX);
       drive_check(k, err, nn, nq, "rand");
 
-      exit when cov.IsCovered and i > 400;
+      exit when IsCovered(cov) and i > 400;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "clause coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "clause coverage closed");
 
     end_of_test("tb_a21_osvvm");
     wait;

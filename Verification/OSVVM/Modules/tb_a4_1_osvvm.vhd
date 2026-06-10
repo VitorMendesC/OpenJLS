@@ -78,7 +78,7 @@ begin
   stim : process is
 
     variable rv  : RandomPType;
-    variable cov : CovPType;
+    variable cov : CoverageIDType;
 
     procedure drive_check (
       q1  : integer;
@@ -115,7 +115,7 @@ begin
         AffirmIfEqual(to_integer(sQ3o), q3, msg & " Q3");
       end if;
 
-      cov.ICover(decider_of(q1, q2, q3));
+      ICover(cov, decider_of(q1, q2, q3));
 
     end procedure drive_check;
 
@@ -125,7 +125,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("decider", GenBin(0, 3, 4));
+    cov := NewID("decider");
+    AddBins(cov, "decider", GenBin(0, 3, 4));
 
     -- Directed: each decider category, both polarities.
     drive_check(0, 0, 0, "all-zero");
@@ -151,8 +152,8 @@ begin
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "decider coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "decider coverage closed");
 
     end_of_test("tb_a4_1_osvvm");
     wait;

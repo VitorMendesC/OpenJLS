@@ -43,7 +43,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable ra      : integer;
     variable rb      : integer;
     constant N_RAND  : natural := 3000;
@@ -68,7 +68,7 @@ begin
         e := 0;
       end if;
       AffirmIfEqual(std_to_int(sRItype), e, msg);
-      cov.ICover(e);
+      ICover(cov, e);
 
     end procedure drive_check;
 
@@ -77,7 +77,8 @@ begin
     SetAlertLogName("tb_a17_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddBins("RItype", GenBin(0, 1, 2));
+    cov := NewID("RItype");
+    AddBins(cov, "RItype", GenBin(0, 1, 2));
 
     drive_check(0, 0, "equal zero");
     drive_check(PX_MAX, PX_MAX, "equal max");
@@ -93,12 +94,12 @@ begin
         rb := rv.RandInt(0, PX_MAX);
       end if;
       drive_check(ra, rb, "rand");
-      exit when cov.IsCovered and i > 100;
+      exit when IsCovered(cov) and i > 100;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "RItype coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "RItype coverage closed");
 
     end_of_test("tb_a17_osvvm");
     wait;

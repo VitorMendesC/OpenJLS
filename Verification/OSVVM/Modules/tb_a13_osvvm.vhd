@@ -58,7 +58,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 8000;
 
     -- event: 0 neg-noclamp, 1 neg-clamp, 2 pos-noclamp, 3 pos-clamp, 4 none.
@@ -110,7 +110,7 @@ begin
 
       AffirmIfEqual(to_integer(sBqO), bNew, msg & " B");
       AffirmIfEqual(to_integer(sCqO), cNew, msg & " C");
-      cov.ICover(ev);
+      ICover(cov, ev);
 
     end procedure drive_check;
 
@@ -120,7 +120,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("event", GenBin(0, 4, 5));
+    cov := NewID("event");
+    AddBins(cov, "event", GenBin(0, 4, 5));
 
     -- Directed: one per event.
     drive_check(-100, 10, 0, "neg branch, big B (clamp)");   -- B=-100<=-10; B+N=-90<=-10 -> clamp
@@ -141,12 +142,12 @@ begin
         drive_check(rv.RandInt(-4096, 4095), rv.RandInt(1, RESET),
                     rv.RandInt(MIN_C, MAX_C), "rand wide");
       end if;
-      exit when cov.IsCovered and i > 300;
+      exit when IsCovered(cov) and i > 300;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "branch/clamp coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "branch/clamp coverage closed");
 
     end_of_test("tb_a13_osvvm");
     wait;

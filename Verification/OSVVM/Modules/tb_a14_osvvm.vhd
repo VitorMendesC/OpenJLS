@@ -58,7 +58,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable ra      : integer;
     variable ix      : integer;
     variable rc      : integer;
@@ -98,7 +98,7 @@ begin
       AffirmIfEqual(to_integer(sRunCntO), expC, msg & " runCnt");
       AffirmIfEqual(std_to_int(sRunHit), hit, msg & " runHit");
       AffirmIfEqual(std_to_int(sRunCont), hit * std_to_int(not eol), msg & " continue");
-      cov.ICover((hit, std_to_int(eol)));
+      ICover(cov, (hit, std_to_int(eol)));
 
     end procedure drive_check;
 
@@ -107,7 +107,8 @@ begin
     SetAlertLogName("tb_a14_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddCross("runHit x eol", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("runHit x eol");
+    AddCross(cov, "runHit x eol", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(7, 7, 0, '0', "hit no-eol");
@@ -125,12 +126,12 @@ begin
       end if;
       rc := rv.RandInt(0, RC_MOD - 1);
       drive_check(ra, ix, rc, bool2bit(rv.RandInt(0, 1) = 1), "rand");
-      exit when cov.IsCovered and i > 100;
+      exit when IsCovered(cov) and i > 100;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "runHit x eol coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "runHit x eol coverage closed");
 
     end_of_test("tb_a14_osvvm");
     wait;

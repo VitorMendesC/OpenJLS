@@ -104,7 +104,7 @@ begin
   stim : process is
 
     variable rv    : RandomPType;
-    variable cov   : CovPType;
+    variable cov   : CoverageIDType;
     variable mem   : mem_t := (others => (others => '0'));
     variable ini   : ini_t := (others => true);
     variable touched : ini_t := (others => false);  -- has the test written it?
@@ -161,7 +161,7 @@ begin
       wait for 1 ns;
       if (rdEn = '1') then
         AffirmIfEqual(oRdData, exp, msg);
-        cov.ICover(outcome);
+        ICover(cov, outcome);
       end if;
 
     end procedure step;
@@ -210,7 +210,8 @@ begin
     SetAlertLogName("tb_context_ram_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddBins("readOutcome", GenBin(0, 2, 3));   -- init / bram / forward
+    cov := NewID("readOutcome");
+    AddBins(cov, "readOutcome", GenBin(0, 2, 3));   -- init / bram / forward
 
     apply_reset(clk, rst, 4, '1');
 
@@ -259,12 +260,12 @@ begin
         pulse_rst;
       end if;
 
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "read-outcome coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "read-outcome coverage closed");
 
     end_of_test("tb_context_ram_osvvm");
     wait;

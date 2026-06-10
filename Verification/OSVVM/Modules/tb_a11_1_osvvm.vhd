@@ -88,7 +88,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable k       : integer;
     variable merr    : integer;
     variable ridx    : integer;
@@ -138,7 +138,7 @@ begin
       AffirmIfEqual(to_integer(sSuffixLen), expLen, msg & " sufLen");
       AffirmIfEqual(to_integer(sSuffixVal), expVal, msg & " sufVal");
 
-      cov.ICover((std_to_int(ri), escape));
+      ICover(cov, (std_to_int(ri), escape));
 
     end procedure drive_check;
 
@@ -148,7 +148,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross("riMode x escape", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("riMode x escape");
+    AddCross(cov, "riMode x escape", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, 0, '0', 0, "reg merr0 k0");           -- non-escape, all minimal
@@ -169,12 +170,12 @@ begin
       else
         drive_check(k, merr, '1', ridx, "rand RI");
       end if;
-      exit when cov.IsCovered and i > 400;
+      exit when IsCovered(cov) and i > 400;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "riMode x escape coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "riMode x escape coverage closed");
 
     end_of_test("tb_a11_1_osvvm");
     wait;

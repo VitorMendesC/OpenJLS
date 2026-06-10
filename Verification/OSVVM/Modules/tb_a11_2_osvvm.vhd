@@ -147,7 +147,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable rawLen  : integer;
     variable uz      : integer;
     variable sl      : integer;
@@ -201,7 +201,7 @@ begin
       else
         caseT := 0;
       end if;
-      cov.ICover(caseT);
+      ICover(cov, caseT);
 
     end procedure beat;
 
@@ -219,7 +219,8 @@ begin
     SetAlertLogName("tb_a11_2_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddBins("case", GenBin(0, 3, 4));
+    cov := NewID("case");
+    AddBins(cov, "case", GenBin(0, 3, 4));
 
     apply_reset(clk, rst, 4, '1');
 
@@ -299,12 +300,12 @@ begin
       rawVal := rv.RandUnsigned(SUFFIX_W);
       sufVal := rv.RandUnsigned(SUFFIX_W);
       beat(rValid, rawLen, rawVal, gValid, uz, sl, sufVal, "rand");
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "case coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "case coverage closed");
 
     end_of_test("tb_a11_2_osvvm");
     wait;

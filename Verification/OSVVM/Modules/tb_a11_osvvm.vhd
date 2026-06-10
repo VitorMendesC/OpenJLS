@@ -86,7 +86,7 @@ begin
   stim : process is
 
     variable rv       : RandomPType;
-    variable cov      : CovPType;
+    variable cov      : CoverageIDType;
     variable kVal     : integer;
     variable bVal     : integer;
     variable nVal     : integer;
@@ -107,7 +107,8 @@ begin
     -- The interesting axis is (special_map, err_sign). Special map only fires
     -- when k=0 AND 2*B <= -N, which is rare under uniform random — bias it.
     -- Axis 0 (regular=0, special=1), axis 1 (err>=0 => 0, err<0 => 1).
-    cov.AddCross(
+    cov := NewID("Special x ErrSign");
+    AddCross(cov, 
       "Special x ErrSign",
       GenBin(ATLEAST => 100, Min => 0, Max => 1, NumBin => 2),
       GenBin(ATLEAST => 100, Min => 0, Max => 1, NumBin => 2)
@@ -197,14 +198,14 @@ begin
         signIdx := 1;
       end if;
 
-      cov.ICover((special, signIdx));
+      ICover(cov, (special, signIdx));
 
-      exit when cov.IsCovered and i > 500;
+      exit when IsCovered(cov) and i > 500;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "Coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "Coverage closed");
 
     end_of_test("tb_a11_osvvm");
     wait;

@@ -73,7 +73,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable ix      : integer;
     variable px      : integer;
     variable sgnIn   : integer;
@@ -97,7 +97,7 @@ begin
       wait for 1 ns;
       e := ref_err(ixv, pxv, sgv);
       AffirmIfEqual(to_integer(sErrorVal), e, msg);
-      cov.ICover((std_to_int(sgv), sgn(e)));
+      ICover(cov, (std_to_int(sgv), sgn(e)));
 
     end procedure drive_check;
 
@@ -107,7 +107,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross("signIn x signErr", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("signIn x signErr");
+    AddCross(cov, "signIn x signErr", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, 0, CO_SIGN_POS, "zero pos");
@@ -126,12 +127,12 @@ begin
       else
         drive_check(ix, px, CO_SIGN_NEG, "rand");
       end if;
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "sign cross coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "sign cross coverage closed");
 
     end_of_test("tb_a7_osvvm");
     wait;

@@ -180,10 +180,10 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable covTerm : CovPType;
-    variable covImm  : CovPType;
-    variable covEoi  : CovPType;
-    variable covIdx  : CovPType;
+    variable covTerm : CoverageIDType;
+    variable covImm  : CoverageIDType;
+    variable covEoi  : CoverageIDType;
+    variable covIdx  : CoverageIDType;
 
     variable actBuf  : string(1 to MAXBITS);
     variable actLen  : natural;
@@ -271,10 +271,10 @@ begin
       end if;
 
       -- Coverage and carried-index update.
-      covTerm.ICover(term);
-      covImm.ICover(boolean'pos(m = 0));
-      covEoi.ICover(std_to_int(eoi));
-      covIdx.ICover(carried);
+      ICover(covTerm, term);
+      ICover(covImm, boolean'pos(m = 0));
+      ICover(covEoi, std_to_int(eoi));
+      ICover(covIdx, carried);
 
       if (eoi = '1') then
         carried := 0;
@@ -326,13 +326,17 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    covTerm.AddBins("terminal", GenBin(0, 1, 2));
-    covImm.AddBins("immediateBreak", GenBin(0, 1, 2));
-    covEoi.AddBins("eoiReset", GenBin(0, 1, 2));
-    covIdx.AddBins("startIdx0", GenBin(0, 0));
-    covIdx.AddBins("startIdxLo", GenBin(1, 3, 1));
-    covIdx.AddBins("startIdxMid", GenBin(4, 10, 1));
-    covIdx.AddBins("startIdxHi", GenBin(11, 31, 1));
+    covTerm := NewID("terminal");
+    AddBins(covTerm, "terminal", GenBin(0, 1, 2));
+    covImm := NewID("immediateBreak");
+    AddBins(covImm, "immediateBreak", GenBin(0, 1, 2));
+    covEoi := NewID("eoiReset");
+    AddBins(covEoi, "eoiReset", GenBin(0, 1, 2));
+    covIdx := NewID("startIdx");
+    AddBins(covIdx, "startIdx0", GenBin(0, 0));
+    AddBins(covIdx, "startIdxLo", GenBin(1, 3, 1));
+    AddBins(covIdx, "startIdxMid", GenBin(4, 10, 1));
+    AddBins(covIdx, "startIdxHi", GenBin(11, 31, 1));
 
     apply_reset(clk, rst, 4, '1');
     carried := 0;
@@ -402,19 +406,19 @@ begin
         idle(rv.RandInt(1, 3));
       end if;
 
-      exit when covTerm.IsCovered and covImm.IsCovered and
-                covEoi.IsCovered and covIdx.IsCovered and r > 50;
+      exit when IsCovered(covTerm) and IsCovered(covImm) and
+                IsCovered(covEoi) and IsCovered(covIdx) and r > 50;
 
     end loop;
 
-    covTerm.WriteBin;
-    covImm.WriteBin;
-    covEoi.WriteBin;
-    covIdx.WriteBin;
-    AffirmIf(covTerm.IsCovered, "terminal coverage closed");
-    AffirmIf(covImm.IsCovered, "immediate-break coverage closed");
-    AffirmIf(covEoi.IsCovered, "EOI-reset coverage closed");
-    AffirmIf(covIdx.IsCovered, "start-RUNindex coverage closed");
+    WriteBin(covTerm);
+    WriteBin(covImm);
+    WriteBin(covEoi);
+    WriteBin(covIdx);
+    AffirmIf(IsCovered(covTerm), "terminal coverage closed");
+    AffirmIf(IsCovered(covImm), "immediate-break coverage closed");
+    AffirmIf(IsCovered(covEoi), "EOI-reset coverage closed");
+    AffirmIf(IsCovered(covIdx), "start-RUNindex coverage closed");
 
     end_of_test("tb_a15_a16_osvvm");
     wait;

@@ -99,7 +99,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable err     : integer;
     variable a       : integer;
     variable n       : integer;
@@ -189,7 +189,7 @@ begin
       else
         eNeg := 0;
       end if;
-      cov.ICover((rsc, eNeg, riv));
+      ICover(cov, (rsc, eNeg, riv));
 
     end procedure drive_check;
 
@@ -199,7 +199,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross("rescale x errNeg x RItype", GenBin(0, 1, 2), GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("rescale x errNeg x RItype");
+    AddCross(cov, "rescale x errNeg x RItype", GenBin(0, 1, 2), GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners (both map values on the same vector to exercise equivalence).
     drive_check(-5, 0, 100, RESET, 10, 0, "rescale errneg ri0 m0");
@@ -221,12 +222,12 @@ begin
         n := rv.RandInt(1, RESET);
       end if;
       drive_check(err, ri, a, n, nn, mp, "rand");
-      exit when cov.IsCovered and i > 600;
+      exit when IsCovered(cov) and i > 600;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "rescale x errNeg x RItype coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "rescale x errNeg x RItype coverage closed");
 
     end_of_test("tb_a23_osvvm");
     wait;

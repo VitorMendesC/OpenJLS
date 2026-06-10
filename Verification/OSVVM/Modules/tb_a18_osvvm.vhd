@@ -60,7 +60,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 4000;
 
     procedure drive_check (
@@ -89,7 +89,7 @@ begin
       end if;
       e := ix - px;
       AffirmIfEqual(to_integer(sErrval), e, msg);
-      cov.ICover((std_to_int(ri), sgn(e)));
+      ICover(cov, (std_to_int(ri), sgn(e)));
 
     end procedure drive_check;
 
@@ -98,7 +98,8 @@ begin
     SetAlertLogName("tb_a18_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddCross("RItype x errSign", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("RItype x errSign");
+    AddCross(cov, "RItype x errSign", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     drive_check('1', 0, PX_MAX, PX_MAX, "ri1 pos");
     drive_check('1', PX_MAX, 0, 0, "ri1 neg");
@@ -112,12 +113,12 @@ begin
       else
         drive_check('0', rv.RandInt(0, PX_MAX), rv.RandInt(0, PX_MAX), rv.RandInt(0, PX_MAX), "rand ri0");
       end if;
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "RItype x errSign coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "RItype x errSign coverage closed");
 
     end_of_test("tb_a18_osvvm");
     wait;

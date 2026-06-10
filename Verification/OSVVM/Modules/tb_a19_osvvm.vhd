@@ -56,7 +56,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     constant N_RAND  : natural := 6000;
 
     procedure drive_check (
@@ -105,7 +105,7 @@ begin
 
       AffirmIfEqual(to_integer(sErrOut), result, msg & " err");
       AffirmIfEqual(std_to_int(sSign), std_to_int(eSign), msg & " sign");
-      cov.ICover((std_to_int(eSign), gh));
+      ICover(cov, (std_to_int(eSign), gh));
 
     end procedure drive_check;
 
@@ -114,7 +114,8 @@ begin
     SetAlertLogName("tb_a19_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    cov.AddCross("sign x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("sign x geHalf");
+    AddCross(cov, "sign x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, '0', 5, 1, "flip err0");           -- flip, e=0
@@ -132,12 +133,12 @@ begin
                     bool2bit(rv.RandInt(0, 1) = 1),
                     rv.RandInt(0, PX_MAX), rv.RandInt(0, PX_MAX), "rand");
       end if;
-      exit when cov.IsCovered and i > 300;
+      exit when IsCovered(cov) and i > 300;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "sign x geHalf coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "sign x geHalf coverage closed");
 
     end_of_test("tb_a19_osvvm");
     wait;

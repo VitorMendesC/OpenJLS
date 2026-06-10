@@ -72,8 +72,8 @@ begin
   stim : process is
 
     variable rv       : RandomPType;
-    variable covCross : CovPType;        -- RItype x map (all 4 reachable)
-    variable covZero  : CovPType;        -- EMErrval == 0 boundary seen
+    variable covCross : CoverageIDType;        -- RItype x map (all 4 reachable)
+    variable covZero  : CoverageIDType;        -- EMErrval == 0 boundary seen
     variable err      : integer;
     variable ri       : integer;
     variable mp       : integer;
@@ -107,8 +107,8 @@ begin
         else
           z := 0;
         end if;
-        covCross.ICover((riv, mpv));
-        covZero.ICover(z);
+        ICover(covCross, (riv, mpv));
+        ICover(covZero, z);
       else
         -- EMErrval<0 is T.87-unreachable: it requires Errval=0 with RItype or map
         -- set, but RItype=1 => Errval/=0 and Errval=0 => map=0 (see header).
@@ -125,8 +125,10 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    covCross.AddCross("ri x map", GenBin(0, 1, 2), GenBin(0, 1, 2));
-    covZero.AddBins("emZero", GenBin(0, 1, 2));
+    covCross := NewID("ri x map");
+    AddCross(covCross, "ri x map", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    covZero := NewID("emZero");
+    AddBins(covZero, "emZero", GenBin(0, 1, 2));
 
     -- Directed: EMErrval==0 boundary for each ri/map needing it.
     drive_check(1, 1, 1, "err1 ri1 map1 -> 0");        -- 2-1-1 = 0
@@ -147,14 +149,14 @@ begin
       ri := rv.RandInt(0, 1);
       mp := rv.RandInt(0, 1);
       drive_check(err, ri, mp, "rand");
-      exit when covCross.IsCovered and covZero.IsCovered and i > 400;
+      exit when IsCovered(covCross) and IsCovered(covZero) and i > 400;
 
     end loop;
 
-    covCross.WriteBin;
-    covZero.WriteBin;
-    AffirmIf(covCross.IsCovered, "ri x map coverage closed");
-    AffirmIf(covZero.IsCovered, "EMErrval==0 boundary covered");
+    WriteBin(covCross);
+    WriteBin(covZero);
+    AffirmIf(IsCovered(covCross), "ri x map coverage closed");
+    AffirmIf(IsCovered(covZero), "EMErrval==0 boundary covered");
 
     end_of_test("tb_a22_osvvm");
     wait;

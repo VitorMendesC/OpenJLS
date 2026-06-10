@@ -12,8 +12,16 @@ build/
 Verification/OSVVM/osvvm-lib/
 Verification/OSVVM/tb_support-lib/
 Verification/OSVVM/work-lib/
-# elaborated TB executables (ghdl -e output lands in Verification/OSVVM/)
-Verification/OSVVM/tb_*_osvvm
+# fast-flow scratch (TB executables + per-run OSVVM YAML)
+Verification/OSVVM/sim-out/
+# script-flow outputs (build_reports.sh: libraries, per-build report trees)
+Verification/OSVVM/VHDL_LIBS/
+Verification/OSVVM/osvvm/
+Verification/OSVVM/OSVVM_OpenJls/
+Verification/OSVVM/OsvvmTemp_GHDL/
+Verification/OSVVM/*.html
+Verification/OSVVM/*.yml
+ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd
 
 # GHDL compile cache
 Verification/T87 conformance/work-lib/

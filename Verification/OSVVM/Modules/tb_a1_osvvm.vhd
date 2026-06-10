@@ -65,7 +65,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable a       : integer;
     variable b       : integer;
     variable c       : integer;
@@ -89,7 +89,7 @@ begin
       AffirmIfEqual(to_integer(sD1), dv - bv, msg & " D1");
       AffirmIfEqual(to_integer(sD2), bv - cv, msg & " D2");
       AffirmIfEqual(to_integer(sD3), cv - av, msg & " D3");
-      cov.ICover((sgn(dv - bv), sgn(bv - cv), sgn(cv - av)));
+      ICover(cov, (sgn(dv - bv), sgn(bv - cv), sgn(cv - av)));
 
     end procedure drive_check;
 
@@ -99,7 +99,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddCross(
+    cov := NewID("sgnD1 x sgnD2 x sgnD3");
+    AddCross(cov, 
                  "sgnD1 x sgnD2 x sgnD3",
                  GenBin(0, 1, 2),
                  GenBin(0, 1, 2),
@@ -120,12 +121,12 @@ begin
       c := rv.RandInt(0, PX_MAX);
       d := rv.RandInt(0, PX_MAX);
       drive_check(a, b, c, d, "rand");
-      exit when cov.IsCovered and i > 200;
+      exit when IsCovered(cov) and i > 200;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "sign-octant coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "sign-octant coverage closed");
 
     end_of_test("tb_a1_osvvm");
     wait;

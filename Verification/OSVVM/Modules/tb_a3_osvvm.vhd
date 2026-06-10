@@ -47,7 +47,7 @@ begin
   stim : process is
 
     variable rv      : RandomPType;
-    variable cov     : CovPType;
+    variable cov     : CoverageIDType;
     variable d1      : integer;
     variable d2      : integer;
     variable d3      : integer;
@@ -76,7 +76,7 @@ begin
         run := 0;
       end if;
       AffirmIfEqual(std_to_int(sModeRun), run, msg);
-      cov.ICover(run);
+      ICover(cov, run);
 
     end procedure drive_check;
 
@@ -86,7 +86,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
 
-    cov.AddBins("modeRun", GenBin(0, 1, 2));
+    cov := NewID("modeRun");
+    AddBins(cov, "modeRun", GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, 0, 0, "run all-zero");
@@ -108,12 +109,12 @@ begin
         d3 := rv.RandInt(D_MIN, D_MAX);
       end if;
       drive_check(d1, d2, d3, "rand");
-      exit when cov.IsCovered and i > 100;
+      exit when IsCovered(cov) and i > 100;
 
     end loop;
 
-    cov.WriteBin;
-    AffirmIf(cov.IsCovered, "modeRun coverage closed");
+    WriteBin(cov);
+    AffirmIf(IsCovered(cov), "modeRun coverage closed");
 
     end_of_test("tb_a3_osvvm");
     wait;

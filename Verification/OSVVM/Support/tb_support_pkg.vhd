@@ -57,9 +57,12 @@ package body tb_support_pkg is
   procedure end_of_test (
     constant test_name : in string
   ) is
+    variable errors : integer;
   begin
-    ReportAlerts;
-    if GetAlertCount(FAILURE) + GetAlertCount(ERROR) = 0 then
+    -- EndOfTestReports = ReportAlerts + YAML emission (alerts, functional
+    -- coverage, scoreboards) consumed by the OSVVM script flow's HTML reports.
+    errors := EndOfTestReports;
+    if errors = 0 then
       report test_name & ": PASS" severity note;
     else
       report test_name & ": FAIL" severity failure;
