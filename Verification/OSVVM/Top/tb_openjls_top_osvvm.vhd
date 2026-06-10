@@ -252,10 +252,12 @@ begin
   stim : process is
 
     variable rv         : RandomPType;
-    variable covStress  : CovPType;
-    variable covUp      : CovPType;
-    variable covB2B     : CovPType;
-    variable covRst     : CovPType;
+    variable covSweep   : CoverageIDType;
+    variable pt         : integer_vector(1 to 3);
+    variable nImages    : positive;
+    variable covUp      : CoverageIDType;
+    variable covB2B     : CoverageIDType;
+    variable covRst     : CoverageIDType;
     variable base       : natural;
     variable baseL      : natural;
     variable bigImg     : pixel_array_t(0 to BIG_W * BIG_H - 1);
@@ -332,31 +334,41 @@ begin
 
     end procedure wait_images;
 
-    -- Encode one full H.3 image and assert the output equals the golden bytes.
+    -- Encode `images` H.3 images back-to-back (no inter-image gap) and assert
+    -- the output equals `images` copies of the golden bytes.
     procedure run_check (
-      bp    : natural range 0 to 1;
-      stall : boolean;
-      msg   : string
+      bp     : natural range 0 to 1;
+      stall  : boolean;
+      images : positive;
+      msg    : string
     ) is
     begin
 
       base    := collectedCount;
       baseL   := lastCount;
       sBpMode <= bp;
-      feed(PIXELS, stall, PIXELS'length);
-      wait_images(1);
+      for k in 1 to images loop
 
-      AffirmIfEqual(collectedCount - base, EXP_BYTES, msg & " byte count");
-      for i in 0 to EXP_BYTES - 1 loop
-
-        if (base + i < collectedCount) then
-          AffirmIfEqual(collected(base + i), EXPECTED(i),
-                        msg & " byte " & integer'image(i));
+        feed(PIXELS, stall, PIXELS'length);
+        -- Image k's last pixel entered one cycle ago, so its oLast cannot
+        -- have fired: image k+1 is fed while image k is still draining.
+        if (k = 1 and images > 1) then
+          AffirmIf(lastCount = baseL, msg & ": b2b overlap");
         end if;
 
       end loop;
 
-      covStress.ICover((bp, boolean'pos(stall)));
+      wait_images(images);
+
+      AffirmIfEqual(collectedCount - base, images * EXP_BYTES, msg & " byte count");
+      for i in 0 to images * EXP_BYTES - 1 loop
+
+        if (base + i < collectedCount) then
+          AffirmIfEqual(collected(base + i), EXPECTED(i mod EXP_BYTES),
+                        msg & " byte " & integer'image(i));
+        end if;
+
+      end loop;
 
     end procedure run_check;
 
@@ -391,47 +403,33 @@ begin
     SetAlertLogName("tb_openjls_top_osvvm");
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
-    covStress.AddCross("bp x inputStall", GenBin(0, 1, 2), GenBin(0, 1, 2));
-    covUp.AddBins("upstreamStallPropagated", GenBin(1, 1));
-    covB2B.AddBins("backToBack clean/stressed/minimal", GenBin(0, 2, 3));
-    covRst.AddBins("reset midFeed/midFeedStress/midDrain", GenBin(0, 2, 3));
+    covSweep := NewID("bp x inputStall x prelude");
+    AddCross(covSweep, "bp x inputStall x prelude",
+             GenBin(0, 1, 2), GenBin(0, 1, 2), GenBin(0, 2, 3));
+    covUp := NewID("upstreamStallPropagated");
+    AddBins(covUp, "upstreamStallPropagated", GenBin(1, 1));
+    covB2B := NewID("backToBack clean/stressed/minimal");
+    AddBins(covB2B, "backToBack clean/stressed/minimal", GenBin(0, 2, 3));
+    covRst := NewID("reset midFeed/midFeedStress/midDrain");
+    AddBins(covRst, "reset midFeed/midFeedStress/midDrain", GenBin(0, 2, 3));
 
     do_reset;
 
     --------------------------------------------------------------------------
     -- Phase A directed: each stress axis, clean baseline first.
     --------------------------------------------------------------------------
-    run_check(0, false, "baseline");
-    run_check(1, false, "downstream backpressure");
-    run_check(0, true, "input stall");
-    run_check(1, true, "backpressure + stall");
+    run_check(0, false, 1, "baseline");
+    run_check(1, false, 1, "downstream backpressure");
+    run_check(0, true, 1, "input stall");
+    run_check(1, true, 1, "backpressure + stall");
 
     --------------------------------------------------------------------------
     -- Back-to-back: three images streamed with no inter-image gap. Exercises
     -- the image-parity machinery (ctx straggler refusal, forwarding guards),
     -- the framer start queue and the in-flight EOI FIFO.
     --------------------------------------------------------------------------
-    sBpMode <= 0;
-    base    := collectedCount;
-    baseL   := lastCount;
-    feed(PIXELS, false, PIXELS'length);
-    -- Image 1's last pixel entered one cycle ago; its oLast cannot have fired.
-    AffirmIf(lastCount = baseL, "b2b: image 2 fed while image 1 still draining");
-    feed(PIXELS, false, PIXELS'length);
-    feed(PIXELS, false, PIXELS'length);
-    wait_images(3);
-
-    AffirmIfEqual(collectedCount - base, 3 * EXP_BYTES, "b2b byte count");
-    for i in 0 to 3 * EXP_BYTES - 1 loop
-
-      if (base + i < collectedCount) then
-        AffirmIfEqual(collected(base + i), EXPECTED(i mod EXP_BYTES),
-                      "b2b byte " & integer'image(i));
-      end if;
-
-    end loop;
-
-    covB2B.ICover(0);
+    run_check(0, false, 3, "b2b x3");
+    ICover(covB2B, 0);
 
     --------------------------------------------------------------------------
     -- Mid-image reset injection, then a clean image must still be correct.
@@ -439,32 +437,43 @@ begin
     sBpMode <= 0;
     feed(PIXELS, false, 8);         -- partial image (8 of 16 pixels)
     do_reset;                       -- abort mid-image
-    run_check(0, false, "post-reset recovery");
-    covRst.ICover(0);
+    run_check(0, false, 1, "post-reset recovery");
+    ICover(covRst, 0);
 
     -- Reset injection while under backpressure, then recover.
     sBpMode <= 1;
     feed(PIXELS, true, 6);
     do_reset;
-    run_check(1, true, "post-reset recovery under stress");
-    covRst.ICover(1);
+    run_check(1, true, 1, "post-reset recovery under stress");
+    ICover(covRst, 1);
 
     --------------------------------------------------------------------------
-    -- Phase A randomized stress sweep.
+    -- Phase A Intelligent Coverage sweep: bp x inputStall x prelude, where
+    -- prelude 0 = none, 1 = aborted partial image (mid-feed reset), 2 = the
+    -- checked image is a back-to-back pair. RandCovPoint picks a random
+    -- *uncovered* bin each pass (WeightMode REMAIN), so the 12-bin cross
+    -- closes in exactly 12 passes instead of a coupon-collector tail.
     --------------------------------------------------------------------------
-    for r in 1 to 40 loop
+    for r in 1 to 60 loop
 
-      -- Occasional mid-image reset injection.
-      if (rv.DistValInt(((1, 1), (0, 5))) = 1) then
-        sBpMode <= rv.RandInt(0, 1);
-        feed(PIXELS, rv.RandInt(0, 1) = 1, rv.RandInt(1, PIXELS'length - 1));
+      exit when IsCovered(covSweep);
+      pt := RandCovPoint(covSweep);
+
+      nImages := 1;
+
+      if (pt(3) = 1) then
+        sBpMode <= pt(1);
+        feed(PIXELS, pt(2) = 1, rv.RandInt(1, PIXELS'length - 1));
         do_reset;
+      elsif (pt(3) = 2) then
+        nImages := 2;
       end if;
 
-      run_check(rv.RandInt(0, 1), rv.RandInt(0, 1) = 1,
-                "rand r=" & integer'image(r));
+      run_check(pt(1), pt(2) = 1, nImages,
+                "ic bp=" & to_string(pt(1)) & " st=" & to_string(pt(2)) &
+                " pre=" & to_string(pt(3)));
 
-      exit when covStress.IsCovered and r > 8;
+      ICover(covSweep, pt);
 
     end loop;
 
@@ -515,7 +524,7 @@ begin
 
     AffirmIf(lastCount = baseL, "B2: output still in flight at reset");
     do_reset;
-    covRst.ICover(2);
+    ICover(covRst, 2);
     base  := collectedCount;
     baseL := lastCount;
     feed(bigImg, false, bigImg'length);
@@ -533,7 +542,7 @@ begin
     sBpMode <= 0;
     AffirmIf(feedStallCnt > vStallSnap,
              "B3: downstream hold propagated to oReady (upstream stall seen)");
-    covUp.ICover(1);
+    ICover(covUp, 1);
     check_against_ref("B3 stall propagation");
 
     -- B4: random backpressure + input stalls.
@@ -564,7 +573,7 @@ begin
 
     end loop;
 
-    covB2B.ICover(1);
+    ICover(covB2B, 1);
 
     --------------------------------------------------------------------------
     -- Phase C: minimal legal image (4x1) back-to-back. The whole image feeds
@@ -609,16 +618,16 @@ begin
 
     end loop;
 
-    covB2B.ICover(2);
+    ICover(covB2B, 2);
 
-    covStress.WriteBin;
-    covUp.WriteBin;
-    covB2B.WriteBin;
-    covRst.WriteBin;
-    AffirmIf(covStress.IsCovered, "bp x input-stall cross closed");
-    AffirmIf(covUp.IsCovered, "upstream-stall-propagation coverage closed");
-    AffirmIf(covB2B.IsCovered, "back-to-back coverage closed");
-    AffirmIf(covRst.IsCovered, "reset-recovery coverage closed");
+    WriteBin(covSweep);
+    WriteBin(covUp);
+    WriteBin(covB2B);
+    WriteBin(covRst);
+    AffirmIf(IsCovered(covSweep), "bp x input-stall x prelude cross closed");
+    AffirmIf(IsCovered(covUp), "upstream-stall-propagation coverage closed");
+    AffirmIf(IsCovered(covB2B), "back-to-back coverage closed");
+    AffirmIf(IsCovered(covRst), "reset-recovery coverage closed");
 
     end_of_test("tb_openjls_top_osvvm");
     wait;
