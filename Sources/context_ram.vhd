@@ -110,18 +110,13 @@ begin
       if (iRst = '1') then
         sUseInitValue <= (others => '1');
       else
-        -- The lookup must also happen on the iEndOfImage cycle: EOI rides
-        -- with the last pixel, whose read is in flight that same cycle and
-        -- belongs to the ending image. Skipping it served raw RAM data for
-        -- a first-use context on the final pixel (k=0 -> spurious escape).
         if (iRdEn = '1') then
-          sUseInitReg <= sUseInitValue(to_integer(unsigned(iRdAddr)));
+          sUseInitReg                                  <= sUseInitValue(to_integer(unsigned(iRdAddr)));
+          sUseInitValue(to_integer(unsigned(iRdAddr))) <= '0';
         end if;
 
         if (iEndOfImage = '1') then
           sUseInitValue <= (others => '1');
-        elsif (iRdEn = '1') then
-          sUseInitValue(to_integer(unsigned(iRdAddr))) <= '0';
         end if;
       end if;
     end if;
