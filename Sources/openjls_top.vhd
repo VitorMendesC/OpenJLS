@@ -292,8 +292,8 @@ architecture rtl of openjls_top is
   signal sReg1Par                           : std_logic;
   signal sReg2Par                           : std_logic;
   signal sReg3Par                           : std_logic;
-  signal sCtxOwnerPar                       : std_logic; -- sticky: colour owning the ctx RAM (held thru bubbles)
-  signal sCtxRdPar                          : std_logic; -- effective owner this cycle (combinational)
+  signal sCtxOwnerPar                       : std_logic;                                              -- sticky: colour owning the ctx RAM (held thru bubbles)
+  signal sCtxRdPar                          : std_logic;                                              -- effective owner this cycle (combinational)
   signal sReg1ModeRun                       : std_logic;
   signal sReg1D1                            : signed(BITNESS downto 0);
   signal sReg1D2                            : signed(BITNESS downto 0);
@@ -674,9 +674,9 @@ begin
         if (sLbValid = '1' and sLbEoi = '1') then
           sGenPar <= not sGenPar;
         end if;
-        sReg1D1  <= sS1D1;
-        sReg1D2  <= sS1D2;
-        sReg1D3  <= sS1D3;
+        sReg1D1 <= sS1D1;
+        sReg1D2 <= sS1D2;
+        sReg1D3 <= sS1D3;
       end if;
     end if;
 
@@ -869,27 +869,26 @@ begin
 
   u_ctx_ram : entity work.context_ram(behavioral)
     generic map (
-      RANGE_P     => RANGE_P,
-      RAM_DEPTH   => RAM_DEPTH,
-      A_WIDTH     => A_STORED,
-      B_WIDTH     => B_STORED,
-      C_WIDTH     => C_STORED,
-      N_WIDTH     => N_STORED,
-      NN_WIDTH    => NN_STORED,
-      TOTAL_WIDTH => TOTAL_WIDTH,
-      RAM_STYLE   => CONTEXT_RAM_TYPE
+      RANGE_P         => RANGE_P,
+      RAM_DEPTH       => RAM_DEPTH,
+      A_WIDTH         => A_STORED,
+      B_WIDTH         => B_STORED,
+      C_WIDTH         => C_STORED,
+      N_WIDTH         => N_STORED,
+      TOTAL_WIDTH     => TOTAL_WIDTH,
+      RAM_MEMORY_TYPE => CONTEXT_RAM_TYPE
     )
     port map (
-      iClk        => iClk,
-      iRst        => iRst,
-      iWrAddr     => std_logic_vector(sReg3.Q),
-      iWrEn       => sCtxWrEn and sCE3,
-      iWrData     => sCtxWrData,
-      iRdAddr     => std_logic_vector(sS2Q),
-      iRdEn       => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
+      iClk            => iClk,
+      iRst            => iRst,
+      iWrAddr         => std_logic_vector(sReg3.Q),
+      iWrEn           => sCtxWrEn and sCE3,
+      iWrData         => sCtxWrData,
+      iRdAddr         => std_logic_vector(sS2Q),
+      iRdEn           => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
       bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
-      iEndOfImage => sReg1Eoi,
-      oRdData     => sCtxRdData
+      iEndOfImage     => sReg1Eoi,
+      oRdData         => sCtxRdData
     );
 
   -- Unpack read port (BRAM RdLatency=1 → valid at Stage 3), with Q3==Q4
