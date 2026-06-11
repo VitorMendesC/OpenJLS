@@ -19,6 +19,11 @@ Patterns (all maxval 65535):
   vstripe  alternating columns 0/FFFF     -- vertical 1px stripes
   hstripe  alternating rows 0/FFFF        -- horizontal 1px stripes
   spikes   max spikes on a flat field     -- sparse FFFF where x%3==0 and y%3==0
+  flat     all zeros                      -- pure run mode; every run ends at EOL
+
+--width/--height override --size for non-square boundary images (minimal
+4x1, min-width-tall, max-width single line). OpenJLS requires width >= 4 and
+height >= 1 by design; 1x1 is not supported, and the generator refuses it.
 
 Seeded => byte-reproducible across runs/hosts, so the committed generator is the
 source of truth for Images/ files that are otherwise gitignored.
@@ -37,6 +42,8 @@ def pattern_value(pat, x, y):
         return 0xFFFF if y & 1 else 0
     if pat == "spikes":
         return 0xFFFF if (x % 3 == 0 and y % 3 == 0) else 0
+    if pat == "flat":
+        return 0
     raise ValueError(pat)
 
 
@@ -45,13 +52,18 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out", help="output PGM path")
     ap.add_argument("--size", type=int, default=256, help="square edge length (px)")
+    ap.add_argument("--width", type=int, help="image width (px); overrides --size")
+    ap.add_argument("--height", type=int, help="image height (px); overrides --size")
     ap.add_argument("--pattern", default="random",
-                    choices=["random", "checker", "vstripe", "hstripe", "spikes"])
+                    choices=["random", "checker", "vstripe", "hstripe", "spikes", "flat"])
     ap.add_argument("--seed", type=lambda s: int(s, 0), default=0x0FF5,
                     help="PRNG seed for --pattern random; accepts 0x.. hex")
     a = ap.parse_args()
 
-    w = h = a.size
+    w = a.width if a.width is not None else a.size
+    h = a.height if a.height is not None else a.size
+    if w < 4 or h < 1:
+        ap.error(f"{w}x{h}: OpenJLS requires width >= 4 and height >= 1 by design")
     if a.pattern == "random":
         payload = random.Random(a.seed).randbytes(w * h * 2)  # big-endian-agnostic
         tag = f"random (seed {a.seed:#06x})"

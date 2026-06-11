@@ -23,7 +23,7 @@ Specifications
 - **Compression** — Lossless JPEG-LS
 - **Pixel Bit depth** — 8 to 16 bits
 - **Components** — Single-component (grayscale)
-- **Image size** — Configurable up to 64k × 64k px
+- **Image size** — Configurable up to 64k × 64k px (minimum 4 × 1)
 - **Memory** — Line buffer, as big as image width, on-chip
 - **Throughput** — One pixel per clock cycle
 - **Interface** — AXI4-Stream input/output

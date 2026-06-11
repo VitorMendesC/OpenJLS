@@ -53,4 +53,23 @@ for pat in checker vstripe hstripe spikes; do
   python3 "$PREP/gen_stress.py" "$IMAGES/synth-$pat-16.pgm" --pattern "$pat"
 done
 
+# Boundary-dimension probes — natural images never hit these shapes. Minimal
+# legal image (width >= 4, height >= 1 is the design floor; 1x1 unsupported),
+# min-width-tall (an EOL every 4 px), odd just-above-min dims, and max-width
+# lines (65535 = T.87 SOF55 2-byte dimension field cap). random exercises
+# regular mode; flat is all-zero => pure run mode, every run cut by EOL.
+echo "== boundary-dimension probes =="
+gen_bound() {
+  python3 "$PREP/gen_stress.py" "$IMAGES/synth-bound-${1}x${2}-$3.pgm" \
+    --width "$1" --height "$2" --pattern "$3"
+}
+gen_bound 4 1 random
+gen_bound 4 1 flat
+gen_bound 4 1024 random
+gen_bound 4 1024 flat
+gen_bound 5 3 random
+gen_bound 7 1 random
+gen_bound 65535 1 random
+gen_bound 65535 2 random
+
 echo "Images ready: $(find "$IMAGES" -name '*.pgm' | wc -l) PGM(s) in $IMAGES"
