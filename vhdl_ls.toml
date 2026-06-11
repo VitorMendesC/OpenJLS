@@ -9,6 +9,7 @@ lib.files = [
     'Verification/Testbenches/*.vhd',
     'Verification/OSVVM/Modules/*.vhd',
     'Verification/OSVVM/Top/*.vhd',
+    'Verification/T87 conformance/*.vhd',
 ]
 
 openlogic_base.files = ['ThirdParty/open-logic/src/base/vhdl/*.vhd']
