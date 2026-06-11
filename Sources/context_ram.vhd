@@ -1,21 +1,5 @@
 ----------------------------------------------------------------------------------
--- Company:
--- Engineer:
---
--- Create Date: 01/15/2026 10:04:39 PM
--- Design Name:
--- Module Name: context_ram - Behavioral
--- Project Name:
--- Target Devices:
--- Tool Versions:
--- Description:
---
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
---
+-- Engineer: Vitor Mendes Camilo
 ----------------------------------------------------------------------------------
 
 library ieee;
@@ -28,28 +12,25 @@ library openlogic_base;
 
 entity context_ram is
   generic (
-    RANGE_P     : positive := CO_RANGE_STD;
-    RAM_DEPTH   : positive := 367;
-    A_WIDTH     : positive := CO_AQ_WIDTH_STD;
-    B_WIDTH     : positive := CO_BQ_WIDTH_STD;
-    C_WIDTH     : positive := CO_CQ_WIDTH;
-    N_WIDTH     : positive := CO_NQ_WIDTH_STD;
-    NN_WIDTH    : positive := CO_NNQ_WIDTH_STD;
-    TOTAL_WIDTH : positive := CO_TOTAL_WIDTH_STD;
-    -- RAM implementation hint passed to the vendor attribute. Vendor-specific
-    -- value: "auto"/"block"/"distributed" (AMD), "M20K" (Intel), etc.
-    RAM_STYLE   : string   := "auto"
+    RANGE_P         : positive := CO_RANGE_STD;
+    RAM_DEPTH       : positive := 367;
+    A_WIDTH         : positive := CO_AQ_WIDTH_STD;
+    B_WIDTH         : positive := CO_BQ_WIDTH_STD;
+    C_WIDTH         : positive := CO_CQ_WIDTH;
+    N_WIDTH         : positive := CO_NQ_WIDTH_STD;
+    TOTAL_WIDTH     : positive := CO_TOTAL_WIDTH_STD;
+    RAM_MEMORY_TYPE : string   := "auto" -- Vendor-specific execept for auto, usually is the best option too
   );
   port (
-    iClk        : in    std_logic;
-    iRst        : in    std_logic;
-    iWrAddr     : in    std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
-    iWrEn       : in    std_logic;
-    iWrData     : in    std_logic_vector(TOTAL_WIDTH - 1 downto 0);
-    iRdAddr     : in    std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
-    iRdEn       : in    std_logic;
-    iEndOfImage : in    std_logic;
-    oRdData     : out   std_logic_vector(TOTAL_WIDTH - 1 downto 0)
+    iClk            : in    std_logic;
+    iRst            : in    std_logic;
+    iWrAddr         : in    std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
+    iWrEn           : in    std_logic;
+    iWrData         : in    std_logic_vector(TOTAL_WIDTH - 1 downto 0);
+    iRdAddr         : in    std_logic_vector(log2ceil(RAM_DEPTH) - 1 downto 0);
+    iRdEn           : in    std_logic;
+    iEndOfImage     : in    std_logic;
+    oRdData         : out   std_logic_vector(TOTAL_WIDTH - 1 downto 0)
   );
 end entity context_ram;
 
@@ -70,7 +51,7 @@ architecture behavioral of context_ram is
                                                                        std_logic_vector(to_unsigned(N_INIT, N_WIDTH));
 
   signal sUseInitValue : std_logic_vector(RAM_DEPTH - 1 downto 0); -- Indicates if init value should be used for each address
-  signal sUseInitReg   : std_logic;                                -- Registered flag aligning with BRAM RdLatency=1.
+  signal sUseInitReg   : std_logic;                                -- Indicates if use init value for the address read last cycle
   signal sBramRdData   : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
 
   -- Same-cycle write->read forwarding: rebuilds WBR on top of an RBW BRAM.
@@ -85,7 +66,7 @@ begin
       WIDTH_G         => TOTAL_WIDTH,
       ISASYNC_G       => false,
       RDLATENCY_G     => 1,
-      RAMSTYLE_G      => RAM_STYLE,
+      RAMSTYLE_G      => RAM_MEMORY_TYPE,
       RAMBEHAVIOR_G   => "RBW",
       USEBYTEENABLE_G => false,
       INITSTRING_G    => "",
