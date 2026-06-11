@@ -12,9 +12,14 @@
 --   * Otherwise the read returns the last written value (RBW: a same-cycle write
 --     to a *different* path does not affect this read).
 --   * Reset / EndOfImage re-arms every address to CTX_INIT (BRAM contents kept).
--- Reads/writes are never issued on a reset or EOI cycle (matches the pipeline),
--- and every address is written before any second read so the modelled and real
--- BRAM contents always agree. Coverage closes the three read outcomes.
+--   * A read issued ON the iEndOfImage cycle (the pipeline does this: EOI rides
+--     with the last pixel, whose context read is in flight that same cycle)
+--     resolves against the ENDING image's init flags; the re-arm applies after.
+--     Regression for the boundary-image bug where this read returned raw BRAM
+--     for a first-use context (k=0 -> spurious escape on the last pixel).
+-- Reads/writes are never issued on a reset cycle, and every address is written
+-- before any second read so the modelled and real BRAM contents always agree.
+-- Coverage closes the three read outcomes plus fresh/seen reads on EOI cycles.
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -103,21 +108,25 @@ begin
 
   stim : process is
 
-    variable rv    : RandomPType;
-    variable cov   : CoverageIDType;
+    variable rv       : RandomPType;
+    variable cov      : CoverageIDType;
+    variable covEoiRd : CoverageIDType;
     variable mem   : mem_t := (others => (others => '0'));
     variable ini   : ini_t := (others => true);
     variable touched : ini_t := (others => false);  -- has the test written it?
 
     -- One access cycle. Computes the expected read result from the model
     -- (pre-write), advances the model at the edge, then checks oRdData.
+    -- eoi='1' asserts iEndOfImage on the same cycle: the read still resolves
+    -- against the ending image's flags; the all-address re-arm applies after.
     procedure step (
       rdEn   : std_logic;
       rdAddr : natural;
       wrEn   : std_logic;
       wrAddr : natural;
       wrData : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
-      msg    : string
+      msg    : string;
+      eoi    : std_logic := '0'
     ) is
 
       variable exp     : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
@@ -130,6 +139,7 @@ begin
       iWrEn   <= wrEn;
       iWrAddr <= std_logic_vector(to_unsigned(wrAddr, ADDR_W));
       iWrData <= wrData;
+      iEoi    <= eoi;
 
       -- Expected result (computed before this cycle's write applies).
       exp     := (others => '0');
@@ -149,8 +159,11 @@ begin
 
       wait until rising_edge(clk);
 
-      -- Model state update at the edge.
-      if (rdEn = '1') then
+      -- Model state update at the edge. EOI re-arms every address (the
+      -- in-flight read's own flag-clear is subsumed by the re-arm).
+      if (eoi = '1') then
+        ini := (others => true);
+      elsif (rdEn = '1') then
         ini(rdAddr) := false;
       end if;
       if (wrEn = '1') then
@@ -159,9 +172,13 @@ begin
       end if;
 
       wait for 1 ns;
+      iEoi <= '0';
       if (rdEn = '1') then
         AffirmIfEqual(oRdData, exp, msg);
         ICover(cov, outcome);
+        if (eoi = '1') then
+          ICover(covEoiRd, outcome);
+        end if;
       end if;
 
     end procedure step;
@@ -212,6 +229,8 @@ begin
     rv.InitSeed(rv'instance_name);
     cov := NewID("readOutcome");
     AddBins(cov, "readOutcome", GenBin(0, 2, 3));   -- init / bram / forward
+    covEoiRd := NewID("readOnEoiCycle");
+    AddBins(covEoiRd, "readOnEoiCycle", GenBin(0, 1, 2)); -- fresh / seen
 
     apply_reset(clk, rst, 4, '1');
 
@@ -241,6 +260,23 @@ begin
     step('1', 13, '0', 0, ZERO, "addr13 after iRst = CTX_INIT");
 
     --------------------------------------------------------------------------
+    -- Directed regression (boundary-image bug): a read in flight ON the EOI
+    -- cycle. The preceding read is a seen address, so the buggy version's
+    -- stale flag served raw BRAM for the fresh address below.
+    --------------------------------------------------------------------------
+    d := std_logic_vector(to_unsigned(3333, TOTAL_WIDTH));
+    step('1', 21, '1', 21, d, "addr21 init read + write-back");
+    step('1', 21, '0', 0, ZERO, "addr21 = written value");
+    -- Fresh address read on the EOI cycle: must be CTX_INIT, not raw BRAM.
+    step('1', 33, '0', 0, ZERO, "fresh addr33 on EOI cycle = CTX_INIT", '1');
+    -- Re-armed by that EOI: addr 21 is fresh again despite its BRAM value.
+    step('1', 21, '0', 0, ZERO, "addr21 after EOI = CTX_INIT");
+    -- Seen address read on the EOI cycle: must be the BRAM value (the buggy
+    -- version's stale flag could equally serve CTX_INIT here).
+    step('1', 21, '0', 0, ZERO, "seen addr21 on EOI cycle = BRAM value", '1');
+    step('1', 21, '0', 0, ZERO, "addr21 after second EOI = CTX_INIT");
+
+    --------------------------------------------------------------------------
     -- Constrained-random: random addresses, always read-modify-write so the
     -- modelled and real BRAM stay in sync.
     --------------------------------------------------------------------------
@@ -249,23 +285,29 @@ begin
       a := rv.RandInt(0, RAM_DEPTH - 1);
       d := rv.RandSlv(TOTAL_WIDTH);
 
-      -- ~1-in-6 cycles also forward (read+write same addr); otherwise
-      -- read addr a and write it back with new data.
-      step('1', a, '1', a, d, "rand rmw a=" & integer'image(a));
+      -- ~1-in-40 reads ride an EOI cycle (the last-pixel pattern); otherwise
+      -- plain read-modify-write.
+      if (rv.DistValInt(((1, 1), (0, 40))) = 1) then
+        step('1', a, '1', a, d, "rand rmw+eoi a=" & integer'image(a), '1');
+      else
+        step('1', a, '1', a, d, "rand rmw a=" & integer'image(a));
+      end if;
 
-      -- Occasional EOI or mid-stream iRst to re-exercise the init path.
+      -- Occasional idle-cycle EOI or mid-stream iRst as well.
       if (rv.DistValInt(((1, 1), (0, 60))) = 1) then
         pulse_eoi;
       elsif (rv.DistValInt(((1, 1), (0, 80))) = 1) then
         pulse_rst;
       end if;
 
-      exit when IsCovered(cov) and i > 200;
+      exit when IsCovered(cov) and IsCovered(covEoiRd) and i > 200;
 
     end loop;
 
     WriteBin(cov);
+    WriteBin(covEoiRd);
     AffirmIf(IsCovered(cov), "read-outcome coverage closed");
+    AffirmIf(IsCovered(covEoiRd), "read-on-EOI-cycle coverage closed");
 
     end_of_test("tb_context_ram_osvvm");
     wait;
