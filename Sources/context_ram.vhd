@@ -60,6 +60,13 @@ architecture behavioral of context_ram is
 
 begin
 
+  -- Accesses may be in flight on the FIRST reset cycle: the pipeline's valid
+  -- registers clear synchronously, so the pre-reset valid still drives the
+  -- enables that cycle. Harmless by construction — the re-arm wins over the
+  -- read's flag-clear, a write lands in BRAM but stays masked by the re-armed
+  -- init flag, and the read result is consumed by nothing (downstream is
+  -- reset). Verified by directed cases in the module TB.
+
   olo_base_ram_sdp_inst : entity openlogic_base.olo_base_ram_sdp(rtl)
     generic map (
       DEPTH_G         => RAM_DEPTH,

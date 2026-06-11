@@ -17,8 +17,14 @@
 --     resolves against the ENDING image's init flags; the re-arm applies after.
 --     Regression for the boundary-image bug where this read returned raw BRAM
 --     for a first-use context (k=0 -> spurious escape on the last pixel).
--- Reads/writes are never issued on a reset cycle, and every address is written
--- before any second read so the modelled and real BRAM contents always agree.
+--   * Accesses CAN be in flight on the first reset cycle (the pipeline's
+--     valid registers clear synchronously, so the pre-reset valid still
+--     drives the enables that cycle). They must be harmless: the re-arm wins
+--     over the read's flag-clear, a write lands in BRAM but stays masked by
+--     the re-armed init flag, and the read result is a don't-care (every
+--     downstream consumer is reset on the cycle it would be used).
+-- Every address is written before any second read so the modelled and real
+-- BRAM contents always agree.
 -- Coverage closes the three read outcomes plus fresh/seen reads on EOI cycles.
 --------------------------------------------------------------------------------
 
@@ -211,6 +217,36 @@ begin
 
     end procedure pulse_rst;
 
+    -- Mid-operation iRst with a read and a write in flight on the FIRST reset
+    -- cycle (the pipeline does this: its valid registers clear synchronously).
+    -- The read result is a don't-care (not checked); the write lands in BRAM
+    -- (no reset on the memory) but is masked by the re-armed init flag.
+    procedure pulse_rst_access (
+      rdAddr : natural;
+      wrAddr : natural;
+      wrData : std_logic_vector(TOTAL_WIDTH - 1 downto 0)
+    ) is
+    begin
+
+      iRdEn   <= '1';
+      iRdAddr <= std_logic_vector(to_unsigned(rdAddr, ADDR_W));
+      iWrEn   <= '1';
+      iWrAddr <= std_logic_vector(to_unsigned(wrAddr, ADDR_W));
+      iWrData <= wrData;
+      rst     <= '1';
+      wait until rising_edge(clk);
+      mem(wrAddr)     := wrData;                  -- the write still lands
+      touched(wrAddr) := true;
+      iRdEn <= '0';
+      iWrEn <= '0';
+      clk_tick(clk, 1);
+      rst <= '0';
+      ini := (others => true);                    -- re-arm init, keep mem
+      wait until rising_edge(clk);
+      wait for 1 ns;
+
+    end procedure pulse_rst_access;
+
     variable a    : natural;
     variable d    : std_logic_vector(TOTAL_WIDTH - 1 downto 0);
     constant ZERO : std_logic_vector(TOTAL_WIDTH - 1 downto 0) := (others => '0');
@@ -260,6 +296,21 @@ begin
     step('1', 13, '0', 0, ZERO, "addr13 after iRst = CTX_INIT");
 
     --------------------------------------------------------------------------
+    -- Directed: accesses in flight on the FIRST reset cycle (found by the
+    -- top-level mid-stream reset stress; the module previously assumed them
+    -- away). The re-arm must win over the in-flight read's flag-clear, and
+    -- the in-flight write must stay masked until its post-reset init read.
+    --------------------------------------------------------------------------
+    d := std_logic_vector(to_unsigned(7777, TOTAL_WIDTH));
+    step('1', 40, '1', 40, d, "addr40 init read + write-back");
+    step('1', 40, '0', 0, ZERO, "addr40 = written value");
+    d := std_logic_vector(to_unsigned(9999, TOTAL_WIDTH));
+    pulse_rst_access(40, 55, d);
+    step('1', 40, '0', 0, ZERO, "addr40 after reset-with-read-in-flight = CTX_INIT");
+    step('1', 55, '0', 0, ZERO, "addr55 written during reset = CTX_INIT (init masks)");
+    step('1', 55, '0', 0, ZERO, "addr55 second read = value written during reset");
+
+    --------------------------------------------------------------------------
     -- Directed regression (boundary-image bug): a read in flight ON the EOI
     -- cycle. The preceding read is a seen address, so the buggy version's
     -- stale flag served raw BRAM for the fresh address below.
@@ -293,11 +344,15 @@ begin
         step('1', a, '1', a, d, "rand rmw a=" & integer'image(a));
       end if;
 
-      -- Occasional idle-cycle EOI or mid-stream iRst as well.
+      -- Occasional idle-cycle EOI or mid-stream iRst (with or without an
+      -- access in flight on the first reset cycle) as well.
       if (rv.DistValInt(((1, 1), (0, 60))) = 1) then
         pulse_eoi;
       elsif (rv.DistValInt(((1, 1), (0, 80))) = 1) then
         pulse_rst;
+      elsif (rv.DistValInt(((1, 1), (0, 100))) = 1) then
+        pulse_rst_access(rv.RandInt(0, RAM_DEPTH - 1),
+                         rv.RandInt(0, RAM_DEPTH - 1), rv.RandSlv(TOTAL_WIDTH));
       end if;
 
       exit when IsCovered(cov) and IsCovered(covEoiRd) and i > 200;

@@ -25,12 +25,26 @@ Patterns (all maxval 65535):
 4x1, min-width-tall, max-width single line). OpenJLS requires width >= 4 and
 height >= 1 by design; 1x1 is not supported, and the generator refuses it.
 
+--fuzz-batch N treats OUT as a directory and emits N tiny random images with
+master-seeded dimensions in [4..16] x [1..8]. Small random images make the
+LAST pixel's context first-use 20-60% of the time -- the shape that exposed
+the context_ram EOI init-lookup bug (b513990) which 163 natural images never
+reached. Tiny, so the whole batch adds negligible sim time.
+
 Seeded => byte-reproducible across runs/hosts, so the committed generator is the
 source of truth for Images/ files that are otherwise gitignored.
 """
 import argparse
+import os
 import random
 import struct
+
+
+def write_pgm(path, w, h, payload):
+    header = f"P5\n{w} {h}\n65535\n".encode()
+    with open(path, "wb") as f:
+        f.write(header + payload)
+    return len(header) + len(payload)
 
 
 def pattern_value(pat, x, y):
@@ -58,7 +72,22 @@ def main():
                     choices=["random", "checker", "vstripe", "hstripe", "spikes", "flat"])
     ap.add_argument("--seed", type=lambda s: int(s, 0), default=0x0FF5,
                     help="PRNG seed for --pattern random; accepts 0x.. hex")
+    ap.add_argument("--fuzz-batch", type=int, metavar="N",
+                    help="treat OUT as a directory; emit N tiny random images "
+                         "(dims master-seeded from --seed)")
     a = ap.parse_args()
+
+    if a.fuzz_batch is not None:
+        if a.fuzz_batch < 1:
+            ap.error("--fuzz-batch: N must be >= 1")
+        os.makedirs(a.out, exist_ok=True)
+        rng = random.Random(a.seed)
+        for i in range(1, a.fuzz_batch + 1):
+            w, h = rng.randint(4, 16), rng.randint(1, 8)
+            path = os.path.join(a.out, f"synth-fuzz-{w}x{h}-{i:02d}.pgm")
+            n = write_pgm(path, w, h, rng.randbytes(w * h * 2))
+            print(f"{path}: {w}x{h} 16-bit random, {n} B")
+        return
 
     w = a.width if a.width is not None else a.size
     h = a.height if a.height is not None else a.size
@@ -74,10 +103,8 @@ def main():
                 payload += struct.pack(">H", pattern_value(a.pattern, x, y))
         tag = a.pattern
 
-    header = f"P5\n{w} {h}\n65535\n".encode()
-    with open(a.out, "wb") as f:
-        f.write(header + payload)
-    print(f"{a.out}: {w}x{h} 16-bit {tag}, {len(header) + len(payload)} B")
+    n = write_pgm(a.out, w, h, payload)
+    print(f"{a.out}: {w}x{h} 16-bit {tag}, {n} B")
 
 
 if __name__ == "__main__":

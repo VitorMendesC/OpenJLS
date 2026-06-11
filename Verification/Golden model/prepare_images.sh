@@ -72,4 +72,9 @@ gen_bound 7 1 random
 gen_bound 65535 1 random
 gen_bound 65535 2 random
 
+# Tiny-random-image fuzz batch — small images make the last pixel's context
+# first-use often, the shape that exposed the context_ram EOI bug (b513990).
+echo "== tiny-image fuzz batch =="
+python3 "$PREP/gen_stress.py" "$IMAGES" --fuzz-batch 16 --seed 0xB513
+
 echo "Images ready: $(find "$IMAGES" -name '*.pgm' | wc -l) PGM(s) in $IMAGES"
