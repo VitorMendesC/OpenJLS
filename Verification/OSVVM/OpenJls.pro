@@ -12,20 +12,48 @@
 #  the full regression with HTML reports and merged functional coverage.
 #  Keep the file lists below in sync with build_run.sh.
 
-# GHDL options matching build_run.sh: -frelaxed (shared variables of
-# non-protected types in open-logic and the TBs), -O2 (LLVM/GCC codegen
-# speedup), --max-stack-alloc=0 (large TB stack objects), and
-# --ieee-asserts=disable (matches the fast flow's run settings).
-# tcl's exec treats any stderr output as failure, so analysis must be
-# warning-clean: -Wno-shared (shared variables are intentional -frelaxed use),
-# -Wno-elaboration (GHDL false positive on olo math functions in Common.vhd
-# package constants).
-# -fpsl activates the "-- psl" contract assertions in Sources/;
-# --assert-level=error makes a violated contract fail the test (default: the
-# violation prints but the sim keeps running and exits 0).
-SetExtendedAnalyzeOptions   {-frelaxed -O2 -fpsl -Wno-shared -Wno-elaboration}
-SetExtendedElaborateOptions {-frelaxed -O2}
-SetExtendedRunOptions       {--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error}
+# Simulator-specific options. tcl's exec treats any stderr output as failure,
+# so analysis must be warning-clean under either simulator.
+if {$::osvvm::ToolName eq "NVC"} {
+  # NVC (code-coverage flow, ./build_coverage.sh): --relaxed permits the
+  # shared variables of non-protected types in open-logic and the TBs;
+  # --stderr=error keeps warnings on stdout (tcl exec fails on any stderr).
+  # "-- psl" contracts are inert without --psl; GHDL stays their enforcer.
+  set ::osvvm::ExtendedGlobalOptions {--stderr=error}
+  SetExtendedAnalyzeOptions {--relaxed}
+  SetExtendedRunOptions     {--ieee-warnings=off}
+} else {
+  # GHDL options matching build_run.sh: -frelaxed (shared variables of
+  # non-protected types in open-logic and the TBs), -O2 (LLVM/GCC codegen
+  # speedup), --max-stack-alloc=0 (large TB stack objects), and
+  # --ieee-asserts=disable (matches the fast flow's run settings).
+  # -Wno-shared (shared variables are intentional -frelaxed use),
+  # -Wno-elaboration (GHDL false positive on olo math functions in Common.vhd
+  # package constants).
+  # -fpsl activates the "-- psl" contract assertions in Sources/;
+  # --assert-level=error makes a violated contract fail the test (default: the
+  # violation prints but the sim keeps running and exits 0).
+  SetExtendedAnalyzeOptions   {-frelaxed -O2 -fpsl -Wno-shared -Wno-elaboration}
+  SetExtendedElaborateOptions {-frelaxed -O2}
+  SetExtendedRunOptions       {--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error}
+}
+
+# Statement+branch code coverage (NVC only): ./build_coverage.sh sets
+# CODE_COVERAGE=1. NVC's --cover-file must be unique per test, so the Test
+# wrapper below refreshes the option before every RunTest; the .covdb files
+# are merged and rendered to HTML by build_coverage.sh.
+set ::OpenJlsCodeCoverage [expr {$::osvvm::ToolName eq "NVC" && [info exists ::env(CODE_COVERAGE)]}]
+if {$::OpenJlsCodeCoverage} {
+  SetCoverageSimulateEnable true
+  file mkdir Coverage
+}
+proc Test {TestFile} {
+  if {$::OpenJlsCodeCoverage} {
+    set tn [file rootname [file tail $TestFile]]
+    SetCoverageSimulateOptions [list --cover=statement,branch --cover-file=Coverage/$tn.covdb]
+  }
+  RunTest $TestFile
+}
 
 # open-logic base: packages + RAM/FIFO primitives the RTL instantiates.
 library openlogic_base
@@ -80,35 +108,35 @@ analyze ../../Sources/openjls_top.vhd
 # Per-module testbenches. RunTest = analyze + simulate + register the test;
 # the test name is the file root name.
 TestSuite Modules
-RunTest Modules/tb_a1_osvvm.vhd
-RunTest Modules/tb_a3_osvvm.vhd
-RunTest Modules/tb_a4_osvvm.vhd
-RunTest Modules/tb_a4_1_osvvm.vhd
-RunTest Modules/tb_a4_2_osvvm.vhd
-RunTest Modules/tb_a5_osvvm.vhd
-RunTest Modules/tb_a6_osvvm.vhd
-RunTest Modules/tb_a7_osvvm.vhd
-RunTest Modules/tb_a9_osvvm.vhd
-RunTest Modules/tb_a10_osvvm.vhd
-RunTest Modules/tb_a11_osvvm.vhd
-RunTest Modules/tb_a11_1_osvvm.vhd
-RunTest Modules/tb_a11_2_osvvm.vhd
-RunTest Modules/tb_a12_osvvm.vhd
-RunTest Modules/tb_a13_osvvm.vhd
-RunTest Modules/tb_a14_osvvm.vhd
-RunTest Modules/tb_a15_a16_osvvm.vhd
-RunTest Modules/tb_a17_osvvm.vhd
-RunTest Modules/tb_a18_osvvm.vhd
-RunTest Modules/tb_a19_osvvm.vhd
-RunTest Modules/tb_a20_osvvm.vhd
-RunTest Modules/tb_a21_osvvm.vhd
-RunTest Modules/tb_a22_osvvm.vhd
-RunTest Modules/tb_a23_osvvm.vhd
-RunTest Modules/tb_line_buffer_osvvm.vhd
-RunTest Modules/tb_context_ram_osvvm.vhd
-RunTest Modules/tb_byte_stuffer_osvvm.vhd
-RunTest Modules/tb_jls_framer_osvvm.vhd
+Test Modules/tb_a1_osvvm.vhd
+Test Modules/tb_a3_osvvm.vhd
+Test Modules/tb_a4_osvvm.vhd
+Test Modules/tb_a4_1_osvvm.vhd
+Test Modules/tb_a4_2_osvvm.vhd
+Test Modules/tb_a5_osvvm.vhd
+Test Modules/tb_a6_osvvm.vhd
+Test Modules/tb_a7_osvvm.vhd
+Test Modules/tb_a9_osvvm.vhd
+Test Modules/tb_a10_osvvm.vhd
+Test Modules/tb_a11_osvvm.vhd
+Test Modules/tb_a11_1_osvvm.vhd
+Test Modules/tb_a11_2_osvvm.vhd
+Test Modules/tb_a12_osvvm.vhd
+Test Modules/tb_a13_osvvm.vhd
+Test Modules/tb_a14_osvvm.vhd
+Test Modules/tb_a15_a16_osvvm.vhd
+Test Modules/tb_a17_osvvm.vhd
+Test Modules/tb_a18_osvvm.vhd
+Test Modules/tb_a19_osvvm.vhd
+Test Modules/tb_a20_osvvm.vhd
+Test Modules/tb_a21_osvvm.vhd
+Test Modules/tb_a22_osvvm.vhd
+Test Modules/tb_a23_osvvm.vhd
+Test Modules/tb_line_buffer_osvvm.vhd
+Test Modules/tb_context_ram_osvvm.vhd
+Test Modules/tb_byte_stuffer_osvvm.vhd
+Test Modules/tb_jls_framer_osvvm.vhd
 
 # Top-level control-plane stress.
 TestSuite Top
-RunTest Top/tb_openjls_top_osvvm.vhd
+Test Top/tb_openjls_top_osvvm.vhd

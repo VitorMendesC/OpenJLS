@@ -19,6 +19,9 @@ Verification/OSVVM/VHDL_LIBS/
 Verification/OSVVM/osvvm/
 Verification/OSVVM/OSVVM_OpenJls/
 Verification/OSVVM/OsvvmTemp_GHDL/
+Verification/OSVVM/OsvvmTemp_NVC/
+# code-coverage flow outputs (build_coverage.sh: per-test covdb + HTML)
+Verification/OSVVM/Coverage/
 Verification/OSVVM/*.html
 Verification/OSVVM/*.yml
 ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd
