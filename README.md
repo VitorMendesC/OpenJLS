@@ -12,7 +12,7 @@ OpenJLS is vendor-agnostic, targeting any FPGA platform.
 
 ## Why JPEG-LS?
 
-JPEG-LS hits a sweet spot for hardware: Close to state-of-the-art lossless ratios from a single-pass, low-memory algorithm that needs no external RAM. It matches or beats older standards like PNG and lossless JPEG 2000, and while heavier modern codecs (JPEG XL, FLIF) compress somewhat tighter, they cost far more logic and memory than an embedded pipeline can spare. That makes JPEG-LS the standard of choice where lossless fidelity and bounded resources both matter — satellite and medical imaging (DICOM).
+JPEG-LS hits a sweet spot for hardware: Close to state-of-the-art lossless ratios from a single-pass, low-memory algorithm that needs no external RAM. It matches or beats older standards like PNG and lossless JPEG 2000, and while heavier modern codecs (JPEG XL, FLIF) compress somewhat tighter, they cost far more logic and memory than an embedded pipeline can spare.
 
 ---
 
@@ -34,7 +34,6 @@ Specifications
 Planned
 
 - Decoder IP core
-- Multi-vendor (Intel, Microchip, Lattice) verified configurations
 
 ---
 
@@ -54,13 +53,13 @@ OpenJLS follows the JPEG-LS encoding pipeline:
 
 ## Performance & Resources
 
-Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning and vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s (4K30fps with margin).
+Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning and vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s.
 
 ### Maximum frequency vs image size
 
 ![Maximum frequency vs image size](Docs/Images/fmax_vs_size.png)
 
-The encoder holds ~250 MHz largely independent of image size with a congestion-aware strategy. The byte-stuffer back-end is congestion-bound, so `Congestion_SpreadLogic_high` (which spreads logic) wins consistently; the default strategy trails by ~15 MHz and `Performance_Explore` is less predictable on large images.
+The encoder holds ~250 MHz largely independent of image size with a strategy focusing on *handling congestion* and ~240 MHz on Default strategy.
 
 | Image width | Default | Performance_Explore | Congestion_SpreadLogic_high |
 |------------:|--------:|--------------------:|----------------------------:|
