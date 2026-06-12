@@ -27,13 +27,11 @@ if {$::osvvm::ToolName eq "NVC"} {
   # non-protected types in open-logic and the TBs), -O2 (LLVM/GCC codegen
   # speedup), --max-stack-alloc=0 (large TB stack objects), and
   # --ieee-asserts=disable (matches the fast flow's run settings).
-  # -Wno-shared (shared variables are intentional -frelaxed use),
-  # -Wno-elaboration (GHDL false positive on olo math functions in Common.vhd
-  # package constants).
+  # -Wno-shared (shared variables are intentional -frelaxed use).
   # -fpsl activates the "-- psl" contract assertions in Sources/;
   # --assert-level=error makes a violated contract fail the test (default: the
   # violation prints but the sim keeps running and exits 0).
-  SetExtendedAnalyzeOptions   {-frelaxed -O2 -fpsl -Wno-shared -Wno-elaboration}
+  SetExtendedAnalyzeOptions   {-frelaxed -O2 -fpsl -Wno-shared}
   SetExtendedElaborateOptions {-frelaxed -O2}
   SetExtendedRunOptions       {--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error}
 }
