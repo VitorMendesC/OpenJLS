@@ -17,11 +17,13 @@
 if {$::osvvm::ToolName eq "NVC"} {
   # NVC (code-coverage flow, ./build_coverage.sh): --relaxed permits the
   # shared variables of non-protected types in open-logic and the TBs;
-  # --stderr=error keeps warnings on stdout (tcl exec fails on any stderr).
-  # "-- psl" contracts are inert without --psl; GHDL stays their enforcer.
+  # --stderr=error keeps warnings on stdout (tcl exec fails on any stderr);
+  # --psl activates the "-- psl" contract assertions in Sources/ (negative-
+  # tested: a violated contract fails the test, like GHDL's
+  # --assert-level=error).
   set ::osvvm::ExtendedGlobalOptions {--stderr=error}
-  SetExtendedAnalyzeOptions {--relaxed}
-  SetExtendedRunOptions     {--ieee-warnings=off}
+  SetExtendedAnalyzeOptions {--relaxed --psl}
+  SetExtendedRunOptions     {--ieee-warnings=off --exit-severity=error}
 } else {
   # GHDL options matching build_run.sh: -frelaxed (shared variables of
   # non-protected types in open-logic and the TBs), -O2 (LLVM/GCC codegen
