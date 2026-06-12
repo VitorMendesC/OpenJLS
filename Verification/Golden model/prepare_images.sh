@@ -77,4 +77,18 @@ gen_bound 65535 2 random
 echo "== tiny-image fuzz batch =="
 python3 "$PREP/gen_stress.py" "$IMAGES" --fuzz-batch 16 --seed 0xB513
 
+# Intermediate-depth probes (9-15 bits): the T.87 constants (LIMIT, k range,
+# counter widths) all derive from BITNESS, but the natural sets are 8/16-bit
+# only and the T.87 vector covers just 12. Random + checker per depth, plus
+# natural texture requantized from the 16-bit set (cropped under the routine
+# 0.5 MP cap).
+echo "== intermediate-depth probes =="
+for b in 9 10 11 12 13 14 15; do
+  mx=$(( (1 << b) - 1 ))
+  python3 "$PREP/gen_stress.py" "$IMAGES/synth-rand${b}_1.pgm" --pattern random --maxval "$mx"
+  python3 "$PREP/gen_stress.py" "$IMAGES/synth-checker-$b.pgm" --pattern checker --maxval "$mx"
+done
+python3 "$PREP/requantize.py" "$IMAGES/ic-gray16_cathedral.pgm" "$IMAGES/requant10-cathedral.pgm" --bits 10 --crop 700 700
+python3 "$PREP/requantize.py" "$IMAGES/ic-gray16_deer.pgm" "$IMAGES/requant14-deer.pgm" --bits 14 --crop 700 700
+
 echo "Images ready: $(find "$IMAGES" -name '*.pgm' | wc -l) PGM(s) in $IMAGES"

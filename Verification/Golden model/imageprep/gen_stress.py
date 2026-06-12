@@ -13,13 +13,18 @@ bits/pixel, so the 4 B/cycle cap is never sustained-overrun; transient LIMIT
 beats are absorbed by buffering. They stay as a robustness probe (the attempt
 that proved the cap safe) and as incompressible/structured inputs in the set.
 
-Patterns (all maxval 65535):
-  random   uniform 16-bit noise (incompressible; --seed controls it)
-  checker  1px checkerboard 0/FFFF        -- MED predictor wrong full-scale every px
-  vstripe  alternating columns 0/FFFF     -- vertical 1px stripes
-  hstripe  alternating rows 0/FFFF        -- horizontal 1px stripes
-  spikes   max spikes on a flat field     -- sparse FFFF where x%3==0 and y%3==0
-  flat     all zeros                      -- pure run mode; every run ends at EOL
+Patterns (full-scale = --maxval, default 65535):
+  random   uniform noise in [0, maxval] (incompressible; --seed controls it)
+  checker  1px checkerboard 0/max        -- MED predictor wrong full-scale every px
+  vstripe  alternating columns 0/max     -- vertical 1px stripes
+  hstripe  alternating rows 0/max        -- horizontal 1px stripes
+  spikes   max spikes on a flat field    -- sparse max where x%3==0 and y%3==0
+  flat     all zeros                     -- pure run mode; every run ends at EOL
+
+--maxval sets the sample precision (must be 2^N - 1, N in 8..16; the golden TB
+asserts maxval = 2^BITNESS - 1). The T.87 constants (LIMIT, k range, counter
+widths) all derive from BITNESS, and no natural dataset exists at 9-15 bits --
+these probes are the only coverage of those derivations.
 
 --width/--height override --size for non-square boundary images (minimal
 4x1, min-width-tall, max-width single line). OpenJLS requires width >= 4 and
@@ -40,22 +45,22 @@ import random
 import struct
 
 
-def write_pgm(path, w, h, payload):
-    header = f"P5\n{w} {h}\n65535\n".encode()
+def write_pgm(path, w, h, payload, maxval=65535):
+    header = f"P5\n{w} {h}\n{maxval}\n".encode()
     with open(path, "wb") as f:
         f.write(header + payload)
     return len(header) + len(payload)
 
 
-def pattern_value(pat, x, y):
+def pattern_value(pat, x, y, mx):
     if pat == "checker":
-        return 0xFFFF if (x + y) & 1 else 0
+        return mx if (x + y) & 1 else 0
     if pat == "vstripe":
-        return 0xFFFF if x & 1 else 0
+        return mx if x & 1 else 0
     if pat == "hstripe":
-        return 0xFFFF if y & 1 else 0
+        return mx if y & 1 else 0
     if pat == "spikes":
-        return 0xFFFF if (x % 3 == 0 and y % 3 == 0) else 0
+        return mx if (x % 3 == 0 and y % 3 == 0) else 0
     if pat == "flat":
         return 0
     raise ValueError(pat)
@@ -72,6 +77,8 @@ def main():
                     choices=["random", "checker", "vstripe", "hstripe", "spikes", "flat"])
     ap.add_argument("--seed", type=lambda s: int(s, 0), default=0x0FF5,
                     help="PRNG seed for --pattern random; accepts 0x.. hex")
+    ap.add_argument("--maxval", type=lambda s: int(s, 0), default=65535,
+                    help="sample precision as 2^N - 1, N in 8..16 (default 65535)")
     ap.add_argument("--fuzz-batch", type=int, metavar="N",
                     help="treat OUT as a directory; emit N tiny random images "
                          "(dims master-seeded from --seed)")
@@ -93,18 +100,27 @@ def main():
     h = a.height if a.height is not None else a.size
     if w < 4 or h < 1:
         ap.error(f"{w}x{h}: OpenJLS requires width >= 4 and height >= 1 by design")
+    mx = a.maxval
+    if mx < 255 or mx > 65535 or (mx & (mx + 1)) != 0:
+        ap.error(f"--maxval {mx}: must be 2^N - 1 with N in 8..16")
+    fmt = ">H" if mx > 255 else "B"
     if a.pattern == "random":
-        payload = random.Random(a.seed).randbytes(w * h * 2)  # big-endian-agnostic
+        if mx == 65535:
+            payload = random.Random(a.seed).randbytes(w * h * 2)  # big-endian-agnostic
+        else:
+            rng = random.Random(a.seed)
+            payload = b"".join(struct.pack(fmt, rng.randint(0, mx))
+                               for _ in range(w * h))
         tag = f"random (seed {a.seed:#06x})"
     else:
         payload = bytearray()
         for y in range(h):
             for x in range(w):
-                payload += struct.pack(">H", pattern_value(a.pattern, x, y))
+                payload += struct.pack(fmt, pattern_value(a.pattern, x, y, mx))
         tag = a.pattern
 
-    n = write_pgm(a.out, w, h, payload)
-    print(f"{a.out}: {w}x{h} 16-bit {tag}, {n} B")
+    n = write_pgm(a.out, w, h, payload, mx)
+    print(f"{a.out}: {w}x{h} {mx.bit_length()}-bit {tag}, {n} B")
 
 
 if __name__ == "__main__":
