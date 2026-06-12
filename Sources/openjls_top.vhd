@@ -69,11 +69,10 @@ entity openjls_top is
     -- 65535: the T.87 frame header Y/X fields are 16 bits.
     MAX_IMAGE_WIDTH  : positive range 4 to 65535 := 4096;
     MAX_IMAGE_HEIGHT : positive range 1 to 65535 := 4096;
-    -- 48: conventional-width floor. The hard limit is 40 — jls_framer FIFO
-    -- stability needs BYTES_OUT >= BYTES_IN + 1 over the 32-bit
-    -- byte_stuffer feed (asserted there).
-    OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD;
-    CONTEXT_RAM_TYPE : string                    := "auto"
+    -- Default 64. 48 is the conventional-width floor; the hard limit is 40 —
+    -- jls_framer FIFO stability needs BYTES_OUT >= BYTES_IN + 1 over the
+    -- 32-bit byte_stuffer feed (asserted there).
+    OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD
   );
   port (
     iClk             : in    std_logic;
@@ -879,8 +878,7 @@ begin
       B_WIDTH         => B_STORED,
       C_WIDTH         => C_STORED,
       N_WIDTH         => N_STORED,
-      TOTAL_WIDTH     => TOTAL_WIDTH,
-      RAM_MEMORY_TYPE => CONTEXT_RAM_TYPE
+      TOTAL_WIDTH     => TOTAL_WIDTH
     )
     port map (
       iClk            => iClk,

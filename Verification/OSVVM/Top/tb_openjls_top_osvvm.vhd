@@ -58,7 +58,7 @@ entity tb_openjls_top_osvvm is
   generic (
     MAX_W      : positive := 4096;
     MAX_H      : positive := 4096;
-    OUT_WIDTH  : natural  := CO_OUT_WIDTH_STD;   -- 48
+    OUT_WIDTH  : natural  := CO_OUT_WIDTH_STD;   -- 64
     -- Bind the DUT to a Vivado funcsim netlist analyzed into work in place of
     -- the RTL (see Verification/Post synth). Defaults-only: the netlist bakes
     -- this TB's default config at synthesis.
@@ -201,8 +201,7 @@ begin
         BITNESS          : positive range 8 to 16    := 12;
         MAX_IMAGE_WIDTH  : positive range 4 to 65535 := 4096;
         MAX_IMAGE_HEIGHT : positive range 1 to 65535 := 4096;
-        OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD;
-        CONTEXT_RAM_TYPE : string                    := "auto"
+        OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD
       );
       port (
         iClk         : in    std_logic;

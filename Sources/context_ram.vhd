@@ -18,8 +18,7 @@ entity context_ram is
     B_WIDTH         : positive := CO_BQ_WIDTH_STD;
     C_WIDTH         : positive := CO_CQ_WIDTH;
     N_WIDTH         : positive := CO_NQ_WIDTH_STD;
-    TOTAL_WIDTH     : positive := CO_TOTAL_WIDTH_STD;
-    RAM_MEMORY_TYPE : string   := "auto" -- Vendor-specific execept for auto, usually is the best option too
+    TOTAL_WIDTH     : positive := CO_TOTAL_WIDTH_STD
   );
   port (
     iClk            : in    std_logic;
@@ -73,7 +72,7 @@ begin
       WIDTH_G         => TOTAL_WIDTH,
       ISASYNC_G       => false,
       RDLATENCY_G     => 1,
-      RAMSTYLE_G      => RAM_MEMORY_TYPE,
+      RAMSTYLE_G      => "auto",
       RAMBEHAVIOR_G   => "RBW",
       USEBYTEENABLE_G => false,
       INITSTRING_G    => "",
