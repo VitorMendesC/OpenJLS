@@ -2,7 +2,7 @@ standard = "2008"
 preferred_case = "lower"
 
 [libraries]
-# Sources and every TB compile into one library (GHDL --work=work), so `work`
+# Sources and every TB compile into one library (--work=work), so `work`
 # resolves to `common` and the DUT entities from any TB file.
 lib.files = [
     'Sources/*.vhd',

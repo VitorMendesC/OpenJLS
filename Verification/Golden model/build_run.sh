@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Golden-model cross-check — vendor-agnostic GHDL build + run.
+# Golden-model cross-check — vendor-agnostic NVC build + run.
 #
 # For each test image: mint a reference .jls with the CharLS encoder, then have
 # OpenJLS encode the same image and byte-compare against it. Covers the 8-bit
@@ -15,7 +15,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-WORK_LIB="$HERE/work-lib"
+LIBS="$HERE/work-lib"
 GOLDEN="$HERE/Output/Golden"
 OUTPUT="$HERE/Output/OpenJLS"
 REF_DIR="$ROOT/Verification/T87 conformance/Reference Images"
@@ -23,7 +23,7 @@ CLI="$HERE/charls-src/build/cli/charls-cli"
 
 TB="tb_openjls_golden"
 
-mkdir -p "$WORK_LIB" "$GOLDEN" "$OUTPUT"
+mkdir -p "$LIBS" "$GOLDEN" "$OUTPUT"
 
 # 0. Reference encoder.
 [ -x "$CLI" ] || "$HERE/build_charls.sh"
@@ -38,12 +38,10 @@ if ! cmp -s "$GOLDEN/TEST16_charls.jls" "$REF_DIR/T16E0.JLS"; then
 fi
 echo "CharLS gate: reproduces official T16E0.JLS byte-exact OK"
 
-# -frelaxed: OpenLogic uses shared variables of non-protected types.
-# -fpsl activates the "-- psl" contract assertions embedded in Sources/.
-STD_FLAGS=(--std=08 -frelaxed -fpsl -P"$WORK_LIB")
-# Native (LLVM/GCC) backends generate code at analyze/elaborate time; -O2 gives
-# a large runtime speedup over the mcode JIT. Applied to -a/-e only, not -r.
-OPT_FLAGS=(-O2)
+# --relaxed: OpenLogic uses shared variables of non-protected types.
+# --psl activates the "-- psl" contract assertions embedded in Sources/.
+NVC=(nvc --std=2008 --ieee-warnings=off -L "$LIBS")
+A_FLAGS=(--relaxed --psl)
 
 # 1. OpenLogic base (compile order matters — dependency chain)
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
@@ -58,9 +56,8 @@ OL_FILES=(
   olo_base_ram_tdp.vhd
   olo_base_fifo_sync.vhd
 )
-for f in "${OL_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=openlogic_base --workdir="$WORK_LIB" "$OL_SRC/$f"
-done
+"${NVC[@]}" --work=openlogic_base:"$LIBS/openlogic_base.08" -a "${A_FLAGS[@]}" \
+  "${OL_FILES[@]/#/$OL_SRC/}"
 
 # 2. Project sources (Common first, openjls_top last)
 SRC="$ROOT/Sources"
@@ -96,27 +93,25 @@ SRC_FILES=(
   jls_framer.vhd
   openjls_top.vhd
 )
-for f in "${SRC_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
-done
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" \
+  "${SRC_FILES[@]/#/$SRC/}"
 
 # 3. Golden-model TB
-ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$HERE/$TB.vhd"
-ghdl -e "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" "$HERE/$TB.vhd"
 
 # 4. Per-image: discover normalized PGMs in Images/, mint the golden with
 #    CharLS, run OpenJLS, byte-compare (in-TB). BITNESS is derived from each
 #    image's maxval (255 => 8, 65535 => 16). Images above MAX_MP megapixels are
-#    skipped to keep GHDL sim time bounded — override e.g. MAX_MP=4 ./build_run.sh
+#    skipped to keep sim time bounded — override e.g. MAX_MP=4 ./build_run.sh
 #    Populate Images/ with ./prepare_images.sh (fetch curated sets and/or drop
 #    in your own images, any format/color — normalize.py folds them in).
 #
-#    GHDL's runtime is single-threaded, so the per-image runs are fanned out
-#    across NUMBER_OF_THREADS processes (default 1). Build/elaboration above is
-#    shared; ghdl -r only reads the work library, and every run writes a unique
-#    per-image golden/output, so concurrent runs are independent. Eligible images
-#    are sharded by file size (LPT greedy) so each worker gets a similar byte
-#    budget — e.g. 100 MB of images over 4 threads ≈ 25 MB each.
+#    NVC fixes generics at elaboration, so each image is one
+#    "-e --jit --no-save ... -r" invocation; --no-save keeps the library
+#    read-only, so runs are independent and are fanned out across
+#    NUMBER_OF_THREADS processes (default 1). Eligible images are sharded by
+#    file size (LPT greedy) so each worker gets a similar byte budget — e.g.
+#    100 MB of images over 4 threads ≈ 25 MB each.
 PREP="$HERE/imageprep"
 IMAGES_DIR="$HERE/Images"
 MAX_MP="${MAX_MP:-0.5}"
@@ -162,13 +157,14 @@ run_image() {
   if ! "$CLI" encode "$pgm" "$GOLDEN/${stem}_charls.jls" >"$LOGD/$stem.log" 2>&1; then
     echo "[t$w] FAIL $stem (charls encode)"; echo "$stem" >>"$TMPD/failures"; return 1
   fi
-  if ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" \
-      --ieee-asserts=disable --max-stack-alloc=0 --assert-level=error \
-      -gREPO_ROOT="$ROOT/" \
-      -gPGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
-      -gJLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
-      -gOUT_PATH="Verification/Golden model/Output/OpenJLS/${stem}_OPENJLS.jls" \
-      -gBITNESS="$bits" >>"$LOGD/$stem.log" 2>&1; then rc=0; else rc=1; fi
+  if "${NVC[@]}" --work=work:"$LIBS/work.08" \
+      -e --jit --no-save \
+      -g REPO_ROOT="$ROOT/" \
+      -g PGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
+      -g JLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
+      -g OUT_PATH="Verification/Golden model/Output/OpenJLS/${stem}_OPENJLS.jls" \
+      -g BITNESS="$bits" "$TB" \
+      -r --exit-severity=error "$TB" >>"$LOGD/$stem.log" 2>&1; then rc=0; else rc=1; fi
   # Surface the TB's internal-stall warning regardless of pass/fail.
   st="$(grep -m1 -ao 'Pipeline stalled.*' "$LOGD/$stem.log" 2>/dev/null || true)"
   if [ -n "$st" ]; then

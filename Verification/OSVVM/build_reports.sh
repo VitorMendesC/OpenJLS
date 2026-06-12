@@ -10,6 +10,9 @@
 #   reports/OSVVM_OpenJls_req.csv   requirements traceability matrix (also
 #                                   the Requirements tab of the build HTML)
 #
+# With CODE_COVERAGE=1 every test is additionally instrumented for
+# statement+branch coverage (see build_coverage.sh, which wraps this).
+#
 # Requires tclsh (Arch: pacman -S tcl). build_run.sh stays the fast,
 # tcl-free inner loop for a single TB.
 #
@@ -19,8 +22,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 cd "$HERE"
 
-command -v ghdl >/dev/null || {
-  echo "ghdl not found — install it (Arch: ghdl-llvm-git from the AUR)" >&2
+command -v nvc >/dev/null || {
+  echo "nvc not found — install it (Arch: nvc from the AUR)" >&2
   exit 1
 }
 command -v tclsh >/dev/null || {
@@ -32,7 +35,13 @@ command -v tclsh >/dev/null || {
 export TCLLIBPATH="$HERE/../../ThirdParty/tcllib"
 
 tclsh <<'EOF'
-source ../../ThirdParty/osvvm-scripts/StartGHDL.tcl
+source ../../ThirdParty/osvvm-scripts/StartNVC.tcl
+# The scripts default NVC to VHDL-2019, whose OSVVM support files are not in
+# the vendored snapshot; 2008 selects the deprecated/*_c.vhd fallbacks. Same
+# reason for the "default" coverage vendor API (no CoverageVendorApiPkg_NVC.vhd
+# vendored; functional coverage reporting comes from OSVVM itself either way).
+SetVHDLVersion 2008
+set ::osvvm::FunctionalCoverageIntegratedInSimulator "default"
 build ../../ThirdParty/osvvm/osvvm.pro
 build OpenJls.pro
 EOF

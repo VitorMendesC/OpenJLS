@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
-# Compile OSVVM into ./osvvm-lib so GHDL can use it via -P./osvvm-lib --work=osvvm
+# Compile OSVVM into ./nvc-libs/osvvm.08 so NVC can use it via -L./nvc-libs
 set -euo pipefail
 
-command -v ghdl >/dev/null || {
-  echo "ghdl not found — install it (Arch: ghdl-llvm-git from the AUR)" >&2
+command -v nvc >/dev/null || {
+  echo "nvc not found — install it (Arch: nvc from the AUR)" >&2
   exit 1
 }
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SRC="$ROOT/ThirdParty/osvvm"   # vendored by ThirdParty/fetch_third_party.sh
-OUT="$HERE/osvvm-lib"
+LIBS="$HERE/nvc-libs"
 
-mkdir -p "$OUT"
-cd "$OUT"
+mkdir -p "$LIBS"
 
-GHDL_FLAGS=(-a --std=08 -frelaxed --work=osvvm --workdir="$OUT" -P"$OUT")
-
-# Order taken from osvvm.pro. Vendor api uses _default for GHDL.
+# Order taken from osvvm.pro. Vendor api uses _default; the deprecated/*_c.vhd
+# files are the VHDL-2008 fallbacks (the 2019 originals are not vendored).
 FILES=(
   IfElsePkg.vhd
   OsvvmTypesPkg.vhd
@@ -61,9 +59,6 @@ FILES=(
   OsvvmContext.vhd
 )
 
-for f in "${FILES[@]}"; do
-  echo "==> $f"
-  ghdl "${GHDL_FLAGS[@]}" "$SRC/$f"
-done
+nvc --std=2008 --work=osvvm:"$LIBS/osvvm.08" -a --relaxed "${FILES[@]/#/$SRC/}"
 
-echo "OSVVM compiled into $OUT"
+echo "OSVVM compiled into $LIBS/osvvm.08"

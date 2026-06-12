@@ -5,30 +5,24 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-OSVVM_LIB="$HERE/osvvm-lib"
-SUPPORT_LIB="$HERE/tb_support-lib"
-WORK_LIB="$HERE/work-lib"
+LIBS="$HERE/nvc-libs"
 
 TB="${1:-tb_a11_osvvm}"
 
-if [[ ! -d "$OSVVM_LIB" ]]; then
+if [[ ! -d "$LIBS/osvvm.08" ]]; then
   echo "OSVVM library missing — run ./build_osvvm.sh first" >&2
   exit 1
 fi
 
-mkdir -p "$SUPPORT_LIB" "$WORK_LIB"
-
-# -fpsl activates the "-- psl" contract assertions embedded in Sources/.
-STD_FLAGS=(--std=08 -frelaxed -fpsl -Wno-shared -P"$OSVVM_LIB" -P"$SUPPORT_LIB" -P"$WORK_LIB")
-# LLVM/GCC backend optimization for analyze + elaborate (not run); matches the
-# golden flow. -r instead heap-allocates large stack objects (LLVM 128 kB cap).
-OPT_FLAGS=(-O2)
-# --assert-level=error makes PSL contract violations fatal (default: sim
-# keeps running and exits 0 — the assertions would be advisory only).
-RUN_FLAGS=(--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error)
+# --relaxed: shared variables of non-protected types in open-logic and the TBs.
+# --psl activates the "-- psl" contract assertions embedded in Sources/.
+NVC=(nvc --std=2008 --ieee-warnings=off -L "$LIBS")
+A_FLAGS=(--relaxed --psl)
+# --exit-severity=error makes assertion/PSL contract violations fatal (default:
+# the sim keeps running and exits 0 — the assertions would be advisory only).
+RUN_FLAGS=(--exit-severity=error)
 
 # 1. OpenLogic base
-OL_LIB="$WORK_LIB"
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
 OL_FILES=(
   olo_base_pkg_array.vhd
@@ -41,9 +35,8 @@ OL_FILES=(
   olo_base_ram_tdp.vhd
   olo_base_fifo_sync.vhd
 )
-for f in "${OL_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=openlogic_base --workdir="$OL_LIB" "$OL_SRC/$f"
-done
+"${NVC[@]}" --work=openlogic_base:"$LIBS/openlogic_base.08" -a "${A_FLAGS[@]}" \
+  "${OL_FILES[@]/#/$OL_SRC/}"
 
 # 2. Project sources
 SRC="$ROOT/Sources"
@@ -79,22 +72,22 @@ SRC_FILES=(
   jls_framer.vhd
   openjls_top.vhd
 )
-for f in "${SRC_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
-done
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" \
+  "${SRC_FILES[@]/#/$SRC/}"
 
 # 3. Support package (own library so TBs can `library tb_support`)
-ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=tb_support --workdir="$SUPPORT_LIB" \
+"${NVC[@]}" --work=tb_support:"$LIBS/tb_support.08" -a "${A_FLAGS[@]}" \
   "$HERE/Support/tb_support_pkg.vhd"
 
 # 4. Module + top-level TBs
-for f in "$HERE"/Modules/*.vhd "$HERE"/Top/*.vhd; do
-  ghdl -a "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$f"
-done
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" \
+  "$HERE"/Modules/*.vhd "$HERE"/Top/*.vhd
 
-# 5. Elaborate + run from a scratch dir: the executable and the OSVVM YAML
-#    droppings (OsvvmTemp*, OsvvmRun.yml from EndOfTestReports) stay contained.
+# 5. Elaborate + run from a scratch dir: the OSVVM YAML droppings (OsvvmRun.yml
+#    from EndOfTestReports) stay contained. --no-save keeps the library
+#    read-only; --jit skips ahead-of-time codegen.
 mkdir -p "$HERE/sim-out"
 cd "$HERE/sim-out"
-ghdl -e "${STD_FLAGS[@]}" "${OPT_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
-ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" "${RUN_FLAGS[@]}" "${@:2}"
+"${NVC[@]}" --work=work:"$LIBS/work.08" \
+  -e --jit --no-save "${@:2}" "$TB" \
+  -r "${RUN_FLAGS[@]}" "$TB"

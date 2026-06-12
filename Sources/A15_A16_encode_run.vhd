@@ -88,7 +88,7 @@ architecture behavioral of a15_a16_encode_run is
 
 begin
 
-  -- Contract assertions in PSL (active in GHDL sims via -fpsl, plain comments
+  -- Contract assertions in PSL (active in NVC sims via --psl, plain comments
   -- to synthesis): run state and RUNindex must clear one cycle after iEoi
   -- (T.87: RUNindex persists across runs within a scan only); tokens only
   -- fire in run mode.

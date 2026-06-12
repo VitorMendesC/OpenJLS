@@ -28,7 +28,9 @@ def main():
     with tempfile.TemporaryDirectory() as td:
         for db in sorted(glob.glob(os.path.join(covdir, "tb_*.covdb"))):
             xml = os.path.join(td, os.path.basename(db) + ".xml")
-            subprocess.run(["nvc", "--cover-export", "--format=cobertura",
+            # --work: keep nvc's default ./work library stub in the temp dir.
+            subprocess.run(["nvc", "--work=work:" + os.path.join(td, "work"),
+                            "--cover-export", "--format=cobertura",
                             "-o", xml, db], check=True, capture_output=True)
             for cls in ET.parse(xml).getroot().iter("class"):
                 ent = cls.get("name", "").split("(")[0]

@@ -5,7 +5,7 @@ This directory holds the OSVVM testbench suite: one TB per RTL module
 records how the suite is organised and which OSVVM facilities each testbench
 relies on, with pointers into the actual files.
 
-OSVVM is a pure-VHDL verification library (no SystemVerilog; runs on GHDL). The
+OSVVM is a pure-VHDL verification library (no SystemVerilog; runs on NVC). The
 suite uses four parts of it: **AlertLog** for assertions with pass/fail
 accounting, **RandomPkg** for constrained-random stimulus, **CoveragePkg** for
 functional coverage, and **ScoreboardPkg** for order-checking streamed output.
@@ -17,9 +17,10 @@ Each is described below as it is used here.
 
 ```
 Verification/OSVVM/
-├── build_osvvm.sh      # one-time: compile vendored OSVVM into ./osvvm-lib (fast flow)
+├── build_osvvm.sh      # one-time: compile vendored OSVVM into ./nvc-libs (fast flow)
 ├── build_run.sh        # fast flow: compile deps + all TBs, elaborate+run one by name
 ├── build_reports.sh    # script flow: full regression + YAML -> HTML reports (needs tcl)
+├── build_coverage.sh   # script flow + statement/branch code coverage of Sources/
 ├── OpenJls.pro         # OSVVM build script: library/analyze/TestSuite/RunTest
 ├── Support/tb_support_pkg.vhd   # shared helpers (clk_tick, apply_reset, end_of_test)
 ├── Modules/tb_*_osvvm.vhd       # one TB per module
@@ -37,7 +38,7 @@ OSVVM publishes no dependency manifest; its scripts just `package require`
 what they need. Everything tcl-side is vendored in this repo, so a fresh
 clone needs only two system packages:
 
-- **ghdl** — both flows (Arch: `ghdl-llvm-git` from the AUR)
+- **nvc** — both flows (Arch: `nvc` from the AUR)
 - **tcl** ≥ 8.6 — script flow only (Arch: `sudo pacman -S tcl`)
 
 The tcllib modules the scripts require (`fileutil`, `yaml`) are vendored in
@@ -53,21 +54,24 @@ renders as a missing-glyph box, install a font that covers it (Arch:
 
 Two flows over the same TBs:
 
-### Fast flow — one TB, plain GHDL, no tcl
+### Fast flow — one TB, plain NVC, no tcl
 
 ```bash
-./build_run.sh tb_a5_osvvm                           # build everything, run one TB
-./build_run.sh tb_byte_stuffer_osvvm -gIN_WIDTH=64   # pass a generic
+./build_run.sh tb_a5_osvvm                            # build everything, run one TB
+./build_run.sh tb_byte_stuffer_osvvm -g IN_WIDTH=64   # pass a generic
 ```
 
 `build_run.sh` recompiles the OpenLogic base, the RTL sources, the support
 package, and every TB in `Modules/` and `Top/` on each invocation, then
 elaborates and runs the named TB from `sim-out/` (scratch, gitignored).
+Extra arguments are elaboration options — generics go there (`-g NAME=VALUE`),
+since NVC fixes generics at elaboration.
 
 ### Script flow — full regression with HTML reports
 
 ```bash
-./build_reports.sh        # needs tcl in addition to ghdl (see Dependencies)
+./build_reports.sh        # needs tcl in addition to nvc (see Dependencies)
+./build_coverage.sh       # same regression + statement/branch code coverage
 ```
 
 This is "the OSVVM intended way": `OpenJls.pro` drives the vendored tcl
@@ -83,9 +87,9 @@ HTML. Outputs (all gitignored, in this directory):
 - `OSVVM_OpenJls/logs/` — per-test simulate transcripts; `VHDL_LIBS/` —
   compiled libraries (incremental between runs)
 
-Note: GHDL analysis must be warning-clean under this flow (tcl's `exec`
-treats any stderr output as a failure), hence the `-Wno-shared` and
-`-Wno-elaboration` flags in `OpenJls.pro`.
+Note: tcl's `exec` treats any stderr output as a failure, hence the
+`--stderr=error` global option in `OpenJls.pro`, which keeps NVC warnings on
+stdout — analysis must stay warning-clean under this flow.
 
 `RunTest Modules/tb_a5_osvvm.vhd` = analyze the file + simulate the entity
 named like it + register the result under the current `TestSuite`. The two
@@ -98,7 +102,7 @@ A passing run ends with:
 
 ```
 %%  205 ns    DONE   PASSED   tb_a5_osvvm  Passed: 209  Affirmations Checked: 209  Requirements Passed: 1 of 1
-... tb_support_pkg.vhd:63 (report note): tb_a5_osvvm: PASS
+** Note: 205ns+0: tb_a5_osvvm: PASS
 ```
 
 `Affirmations Checked` is the number of checks that ran; `Passed` is how many
@@ -107,7 +111,7 @@ passed. A failure looks like:
 ```
 %%  211 ns    Alert  ERROR   <the message that was passed to the check>  Received : 20  Expected : 0
 %% 2231 ns    DONE   FAILED   tb_..._osvvm  Total Error(s) = 1 ...
-./tb_..._osvvm:error: simulation failed
+** Failure: 2231ns+0: tb_..._osvvm: FAIL
 ```
 
 Each failing check prints an `Alert ERROR` line carrying its message, which
@@ -322,15 +326,16 @@ The PSL contracts live next to the entity's output wiring (e.g.
 `jls_framer`: AXIS `oValid` held until accepted, `oLast` only on a valid
 beat; `byte_stuffer`: `oFlushDone` only on a valid beat and strictly one
 cycle; `a15_a16`: run state clears one cycle after `iEoi`). They are written
-as comments so synthesis sees nothing; GHDL activates them with `-fpsl` and
-`--assert-level=error` makes a violation fatal (without it the violation
+as comments so synthesis sees nothing; NVC activates them with `--psl` and
+`--exit-severity=error` makes a violation fatal (without it the violation
 prints but the sim still exits 0). All four build flows set both flags.
 
-GHDL notes: the PSL built-in functions (`prev()`, `stable()`) are not
-implemented in the LLVM codegen — properties must be plain boolean
-expressions under `always`/`never`/`next`. And with `-fpsl` active, any
-comment whose first word is `psl` is *parsed as PSL*, so prose comments must
-not start with that word.
+NVC notes: the properties are kept to plain boolean expressions under
+`always`/`never`/`next` (the portable PSL subset — the original GHDL flow
+could not codegen `prev()`/`stable()` either, and staying inside it keeps
+the contracts simulator-agnostic). With `--psl` active, any comment whose
+first word is `psl` is *parsed as PSL*, so prose comments must not start
+with that word.
 
 ---
 

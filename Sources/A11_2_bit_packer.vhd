@@ -69,7 +69,7 @@ begin
     report "A11_2_bit_packer: OUT_WIDTH must be >= LIMIT (per-cycle worst case)"
     severity failure;
 
-  -- Contract assertions in PSL (active in GHDL sims via -fpsl, plain
+  -- Contract assertions in PSL (active in NVC sims via --psl, plain
   -- comments to synthesis).
   -- psl default clock is rising_edge(iClk);
   -- psl assert always (iRst = '1' -> next (oWordValid = '0')) report "a11_2: reset must clear oWordValid";

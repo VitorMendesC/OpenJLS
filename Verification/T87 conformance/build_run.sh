@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# ITU-T T.87 conformance test — vendor-agnostic GHDL build + run.
+# ITU-T T.87 conformance test — vendor-agnostic NVC build + run.
 # Compiles OpenLogic base, the project sources and the conformance TB into a
-# local work library, then elaborates and runs it. REPO_ROOT is derived from
+# local library tree, then elaborates and runs it. REPO_ROOT is derived from
 # this script's location so it works on any machine.
 #
 # Usage:  ./build_run.sh
@@ -9,15 +9,16 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-WORK_LIB="$HERE/work-lib"
+LIBS="$HERE/work-lib"
 
-TB="tb_openjls_conformance"
+TB="tb_openjls_t87_conformance"
 
-mkdir -p "$WORK_LIB" "$HERE/Output"
+mkdir -p "$LIBS" "$HERE/Output"
 
-# -frelaxed: OpenLogic uses shared variables of non-protected types.
-# -fpsl activates the "-- psl" contract assertions embedded in Sources/.
-STD_FLAGS=(--std=08 -frelaxed -fpsl -P"$WORK_LIB")
+# --relaxed: OpenLogic uses shared variables of non-protected types.
+# --psl activates the "-- psl" contract assertions embedded in Sources/.
+NVC=(nvc --std=2008 --ieee-warnings=off -L "$LIBS")
+A_FLAGS=(--relaxed --psl)
 
 # 1. OpenLogic base (compile order matters — dependency chain)
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
@@ -32,9 +33,8 @@ OL_FILES=(
   olo_base_ram_tdp.vhd
   olo_base_fifo_sync.vhd
 )
-for f in "${OL_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" --work=openlogic_base --workdir="$WORK_LIB" "$OL_SRC/$f"
-done
+"${NVC[@]}" --work=openlogic_base:"$LIBS/openlogic_base.08" -a "${A_FLAGS[@]}" \
+  "${OL_FILES[@]/#/$OL_SRC/}"
 
 # 2. Project sources (Common first, openjls_top last)
 SRC="$ROOT/Sources"
@@ -70,13 +70,15 @@ SRC_FILES=(
   jls_framer.vhd
   openjls_top.vhd
 )
-for f in "${SRC_FILES[@]}"; do
-  ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$SRC/$f"
-done
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" \
+  "${SRC_FILES[@]/#/$SRC/}"
 
 # 3. Conformance TB
-ghdl -a "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$HERE/$TB.vhd"
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" "$HERE/tb_openjls_conformance.vhd"
 
-# 4. Elaborate + run (REPO_ROOT points the TB at the in-repo test images)
-ghdl -e "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB"
-ghdl -r "${STD_FLAGS[@]}" --work=work --workdir="$WORK_LIB" "$TB" --assert-level=error -gREPO_ROOT="$ROOT/"
+# 4. Elaborate + run in one shot (REPO_ROOT points the TB at the in-repo test
+#    images). --exit-severity=error makes a violated assertion/PSL contract
+#    fail the run (default: it prints and the sim exits 0).
+"${NVC[@]}" --work=work:"$LIBS/work.08" \
+  -e --jit --no-save -g REPO_ROOT="$ROOT/" "$TB" \
+  -r --exit-severity=error "$TB"

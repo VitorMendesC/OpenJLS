@@ -14,7 +14,7 @@
   -- the image set, passing PGM_PATH/JLS_PATH/OUT_PATH/BITNESS each time.
   -- Image dimensions and sample width are read from the PGM header at runtime.
   --
-  -- Behavioral (GHDL) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
+  -- Behavioral (NVC) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
   ----------------------------------------------------------------------------------
   use work.common.all;
 
@@ -41,7 +41,7 @@ entity tb_openjls_golden is
     -- pixel-port width. 8 for the TEST8 planes, 12 for TEST16.
     BITNESS             : natural := 8;
     -- true: instantiate the top bare (post-synthesis netlist). false: behavioral
-    -- sim with the explicit generic map below (GHDL flow).
+    -- sim with the explicit generic map below (behavioral flow).
     POST_SYNTH_FRIENDLY : boolean := false
   );
 end entity tb_openjls_golden;

@@ -192,8 +192,8 @@ begin
     report "byte_stuffer: FIFO write dropped - AlmFull cushion undersized vs stall latency"
     severity failure;
 
-  -- Contract assertions in PSL (temporal, signal-level; active in GHDL sims
-  -- via -fpsl, plain comments to synthesis) --------------------------------------
+  -- Contract assertions in PSL (temporal, signal-level; active in NVC sims
+  -- via --psl, plain comments to synthesis) --------------------------------------
   -- psl default clock is rising_edge(iClk);
   -- psl assert always (iRst = '1' -> next (oWordValid = '0' and oFlushDone = '0')) report "byte_stuffer: reset must clear the output beat and oFlushDone";
   -- psl assert never (oFlushDone = '1' and oWordValid = '0') report "byte_stuffer: oFlushDone only fires on a valid output beat (framer iEoi contract)";

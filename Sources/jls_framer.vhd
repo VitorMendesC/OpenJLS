@@ -387,7 +387,7 @@ begin
   sAxiHandshake <= (iReady and sOutValid) = '1';
 
   -- Contract assertions in PSL: the output side is an AXI-Stream master —
-  -- these hold for any downstream behaviour (active in GHDL sims via -fpsl,
+  -- these hold for any downstream behaviour (active in NVC sims via --psl,
   -- plain comments to synthesis).
   -- psl default clock is rising_edge(iClk);
   -- psl assert always (iRst = '1' -> next (oValid = '0' and oLast = '0')) report "jls_framer: reset must clear the output stream";

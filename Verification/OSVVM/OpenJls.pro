@@ -1,7 +1,7 @@
 #  OpenJLS OSVVM regression — script-flow entry point.
 #
 #  Run via ./build_reports.sh (or interactively:
-#    tclsh> source ../../ThirdParty/osvvm-scripts/StartGHDL.tcl
+#    tclsh> source ../../ThirdParty/osvvm-scripts/StartNVC.tcl
 #    tclsh> build ../../ThirdParty/osvvm/osvvm.pro
 #    tclsh> build OpenJls.pro
 #  ). Outputs land in this directory: VHDL_LIBS/ (compiled libraries),
@@ -12,37 +12,21 @@
 #  the full regression with HTML reports and merged functional coverage.
 #  Keep the file lists below in sync with build_run.sh.
 
-# Simulator-specific options. tcl's exec treats any stderr output as failure,
-# so analysis must be warning-clean under either simulator.
-if {$::osvvm::ToolName eq "NVC"} {
-  # NVC (code-coverage flow, ./build_coverage.sh): --relaxed permits the
-  # shared variables of non-protected types in open-logic and the TBs;
-  # --stderr=error keeps warnings on stdout (tcl exec fails on any stderr);
-  # --psl activates the "-- psl" contract assertions in Sources/ (negative-
-  # tested: a violated contract fails the test, like GHDL's
-  # --assert-level=error).
-  set ::osvvm::ExtendedGlobalOptions {--stderr=error}
-  SetExtendedAnalyzeOptions {--relaxed --psl}
-  SetExtendedRunOptions     {--ieee-warnings=off --exit-severity=error}
-} else {
-  # GHDL options matching build_run.sh: -frelaxed (shared variables of
-  # non-protected types in open-logic and the TBs), -O2 (LLVM/GCC codegen
-  # speedup), --max-stack-alloc=0 (large TB stack objects), and
-  # --ieee-asserts=disable (matches the fast flow's run settings).
-  # -Wno-shared (shared variables are intentional -frelaxed use).
-  # -fpsl activates the "-- psl" contract assertions in Sources/;
-  # --assert-level=error makes a violated contract fail the test (default: the
-  # violation prints but the sim keeps running and exits 0).
-  SetExtendedAnalyzeOptions   {-frelaxed -O2 -fpsl -Wno-shared}
-  SetExtendedElaborateOptions {-frelaxed -O2}
-  SetExtendedRunOptions       {--max-stack-alloc=0 --ieee-asserts=disable --assert-level=error}
-}
+# NVC options matching build_run.sh: --relaxed permits the shared variables of
+# non-protected types in open-logic and the TBs; --stderr=error keeps warnings
+# on stdout (tcl's exec treats any stderr output as failure, so analysis must
+# be warning-clean); --psl activates the "-- psl" contract assertions in
+# Sources/ (negative-tested: with --exit-severity=error a violated contract
+# fails the test; without it the violation prints but the sim exits 0).
+set ::osvvm::ExtendedGlobalOptions {--stderr=error}
+SetExtendedAnalyzeOptions {--relaxed --psl}
+SetExtendedRunOptions     {--ieee-warnings=off --exit-severity=error}
 
-# Statement+branch code coverage (NVC only): ./build_coverage.sh sets
-# CODE_COVERAGE=1. NVC's --cover-file must be unique per test, so the Test
-# wrapper below refreshes the option before every RunTest; the .covdb files
-# are merged and rendered to HTML by build_coverage.sh.
-set ::OpenJlsCodeCoverage [expr {$::osvvm::ToolName eq "NVC" && [info exists ::env(CODE_COVERAGE)]}]
+# Statement+branch code coverage: ./build_coverage.sh sets CODE_COVERAGE=1.
+# NVC's --cover-file must be unique per test, so the Test wrapper below
+# refreshes the option before every RunTest; the .covdb files are merged and
+# rendered to HTML by build_coverage.sh.
+set ::OpenJlsCodeCoverage [info exists ::env(CODE_COVERAGE)]
 if {$::OpenJlsCodeCoverage} {
   SetCoverageSimulateEnable true
   file mkdir Coverage
