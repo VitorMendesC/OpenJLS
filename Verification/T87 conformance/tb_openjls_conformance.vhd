@@ -1,44 +1,40 @@
 ----------------------------------------------------------------------------------
-  -- Engineer:    Vitor Mendes Camilo
-  --
-  -- Testbench: tb_openjls_conformance
-  --
-  -- T.87 conformance test. Loads a single-component PGM image, drives the
-  -- encoder, collects the produced JLS stream, writes it to disk under
-  -- Verification/T87 conformance/Output/, then byte-for-byte compares against
-  -- a golden reference .jls file.
-  --
-  -- Behavioral (GHDL) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
-  -- Run from the repo root so the relative paths resolve.
-  --
-  -- Test image: Verification/T87 conformance/Reference Images/TEST16.PGM (256x256, 12-bit)
-  -- Golden JLS: Verification/T87 conformance/Reference Images/T16E0.JLS  (NEAR=0)
-  -- Output    : Verification/T87 conformance/Output/T16E0_OPENJLS.JLS
-  ----------------------------------------------------------------------------------
-  use work.common.all;
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Testbench: tb_openjls_t87_conformance
+--
+-- T.87 conformance test. Loads a single-component PGM image, drives the
+-- encoder, collects the produced JLS stream, writes it to disk under
+-- Verification/T87 conformance/Output/, then byte-for-byte compares against
+-- a golden reference .jls file.
+--
+-- Behavioral (NVC) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
+-- Run from the repo root so the relative paths resolve.
+--
+-- Test image: Verification/T87 conformance/Reference Images/TEST16.PGM (256x256, 12-bit)
+-- Golden JLS: Verification/T87 conformance/Reference Images/T16E0.JLS  (NEAR=0)
+-- Output    : Verification/T87 conformance/Output/T16E0_OPENJLS.JLS
+----------------------------------------------------------------------------------
 
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
   use std.textio.all;
   use std.env.all;
+  use work.common.all;
 
 library openlogic_base;
   use openlogic_base.olo_base_pkg_math.log2ceil;
 
-entity tb_openjls_conformance is
+entity tb_openjls_t87_conformance is
   generic (
-    -- Repo root, with trailing '/'. The launcher injects it (build_run.sh passes
-    -- -gREPO_ROOT); empty default => paths resolve relative to CWD (run from repo root).
     REPO_ROOT           : string  := "/home/Vitor/Repos/OpenJLS";
     -- true: instantiate the top bare (no generic map) for post-synthesis netlist
-    -- sim, where the netlist is already specialized. false: behavioral sim with
-    -- the explicit generic map below (GHDL flow).
     POST_SYNTH_FRIENDLY : boolean := false
   );
-end entity tb_openjls_conformance;
+end entity tb_openjls_t87_conformance;
 
-architecture bench of tb_openjls_conformance is
+architecture bench of tb_openjls_t87_conformance is
 
   -------------------------------------------------------------------------------------------------------------
   -- TB level controls
@@ -85,7 +81,7 @@ architecture bench of tb_openjls_conformance is
   signal iReady                  : std_logic;
 
   -- Stim -> output-ready controller: pulse high to arm one backpressure episode.
-  signal sBpReq                  : std_logic := '0';
+  signal sBpReq                  : std_logic;
 
   -- Collection
   shared variable collected      : byte_array_t(0 to COLLECT_CAP - 1);
@@ -316,7 +312,7 @@ begin
   bp_ctrl : process is
 
     constant BP_TIMEOUT : natural := 100000; -- safety cap waiting for oReady low
-    constant BP_EXTRA   : natural := 8;       -- extra fully-stalled cycles after the stall lands
+    constant BP_EXTRA   : natural := 8;      -- extra fully-stalled cycles after the stall lands
 
   begin
 
@@ -523,6 +519,7 @@ begin
     end procedure wait_images;
 
     -- Compare refLen collected bytes starting at `base` against the reference.
+
     procedure compare_slice (
       base : natural;
       tag  : string
@@ -594,14 +591,14 @@ begin
     report "Image 1: feeding " & integer'image(N_PIX) & " pixels (conformance)";
     feed_image;
 
-    sBpReq <= '1';   -- arm one output-backpressure episode for image 2
+    sBpReq <= '1';                                                                                 -- arm one output-backpressure episode for image 2
     report "Image 2: back-to-back, with output backpressure";
     feed_image;
     sBpReq <= '0';
 
     wait_images(2);
     report "Encoder produced " & integer'image(collectedCount) & " bytes";
-    save_collected(OUT_PATH, refLen);   -- conformance artifact = image 1 only
+    save_collected(OUT_PATH, refLen);                                                              -- conformance artifact = image 1 only
 
     check(collectedCount = 2 * refLen,
           "Byte count mismatch: got " & integer'image(collectedCount) &
@@ -610,11 +607,11 @@ begin
     compare_slice(refLen, "Image 2");
 
     if (errCount > 0) then
-      report "tb_openjls_conformance RESULT: FAIL (" &
+      report "tb_openjls_t87_conformance RESULT: FAIL (" &
              integer'image(errCount) & " errors)"
         severity failure;
     else
-      report "tb_openjls_conformance RESULT: PASS"
+      report "tb_openjls_t87_conformance RESULT: PASS"
         severity note;
     end if;
 
