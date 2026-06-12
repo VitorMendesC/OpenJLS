@@ -20,10 +20,16 @@ NETLIST="$HERE/Output/openjls_top_funcsim.vhd"
 
 TB="tb_openjls_top_osvvm"
 
-# 1. Synthesis. Runs in Output/ so the journal and log land there.
+# 1. Synthesis. Runs in a space-free scratch dir (Vivado mishandles spaced
+#    paths in shell-outs during synthesis — see synth_funcsim.tcl); the
+#    artifacts are collected into Output/ afterward.
 if [[ "${1:-}" != "--sim" ]]; then
   mkdir -p "$HERE/Output"
-  (cd "$HERE/Output" && vivado -mode batch -source "$HERE/synth_funcsim.tcl")
+  SCRATCH="$(mktemp -d)"
+  (cd "$SCRATCH" && vivado -mode batch -source "$HERE/synth_funcsim.tcl")
+  mv "$SCRATCH/openjls_top_funcsim.vhd" "$SCRATCH/synth_util.rpt" "$HERE/Output/"
+  cp "$SCRATCH/vivado.log" "$HERE/Output/" 2> /dev/null || true
+  rm -rf "$SCRATCH"
 fi
 
 if [[ ! -f "$NETLIST" ]]; then

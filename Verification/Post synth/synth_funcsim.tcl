@@ -13,8 +13,11 @@
 
 set HERE [file dirname [file normalize [info script]]]
 set ROOT [file normalize [file join $HERE .. ..]]
-set OUT  [file join $HERE Output]
-file mkdir $OUT
+# Outputs go to the cwd: Vivado mishandles space-containing paths (this
+# script's directory has one) in shell-outs during synthesis, dropping a
+# stray prefix-truncated file. build_run.sh runs this from a space-free
+# scratch dir and collects the artifacts into Output/.
+set OUT [pwd]
 
 # Same device as the fmax characterization project.
 set PART xczu7eg-fbvb900-1-e
