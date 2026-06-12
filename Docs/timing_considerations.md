@@ -33,7 +33,7 @@ cluster.
 Reproducible sweep driving the existing `project_OpenJLS_tests` project in batch mode.
 
 - **Scripts:** `Scripts/fmax_sweep.tcl` (harness), `Scripts/run_fmax_sweep.sh` (launches
-  it inside the `vivado_box` distrobox), `Scripts/plot_fmax.py` (plots the CSV).
+  it via `vivado` on PATH), `Scripts/plot_fmax.py` (plots the CSV).
 - **What is measured, per (size × strategy):**
   - **fmax** via single over-constrain at 3 ns → `1000 / (3.0 − WNS)` (WNS from the worst
     setup path after route). Every point is checked for WNS < 0 so the number is a real

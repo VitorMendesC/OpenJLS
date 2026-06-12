@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # Post-synthesis netlist verification (vendor tool for synthesis ONLY).
-# Synthesizes openjls_top in the vivado_box distrobox at the OSVVM top TB's
-# default config (BITNESS=8, 4096x4096, OUT_WIDTH=48), then runs the full
-# OSVVM control-plane stress TB against the funcsim netlist under NVC.
+# Synthesizes openjls_top at the OSVVM top TB's default config (BITNESS=8,
+# 4096x4096, OUT_WIDTH=64), then runs the full OSVVM control-plane stress TB
+# against the funcsim netlist under NVC.
+#
+# Needs `vivado` on PATH (if Vivado lives in a container on your machine,
+# point a local shim at it) and, for the one-time vendor-library compile,
+# XILINX_VIVADO set to the Vivado install directory.
 #
 # Usage:  ./build_run.sh          synthesize + simulate
 #         ./build_run.sh --sim    skip synthesis, reuse Output/ netlist
@@ -16,11 +20,10 @@ NETLIST="$HERE/Output/openjls_top_funcsim.vhd"
 
 TB="tb_openjls_top_osvvm"
 
-# 1. Synthesis (Vivado lives only in the distrobox; log: ~/EDA/vivado.log)
+# 1. Synthesis. Runs in Output/ so the journal and log land there.
 if [[ "${1:-}" != "--sim" ]]; then
   mkdir -p "$HERE/Output"
-  distrobox enter vivado_box -- /home/Vitor/EDA/vivado-launch \
-    "$HERE/Output" -mode batch -source "$HERE/synth_funcsim.tcl"
+  (cd "$HERE/Output" && vivado -mode batch -source "$HERE/synth_funcsim.tcl")
 fi
 
 if [[ ! -f "$NETLIST" ]]; then
@@ -28,11 +31,11 @@ if [[ ! -f "$NETLIST" ]]; then
   exit 1
 fi
 
-# Without lsb_release in the container, Vivado dumps raw os-release lines
-# (VERSION_ID=...) into the netlist header comment block, unprefixed —
-# unparseable. Fix: install lsb-release in vivado_box.
+# Without lsb_release on the synthesis host, Vivado dumps raw os-release
+# lines (VERSION_ID=...) into the netlist header comment block, unprefixed —
+# unparseable. Fix: install lsb-release where Vivado runs.
 if grep -qm1 '^[A-Z_]\+=' "$NETLIST"; then
-  echo "netlist header corrupt — install lsb-release in vivado_box" >&2
+  echo "netlist header corrupt — install lsb-release on the synthesis host" >&2
   exit 1
 fi
 
@@ -40,11 +43,8 @@ fi
 #    /tmp: the install scripts mishandle a cwd containing a space (this
 #    directory) and also drop a stray ./work stub in the cwd.
 if ! compgen -G "$HOME/.nvc/lib/unisim*" > /dev/null; then
-  (
-    cd /tmp
-    XILINX_VIVADO="$(ls -d "$HOME"/EDA/Xilinx/*/Vivado | sort | tail -1)" \
-      nvc --install vivado
-  )
+  : "${XILINX_VIVADO:?set XILINX_VIVADO to the Vivado install directory for nvc --install vivado}"
+  (cd /tmp && env XILINX_VIVADO="$XILINX_VIVADO" nvc --install vivado)
 fi
 
 # 3. OSVVM library (source-built by the routine flow)

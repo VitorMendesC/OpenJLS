@@ -31,7 +31,7 @@ entity tb_openjls_golden is
   generic (
     -- Repo root, with trailing '/'. The launcher injects it (build_run.sh passes
     -- -gREPO_ROOT); empty default => paths resolve relative to CWD.
-    REPO_ROOT           : string  := "/home/Vitor/Repos/OpenJLS/";
+    REPO_ROOT           : string  := "";
     -- Input PGM, CharLS-minted golden .jls, and the OpenJLS output artifact.
     -- Relative to REPO_ROOT; build_run.sh injects one image per run.
     PGM_PATH            : string  := "Verification/T87 conformance/Reference Images/TEST8R.PGM";
@@ -68,7 +68,7 @@ architecture bench of tb_openjls_golden is
   -- images) without an artificial width/height cap.
   constant MAX_IMAGE_WIDTH       : positive := 65535;
   constant MAX_IMAGE_HEIGHT      : positive := 65535;
-  constant OUT_WIDTH             : natural  := CO_OUT_WIDTH_STD;   -- 48
+  constant OUT_WIDTH             : natural  := CO_OUT_WIDTH_STD;   -- 64
   constant BYTES_PER_WORD        : natural  := OUT_WIDTH / 8;
 
   -- Buffers are heap-allocated at runtime to fit the actual image, so there is

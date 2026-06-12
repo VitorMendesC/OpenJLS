@@ -11,21 +11,22 @@
 # Output: $OUTDIR/fmax_sweep.csv  (size,strategy,period_ns,wns_ns,fmax_mhz,lut,ff,bram,met,status)
 #         $OUTDIR/rpt_<size>_<strategy>_{timing,util}.log  (per-point provenance)
 #
-# Run (inside vivado_box):
+# Run via the wrapper (sets the output cwd):
+#   ./Scripts/run_fmax_sweep.sh
+# or directly:
 #   vivado -mode batch -source Scripts/fmax_sweep.tcl
-# or via the wrapper:
-#   distrobox enter vivado_box -- /home/Vitor/EDA/vivado-launch \
-#       /home/Vitor/EDA/Logs -mode batch -source \
-#       /home/Vitor/Repos/OpenJLS/Scripts/fmax_sweep.tcl
+#
+# Drives the private characterization project (PROJ below) — not portable
+# beyond machines that have it.
 #
 # NON-DESTRUCTIVE: backs up and restores the clock XDC, clears the generic
 # override, and restores the default strategy on exit.
 #-----------------------------------------------------------------------------
 
 # ---- Configuration (edit here) ---------------------------------------------
-set PROJ  "/home/Vitor/Repos/OpenJLS-vivado-private/project_OpenJLS_tests/project_OpenJLS_tests.xpr"
-set XDC   "/home/Vitor/Repos/OpenJLS-vivado-private/project_OpenJLS_tests/project_OpenJLS_tests.srcs/constrs_1/new/timing_constraints.xdc"
-set OUTDIR "/home/Vitor/EDA/Logs"
+set PROJ  "$::env(HOME)/Repos/OpenJLS-vivado-private/project_OpenJLS_tests/project_OpenJLS_tests.xpr"
+set XDC   "$::env(HOME)/Repos/OpenJLS-vivado-private/project_OpenJLS_tests/project_OpenJLS_tests.srcs/constrs_1/new/timing_constraints.xdc"
+set OUTDIR [pwd]
 set CLKPORT iClk
 set OVERCONSTRAIN_NS 3.000 ;# aggressive probe period; keep tighter than real fmax
 set JOBS 12

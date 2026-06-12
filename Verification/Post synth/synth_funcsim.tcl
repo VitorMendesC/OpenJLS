@@ -7,7 +7,7 @@
 # configuration at synthesis, and the TB's POST_SYNTH component declares the
 # matching fixed port widths.
 #
-# Run standalone (inside vivado_box):
+# Run standalone:
 #   vivado -mode batch -source synth_funcsim.tcl
 #-----------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ synth_design -top openjls_top -part $PART -mode out_of_context \
   -generic BITNESS=8 \
   -generic MAX_IMAGE_WIDTH=4096 \
   -generic MAX_IMAGE_HEIGHT=4096 \
-  -generic OUT_WIDTH=48
+  -generic OUT_WIDTH=64
 
 write_vhdl -mode funcsim -force [file join $OUT openjls_top_funcsim.vhd]
 report_utilization -file [file join $OUT synth_util.rpt]
