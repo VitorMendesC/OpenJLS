@@ -36,10 +36,15 @@ if grep -qm1 '^[A-Z_]\+=' "$NETLIST"; then
   exit 1
 fi
 
-# 2. Vendor simulation libraries for NVC (one-time; ~/.nvc/lib)
+# 2. Vendor simulation libraries for NVC (one-time; ~/.nvc/lib). Run from
+#    /tmp: the install scripts mishandle a cwd containing a space (this
+#    directory) and also drop a stray ./work stub in the cwd.
 if ! compgen -G "$HOME/.nvc/lib/unisim*" > /dev/null; then
-  XILINX_VIVADO="$(ls -d "$HOME"/EDA/Xilinx/*/Vivado | sort | tail -1)" \
-    nvc --install vivado
+  (
+    cd /tmp
+    XILINX_VIVADO="$(ls -d "$HOME"/EDA/Xilinx/*/Vivado | sort | tail -1)" \
+      nvc --install vivado
+  )
 fi
 
 # 3. OSVVM library (source-built by the routine flow)
