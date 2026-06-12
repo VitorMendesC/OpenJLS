@@ -68,7 +68,7 @@ architecture bench of tb_openjls_golden is
   -- images) without an artificial width/height cap.
   constant MAX_IMAGE_WIDTH       : positive := 65535;
   constant MAX_IMAGE_HEIGHT      : positive := 65535;
-  constant OUT_WIDTH             : natural  := 64;
+  constant OUT_WIDTH             : natural  := CO_OUT_WIDTH_STD;   -- 48
   constant BYTES_PER_WORD        : natural  := OUT_WIDTH / 8;
 
   -- Buffers are heap-allocated at runtime to fit the actual image, so there is

@@ -71,7 +71,7 @@ entity openjls_top is
     MAX_IMAGE_HEIGHT : positive range 1 to 65535 := 4096;
     -- 40: must clear the 32-bit byte_stuffer feed by one byte (jls_framer
     -- FIFO stability assert).
-    OUT_WIDTH        : positive range 40 to 1024 := 64;
+    OUT_WIDTH        : positive range 40 to 1024 := CO_OUT_WIDTH_STD;
     CONTEXT_RAM_TYPE : string                    := "auto"
   );
   port (

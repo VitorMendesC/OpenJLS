@@ -56,9 +56,9 @@ library tb_support;
 entity tb_openjls_top_osvvm is
   -- Non-default variants are driven from OpenJls.pro via [generic ...].
   generic (
-    MAX_W       : positive := 4096;
-    MAX_H       : positive := 4096;
-    OUT_WIDTH_G : natural  := 0   -- 0 = openjls_top's default derivation
+    MAX_W     : positive := 4096;
+    MAX_H     : positive := 4096;
+    OUT_WIDTH : natural  := CO_OUT_WIDTH_STD   -- 48
   );
 end entity tb_openjls_top_osvvm;
 
@@ -66,20 +66,6 @@ architecture sim of tb_openjls_top_osvvm is
 
   constant CLK_PERIOD     : time     := CLK_PERIOD_DEFAULT;
   constant BITNESS        : natural  := 8;
-
-  -- Mirrors openjls_top's default OUT_WIDTH derivation for this BITNESS.
-  function out_width_cfg return natural is
-  begin
-
-    if (OUT_WIDTH_G /= 0) then
-      return OUT_WIDTH_G;
-    end if;
-
-    return math_ceil_div(4 * BITNESS + 4 * BITNESS / 8 + 7, 8) * 8 + 8;
-
-  end function out_width_cfg;
-
-  constant OUT_WIDTH      : natural  := out_width_cfg;
   constant BYTES_PER_WORD : natural  := OUT_WIDTH / 8;
 
   constant IMG_W : natural := 4;

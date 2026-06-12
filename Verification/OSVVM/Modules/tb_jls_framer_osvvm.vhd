@@ -31,7 +31,7 @@ library tb_support;
 entity tb_jls_framer_osvvm is
   -- Non-default variants are driven from OpenJls.pro via [generic ...].
   generic (
-    OUT_WIDTH : natural  := CO_OUT_WIDTH_STD;                   -- 72
+    OUT_WIDTH : natural  := CO_OUT_WIDTH_STD;                   -- 48
     MAX_W     : positive := 4096;
     MAX_H     : positive := 4096
   );

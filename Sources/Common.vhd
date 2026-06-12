@@ -72,7 +72,7 @@ package common is
   -- Project's standard reference values ----------------------------------------------
   constant CO_BITNESS_STD   : natural := 12;
   constant CO_NEAR_STD      : natural := 0;
-  constant CO_OUT_WIDTH_STD : natural := 72;
+  constant CO_OUT_WIDTH_STD : natural := 48;
 
   -- Defined values from T.87 ----------------------------------------------------------
   constant CO_BITNESS_MAX_WIDTH          : natural := 16;

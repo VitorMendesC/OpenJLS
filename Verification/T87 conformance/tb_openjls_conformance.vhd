@@ -51,7 +51,7 @@ architecture bench of tb_openjls_t87_conformance is
   constant BITNESS               : natural  := 12;
   constant MAX_IMAGE_WIDTH       : positive := 4096;
   constant MAX_IMAGE_HEIGHT      : positive := 4096;
-  constant OUT_WIDTH             : natural  := 64;
+  constant OUT_WIDTH             : natural  := CO_OUT_WIDTH_STD;   -- 48
   constant BYTES_PER_WORD        : natural  := OUT_WIDTH / 8;
 
   constant IMG_W                 : natural := 256;

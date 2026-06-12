@@ -122,18 +122,17 @@ Test Modules/tb_line_buffer_osvvm.vhd
 Test Modules/tb_context_ram_osvvm.vhd
 Test Modules/tb_byte_stuffer_osvvm.vhd
 Test Modules/tb_jls_framer_osvvm.vhd
-# Non-default OUT_WIDTH sweep: 40 = narrowest legal width (BYTES_OUT =
-# BYTES_IN + 1) and the only small one where the 25-byte header ends exactly
-# on a beat boundary; 56 leaves >=3 data slots in the final header beat (the
-# filler arm); 1024 = top of the range (pins the BUFFER_BYTES_NOMINAL sizing).
+# Non-default OUT_WIDTH sweep around the 48 default: 40 = narrowest legal
+# width (BYTES_OUT = BYTES_IN + 1) and the only small one where the 25-byte
+# header ends exactly on a beat boundary; 56 = another final-header-beat
+# split; 1024 = top of the range (pins the BUFFER_BYTES_NOMINAL sizing).
 Test Modules/tb_jls_framer_osvvm.vhd [generic OUT_WIDTH 40]
 Test Modules/tb_jls_framer_osvvm.vhd [generic OUT_WIDTH 56]
 Test Modules/tb_jls_framer_osvvm.vhd [generic OUT_WIDTH 1024]
 
-# Top-level control-plane stress: derived-default OUT_WIDTH (56 for this
-# BITNESS), then the range floor with non-power-of-2 MAX dims, then the
-# range ceiling.
+# Top-level control-plane stress: the 48-bit default OUT_WIDTH, then the
+# range floor with non-power-of-2 MAX dims, then the range ceiling.
 TestSuite Top
 Test Top/tb_openjls_top_osvvm.vhd
-Test Top/tb_openjls_top_osvvm.vhd [generic OUT_WIDTH_G 40] [generic MAX_W 320] [generic MAX_H 200]
-Test Top/tb_openjls_top_osvvm.vhd [generic OUT_WIDTH_G 1024]
+Test Top/tb_openjls_top_osvvm.vhd [generic OUT_WIDTH 40] [generic MAX_W 320] [generic MAX_H 200]
+Test Top/tb_openjls_top_osvvm.vhd [generic OUT_WIDTH 1024]
