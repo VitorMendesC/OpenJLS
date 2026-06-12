@@ -26,6 +26,11 @@ ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd
 # NVC compile cache
 Verification/T87 conformance/work-lib/
 
+# Post-synth flow (netlist + libraries + scratch are all regenerated)
+Verification/Post synth/Output/
+Verification/Post synth/work-lib/
+Verification/Post synth/sim-out/
+
 # Golden model (CharLS built from source; minted goldens + OpenJLS results)
 Verification/Golden model/charls-src/
 Verification/Golden model/Output/

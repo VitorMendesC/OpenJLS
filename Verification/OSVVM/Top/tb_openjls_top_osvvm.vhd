@@ -56,9 +56,13 @@ library tb_support;
 entity tb_openjls_top_osvvm is
   -- Non-default variants are driven from OpenJls.pro via [generic ...].
   generic (
-    MAX_W     : positive := 4096;
-    MAX_H     : positive := 4096;
-    OUT_WIDTH : natural  := CO_OUT_WIDTH_STD   -- 48
+    MAX_W      : positive := 4096;
+    MAX_H      : positive := 4096;
+    OUT_WIDTH  : natural  := CO_OUT_WIDTH_STD;   -- 48
+    -- Bind the DUT to a Vivado funcsim netlist analyzed into work in place of
+    -- the RTL (see Verification/Post synth). Defaults-only: the netlist bakes
+    -- this TB's default config at synthesis.
+    POST_SYNTH : boolean  := false
   );
 end entity tb_openjls_top_osvvm;
 
@@ -146,27 +150,101 @@ begin
   iWidth  <= std_logic_vector(to_unsigned(sImgW, iWidth'length));
   iHeight <= std_logic_vector(to_unsigned(sImgH, iHeight'length));
 
-  dut : entity work.openjls_top(rtl)
-    generic map (
-      BITNESS          => BITNESS,
-      MAX_IMAGE_WIDTH  => MAX_W,
-      MAX_IMAGE_HEIGHT => MAX_H,
-      OUT_WIDTH        => OUT_WIDTH
-    )
-    port map (
-      iClk         => clk,
-      iRst         => rst,
-      iValid       => iValid,
-      iPixel       => iPixel,
-      oReady       => oReady,
-      iImageWidth  => iWidth,
-      iImageHeight => iHeight,
-      oData        => oData,
-      oValid       => oValid,
-      oKeep        => oKeep,
-      oLast        => oLast,
-      iReady       => iReady
-    );
+  -- Each branch declares its own component and lets default binding pick up
+  -- whatever openjls_top the build analyzed into work: the funcsim netlist is
+  -- genericless (config baked at synthesis) and its architecture is STRUCTURE,
+  -- so a direct entity work.openjls_top(rtl) instantiation cannot analyze
+  -- against it.
+  dut : if POST_SYNTH generate
+
+    -- Ports fixed at this TB's defaults; a netlist baked with anything else
+    -- fails elaboration here on the width mismatch.
+    component openjls_top is
+      port (
+        iClk         : in    std_logic;
+        iRst         : in    std_logic;
+        iValid       : in    std_logic;
+        iPixel       : in    std_logic_vector(BITNESS - 1 downto 0);
+        oReady       : out   std_logic;
+        iImageWidth  : in    std_logic_vector(log2ceil(MAX_W + 1) - 1 downto 0);
+        iImageHeight : in    std_logic_vector(log2ceil(MAX_H + 1) - 1 downto 0);
+        oData        : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+        oValid       : out   std_logic;
+        oKeep        : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
+        oLast        : out   std_logic;
+        iReady       : in    std_logic
+      );
+    end component openjls_top;
+
+  begin
+
+    dut_post_syn : openjls_top
+      port map (
+        iClk         => clk,
+        iRst         => rst,
+        iValid       => iValid,
+        iPixel       => iPixel,
+        oReady       => oReady,
+        iImageWidth  => iWidth,
+        iImageHeight => iHeight,
+        oData        => oData,
+        oValid       => oValid,
+        oKeep        => oKeep,
+        oLast        => oLast,
+        iReady       => iReady
+      );
+
+  else generate
+
+    component openjls_top is
+      generic (
+        BITNESS          : positive range 8 to 16    := 12;
+        MAX_IMAGE_WIDTH  : positive range 4 to 65535 := 4096;
+        MAX_IMAGE_HEIGHT : positive range 1 to 65535 := 4096;
+        OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD;
+        CONTEXT_RAM_TYPE : string                    := "auto"
+      );
+      port (
+        iClk         : in    std_logic;
+        iRst         : in    std_logic;
+        iValid       : in    std_logic;
+        iPixel       : in    std_logic_vector(BITNESS - 1 downto 0);
+        oReady       : out   std_logic;
+        iImageWidth  : in    std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
+        iImageHeight : in    std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+        oData        : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+        oValid       : out   std_logic;
+        oKeep        : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
+        oLast        : out   std_logic;
+        iReady       : in    std_logic
+      );
+    end component openjls_top;
+
+  begin
+
+    dut_behav : openjls_top
+      generic map (
+        BITNESS          => BITNESS,
+        MAX_IMAGE_WIDTH  => MAX_W,
+        MAX_IMAGE_HEIGHT => MAX_H,
+        OUT_WIDTH        => OUT_WIDTH
+      )
+      port map (
+        iClk         => clk,
+        iRst         => rst,
+        iValid       => iValid,
+        iPixel       => iPixel,
+        oReady       => oReady,
+        iImageWidth  => iWidth,
+        iImageHeight => iHeight,
+        oData        => oData,
+        oValid       => oValid,
+        oKeep        => oKeep,
+        oLast        => oLast,
+        iReady       => iReady
+      );
+
+  end generate dut;
 
   -----------------------------------------------------------------------------
   -- Output collector (oKeep bytes, MSB-first, on the AXI handshake).
