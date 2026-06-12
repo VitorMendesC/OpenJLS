@@ -156,10 +156,13 @@ architecture behavioral of jls_framer is
   constant V_IEOI               : natural := BYTES_OUT + BYTES_IN + 1;
   constant D_DRAIN              : natural := math_ceil_div(V_IEOI, BYTES_OUT);
   constant N_H                  : natural := math_ceil_div(HEADER_LEN, BYTES_OUT);
+  -- Header-tail carry: bytes of the final header beat not covered by the
+  -- header itself. Expressed via math_min to stay in natural for wide
+  -- OUT_WIDTHs, where N_H * BYTES_OUT - HEADER_LEN exceeds the fill.
+  constant H_SLACK              : natural := N_H * BYTES_OUT - HEADER_LEN;
   constant BUFFER_BYTES_NOMINAL : natural := math_max(
                                                       math_max(V_IEOI, D_DRAIN * BYTES_IN),
-                                                      math_max((D_DRAIN + N_H - 1) * BYTES_IN,
-                                                                (D_DRAIN + N_H) * BYTES_IN - (N_H * BYTES_OUT - HEADER_LEN)));
+                                                      (D_DRAIN + N_H) * BYTES_IN - math_min(BYTES_IN, H_SLACK));
   constant BUFFER_BYTES         : natural := BUFFER_BYTES_NOMINAL + STALL_MARGIN_BYTES;
   constant BUFFER_WIDTH         : natural := BUFFER_BYTES * 8;
 

@@ -29,15 +29,18 @@ library tb_support;
   use tb_support.tb_support_pkg.all;
 
 entity tb_jls_framer_osvvm is
+  -- Non-default variants are driven from OpenJls.pro via [generic ...].
+  generic (
+    OUT_WIDTH : natural  := CO_OUT_WIDTH_STD;                   -- 72
+    MAX_W     : positive := 4096;
+    MAX_H     : positive := 4096
+  );
 end entity tb_jls_framer_osvvm;
 
 architecture sim of tb_jls_framer_osvvm is
 
   constant BITNESS    : natural := CO_BITNESS_STD;
   constant IN_WIDTH   : natural := CO_BYTE_STUFFER_OUT_WIDTH;   -- 32
-  constant OUT_WIDTH  : natural := CO_OUT_WIDTH_STD;            -- 72
-  constant MAX_W      : natural := 4096;
-  constant MAX_H      : natural := 4096;
   constant BYTES_IN   : natural := IN_WIDTH / 8;
   constant BYTES_OUT  : natural := OUT_WIDTH / 8;
   constant WDIM       : natural := log2ceil(MAX_W + 1);
@@ -46,6 +49,9 @@ architecture sim of tb_jls_framer_osvvm is
   constant BE_OUT_W   : natural := log2ceil(OUT_WIDTH / 8 + 1);
   constant CLK_PERIOD : time    := CLK_PERIOD_DEFAULT;
   constant N_IMAGES   : natural := 30;
+  -- Scale image length with the beat size so wide OUT_WIDTHs still emit full
+  -- data beats (payload must outrun the 25-byte header's final-beat fill).
+  constant MAX_WORDS  : natural := math_max(24, 2 * BYTES_OUT);
 
   signal clk      : std_logic := '0';
   signal rst      : std_logic;
@@ -254,7 +260,7 @@ begin
 
     for img in 1 to N_IMAGES loop
 
-      send_image(rv.RandInt(4, MAX_W), rv.RandInt(1, MAX_H), rv.RandInt(1, 24));
+      send_image(rv.RandInt(4, MAX_W), rv.RandInt(1, MAX_H), rv.RandInt(1, MAX_WORDS));
       sImagesSent <= img;
       -- Serialize: drain this image before the next (keeps dims coherent).
       wait until sImagesDone = img;
@@ -279,7 +285,7 @@ begin
     sIgnore <= false;
     wait until rising_edge(clk);
 
-    send_image(rv.RandInt(4, MAX_W), rv.RandInt(1, MAX_H), rv.RandInt(1, 24));
+    send_image(rv.RandInt(4, MAX_W), rv.RandInt(1, MAX_H), rv.RandInt(1, MAX_WORDS));
     sImagesSent <= N_IMAGES + 1;
     wait until sImagesDone = N_IMAGES + 1;
 

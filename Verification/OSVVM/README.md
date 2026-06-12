@@ -96,6 +96,12 @@ named like it + register the result under the current `TestSuite`. The two
 flows share sources but compile into separate library trees; keep the file
 lists in `build_run.sh` and `OpenJls.pro` in sync.
 
+Configuration variants re-run a TB with non-default generics:
+`Test Modules/tb_jls_framer_osvvm.vhd [generic OUT_WIDTH 40]` — reports and
+`.covdb` files get a `_OUT_WIDTH_40` suffix. The framer and top TBs sweep
+OUT_WIDTH (range floor 40 / filler-arm 56 / ceiling 1024) plus non-power-of-2
+MAX dims this way; the byte stream they check is configuration-invariant.
+
 ### Reading the output
 
 A passing run ends with:
