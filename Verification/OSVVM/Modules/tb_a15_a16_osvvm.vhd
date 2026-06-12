@@ -363,6 +363,20 @@ begin
     end loop;
 
     --------------------------------------------------------------------------
+    -- Saturate RUNindex at 31. The J table tail grows exponentially
+    -- (J[24..31] = 8..15), so 800-pixel runs stall at index 26 (next segment
+    -- 1024); reaching 31 takes one run past the 2^14 segment, and a boundary
+    -- WHILE at 31 (second run, past 2^15) proves the index holds there
+    -- instead of overflowing.
+    --------------------------------------------------------------------------
+    do_run(33100, T_EOL, '0', "saturate RUNindex to 31");
+    do_run(40000, T_EOL, '0', "boundary at saturated RUNindex");
+    do_run(3, T_BREAK, '0', "break from saturated RUNindex");
+    wait for 1 ns;
+    AffirmIfEqual(req, to_integer(oRiRunIndex), 30,
+                  "RUNindex decremented from saturation by the break");
+
+    --------------------------------------------------------------------------
     -- Mid-operation iRst (distinct from the iEoi path): RUNindex is high after
     -- the climb; assert iRst and confirm the FSM goes cold (no spurious output,
     -- sInRun cleared) and the next run encodes from RUNindex=0 again -- the

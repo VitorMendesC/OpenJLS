@@ -283,6 +283,34 @@ begin
     sImagesSent <= N_IMAGES + 1;
     wait until sImagesDone = N_IMAGES + 1;
 
+    --------------------------------------------------------------------------
+    -- Directed: two back-to-back minimal images (payload = the FF D9 footer
+    -- only, zero stuffed bytes). Both EOIs queue inside the framer while the
+    -- first image's header is still draining — the EOI lands in the final
+    -- partial header beat, the EOI FIFO holds its full EOI_FIFO_DEPTH=2, the
+    -- pop shifts the second entry down, and the FSM takes both terminal arms:
+    -- straight back to header (image B pending) and then to idle.
+    --------------------------------------------------------------------------
+    for img in 1 to 2 loop
+
+      for k in 0 to 24 loop
+
+        Push(SB_ID, header_byte(k, 16, 1));
+
+      end loop;
+
+      Push(SB_ID, x"FF");
+      Push(SB_ID, x"D9");
+
+    end loop;
+
+    iWidth  <= to_unsigned(16, WDIM);
+    iHeight <= to_unsigned(1, HDIM);
+    push_word(rv.RandSlv(IN_WIDTH), 0, '1', '1');   -- image A: start+EOI, no payload
+    push_word(rv.RandSlv(IN_WIDTH), 0, '1', '1');   -- image B: queued behind A
+    sImagesSent <= N_IMAGES + 3;
+    wait until sImagesDone = N_IMAGES + 3;
+
     sDriverDone <= true;
     wait;
 

@@ -687,6 +687,45 @@ begin
 
     ICover(covB2B, 2);
 
+    --------------------------------------------------------------------------
+    -- Phase D: below-minimum dimensions fall back to MAX_IMAGE_WIDTH/HEIGHT
+    -- (latched during reset, with a warning). Encoding a full 4096x4096 image
+    -- is golden-suite territory; the observable contract checked here is the
+    -- frame header's Y/X fields, which emit before any payload is needed.
+    -- The image is then aborted with the (already verified) mid-image reset.
+    --------------------------------------------------------------------------
+    sImgW    <= 0;
+    sImgH    <= 0;
+    sNoStall <= false;   -- pxIdx line math is meaningless under the fallback dims
+    do_reset;
+    base    := collectedCount;
+    sBpMode <= 0;
+    feed(PIXELS, false, PIXELS'length);
+
+    for i in 0 to 199999 loop
+
+      exit when collectedCount - base >= 14;   -- header bytes 0..13 collected
+      wait until rising_edge(clk);
+
+    end loop;
+
+    AffirmIfEqual(collected(base + 7),
+                  std_logic_vector(to_unsigned(MAX_H / 256, 8)),
+                  "D: header Y hi = MAX_IMAGE_HEIGHT");
+    AffirmIfEqual(collected(base + 8),
+                  std_logic_vector(to_unsigned(MAX_H mod 256, 8)),
+                  "D: header Y lo = MAX_IMAGE_HEIGHT");
+    AffirmIfEqual(collected(base + 9),
+                  std_logic_vector(to_unsigned(MAX_W / 256, 8)),
+                  "D: header X hi = MAX_IMAGE_WIDTH");
+    AffirmIfEqual(collected(base + 10),
+                  std_logic_vector(to_unsigned(MAX_W mod 256, 8)),
+                  "D: header X lo = MAX_IMAGE_WIDTH");
+
+    sImgW <= IMG_W;
+    sImgH <= IMG_H;
+    do_reset;                                  -- abort the fallback image
+
     WriteBin(covSweep);
     WriteBin(covUp);
     WriteBin(covB2B);
