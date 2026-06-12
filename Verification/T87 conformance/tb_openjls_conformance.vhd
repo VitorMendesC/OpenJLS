@@ -8,8 +8,7 @@
 -- Verification/T87 conformance/Output/, then byte-for-byte compares against
 -- a golden reference .jls file.
 --
--- Behavioral (NVC) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
--- Run from the repo root so the relative paths resolve.
+-- Run from the repo root (or pass REPO_ROOT) so the relative paths resolve.
 --
 -- Test image: Verification/T87 conformance/Reference Images/TEST16.PGM (256x256, 12-bit)
 -- Golden JLS: Verification/T87 conformance/Reference Images/T16E0.JLS  (NEAR=0)
@@ -28,9 +27,7 @@ library openlogic_base;
 
 entity tb_openjls_t87_conformance is
   generic (
-    REPO_ROOT           : string  := "/home/Vitor/Repos/OpenJLS";
-    -- true: instantiate the top bare (no generic map) for post-synthesis netlist
-    POST_SYNTH_FRIENDLY : boolean := false
+    REPO_ROOT : string := "./"
   );
 end entity tb_openjls_t87_conformance;
 
@@ -51,7 +48,7 @@ architecture bench of tb_openjls_t87_conformance is
   constant BITNESS               : natural  := 12;
   constant MAX_IMAGE_WIDTH       : positive := 4096;
   constant MAX_IMAGE_HEIGHT      : positive := 4096;
-  constant OUT_WIDTH             : natural  := CO_OUT_WIDTH_STD;   -- 48
+  constant OUT_WIDTH             : natural  := CO_OUT_WIDTH_STD;   -- 64
   constant BYTES_PER_WORD        : natural  := OUT_WIDTH / 8;
 
   constant IMG_W                 : natural := 256;
@@ -229,52 +226,27 @@ begin
   iImageWidth  <= std_logic_vector(to_unsigned(IMG_W, iImageWidth'length));
   iImageHeight <= std_logic_vector(to_unsigned(IMG_H, iImageHeight'length));
 
-  dut : if POST_SYNTH_FRIENDLY generate
-
-    dut_post_syn : entity work.openjls_top(rtl)
-
-      port map (
-        iClk         => iClk,
-        iRst         => iRst,
-        iValid       => iValid,
-        iPixel       => iPixel,
-        oReady       => oReady,
-        iImageWidth  => iImageWidth,
-        iImageHeight => iImageHeight,
-        oData        => oData,
-        oValid       => oValid,
-        oKeep        => oKeep,
-        oLast        => oLast,
-        iReady       => iReady
-      );
-
-  else
-    generate
-
-    dut_behav : entity work.openjls_top(rtl)
-
-      generic map (
-        BITNESS          => BITNESS,
-        MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
-        MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
-        OUT_WIDTH        => OUT_WIDTH
-      )
-      port map (
-        iClk             => iClk,
-        iRst             => iRst,
-        iValid           => iValid,
-        iPixel           => iPixel,
-        oReady           => oReady,
-        iImageWidth      => iImageWidth,
-        iImageHeight     => iImageHeight,
-        oData            => oData,
-        oValid           => oValid,
-        oKeep            => oKeep,
-        oLast            => oLast,
-        iReady           => iReady
-      );
-
-  end generate dut;
+  dut : entity work.openjls_top(rtl)
+    generic map (
+      BITNESS          => BITNESS,
+      MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
+      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
+      OUT_WIDTH        => OUT_WIDTH
+    )
+    port map (
+      iClk             => iClk,
+      iRst             => iRst,
+      iValid           => iValid,
+      iPixel           => iPixel,
+      oReady           => oReady,
+      iImageWidth      => iImageWidth,
+      iImageHeight     => iImageHeight,
+      oData            => oData,
+      oValid           => oValid,
+      oKeep            => oKeep,
+      oLast            => oLast,
+      iReady           => iReady
+    );
 
   -- Output collection: extract bytes per word using oKeep (MSB-first).
   collect : process (iClk) is
@@ -557,17 +529,9 @@ begin
     iPixel <= (others => '0');
     sBpReq <= '0';
 
-    -- Config guard. The pixel port width is fixed in a post-synth netlist; if it
-    -- disagrees with BITNESS the netlist was built with different generics, so
-    -- fail loudly here instead of producing a confusing byte mismatch later.
     report "DUT config: BITNESS=" & integer'image(BITNESS) &
            " OUT_WIDTH=" & integer'image(OUT_WIDTH) &
            " MAX_IMAGE=" & integer'image(MAX_IMAGE_WIDTH) & "x" & integer'image(MAX_IMAGE_HEIGHT);
-    assert iPixel'length = BITNESS
-      report "iPixel width (" & integer'image(iPixel'length) &
-             ") /= BITNESS (" & integer'image(BITNESS) &
-             ") - DUT generics do not match the testbench"
-      severity failure;
     assert IMG_W <= MAX_IMAGE_WIDTH and IMG_H <= MAX_IMAGE_HEIGHT
       report "Test image exceeds MAX_IMAGE_WIDTH/HEIGHT"
       severity failure;

@@ -12,7 +12,7 @@
 # Instructions
 - Check if every code segment bellow is correctly implemented by its corresponding RTL located in the folder `Sources`
   - Some requirements are written instead of code segments, check if what is described in text is correctly implemented by the corresponding RTL
-- Check if every code segment has an appropriate testbench in the folder `Testbenches`
+- Check if every code segment has an appropriate OSVVM testbench under `Verification/OSVVM`
   - Create the missing testbenches, if any
 
 # Variables

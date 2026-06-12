@@ -6,7 +6,6 @@ preferred_case = "lower"
 # resolves to `common` and the DUT entities from any TB file.
 lib.files = [
     'Sources/*.vhd',
-    'Verification/Testbenches/*.vhd',
     'Verification/OSVVM/Modules/*.vhd',
     'Verification/OSVVM/Top/*.vhd',
     'Verification/T87 conformance/*.vhd',
