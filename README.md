@@ -49,6 +49,8 @@ OpenJLS follows the JPEG-LS encoding pipeline:
 4. **Encoding** — adaptive Golomb-Rice coding for regular mode, run-length encoding for uniform regions
 5. **Bitstream packing** — ISO/IEC 14495-1 compliant JPEG-LS output stream
 
+The hardware architecture is based on the optimizations in Mert's [*Key Architectural Optimizations for Hardware Efficient JPEG-LS Encoder*](https://www.researchgate.net/publication/331795298_Key_Architectural_Optimizations_for_Hardware_Efficient_JPEG-LS_Encoder), reworked into a vendor-agnostic, fully pipelined VHDL core.
+
 ---
 
 ## Performance & Resources
@@ -149,9 +151,12 @@ No dependency imposes copyleft obligations on the OpenJLS sources; the dual-lice
 
 ## References
 
+- [Key Architectural Optimizations for Hardware Efficient JPEG-LS Encoder](https://www.researchgate.net/publication/331795298_Key_Architectural_Optimizations_for_Hardware_Efficient_JPEG-LS_Encoder) — Y. M. Mert, IEEE (2018). The hardware architecture OpenJLS is based on.
 - [ISO/IEC 14495-1](https://www.itu.int/rec/T-REC-T.87) — JPEG-LS standard specification (ITU-T T.87)
-- [LOCO-I algorithm paper](https://doi.org/10.1109/83.730379) — Weinberger, Seroussi, Sapiro (2000)
 - [open-logic](https://github.com/open-logic/open-logic) — Vendor-agnostic VHDL building blocks used in this project
+- [OSVVM](https://osvvm.org/) — VHDL verification methodology (constrained-random + functional coverage) used by the testbench suite
+- [NVC](https://www.nickg.me.uk/nvc/) — VHDL simulator used for all simulation, coverage, and post-synthesis flows
+- [CharLS](https://github.com/team-charls/charls) — JPEG-LS reference codec used as the golden model for conformance
 
 ---
 
