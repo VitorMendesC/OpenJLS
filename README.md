@@ -6,7 +6,7 @@ It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — a low-comp
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform.
 
-> **Status:** Active development. The lossless encoder is integrated end-to-end with AXI4-Stream interfaces, verified bit-exact against the ISO/IEC 14495-1 reference (TEST16, 12-bit grayscale), and characterized for timing and resources (~250 MHz on UltraScale+, see below). Current focus is completing verification with [OSVVM](https://osvvm.org/) (constrained-random + functional coverage). Check the [roadmap](Docs/roadmap.md) file for more details.
+> **Status:** v1.0 — feature-complete and verified. The lossless encoder is integrated end-to-end with AXI4-Stream interfaces, bit-exact against the ISO/IEC 14495-1 reference and the CharLS golden model, validated at the gate level after synthesis, and characterized for timing and resources (~250 MHz on UltraScale+, see below). See the [Verification](#verification) section and the [roadmap](Docs/roadmap.md).
 
 ---
 
@@ -89,12 +89,41 @@ Resource usage by image width (default strategy; near-identical across strategie
 
 ---
 
+## Verification
+
+OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) and the [OSVVM](https://osvvm.org/) methodology, pairing self-checking constrained-random tests with byte-exact comparison against an independent reference encoder over a large corpus of real images.
+
+**Real-image golden-model conformance.** Each encoded bitstream is byte-compared against [CharLS](https://github.com/team-charls/charls) and the official ISO/IEC 14495-1 reference vectors. The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
+
+| Source | Set | Images |
+|---|---|--:|
+| [USC-SIPI](https://sipi.usc.edu/database/) | Aerials, textures, miscellaneous, sequences | 210 |
+| [imagecompression.info](http://imagecompression.info/test_images/) | 8-bit and 16-bit natural photographs | 30 |
+| Generated stress probes | Boundary, predictor-adversarial, high-entropy and fuzz patterns | 47 |
+
+The real datasets give natural image statistics from 256×256 up to **39 megapixels** (7216×5412); the generated probes deliberately target what real images never reach. [`gen_stress.py`](Verification/Golden%20model/imageprep/gen_stress.py) emits them deterministically — seeded and byte-reproducible, so the committed generator is the source of truth — covering:
+
+- **Intermediate bit depths (9–15)** — no natural dataset exists here, so these probes are the *only* coverage of the T.87 constant derivations (code-length limit, *k* range, counter widths) between 8- and 16-bit.
+- **Boundary geometries** — the smallest legal image (4×1), tall single-column images, and maximum-width single rows up to 65535×1.
+- **Predictor-adversarial content** — checkerboard, vertical/horizontal stripes and sparse spikes that defeat the MED predictor on every pixel, plus incompressible uniform noise.
+- **Tiny-image fuzz batch** — many small randomized images that stress start- and end-of-image edge conditions far more densely than full-size images can; this batch caught a real end-of-image corner-case bug that no natural image exposed.
+
+**OSVVM suite.** 28 module-level testbenches plus a top-level control-plane stress test (reset injection, output backpressure, randomized image sizes), with functional coverage, per-module behavioral reference models derived from the T.87 specification, requirements tracking, and 99%+ statement coverage measured under NVC.
+
+**Throughput and streaming.** The top-level stress test verifies the encoder sustains one pixel per clock and stalls *only* when the downstream sink applies backpressure — never on its own — and that it streams consecutive images back-to-back with no gap or data loss between them. Measured on un-backpressured feeds: zero internal stalls across thousands of offered-pixel checks and hundreds of line- and image-boundary checks.
+
+**Design contracts.** Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked on every simulation run.
+
+**Post-synthesis.** The synthesized gate-level netlist is re-run through the same OSVVM tooling and base images and is bit-identical to the RTL, confirming the encoder survives synthesis unchanged.
+
+---
+
 ## Licensing
 
 OpenJLS is dual-licensed:
 
 - **[GPL v3](LICENSE.md)** — free for any use that complies with GPL v3 terms. This means if you distribute a product containing OpenJLS, your design must also be released under GPL v3.
-- **[Commercial License](COMMERCIAL_LICENSE.md)** — for use in proprietary/closed-source products without GPL obligations. Contact vitormendescamilo@protonmail.com for pricing and terms.
+- **Commercial License** — for use in proprietary/closed-source products without GPL obligations. Contact vitormendescamilo@protonmail.com for pricing and terms.
 
 **Evaluation is unrestricted.** You can clone, simulate, synthesize, and test OpenJLS freely under the GPL. A commercial license is only required when shipping a product.
 
@@ -102,7 +131,7 @@ OpenJLS is dual-licensed:
 
 ## Dependencies
 
-All third-party components are vendored under `ThirdParty/` with their license texts, pinned to fixed releases by `fetch_third_party.sh`. Only open-logic is part of the synthesizable IP; everything else is verification tooling and is never distributed in a product.
+All third-party components are vendored under `ThirdParty/` with their license texts, pinned to fixed releases by [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh). Only open-logic is part of the synthesizable IP; everything else is verification tooling and is never distributed in a product.
 
 | Component | License | Scope | Notes |
 |---|---|---|---|
@@ -113,6 +142,8 @@ All third-party components are vendored under `ThirdParty/` with their license t
 | [CharLS](https://github.com/team-charls/charls) | BSD-3-Clause | Verification only | Golden reference encoder for conformance testing; built from source, not vendored or redistributed. |
 
 No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution of the repository or the IP must retain the third-party copyright notices and license texts in `ThirdParty/`.
+
+**Toolchain.** Simulation, code coverage, and post-synthesis verification run on [NVC](https://www.nickg.me.uk/nvc/) — the sole simulator, having replaced GHDL across all flows. Synthesis and timing/resource characterization use AMD Vivado. Both are external tools, not vendored, and are needed only to verify and implement the IP — not to use it.
 
 ---
 
