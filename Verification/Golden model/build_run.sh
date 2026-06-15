@@ -40,7 +40,11 @@ echo "CharLS gate: reproduces official T16E0.JLS byte-exact OK"
 
 # --relaxed: OpenLogic uses shared variables of non-protected types.
 # --psl activates the "-- psl" contract assertions embedded in Sources/.
-NVC=(nvc --std=2008 --ieee-warnings=off -L "$LIBS")
+# -H: raise the sim heap ceiling; the TB loads whole images into memory and the
+#     16 MB default OOMs on multi-MP inputs. Keep it modest — NVC grows the heap
+#     toward this ceiling before collecting, so a high value × NUMBER_OF_THREADS
+#     can exhaust RAM. 1g covers the largest (~39 MP) image (override NVC_HEAP).
+NVC=(nvc --std=2008 --ieee-warnings=off -H "${NVC_HEAP:-1g}" -L "$LIBS")
 A_FLAGS=(--relaxed --psl)
 
 # 1. OpenLogic base (compile order matters — dependency chain)
