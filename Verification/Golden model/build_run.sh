@@ -19,14 +19,14 @@ LIBS="$HERE/work-lib"
 GOLDEN="$HERE/Output/Golden"
 OUTPUT="$HERE/Output/OpenJLS"
 REF_DIR="$ROOT/Verification/T87 conformance/Reference Images"
-CLI="$HERE/charls-src/build/cli/charls-cli"
+CLI="$ROOT/ThirdParty/charls/build/cli/charls-cli"
 
 TB="tb_openjls_golden"
 
 mkdir -p "$LIBS" "$GOLDEN" "$OUTPUT"
 
-# 0. Reference encoder.
-[ -x "$CLI" ] || "$HERE/build_charls.sh"
+# 0. Reference encoder (built from source under ThirdParty/ on first use).
+[ -x "$CLI" ] || "$ROOT/ThirdParty/fetch_third_party.sh" charls
 
 # 0a. Toolchain gate: CharLS must reproduce the official T16E0.JLS byte-exact,
 #     otherwise the goldens it mints are not trustworthy.

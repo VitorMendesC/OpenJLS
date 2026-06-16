@@ -26,7 +26,7 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 GMODEL="$ROOT/Verification/Golden model"
 LIBS="$HERE/work-lib-golden"
 NETLIST="$HERE/Output/openjls_top_8bit_funcsim.vhd"
-CLI="$GMODEL/charls-src/build/cli/charls-cli"
+CLI="$ROOT/ThirdParty/charls/build/cli/charls-cli"
 IMAGES_DIR="$GMODEL/Images"
 GOLDEN="$GMODEL/Output/Golden"
 OUTPUT="$GMODEL/Output/OpenJLS"
@@ -48,8 +48,8 @@ PER_MEM="${PER_MEM:-2G}"        # per-worker cgroup cap; ~1 GB real on <=4 MP im
 
 mkdir -p "$LIBS" "$GOLDEN" "$OUTPUT" "$LOGD" "$HERE/Output"
 
-# 0. Reference encoder.
-[ -x "$CLI" ] || "$GMODEL/build_charls.sh"
+# 0. Reference encoder (built from source under ThirdParty/ on first use).
+[ -x "$CLI" ] || "$ROOT/ThirdParty/fetch_third_party.sh" charls
 
 # 1. Synthesis (8-bit netlist sized for the corpus). Space-free scratch dir.
 if [[ "${1:-}" != "--sim" ]]; then

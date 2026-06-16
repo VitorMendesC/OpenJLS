@@ -5,8 +5,8 @@
   --
   -- Golden-model cross-check. Encodes a single-component PGM with OpenJLS and
   -- byte-for-byte compares the result against a reference .jls produced by the
-  -- CharLS encoder (built from source — see build_charls.sh). Unlike the T.87
-  -- conformance suite (which compares against the handful of ITU-supplied
+  -- CharLS encoder (built from source — see ThirdParty/fetch_third_party.sh).
+  -- Unlike the T.87 conformance suite (which compares against the ITU-supplied
   -- vectors), this lets us check arbitrary images — notably the 8-bit planes of
   -- TEST8, which exercise the BITNESS=8 datapath that TEST16 never touches.
   --
