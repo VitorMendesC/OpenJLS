@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
-# Rebuild this project's third-party environment from scratch, pinned to the
-# versions below. Run it on a fresh clone to get everything the build and
-# verification flows need. This script is also the provenance record: the pins
-# and file lists are the source of truth for what each dependency is and where
-# it came from.
+# Rebuild this project's third-party environment, pinned to the versions below.
+# A no-arg run materializes everything the *verification* flows need (network
+# access required); the core IP itself ships with its one synthesis dependency
+# already committed (see open-logic below). This script is also the provenance
+# record: the pins and file lists are the source of truth for what each
+# dependency is and where it came from.
 #
 # Three kinds of dependency live here:
 #   - Vendored HDL (open-logic, osvvm, osvvm-scripts, tcllib): a curated set of
-#     files is copied in and committed; the build then reads them offline and
-#     never needs the network. Re-run only to (re)materialize or bump them.
+#     files (sources + license texts) is copied in; the build then reads them
+#     offline. The verification ones are gitignored and (re)fetched by the
+#     default run. open-logic is the exception: the core RTL instantiates its
+#     primitives, so it stays committed in-tree and is NOT in the default run —
+#     fetch it explicitly only to (re)materialize or bump it.
 #   - Built-from-source tools (charls): cloned at a pinned commit and compiled
-#     locally; the source tree and binary are gitignored (reproducible from the
-#     pin). Also built on demand by the golden-model flows, which call this.
+#     locally (reproducible from the pin). Also built on demand by the
+#     golden-model flows, which call this.
 #   - System packages (nvc): the VHDL simulator, installed via the OS package
 #     manager. Runs last so the vendored deps land first; needs sudo (Ubuntu)
 #     or an AUR helper (Arch), so a no-arg run may prompt for elevation.
 #
-# Usage:  ./fetch_third_party.sh                 everything (full environment)
-#         ./fetch_third_party.sh nvc             one or more named components
+# Usage:  ./fetch_third_party.sh                 verification deps (default)
+#         ./fetch_third_party.sh open-logic      one or more named components
 #         (names: open-logic osvvm osvvm-scripts tcllib charls nvc)
 set -euo pipefail
 
@@ -235,7 +239,9 @@ fetch_nvc() {
 
 # --- dispatch ---------------------------------------------------------------
 components=("$@")
-[ ${#components[@]} -eq 0 ] && components=(open-logic osvvm osvvm-scripts tcllib charls nvc)
+# open-logic is intentionally absent: it is committed in-tree, fetched only when
+# explicitly named (to bump it).
+[ ${#components[@]} -eq 0 ] && components=(osvvm osvvm-scripts tcllib charls nvc)
 for c in "${components[@]}"; do
   case "$c" in
     open-logic)    fetch_open_logic ;;

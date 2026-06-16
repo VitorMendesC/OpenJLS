@@ -139,30 +139,17 @@ The IP carries no OS or vendor lock-in — it builds with Vivado, Quartus, Liber
 ### Verification (Linux)
 
 The verification flows are bash-driven and built around the NVC simulator; they run on Linux and are not supported on Windows.
-Every component below is easily sourced by running [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh), with the exception of NVC that must be installed in the machine.
+None of the components below are committed to the repository — running [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh) materializes them all: vendoring the HDL with its license texts, building CharLS from source, and installing NVC.
 
 | Component | License | Notes |
 |---|---|---|
-| [NVC](https://www.nickg.me.uk/nvc/) | GPL-3.0 | VHDL simulator for all simulation, coverage, and post-synthesis flows; developed and tested with NVC 1.21. Installed separately (see below), not vendored — its GPL covers the simulator, not the IP it runs. |
+| [NVC](https://www.nickg.me.uk/nvc/) | GPL-3.0 | VHDL simulator for all simulation, coverage, and post-synthesis flows; developed and tested with NVC 1.21. Not vendored — its GPL covers the simulator, not the IP it runs. |
 | [CharLS](https://github.com/team-charls/charls) | BSD-3-Clause | JPEG-LS reference encoder for the golden-model cross-check; built from source at a pinned commit by `ThirdParty/fetch_third_party.sh`. |
 | [OSVVM](https://github.com/OSVVM/OSVVM) | Apache-2.0 | VHDL verification library used by the testbench suite. |
 | [OSVVM-Scripts](https://github.com/OSVVM/OSVVM-Scripts) | Apache-2.0 | Regression and report-generation script flow. |
 | [tcllib](https://github.com/tcltk/tcllib) | Tcl/BSD-style | `fileutil` and `yaml` modules required by the report scripts. |
 
-For Ubuntu, NVC ships prebuilt `.deb` packages on its [releases](https://github.com/nickg/nvc/releases); install the one matching your Ubuntu (22.04 or 24.04), and if you run into any issues try the same version this project uses, 1.21.0. On Ubuntu 24.04 the following commands fetch and install the 1.21.0 release:
-
-```bash
-curl -LO https://github.com/nickg/nvc/releases/download/r1.21.0/nvc_1.21.0-1_amd64_ubuntu-24.04.deb
-sudo apt install ./nvc_1.21.0-1_amd64_ubuntu-24.04.deb
-```
-
-On Arch Linux you can easily install NVC with
-
-```bash
-yay -S nvc
-```
-
-The vendored libraries (open-logic, OSVVM, OSVVM-Scripts, tcllib) live under `ThirdParty/` with their license texts, pinned by [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh). No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution must retain the third-party copyright notices and license texts in `ThirdParty/`.
+The verification libraries (OSVVM, OSVVM-Scripts, tcllib) are not committed; [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh) materializes each one under `ThirdParty/` from its pinned upstream, license text included. open-logic is committed in-tree (the core RTL instantiates its primitives, so the IP builds without the fetch step). NVC is installed through your OS package manager — the script handles Ubuntu and Arch automatically; on other systems install it manually from the [NVC docs](https://www.nickg.me.uk/nvc/). No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution must retain the third-party copyright notices and license texts in `ThirdParty/`.
 
 ---
 

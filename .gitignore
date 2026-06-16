@@ -1,6 +1,5 @@
 # Directories
 backups/
-ThirdParty/open-logic/doc
 project_testbenches/
 sim/
 Papers/
@@ -21,9 +20,13 @@ Verification/OSVVM/OsvvmTemp_NVC/
 Verification/OSVVM/Coverage/
 Verification/OSVVM/*.html
 Verification/OSVVM/*.yml
-ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd
-
-# CharLS reference encoder (built from source by ThirdParty/fetch_third_party.sh)
+# Verification-only third-party deps are not committed; fetch_third_party.sh
+# (re)materializes them from their pinned upstreams, license texts included.
+# (open-logic stays committed — the core RTL instantiates its primitives, so the
+# IP must build without running the fetch script.)
+ThirdParty/osvvm/
+ThirdParty/osvvm-scripts/
+ThirdParty/tcllib/
 ThirdParty/charls/
 
 # NVC compile cache
