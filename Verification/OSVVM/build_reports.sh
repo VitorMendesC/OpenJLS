@@ -11,10 +11,10 @@
 #                                   the Requirements tab of the build HTML)
 #
 # With CODE_COVERAGE=1 every test is additionally instrumented for
-# statement+branch coverage (see build_coverage.sh, which wraps this).
+# statement+branch coverage (see build_run.sh, which wraps this to add NVC
+# code coverage).
 #
-# Requires tclsh (Arch: pacman -S tcl). build_run.sh stays the fast,
-# tcl-free inner loop for a single TB.
+# Requires tclsh (Arch: pacman -S tcl).
 #
 # Usage:  ./build_reports.sh
 set -euo pipefail

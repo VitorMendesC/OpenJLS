@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="text-align: left;">
+   File:&nbsp; ../../ThirdParty/open-logic/src/base/vhdl/olo_base_fifo_sync.vhd
+</h2><pre><code>     0: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+     1: &nbsp; --&nbsp;Copyright&nbsp;(c)&nbsp;2018&nbsp;by&nbsp;Paul&nbsp;Scherrer&nbsp;Institute,&nbsp;Switzerland&nbsp;
+     2: &nbsp; --&nbsp;Copyright&nbsp;(c)&nbsp;2024&nbsp;by&nbsp;Oliver&nbsp;Bruendler&nbsp;
+     3: &nbsp; --&nbsp;Authors:&nbsp;Oliver&nbsp;Bruendler&nbsp;
+     4: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+     5: &nbsp; &nbsp;
+     6: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+     7: &nbsp; --&nbsp;Description&nbsp;
+     8: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+     9: &nbsp; --&nbsp;This&nbsp;is&nbsp;a&nbsp;very&nbsp;basic&nbsp;synchronous&nbsp;FIFO.&nbsp;It&nbsp;&nbsp;has&nbsp;optional&nbsp;level-&nbsp;and&nbsp;
+    10: &nbsp; --&nbsp;almost-full/empty&nbsp;ports.&nbsp;
+    11: &nbsp; --&nbsp;
+    12: &nbsp; --&nbsp;Documentation:&nbsp;
+    13: &nbsp; --&nbsp;https://github.com/open-logic/open-logic/blob/main/doc/base/olo_base_fifo_sync.md&nbsp;
+    14: &nbsp; --&nbsp;
+    15: &nbsp; --&nbsp;Note:&nbsp;The&nbsp;link&nbsp;points&nbsp;to&nbsp;the&nbsp;documentation&nbsp;of&nbsp;the&nbsp;latest&nbsp;release.&nbsp;If&nbsp;you&nbsp;
+    16: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;use&nbsp;an&nbsp;older&nbsp;version,&nbsp;the&nbsp;documentation&nbsp;might&nbsp;not&nbsp;match&nbsp;the&nbsp;code.&nbsp;
+    17: &nbsp; &nbsp;
+    18: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+    19: &nbsp; --&nbsp;Libraries&nbsp;
+    20: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+    21: &nbsp; library&nbsp;ieee;&nbsp;
+    22: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
+    23: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
+    24: &nbsp; &nbsp;
+    25: &nbsp; library&nbsp;work;&nbsp;
+    26: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;use&nbsp;work.olo_base_pkg_math.all;&nbsp;
+    27: &nbsp; &nbsp;
+    28: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+    29: &nbsp; --&nbsp;Entity&nbsp;
+    30: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+    31: &nbsp; entity&nbsp;olo_base_fifo_sync&nbsp;is&nbsp;
+    32: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;generic&nbsp;(&nbsp;
+    33: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Width_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;positive;&nbsp;
+    34: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Depth_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;positive;&nbsp;
+    35: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmFullOn_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;boolean&nbsp;&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+    36: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmFullLevel_g&nbsp;&nbsp;:&nbsp;natural&nbsp;&nbsp;&nbsp;:=&nbsp;0;&nbsp;
+    37: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmEmptyOn_g&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;boolean&nbsp;&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+    38: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmEmptyLevel_g&nbsp;:&nbsp;natural&nbsp;&nbsp;&nbsp;:=&nbsp;0;&nbsp;
+    39: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamStyle_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;"auto";&nbsp;
+    40: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamBehavior_g&nbsp;&nbsp;&nbsp;:&nbsp;string&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;"RBW";&nbsp;
+    41: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadyRstState_g&nbsp;:&nbsp;std_logic&nbsp;:=&nbsp;'1'&nbsp;
+    42: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;);&nbsp;
+    43: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;port&nbsp;(&nbsp;
+    44: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Control&nbsp;Ports&nbsp;
+    45: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    46: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rst&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    47: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Input&nbsp;Data&nbsp;
+    48: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;std_logic_vector(Width_g&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    49: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Valid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;std_logic&nbsp;:=&nbsp;'1';&nbsp;
+    50: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Ready&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    51: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Level&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic_vector(log2ceil(Depth_g&nbsp;+&nbsp;1)&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    52: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Output&nbsp;Data&nbsp;
+    53: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Out_Data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic_vector(Width_g&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    54: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Out_Valid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    55: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Out_Ready&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;std_logic&nbsp;:=&nbsp;'1';&nbsp;
+    56: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Out_Level&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic_vector(log2ceil(Depth_g&nbsp;+&nbsp;1)&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    57: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Status&nbsp;
+    58: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Full&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    59: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmFull&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    60: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    61: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmEmpty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic&nbsp;
+    62: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;);&nbsp;
+    63: &nbsp; end&nbsp;entity;&nbsp;
+    64: &nbsp; &nbsp;
+    65: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+    66: &nbsp; --&nbsp;Architecture&nbsp;
+    67: &nbsp; ---------------------------------------------------------------------------------------------------&nbsp;
+    68: &nbsp; architecture&nbsp;rtl&nbsp;of&nbsp;olo_base_fifo_sync&nbsp;is&nbsp;
+    69: &nbsp; &nbsp;
+    70: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;type&nbsp;TwoProcess_r&nbsp;is&nbsp;record&nbsp;
+    71: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WrLevel&nbsp;:&nbsp;std_logic_vector(In_Level'range);&nbsp;
+    72: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RdLevel&nbsp;:&nbsp;std_logic_vector(Out_Level'range);&nbsp;
+    73: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RdUp&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    74: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WrDown&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    75: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WrAddr&nbsp;&nbsp;:&nbsp;std_logic_vector(log2ceil(Depth_g)&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    76: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RdAddr&nbsp;&nbsp;:&nbsp;std_logic_vector(log2ceil(Depth_g)&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    77: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;record;&nbsp;
+    78: &nbsp; &nbsp;
+    79: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;signal&nbsp;r,&nbsp;r_next&nbsp;:&nbsp;TwoProcess_r;&nbsp;
+    80: &nbsp; &nbsp;
+    81: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;signal&nbsp;RamWr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    82: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;signal&nbsp;RamRdAddr&nbsp;:&nbsp;std_logic_vector(log2ceil(Depth_g)&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    83: &nbsp; &nbsp;
+    84: &nbsp; begin&nbsp;
+    85: &nbsp; &nbsp;
+    86: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;p_comb&nbsp;:&nbsp;process&nbsp;(all)&nbsp;is&nbsp;
+    87: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;v&nbsp;:&nbsp;TwoProcess_r;&nbsp;
+    88: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+    89: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;hold&nbsp;variables&nbsp;stable&nbsp;
+    90: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v&nbsp;:=&nbsp;r;&nbsp;
+    91: &nbsp; &nbsp;
+    92: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Write&nbsp;side&nbsp;
+    93: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.RdUp&nbsp;:=&nbsp;'0';&nbsp;
+    94: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamWr&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+    95: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;unsigned(r.WrLevel)&nbsp;/=&nbsp;Depth_g&nbsp;and&nbsp;In_Valid&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+    96: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;unsigned(r.WrAddr)&nbsp;/=&nbsp;Depth_g&nbsp;-&nbsp;1&nbsp;then&nbsp;
+    97: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.WrAddr&nbsp;:=&nbsp;std_logic_vector(unsigned(r.WrAddr)&nbsp;+&nbsp;1);&nbsp;
+    98: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+    99: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.WrAddr&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   100: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   101: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamWr&nbsp;&nbsp;&lt;=&nbsp;'1';&nbsp;
+   102: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.RdUp&nbsp;:=&nbsp;'1';&nbsp;
+   103: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;r.WrDown&nbsp;=&nbsp;'0'&nbsp;then&nbsp;
+   104: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.WrLevel&nbsp;:=&nbsp;std_logic_vector(unsigned(r.WrLevel)&nbsp;+&nbsp;1);&nbsp;
+   105: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   106: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elsif&nbsp;r.WrDown&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   107: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.WrLevel&nbsp;:=&nbsp;std_logic_vector(unsigned(r.WrLevel)&nbsp;-&nbsp;1);&nbsp;
+   108: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   109: &nbsp; &nbsp;
+   110: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Write&nbsp;side&nbsp;status&nbsp;
+   111: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;unsigned(r.WrLevel)&nbsp;=&nbsp;Depth_g&nbsp;then&nbsp;
+   112: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Ready&nbsp;&lt;=&nbsp;'0';&nbsp;
+   113: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Full&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'1';&nbsp;
+   114: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   115: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Ready&nbsp;&lt;=&nbsp;'1';&nbsp;
+   116: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Full&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   117: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   118: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Artificially&nbsp;keep&nbsp;InRdy&nbsp;low&nbsp;during&nbsp;reset&nbsp;if&nbsp;required&nbsp;
+   119: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(ReadyRstState_g&nbsp;=&nbsp;'0')&nbsp;and&nbsp;(Rst&nbsp;=&nbsp;'1')&nbsp;then&nbsp;
+   120: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In_Ready&nbsp;&lt;=&nbsp;'0';&nbsp;
+   121: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   122: &nbsp; &nbsp;
+   123: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;AlmFullOn_g&nbsp;and&nbsp;unsigned(r.WrLevel)&nbsp;&gt;=&nbsp;AlmFullLevel_g&nbsp;then&nbsp;
+   124: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmFull&nbsp;&lt;=&nbsp;'1';&nbsp;
+   125: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   126: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmFull&nbsp;&lt;=&nbsp;'0';&nbsp;
+   127: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   128: &nbsp; &nbsp;
+   129: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Read&nbsp;side&nbsp;
+   130: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.WrDown&nbsp;:=&nbsp;'0';&nbsp;
+   131: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;unsigned(r.RdLevel)&nbsp;/=&nbsp;0&nbsp;and&nbsp;Out_Ready&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   132: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;unsigned(r.RdAddr)&nbsp;/=&nbsp;Depth_g&nbsp;-&nbsp;1&nbsp;then&nbsp;
+   133: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.RdAddr&nbsp;:=&nbsp;std_logic_vector(unsigned(r.RdAddr)&nbsp;+&nbsp;1);&nbsp;
+   134: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   135: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.RdAddr&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   136: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   137: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.WrDown&nbsp;:=&nbsp;'1';&nbsp;
+   138: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;r.RdUp&nbsp;=&nbsp;'0'&nbsp;then&nbsp;
+   139: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.RdLevel&nbsp;:=&nbsp;std_logic_vector(unsigned(r.RdLevel)&nbsp;-&nbsp;1);&nbsp;
+   140: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   141: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elsif&nbsp;r.RdUp&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   142: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v.RdLevel&nbsp;:=&nbsp;std_logic_vector(unsigned(r.RdLevel)&nbsp;+&nbsp;1);&nbsp;
+   143: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   144: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamRdAddr&nbsp;&lt;=&nbsp;v.RdAddr;&nbsp;
+   145: &nbsp; &nbsp;
+   146: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Read&nbsp;side&nbsp;status&nbsp;
+   147: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;unsigned(r.RdLevel)&nbsp;&gt;&nbsp;0&nbsp;then&nbsp;
+   148: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Out_Valid&nbsp;&lt;=&nbsp;'1';&nbsp;
+   149: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   150: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   151: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Out_Valid&nbsp;&lt;=&nbsp;'0';&nbsp;
+   152: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'1';&nbsp;
+   153: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   154: &nbsp; &nbsp;
+   155: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;AlmEmptyOn_g&nbsp;and&nbsp;unsigned(r.RdLevel)&nbsp;&lt;=&nbsp;AlmEmptyLevel_g&nbsp;then&nbsp;
+   156: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmEmpty&nbsp;&lt;=&nbsp;'1';&nbsp;
+   157: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   158: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlmEmpty&nbsp;&lt;=&nbsp;'0';&nbsp;
+   159: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   160: &nbsp; &nbsp;
+   161: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Assign&nbsp;signal&nbsp;
+   162: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r_next&nbsp;&lt;=&nbsp;v;&nbsp;
+   163: &nbsp; &nbsp;
+   164: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;process;&nbsp;
+   165: &nbsp; &nbsp;
+   166: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Synchronous&nbsp;Outputs&nbsp;
+   167: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;Out_Level&nbsp;&lt;=&nbsp;r.RdLevel;&nbsp;
+   168: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;In_Level&nbsp;&nbsp;&lt;=&nbsp;r.WrLevel;&nbsp;
+   169: &nbsp; &nbsp;
+   170: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;p_seq&nbsp;:&nbsp;process&nbsp;(Clk)&nbsp;is&nbsp;
+   171: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   172: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;rising_edge(Clk)&nbsp;then&nbsp;
+   173: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r&nbsp;&lt;=&nbsp;r_next;&nbsp;
+   174: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Rst&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   175: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r.WrLevel&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   176: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r.RdLevel&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   177: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r.RdUp&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   178: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r.WrDown&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   179: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r.WrAddr&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   180: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r.RdAddr&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   181: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   182: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   183: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;process;&nbsp;
+   184: &nbsp; &nbsp;
+   185: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;i_ram&nbsp;:&nbsp;entity&nbsp;work.olo_base_ram_sdp&nbsp;
+   186: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;generic&nbsp;map&nbsp;(&nbsp;
+   187: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Depth_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Depth_g,&nbsp;
+   188: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Width_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Width_g,&nbsp;
+   189: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamStyle_g&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;RamStyle_g,&nbsp;
+   190: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RamBehavior_g&nbsp;&nbsp;&nbsp;=&gt;&nbsp;RamBehavior_g&nbsp;
+   191: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;
+   192: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;port&nbsp;map&nbsp;(&nbsp;
+   193: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Clk,&nbsp;
+   194: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Wr_Addr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;r.WrAddr,&nbsp;
+   195: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Wr_Ena&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;RamWr,&nbsp;
+   196: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Wr_Data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;In_Data,&nbsp;
+   197: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rd_Addr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;RamRdAddr,&nbsp;
+   198: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rd_Data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Out_Data&nbsp;
+   199: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);&nbsp;
+   200: &nbsp; &nbsp;
+   201: &nbsp; end&nbsp;architecture;&nbsp;
+</code></pre>

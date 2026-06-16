@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenJLS — verification reports</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 60rem; margin: 2.5rem auto;
+         padding: 0 1.2rem; }
+  h1 { margin-bottom: .2rem; }
+  p.sub { color: #888; margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid #8884; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: #888; }
+  .badge { display: inline-block; padding: .1rem .5rem; border-radius: .5rem;
+           font-size: .8rem; font-weight: 600; }
+  .ok   { background: #1a7f37; color: #fff; }
+  .bad  { background: #cf222e; color: #fff; }
+  .info { background: #0969da; color: #fff; }
+  .na   { background: #8884; color: inherit; }
+  td.pct { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  td.note { color: #888; }
+  a { color: #0969da; }
+  footer { margin-top: 2rem; color: #888; font-size: .85rem; }
+</style>
+</head>
+<body>
+<h1>OpenJLS — verification reports</h1>
+<p class="sub">JPEG-LS encoder IP &middot; results published from the project's own
+verification suites. Drill into a row's report for per-test detail.</p>
+<table>
+  <thead><tr><th>Suite</th><th>Status</th><th>Pass / cov</th><th>Summary</th><th>Notes</th><th>Report</th><th>Run date</th></tr></thead>
+  <tbody>
+    <tr><td>OSVVM regression</td><td><span class="badge ok">PASS</span></td><td class="pct">100%</td><td>36 tests &middot; 129809 affirmations</td><td class="note">module + top control-plane</td><td><a href="osvvm/index.html">view</a></td><td>2026-06-12</td></tr>
+    <tr><td>NVC code coverage</td><td><span class="badge info">INFO</span></td><td class="pct">99.2%</td><td>per-file breakdown in report</td><td class="note">statement, union over all tests</td><td><a href="coverage/index.html">view</a></td><td>&mdash;</td></tr>
+    <tr><td>Golden model</td><td><span class="badge na">not run</span></td><td class="pct">&mdash;</td><td>run the suite to populate</td><td class="note">CharLS byte-exact, 8-bit corpus</td><td>&mdash;</td><td>&mdash;</td></tr>
+    <tr><td>Post-synth</td><td><span class="badge na">not run</span></td><td class="pct">&mdash;</td><td>run the suite to populate</td><td class="note">control-plane stress on netlist</td><td>&mdash;</td><td>&mdash;</td></tr>
+    <tr><td>Post-synth</td><td><span class="badge na">not run</span></td><td class="pct">&mdash;</td><td>run the suite to populate</td><td class="note">golden byte-exact on netlist</td><td>&mdash;</td><td>&mdash;</td></tr>
+  </tbody>
+</table>
+<footer>
+  Generated 2026-06-16 20:47 UTC by <code>Verification/OSVVM/publish_reports.sh</code>.
+  OSVVM reports and NVC coverage are full HTML; golden and post-synth are
+  byte-exact cross-checks summarized here (they emit PASS/FAIL, not HTML).
+</footer>
+</body>
+</html>

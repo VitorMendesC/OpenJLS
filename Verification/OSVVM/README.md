@@ -17,11 +17,10 @@ Each is described below as it is used here.
 
 ```
 Verification/OSVVM/
-├── build_osvvm.sh      # one-time: compile vendored OSVVM into ./nvc-libs (fast flow)
-├── build_run.sh        # fast flow: compile deps + all TBs, elaborate+run one by name
-├── build_reports.sh    # script flow: full regression + YAML -> HTML reports (needs tcl)
-├── build_coverage.sh   # script flow + statement/branch code coverage of Sources/
-├── OpenJls.pro         # OSVVM build script: library/analyze/TestSuite/RunTest
+├── build_run.sh        # main: full regression + HTML reports + NVC code coverage (needs tcl)
+├── build_reports.sh    # full regression + HTML reports, no coverage instrumentation (needs tcl)
+├── build_osvvm.sh      # one-time: compile vendored OSVVM into ./nvc-libs (for the post-synth flow)
+├── OpenJls.pro         # OSVVM build script + source-of-truth file list (library/analyze/TestSuite/RunTest)
 ├── Support/tb_support_pkg.vhd   # shared helpers (clk_tick, apply_reset, end_of_test)
 ├── Modules/tb_*_osvvm.vhd       # one TB per module
 └── Top/tb_openjls_top_osvvm.vhd # top-level stress TB
@@ -29,8 +28,9 @@ Verification/OSVVM/
 
 OSVVM itself is vendored under `ThirdParty/osvvm/`, and the OSVVM tcl script
 flow under `ThirdParty/osvvm-scripts/`, both pinned to the same release (see
-`ThirdParty/fetch_third_party.sh`). A fresh checkout runs `./build_osvvm.sh`
-once for the fast flow; the script flow builds its own libraries.
+`ThirdParty/fetch_third_party.sh`). The routine flow builds its own libraries;
+`./build_osvvm.sh` is a one-time prerequisite only for the post-synth
+gate-level flow (`Verification/Post synth/`), which reuses `./nvc-libs`.
 
 ## Dependencies
 
@@ -38,8 +38,8 @@ OSVVM publishes no dependency manifest; its scripts just `package require`
 what they need. Everything tcl-side is vendored in this repo, so a fresh
 clone needs only two system packages:
 
-- **nvc** — both flows (Arch: `nvc` from the AUR)
-- **tcl** ≥ 8.6 — script flow only (Arch: `sudo pacman -S tcl`)
+- **nvc** — the simulator (Arch: `nvc` from the AUR)
+- **tcl** ≥ 8.6 — drives the OSVVM `.pro` flow (Arch: `sudo pacman -S tcl`)
 
 The tcllib modules the scripts require (`fileutil`, `yaml`) are vendored in
 `ThirdParty/tcllib/` and picked up via `TCLLIBPATH`; OSVVM and OSVVM-Scripts
@@ -52,26 +52,13 @@ renders as a missing-glyph box, install a font that covers it (Arch:
 
 ## Running
 
-Two flows over the same TBs:
-
-### Fast flow — one TB, plain NVC, no tcl
-
-```bash
-./build_run.sh tb_a5_osvvm                            # build everything, run one TB
-./build_run.sh tb_byte_stuffer_osvvm -g IN_WIDTH=64   # pass a generic
-```
-
-`build_run.sh` recompiles the OpenLogic base, the RTL sources, the support
-package, and every TB in `Modules/` and `Top/` on each invocation, then
-elaborates and runs the named TB from `sim-out/` (scratch, gitignored).
-Extra arguments are elaboration options — generics go there (`-g NAME=VALUE`),
-since NVC fixes generics at elaboration.
-
-### Script flow — full regression with HTML reports
+`build_run.sh` is the main entry point — it runs every TB through the OSVVM
+tcl/`.pro` flow, renders the HTML reports, and adds NVC statement/branch code
+coverage:
 
 ```bash
-./build_reports.sh        # needs tcl in addition to nvc (see Dependencies)
-./build_coverage.sh       # same regression + statement/branch code coverage
+./build_run.sh            # full regression + HTML reports + code coverage (needs tcl + nvc)
+./build_reports.sh        # same regression + reports, without coverage instrumentation
 ```
 
 This is "the OSVVM intended way": `OpenJls.pro` drives the vendored tcl
@@ -84,6 +71,11 @@ HTML. Outputs (all gitignored, in this directory):
   (suite, status, alert counts, functional coverage %, links)
 - `OSVVM_OpenJls/reports/<suite>/<test>.html` — per-test detail: alert tree,
   every coverage model's bin table, scoreboard stats
+- `OSVVM_OpenJls/reports/OSVVM_OpenJls_req.html` — requirements traceability
+  (the `T87.*` / `OJLS.*` registry mapped to tests; `.csv` alongside)
+- `NVC_CodeCoverage/html/index.html` — statement/branch coverage of `Sources/`
+  (written by `build_run.sh` only — it is NVC's own report, since OSVVM has no
+  NVC coverage vendor API, so its `OSVVM_OpenJls/CodeCoverage/` stays empty)
 - `OSVVM_OpenJls/logs/` — per-test simulate transcripts; `VHDL_LIBS/` —
   compiled libraries (incremental between runs)
 
@@ -92,9 +84,10 @@ Note: tcl's `exec` treats any stderr output as a failure, hence the
 stdout — analysis must stay warning-clean under this flow.
 
 `RunTest Modules/tb_a5_osvvm.vhd` = analyze the file + simulate the entity
-named like it + register the result under the current `TestSuite`. The two
-flows share sources but compile into separate library trees; keep the file
-lists in `build_run.sh` and `OpenJls.pro` in sync.
+named like it + register the result under the current `TestSuite`. `OpenJls.pro`
+is the single source of the analyzed-file list — to run one TB in isolation,
+comment out the others' `Test` lines there (or pass generics via
+`[generic NAME VALUE]`).
 
 Configuration variants re-run a TB with non-default generics:
 `Test Modules/tb_jls_framer_osvvm.vhd [generic OUT_WIDTH 40]` — reports and
@@ -129,6 +122,29 @@ passed. A failure looks like:
 Each failing check prints an `Alert ERROR` line carrying its message, which
 localises it. The run then reports `FAILED` and exits nonzero (what the
 regression sweep keys on).
+
+### Publishing reports (GitHub Pages)
+
+`./publish_reports.sh` assembles the committed report site under
+`Docs/Reports/` (served at `https://<user>.github.io/OpenJLS/` by
+`.github/workflows/pages.yml`). The OSVVM suite owns the report: the script
+copies the OSVVM HTML tree (`osvvm/`) and the NVC coverage HTML (`coverage/`)
+it generates, then stitches in the text-only suites — golden model and
+post-synth — from the small `report_status.env` file each one drops in its
+`Output/` when run. A suite that hasn't been run shows as "not run", so the
+page degrades gracefully (post-synth in particular needs Vivado).
+
+```bash
+./build_run.sh                                    # OSVVM regression + coverage
+( cd "../Golden model" && ./build_run.sh )        # optional: golden cross-check
+( cd "../Post synth"   && ./build_run_osvvm.sh )  # optional: gate-level (needs Vivado)
+./publish_reports.sh                              # regenerate Docs/Reports/
+```
+
+Refresh at milestones rather than every run — the report HTML is committed, so
+each regeneration churns history. The deploy workflow only uploads the
+committed `Docs/Reports/`; it never runs the suites (free on this public repo).
+One-time: repo Settings → Pages → Source → "GitHub Actions".
 
 ---
 

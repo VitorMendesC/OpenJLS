@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites 
+   name="osvvm"
+   timestamp="2026-06-12T17:52:00-03:00"
+   time="0.342"
+   tests="0"
+   failures="0"
+   errors="0"
+   skipped="0"
+>
+<properties> 
+  <property name="OsvvmVersion" value="2026.01" /> 
+  <property name="Simulator" value="NVC" /> 
+  <property name="SimulatorVersion" value="1.21.0" /> 
+</properties> 
+</testsuites>

@@ -222,6 +222,17 @@ fi
 
 echo "=============================================================="
 echo "Golden-model suite: PASS=$pass FAIL=$fail SKIP=$skip (cap ${MAX_MP} MP, ${NT} thread(s))"
+
+# Status line for the published report (Verification/OSVVM/publish_reports.sh).
+gpct=$(awk -v p="$pass" -v t="$((pass + fail))" 'BEGIN{ if (t > 0) printf "%.0f%%", 100 * p / t }')
+{
+  echo "NAME=\"Golden model\""
+  echo "NOTE=\"CharLS byte-exact, 8-bit corpus\""
+  echo "STATUS=$([ "$fail" -eq 0 ] && echo PASS || echo FAIL)"
+  echo "PCT=\"$gpct\""
+  echo "SUMMARY=\"$pass passed &middot; $fail failed &middot; $skip skipped (cap ${MAX_MP} MP)\""
+  echo "DATE=\"$(date -Iseconds)\""
+} > "$HERE/Output/report_status.env"
 if [ -f "$TMPD/stalls" ]; then
   echo "Internal stalls (pipeline back-pressured with no downstream stall):"
   while IFS=$'\t' read -r s msg; do echo "  -- $s: $msg"; done < "$TMPD/stalls"

@@ -17,7 +17,7 @@ Verification/OSVVM/osvvm/
 Verification/OSVVM/OSVVM_OpenJls/
 Verification/OSVVM/OsvvmTemp_NVC/
 # code-coverage flow outputs (build_coverage.sh: per-test covdb + HTML)
-Verification/OSVVM/Coverage/
+Verification/OSVVM/NVC_CodeCoverage/
 Verification/OSVVM/*.html
 Verification/OSVVM/*.yml
 # Verification-only third-party deps are not committed; fetch_third_party.sh

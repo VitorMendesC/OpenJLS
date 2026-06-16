@@ -1,0 +1,42 @@
+Version: "0.1"
+Coverage: 100.00
+Settings: 
+  WritePassFail: 0
+Models: 
+  - Name: "partialBeat"
+    TestCases: 
+      - "tb_jls_framer_osvvm"
+    Coverage: 100.00
+    Settings: 
+      CovWeight: 1
+      Goal: 100.0
+      WeightMode: "REMAIN"
+      Seeds: [1774301168, 321440542]
+      CountMode: "COUNT_FIRST"
+      IllegalMode: "ILLEGAL_ON"
+      Threshold: 45.0
+      ThresholdEnable: "FALSE"
+      IsRequirement: "FALSE"
+      TotalCovCount: 2
+      TotalCovGoal: 2
+    BinInfo: 
+      Dimensions: 1
+      FieldNames: 
+        - "Bin1"
+      NumBins: 2
+    Bins: 
+      - Name: "partialBeat"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 7}
+        Count: 29
+        AtLeast: 1
+        PercentCov: 2900.0000
+      - Name: "fullBeat"
+        Type: "COUNT"
+        Range: 
+          - {Min: 8, Max: 8}
+        Count: 192
+        AtLeast: 1
+        PercentCov: 19200.0000
+

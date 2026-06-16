@@ -1,0 +1,5 @@
+- Requirement: "T87.A4.2"
+  TestCases: 
+  - TestName: "tb_a4_2_osvvm"
+    Status: PASSED
+    Results: {Goal: 365, Passed: 1096, Errors: 0, Checked: 1096, AlertCount: {Failure: 0, Error: 0, Warning: 0}, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}}

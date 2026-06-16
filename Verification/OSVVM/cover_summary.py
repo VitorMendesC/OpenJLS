@@ -59,7 +59,7 @@ def main():
         tott += len(lines)
         tag = ",".join(map(str, missed[:14])) + ("..." if len(missed) > 14 else "")
         print(f"{f:32} {cov:4}/{len(lines):<4} {100*cov/len(lines):5.1f}%  {tag}")
-    uncovered = sorted(set(entity2file.values()) - set(hits) - {"Common.vhd"})
+    uncovered = sorted(set(entity2file.values()) - set(hits) - {"openjls_pkg.vhd"})
     for f in uncovered:
         print(f"{f:32}    0/?      0.0%  NOT INSTRUMENTED BY ANY TEST")
     if tott:

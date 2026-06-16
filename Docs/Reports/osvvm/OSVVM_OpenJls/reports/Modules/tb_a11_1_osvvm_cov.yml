@@ -1,0 +1,61 @@
+Version: "0.1"
+Coverage: 100.00
+Settings: 
+  WritePassFail: 0
+Models: 
+  - Name: "riMode x escape"
+    TestCases: 
+      - "tb_a11_1_osvvm"
+    Coverage: 100.00
+    Settings: 
+      CovWeight: 1
+      Goal: 100.0
+      WeightMode: "REMAIN"
+      Seeds: [1277137235, 49335386]
+      CountMode: "COUNT_FIRST"
+      IllegalMode: "ILLEGAL_ON"
+      Threshold: 45.0
+      ThresholdEnable: "FALSE"
+      IsRequirement: "FALSE"
+      TotalCovCount: 4
+      TotalCovGoal: 4
+    BinInfo: 
+      Dimensions: 2
+      FieldNames: 
+        - "Bin1"
+        - "Bin2"
+      NumBins: 4
+    Bins: 
+      - Name: "riMode x escape"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 0, Max: 0}
+        Count: 74
+        AtLeast: 1
+        PercentCov: 7400.0000
+      - Name: "riMode x escape"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 1, Max: 1}
+        Count: 123
+        AtLeast: 1
+        PercentCov: 12300.0000
+      - Name: "riMode x escape"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 0, Max: 0}
+        Count: 79
+        AtLeast: 1
+        PercentCov: 7900.0000
+      - Name: "riMode x escape"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 1, Max: 1}
+        Count: 131
+        AtLeast: 1
+        PercentCov: 13100.0000
+

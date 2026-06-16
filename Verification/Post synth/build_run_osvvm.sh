@@ -53,7 +53,7 @@ if ! compgen -G "$HOME/.nvc/lib/unisim*" > /dev/null; then
   (cd /tmp && env XILINX_VIVADO="$XILINX_VIVADO" nvc --install vivado)
 fi
 
-# 3. OSVVM library (source-built by the routine flow)
+# 3. OSVVM library (source-built once by Verification/OSVVM/build_osvvm.sh)
 if [[ ! -d "$OSVVM_DIR/nvc-libs/osvvm.08" ]]; then
   echo "OSVVM library missing — run Verification/OSVVM/build_osvvm.sh first" >&2
   exit 1
@@ -86,6 +86,17 @@ OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
 # 7. Elaborate + run from a scratch dir (contains the OSVVM YAML droppings)
 mkdir -p "$HERE/sim-out"
 cd "$HERE/sim-out"
-"${NVC[@]}" --work=work:"$LIBS/work.08" \
-  -e --jit --no-save -g POST_SYNTH=true "$TB" \
-  -r --exit-severity=error "$TB"
+if "${NVC[@]}" --work=work:"$LIBS/work.08" \
+    -e --jit --no-save -g POST_SYNTH=true "$TB" \
+    -r --exit-severity=error "$TB"; then ps_rc=0; else ps_rc=1; fi
+
+# Status line for the published report (Verification/OSVVM/publish_reports.sh).
+{
+  echo "NAME=\"Post-synth\""
+  echo "NOTE=\"control-plane stress on funcsim netlist\""
+  echo "STATUS=$([ "$ps_rc" -eq 0 ] && echo PASS || echo FAIL)"
+  echo "PCT=\"$([ "$ps_rc" -eq 0 ] && echo 100% || echo 0%)\""
+  echo "SUMMARY=\"tb_openjls_top_osvvm on gate-level netlist (BITNESS=8, 4096x4096, OUT_WIDTH=64)\""
+  echo "DATE=\"$(date -Iseconds)\""
+} > "$HERE/Output/report_status_osvvm.env"
+exit "$ps_rc"

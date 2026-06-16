@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="text-align: left;">
+   File:&nbsp; Modules/tb_a4_2_osvvm.vhd
+</h2><pre><code>     0: &nbsp; --------------------------------------------------------------------------------&nbsp;
+     1: &nbsp; --&nbsp;OSVVM&nbsp;testbench:&nbsp;a4_2_q_mapping&nbsp;(written&nbsp;requirement&nbsp;A.4.2).&nbsp;
+     2: &nbsp; --&nbsp;
+     3: &nbsp; --&nbsp;T.87&nbsp;leaves&nbsp;the&nbsp;(Q1,Q2,Q3)&nbsp;-&gt;&nbsp;Q&nbsp;mapping&nbsp;unspecified,&nbsp;requiring&nbsp;only&nbsp;that&nbsp;it&nbsp;be&nbsp;
+     4: &nbsp; --&nbsp;one-to-one,&nbsp;total,&nbsp;and&nbsp;produce&nbsp;Q&nbsp;in&nbsp;[0..364].&nbsp;So&nbsp;the&nbsp;reference&nbsp;checks&nbsp;those&nbsp;
+     5: &nbsp; --&nbsp;*properties*&nbsp;over&nbsp;the&nbsp;full&nbsp;post-merge&nbsp;domain&nbsp;(Q1&nbsp;in&nbsp;[0..4];&nbsp;leading&nbsp;non-zero&nbsp;
+     6: &nbsp; --&nbsp;non-negative&nbsp;=&gt;&nbsp;exactly&nbsp;365&nbsp;vectors),&nbsp;plus&nbsp;the&nbsp;design's&nbsp;documented&nbsp;choice&nbsp;
+     7: &nbsp; --&nbsp;Q&nbsp;=&nbsp;81*Q1&nbsp;+&nbsp;9*Q2&nbsp;+&nbsp;Q3&nbsp;(Docs/Project.md).&nbsp;Injectivity&nbsp;is&nbsp;checked&nbsp;with&nbsp;a&nbsp;
+     8: &nbsp; --&nbsp;seen[]&nbsp;map&nbsp;and&nbsp;completeness&nbsp;by&nbsp;requiring&nbsp;all&nbsp;365&nbsp;codes&nbsp;hit.&nbsp;
+     9: &nbsp; --------------------------------------------------------------------------------&nbsp;
+    10: &nbsp; &nbsp;
+    11: &nbsp; library&nbsp;ieee;&nbsp;
+    12: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
+    13: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
+    14: &nbsp; &nbsp;&nbsp;use&nbsp;work.common.all;&nbsp;
+    15: &nbsp; &nbsp;
+    16: &nbsp; library&nbsp;osvvm;&nbsp;
+    17: &nbsp; &nbsp;&nbsp;context&nbsp;osvvm.OsvvmContext;&nbsp;
+    18: &nbsp; &nbsp;
+    19: &nbsp; library&nbsp;tb_support;&nbsp;
+    20: &nbsp; &nbsp;&nbsp;use&nbsp;tb_support.tb_support_pkg.all;&nbsp;
+    21: &nbsp; &nbsp;
+    22: &nbsp; entity&nbsp;tb_a4_2_osvvm&nbsp;is&nbsp;
+    23: &nbsp; end&nbsp;entity&nbsp;tb_a4_2_osvvm;&nbsp;
+    24: &nbsp; &nbsp;
+    25: &nbsp; architecture&nbsp;sim&nbsp;of&nbsp;tb_a4_2_osvvm&nbsp;is&nbsp;
+    26: &nbsp; &nbsp;
+    27: &nbsp; &nbsp;&nbsp;signal&nbsp;sQ1&nbsp;:&nbsp;signed(3&nbsp;downto&nbsp;0);&nbsp;
+    28: &nbsp; &nbsp;&nbsp;signal&nbsp;sQ2&nbsp;:&nbsp;signed(3&nbsp;downto&nbsp;0);&nbsp;
+    29: &nbsp; &nbsp;&nbsp;signal&nbsp;sQ3&nbsp;:&nbsp;signed(3&nbsp;downto&nbsp;0);&nbsp;
+    30: &nbsp; &nbsp;&nbsp;signal&nbsp;sQ&nbsp;&nbsp;:&nbsp;unsigned(8&nbsp;downto&nbsp;0);&nbsp;
+    31: &nbsp; &nbsp;
+    32: &nbsp; begin&nbsp;
+    33: &nbsp; &nbsp;
+    34: &nbsp; &nbsp;&nbsp;dut&nbsp;:&nbsp;entity&nbsp;work.a4_2_q_mapping(behavioral)&nbsp;
+    35: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;port&nbsp;map&nbsp;(&nbsp;
+    36: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iQ1&nbsp;=&gt;&nbsp;sQ1,&nbsp;
+    37: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iQ2&nbsp;=&gt;&nbsp;sQ2,&nbsp;
+    38: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iQ3&nbsp;=&gt;&nbsp;sQ3,&nbsp;
+    39: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oQ&nbsp;&nbsp;=&gt;&nbsp;sQ&nbsp;
+    40: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;);&nbsp;
+    41: &nbsp; &nbsp;
+    42: &nbsp; &nbsp;&nbsp;stim&nbsp;:&nbsp;process&nbsp;is&nbsp;
+    43: &nbsp; &nbsp;
+    44: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;seen&nbsp;&nbsp;&nbsp;:&nbsp;integer_vector(0&nbsp;to&nbsp;364)&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;-1);&nbsp;
+    45: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;nSeen&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;0;&nbsp;
+    46: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;q&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer;&nbsp;
+    47: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;expQ&nbsp;&nbsp;&nbsp;:&nbsp;integer;&nbsp;
+    48: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;req&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;AlertLogIDType;&nbsp;
+    49: &nbsp; &nbsp;
+    50: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;drive_check&nbsp;(&nbsp;
+    51: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q1&nbsp;:&nbsp;integer;&nbsp;
+    52: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q2&nbsp;:&nbsp;integer;&nbsp;
+    53: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q3&nbsp;:&nbsp;integer&nbsp;
+    54: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;is&nbsp;
+    55: &nbsp; &nbsp;
+    56: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;e&nbsp;:&nbsp;integer;&nbsp;
+    57: &nbsp; &nbsp;
+    58: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+    59: &nbsp; &nbsp;
+    60: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sQ1&nbsp;&lt;=&nbsp;to_signed(q1,&nbsp;4);&nbsp;
+    61: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sQ2&nbsp;&lt;=&nbsp;to_signed(q2,&nbsp;4);&nbsp;
+    62: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sQ3&nbsp;&lt;=&nbsp;to_signed(q3,&nbsp;4);&nbsp;
+    63: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;1&nbsp;ns;&nbsp;
+    64: &nbsp; &nbsp;
+    65: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e&nbsp;:=&nbsp;81&nbsp;*&nbsp;q1&nbsp;+&nbsp;9&nbsp;*&nbsp;q2&nbsp;+&nbsp;q3;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;documented&nbsp;design&nbsp;mapping&nbsp;
+    66: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(req,&nbsp;to_integer(sQ),&nbsp;e,&nbsp;
+    67: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"map&nbsp;Q1="&nbsp;&amp;&nbsp;integer'image(q1)&nbsp;&amp;&nbsp;
+    68: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Q2="&nbsp;&amp;&nbsp;integer'image(q2)&nbsp;&amp;&nbsp;
+    69: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Q3="&nbsp;&amp;&nbsp;integer'image(q3));&nbsp;
+    70: &nbsp; &nbsp;
+    71: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Property:&nbsp;range&nbsp;[0..364].&nbsp;
+    72: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(req,&nbsp;e&nbsp;&gt;=&nbsp;0&nbsp;and&nbsp;e&nbsp;&lt;=&nbsp;364,&nbsp;"Q&nbsp;in&nbsp;range&nbsp;for&nbsp;vector");&nbsp;
+    73: &nbsp; &nbsp;
+    74: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Property:&nbsp;one-to-one.&nbsp;
+    75: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(e&nbsp;&gt;=&nbsp;0&nbsp;and&nbsp;e&nbsp;&lt;=&nbsp;364)&nbsp;then&nbsp;
+    76: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(req,&nbsp;seen(e)&nbsp;=&nbsp;-1,&nbsp;
+    77: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Q="&nbsp;&amp;&nbsp;integer'image(e)&nbsp;&amp;&nbsp;"&nbsp;collides&nbsp;with&nbsp;vector&nbsp;index&nbsp;"&nbsp;&amp;&nbsp;
+    78: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;integer'image(seen(e)));&nbsp;
+    79: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(seen(e)&nbsp;=&nbsp;-1)&nbsp;then&nbsp;
+    80: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;seen(e)&nbsp;:=&nbsp;q1&nbsp;*&nbsp;100&nbsp;+&nbsp;q2&nbsp;*&nbsp;10&nbsp;+&nbsp;q3;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;record&nbsp;a&nbsp;witness&nbsp;
+    81: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nSeen&nbsp;&nbsp;&nbsp;:=&nbsp;nSeen&nbsp;+&nbsp;1;&nbsp;
+    82: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+    83: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+    84: &nbsp; &nbsp;
+    85: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;drive_check;&nbsp;
+    86: &nbsp; &nbsp;
+    87: &nbsp; &nbsp;&nbsp;begin&nbsp;
+    88: &nbsp; &nbsp;
+    89: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;SetAlertLogName("tb_a4_2_osvvm");&nbsp;
+    90: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;SetLogEnable(PASSED,&nbsp;FALSE);&nbsp;
+    91: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;req&nbsp;:=&nbsp;GetReqID("T87.A4.2",&nbsp;365);&nbsp;
+    92: &nbsp; &nbsp;
+    93: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Exhaustive&nbsp;over&nbsp;the&nbsp;post-merge&nbsp;domain&nbsp;(leading&nbsp;non-zero&nbsp;non-negative).&nbsp;
+    94: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;q1&nbsp;in&nbsp;0&nbsp;to&nbsp;4&nbsp;loop&nbsp;
+    95: &nbsp; &nbsp;
+    96: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;q2&nbsp;in&nbsp;-4&nbsp;to&nbsp;4&nbsp;loop&nbsp;
+    97: &nbsp; &nbsp;
+    98: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;q3&nbsp;in&nbsp;-4&nbsp;to&nbsp;4&nbsp;loop&nbsp;
+    99: &nbsp; &nbsp;
+   100: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Drop&nbsp;vectors&nbsp;a&nbsp;negative&nbsp;leading&nbsp;element&nbsp;would&nbsp;have&nbsp;folded&nbsp;away.&nbsp;
+   101: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(q1&nbsp;=&nbsp;0&nbsp;and&nbsp;q2&nbsp;&lt;&nbsp;0)&nbsp;then&nbsp;
+   102: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;next;&nbsp;
+   103: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   104: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(q1&nbsp;=&nbsp;0&nbsp;and&nbsp;q2&nbsp;=&nbsp;0&nbsp;and&nbsp;q3&nbsp;&lt;&nbsp;0)&nbsp;then&nbsp;
+   105: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;next;&nbsp;
+   106: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   107: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;drive_check(q1,&nbsp;q2,&nbsp;q3);&nbsp;
+   108: &nbsp; &nbsp;
+   109: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   110: &nbsp; &nbsp;
+   111: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   112: &nbsp; &nbsp;
+   113: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   114: &nbsp; &nbsp;
+   115: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(req,&nbsp;nSeen,&nbsp;365,&nbsp;"all&nbsp;365&nbsp;contexts&nbsp;mapped&nbsp;(total&nbsp;+&nbsp;complete)");&nbsp;
+   116: &nbsp; &nbsp;
+   117: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end_of_test("tb_a4_2_osvvm");&nbsp;
+   118: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait;&nbsp;
+   119: &nbsp; &nbsp;
+   120: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;stim;&nbsp;
+   121: &nbsp; &nbsp;
+   122: &nbsp; end&nbsp;architecture&nbsp;sim;&nbsp;
+</code></pre>

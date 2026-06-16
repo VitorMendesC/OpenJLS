@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="text-align: left;">
+   File:&nbsp; Modules/tb_byte_stuffer_osvvm.vhd
+</h2><pre><code>     0: &nbsp; --------------------------------------------------------------------------------&nbsp;
+     1: &nbsp; --&nbsp;OSVVM&nbsp;testbench:&nbsp;byte_stuffer&nbsp;
+     2: &nbsp; --&nbsp;
+     3: &nbsp; --&nbsp;First&nbsp;stateful-module&nbsp;OSVVM&nbsp;TB&nbsp;and&nbsp;the&nbsp;template&nbsp;for&nbsp;the&nbsp;rest.&nbsp;It&nbsp;settles&nbsp;the&nbsp;
+     4: &nbsp; --&nbsp;stateful&nbsp;pattern&nbsp;the&nbsp;combinational&nbsp;tb_a11&nbsp;template&nbsp;can't&nbsp;show:&nbsp;
+     5: &nbsp; --&nbsp;
+     6: &nbsp; --&nbsp;&nbsp;&nbsp;*&nbsp;reference-as-process:&nbsp;an&nbsp;independent&nbsp;bit-stream&nbsp;FF-stuffer&nbsp;model&nbsp;that&nbsp;
+     7: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;turns&nbsp;the&nbsp;accepted&nbsp;input&nbsp;bits&nbsp;into&nbsp;the&nbsp;expected&nbsp;output&nbsp;byte&nbsp;stream&nbsp;
+     8: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(T.87:&nbsp;a&nbsp;'0'&nbsp;bit&nbsp;is&nbsp;stuffed&nbsp;after&nbsp;every&nbsp;0xFF&nbsp;byte;&nbsp;the&nbsp;final&nbsp;sub-byte&nbsp;
+     9: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;residue&nbsp;is&nbsp;zero-padded&nbsp;*after*&nbsp;stuffing,&nbsp;matching&nbsp;the&nbsp;DUT&nbsp;contract);&nbsp;
+    10: &nbsp; --&nbsp;&nbsp;&nbsp;*&nbsp;osvvm.ScoreboardPkg_slv&nbsp;as&nbsp;the&nbsp;order-checking&nbsp;oracle&nbsp;(expected&nbsp;bytes&nbsp;
+    11: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pushed&nbsp;by&nbsp;the&nbsp;driver,&nbsp;popped/checked&nbsp;by&nbsp;the&nbsp;output&nbsp;monitor);&nbsp;
+    12: &nbsp; --&nbsp;&nbsp;&nbsp;*&nbsp;randomized&nbsp;handshake&nbsp;on&nbsp;BOTH&nbsp;sides&nbsp;—&nbsp;iReady&nbsp;(downstream&nbsp;backpressure)&nbsp;
+    13: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;iStall&nbsp;(upstream&nbsp;stall)&nbsp;—&nbsp;which&nbsp;is&nbsp;exactly&nbsp;the&nbsp;coverage&nbsp;the&nbsp;golden&nbsp;
+    14: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suite&nbsp;stopped&nbsp;exercising&nbsp;(see&nbsp;project-backpressure-coverage-gap);&nbsp;
+    15: &nbsp; --&nbsp;&nbsp;&nbsp;*&nbsp;directed&nbsp;corners&nbsp;seeded&nbsp;from&nbsp;already-fixed&nbsp;bugs&nbsp;(multi-word&nbsp;flush,&nbsp;
+    16: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;post-stuffing&nbsp;residue&nbsp;pad,&nbsp;skid&nbsp;latch)&nbsp;plus&nbsp;the&nbsp;EOI&nbsp;terminal&nbsp;variants.&nbsp;
+    17: &nbsp; --&nbsp;
+    18: &nbsp; --&nbsp;iStall&nbsp;is&nbsp;forced&nbsp;high&nbsp;whenever&nbsp;oAlmostFull&nbsp;is&nbsp;high&nbsp;(the&nbsp;real&nbsp;top-level&nbsp;stall&nbsp;
+    19: &nbsp; --&nbsp;contract)&nbsp;and&nbsp;additionally&nbsp;asserted&nbsp;at&nbsp;random&nbsp;—&nbsp;stalling&nbsp;more&nbsp;is&nbsp;always&nbsp;safe,&nbsp;
+    20: &nbsp; --&nbsp;stalling&nbsp;less&nbsp;would&nbsp;overrun&nbsp;the&nbsp;FIFO&nbsp;and&nbsp;trip&nbsp;the&nbsp;DUT's&nbsp;own&nbsp;write-drop&nbsp;assert.&nbsp;
+    21: &nbsp; --&nbsp;
+    22: &nbsp; --&nbsp;IN_WIDTH&nbsp;is&nbsp;a&nbsp;generic&nbsp;(=&nbsp;byte_stuffer&nbsp;LIMIT).&nbsp;Defaults&nbsp;to&nbsp;48&nbsp;(12-bit&nbsp;config);&nbsp;
+    23: &nbsp; --&nbsp;run&nbsp;with&nbsp;-gIN_WIDTH=32&nbsp;or&nbsp;64&nbsp;for&nbsp;the&nbsp;8-/16-bit&nbsp;configs:&nbsp;
+    24: &nbsp; --&nbsp;&nbsp;&nbsp;./build_run.sh&nbsp;tb_byte_stuffer_osvvm&nbsp;-gIN_WIDTH=64&nbsp;
+    25: &nbsp; --------------------------------------------------------------------------------&nbsp;
+    26: &nbsp; &nbsp;
+    27: &nbsp; library&nbsp;ieee;&nbsp;
+    28: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
+    29: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
+    30: &nbsp; &nbsp;&nbsp;use&nbsp;work.common.all;&nbsp;
+    31: &nbsp; &nbsp;
+    32: &nbsp; library&nbsp;osvvm;&nbsp;
+    33: &nbsp; &nbsp;&nbsp;context&nbsp;osvvm.OsvvmContext;&nbsp;
+    34: &nbsp; &nbsp;&nbsp;use&nbsp;osvvm.ScoreboardPkg_slv.all;&nbsp;
+    35: &nbsp; &nbsp;
+    36: &nbsp; library&nbsp;openlogic_base;&nbsp;
+    37: &nbsp; &nbsp;&nbsp;use&nbsp;openlogic_base.olo_base_pkg_math.log2ceil;&nbsp;
+    38: &nbsp; &nbsp;
+    39: &nbsp; library&nbsp;tb_support;&nbsp;
+    40: &nbsp; &nbsp;&nbsp;use&nbsp;tb_support.tb_support_pkg.all;&nbsp;
+    41: &nbsp; &nbsp;
+    42: &nbsp; entity&nbsp;tb_byte_stuffer_osvvm&nbsp;is&nbsp;
+    43: &nbsp; &nbsp;&nbsp;generic&nbsp;(&nbsp;
+    44: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;IN_WIDTH&nbsp;:&nbsp;natural&nbsp;:=&nbsp;48&nbsp;
+    45: &nbsp; &nbsp;&nbsp;);&nbsp;
+    46: &nbsp; end&nbsp;entity&nbsp;tb_byte_stuffer_osvvm;&nbsp;
+    47: &nbsp; &nbsp;
+    48: &nbsp; architecture&nbsp;sim&nbsp;of&nbsp;tb_byte_stuffer_osvvm&nbsp;is&nbsp;
+    49: &nbsp; &nbsp;
+    50: &nbsp; &nbsp;&nbsp;--&nbsp;DUT&nbsp;config&nbsp;-----------------------------------------------------------------&nbsp;
+    51: &nbsp; &nbsp;&nbsp;constant&nbsp;OUT_BYTES&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;4;&nbsp;
+    52: &nbsp; &nbsp;&nbsp;constant&nbsp;OUT_WIDTH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;OUT_BYTES&nbsp;*&nbsp;8;&nbsp;
+    53: &nbsp; &nbsp;&nbsp;constant&nbsp;BURST_DEPTH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;16;&nbsp;
+    54: &nbsp; &nbsp;&nbsp;constant&nbsp;VLEN_W&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;log2ceil(IN_WIDTH&nbsp;+&nbsp;1);&nbsp;
+    55: &nbsp; &nbsp;&nbsp;constant&nbsp;OBYTES_W&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;log2ceil(OUT_BYTES&nbsp;+&nbsp;1);&nbsp;
+    56: &nbsp; &nbsp;
+    57: &nbsp; &nbsp;&nbsp;--&nbsp;Stimulus&nbsp;sizing&nbsp;
+    58: &nbsp; &nbsp;&nbsp;constant&nbsp;CLK_PERIOD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;time&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;CLK_PERIOD_DEFAULT;&nbsp;
+    59: &nbsp; &nbsp;&nbsp;constant&nbsp;N_RANDOM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;60;&nbsp;--&nbsp;random&nbsp;images&nbsp;
+    60: &nbsp; &nbsp;&nbsp;constant&nbsp;MAX_BEATS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;40;&nbsp;--&nbsp;beats&nbsp;per&nbsp;random&nbsp;image&nbsp;
+    61: &nbsp; &nbsp;
+    62: &nbsp; &nbsp;&nbsp;--&nbsp;DUT&nbsp;interface&nbsp;--------------------------------------------------------------&nbsp;
+    63: &nbsp; &nbsp;&nbsp;signal&nbsp;clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    64: &nbsp; &nbsp;&nbsp;signal&nbsp;rst&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    65: &nbsp; &nbsp;&nbsp;signal&nbsp;iStall&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    66: &nbsp; &nbsp;&nbsp;signal&nbsp;iWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    67: &nbsp; &nbsp;&nbsp;signal&nbsp;iWordValid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    68: &nbsp; &nbsp;&nbsp;signal&nbsp;iWordValidLen&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;unsigned(VLEN_W&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    69: &nbsp; &nbsp;&nbsp;signal&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    70: &nbsp; &nbsp;&nbsp;signal&nbsp;oWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(OUT_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    71: &nbsp; &nbsp;&nbsp;signal&nbsp;oWordValid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    72: &nbsp; &nbsp;&nbsp;signal&nbsp;oValidBytes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;unsigned(OBYTES_W&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    73: &nbsp; &nbsp;&nbsp;signal&nbsp;iReady&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    74: &nbsp; &nbsp;&nbsp;signal&nbsp;oAlmostFull&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    75: &nbsp; &nbsp;&nbsp;signal&nbsp;oFlushDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    76: &nbsp; &nbsp;
+    77: &nbsp; &nbsp;&nbsp;--&nbsp;TB&nbsp;plumbing&nbsp;----------------------------------------------------------------&nbsp;
+    78: &nbsp; &nbsp;&nbsp;--&nbsp;Expected&nbsp;output&nbsp;bytes,&nbsp;pushed&nbsp;in&nbsp;emission&nbsp;order&nbsp;by&nbsp;the&nbsp;driver&nbsp;model.&nbsp;
+    79: &nbsp; &nbsp;&nbsp;constant&nbsp;SB_ID&nbsp;:&nbsp;ScoreboardIDType&nbsp;:=&nbsp;NewID("byte_stuffer&nbsp;SB");&nbsp;
+    80: &nbsp; &nbsp;&nbsp;--&nbsp;Coverage.&nbsp;
+    81: &nbsp; &nbsp;&nbsp;shared&nbsp;variable&nbsp;covEmit&nbsp;&nbsp;:&nbsp;CoverageIDType;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;bytes&nbsp;emitted&nbsp;per&nbsp;accepted&nbsp;beat&nbsp;(0..4)&nbsp;
+    82: &nbsp; &nbsp;&nbsp;shared&nbsp;variable&nbsp;covFlush&nbsp;:&nbsp;CoverageIDType;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;flush&nbsp;terminal&nbsp;type&nbsp;(0..3)&nbsp;
+    83: &nbsp; &nbsp;&nbsp;shared&nbsp;variable&nbsp;covCross&nbsp;:&nbsp;CoverageIDType;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;(emitBytes&gt;0)&nbsp;x&nbsp;(oAlmostFull)&nbsp;
+    84: &nbsp; &nbsp;
+    85: &nbsp; &nbsp;&nbsp;--&nbsp;Driver&nbsp;-&gt;&nbsp;monitor&nbsp;image&nbsp;handshake.&nbsp;
+    86: &nbsp; &nbsp;&nbsp;signal&nbsp;sImagesSent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;flushes&nbsp;presented&nbsp;by&nbsp;the&nbsp;driver&nbsp;
+    87: &nbsp; &nbsp;&nbsp;signal&nbsp;sFlushDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;oFlushDone&nbsp;beats&nbsp;seen&nbsp;by&nbsp;the&nbsp;monitor&nbsp;
+    88: &nbsp; &nbsp;&nbsp;signal&nbsp;sDriverDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;boolean;&nbsp;
+    89: &nbsp; &nbsp;
+    90: &nbsp; &nbsp;&nbsp;--&nbsp;Random&nbsp;upstream-stall&nbsp;enable&nbsp;(ORed&nbsp;with&nbsp;oAlmostFull,&nbsp;driven&nbsp;by&nbsp;stall&nbsp;proc).&nbsp;
+    91: &nbsp; &nbsp;&nbsp;signal&nbsp;sRandStall&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic;&nbsp;
+    92: &nbsp; &nbsp;
+    93: &nbsp; &nbsp;&nbsp;--&nbsp;Monitor&nbsp;ignores&nbsp;output&nbsp;during&nbsp;a&nbsp;reset-aborted&nbsp;(mid-image)&nbsp;sequence.&nbsp;
+    94: &nbsp; &nbsp;&nbsp;signal&nbsp;sIgnore&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;boolean&nbsp;:=&nbsp;false;&nbsp;
+    95: &nbsp; &nbsp;
+    96: &nbsp; &nbsp;&nbsp;--&nbsp;Flush-type&nbsp;codes&nbsp;(coverage&nbsp;+&nbsp;sanity).&nbsp;
+    97: &nbsp; &nbsp;&nbsp;constant&nbsp;FT_EMPTY&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0;&nbsp;&nbsp;--&nbsp;flush&nbsp;with&nbsp;no&nbsp;payload&nbsp;bits&nbsp;
+    98: &nbsp; &nbsp;&nbsp;constant&nbsp;FT_CLEAN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;1;&nbsp;&nbsp;--&nbsp;byte-aligned,&nbsp;no&nbsp;residue&nbsp;
+    99: &nbsp; &nbsp;&nbsp;constant&nbsp;FT_RESIDUE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;2;&nbsp;&nbsp;--&nbsp;sub-byte&nbsp;real&nbsp;residue&nbsp;padded&nbsp;
+   100: &nbsp; &nbsp;&nbsp;constant&nbsp;FT_DANGLING&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;3;&nbsp;&nbsp;--&nbsp;trailing&nbsp;0xFF&nbsp;-&gt;&nbsp;stuffed&nbsp;0x00&nbsp;byte&nbsp;
+   101: &nbsp; &nbsp;
+   102: &nbsp; begin&nbsp;
+   103: &nbsp; &nbsp;
+   104: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   105: &nbsp; &nbsp;&nbsp;--&nbsp;Clock&nbsp;
+   106: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   107: &nbsp; &nbsp;&nbsp;clk_proc&nbsp;:&nbsp;process&nbsp;is&nbsp;
+   108: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   109: &nbsp; &nbsp;
+   110: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;clk&nbsp;&lt;=&nbsp;'1';&nbsp;
+   111: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;CLK_PERIOD&nbsp;/&nbsp;2;&nbsp;
+   112: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;clk&nbsp;&lt;=&nbsp;'0';&nbsp;
+   113: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;CLK_PERIOD&nbsp;/&nbsp;2;&nbsp;
+   114: &nbsp; &nbsp;
+   115: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;clk_proc;&nbsp;
+   116: &nbsp; &nbsp;
+   117: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   118: &nbsp; &nbsp;&nbsp;--&nbsp;DUT&nbsp;
+   119: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   120: &nbsp; &nbsp;&nbsp;dut&nbsp;:&nbsp;entity&nbsp;work.byte_stuffer(behavioral)&nbsp;
+   121: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;generic&nbsp;map&nbsp;(&nbsp;
+   122: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IN_WIDTH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;IN_WIDTH,&nbsp;
+   123: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OUT_BYTES_PER_CYCLE&nbsp;=&gt;&nbsp;OUT_BYTES,&nbsp;
+   124: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OUT_WIDTH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;OUT_WIDTH,&nbsp;
+   125: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BURST_DEPTH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;BURST_DEPTH&nbsp;
+   126: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;
+   127: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;port&nbsp;map&nbsp;(&nbsp;
+   128: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iClk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;clk,&nbsp;
+   129: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iRst&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;rst,&nbsp;
+   130: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iStall&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;iStall,&nbsp;
+   131: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;iWord,&nbsp;
+   132: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;iWordValid,&nbsp;
+   133: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValidLen&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;iWordValidLen,&nbsp;
+   134: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;iFlush,&nbsp;
+   135: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;oWord,&nbsp;
+   136: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oWordValid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;oWordValid,&nbsp;
+   137: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oValidBytes&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;oValidBytes,&nbsp;
+   138: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;iReady,&nbsp;
+   139: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oAlmostFull&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;oAlmostFull,&nbsp;
+   140: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oFlushDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;oFlushDone&nbsp;
+   141: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;);&nbsp;
+   142: &nbsp; &nbsp;
+   143: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   144: &nbsp; &nbsp;&nbsp;--&nbsp;Upstream&nbsp;stall:&nbsp;ALWAYS&nbsp;stall&nbsp;when&nbsp;the&nbsp;FIFO&nbsp;is&nbsp;almost&nbsp;full&nbsp;(the&nbsp;real&nbsp;
+   145: &nbsp; &nbsp;&nbsp;--&nbsp;top-level&nbsp;contract),&nbsp;plus&nbsp;extra&nbsp;random&nbsp;stalls&nbsp;for&nbsp;coverage.&nbsp;Registered,&nbsp;
+   146: &nbsp; &nbsp;&nbsp;--&nbsp;which&nbsp;the&nbsp;AlmFull&nbsp;cushion&nbsp;is&nbsp;sized&nbsp;to&nbsp;tolerate.&nbsp;
+   147: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   148: &nbsp; &nbsp;&nbsp;stall_proc&nbsp;:&nbsp;process&nbsp;(clk)&nbsp;is&nbsp;
+   149: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   150: &nbsp; &nbsp;
+   151: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;rising_edge(clk)&nbsp;then&nbsp;
+   152: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(rst&nbsp;=&nbsp;'1')&nbsp;then&nbsp;
+   153: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iStall&nbsp;&lt;=&nbsp;'0';&nbsp;
+   154: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   155: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iStall&nbsp;&lt;=&nbsp;oAlmostFull&nbsp;or&nbsp;sRandStall;&nbsp;
+   156: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   157: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   158: &nbsp; &nbsp;
+   159: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;stall_proc;&nbsp;
+   160: &nbsp; &nbsp;
+   161: &nbsp; &nbsp;&nbsp;rand_stall_proc&nbsp;:&nbsp;process&nbsp;is&nbsp;
+   162: &nbsp; &nbsp;
+   163: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;rv&nbsp;:&nbsp;RandomPType;&nbsp;
+   164: &nbsp; &nbsp;
+   165: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   166: &nbsp; &nbsp;
+   167: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;rv.InitSeed("stall");&nbsp;
+   168: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;sRandStall&nbsp;&lt;=&nbsp;'0';&nbsp;
+   169: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rst&nbsp;=&nbsp;'0';&nbsp;
+   170: &nbsp; &nbsp;
+   171: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   172: &nbsp; &nbsp;
+   173: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   174: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;~20%&nbsp;extra&nbsp;upstream&nbsp;stall.&nbsp;
+   175: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(rv.DistValInt(((1,&nbsp;20),&nbsp;(0,&nbsp;80)))&nbsp;=&nbsp;1)&nbsp;then&nbsp;
+   176: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sRandStall&nbsp;&lt;=&nbsp;'1';&nbsp;
+   177: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   178: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sRandStall&nbsp;&lt;=&nbsp;'0';&nbsp;
+   179: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   180: &nbsp; &nbsp;
+   181: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;sDriverDone;&nbsp;
+   182: &nbsp; &nbsp;
+   183: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   184: &nbsp; &nbsp;
+   185: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;sRandStall&nbsp;&lt;=&nbsp;'0';&nbsp;
+   186: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait;&nbsp;
+   187: &nbsp; &nbsp;
+   188: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;rand_stall_proc;&nbsp;
+   189: &nbsp; &nbsp;
+   190: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   191: &nbsp; &nbsp;&nbsp;--&nbsp;Downstream&nbsp;backpressure:&nbsp;weighted-random&nbsp;iReady,&nbsp;with&nbsp;occasional&nbsp;long&nbsp;
+   192: &nbsp; &nbsp;&nbsp;--&nbsp;not-ready&nbsp;bursts&nbsp;to&nbsp;fill&nbsp;the&nbsp;FIFO&nbsp;and&nbsp;exercise&nbsp;oAlmostFull&nbsp;/&nbsp;iStall.&nbsp;
+   193: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   194: &nbsp; &nbsp;&nbsp;ready_proc&nbsp;:&nbsp;process&nbsp;is&nbsp;
+   195: &nbsp; &nbsp;
+   196: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;rv&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;RandomPType;&nbsp;
+   197: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;burst&nbsp;:&nbsp;integer;&nbsp;
+   198: &nbsp; &nbsp;
+   199: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   200: &nbsp; &nbsp;
+   201: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;rv.InitSeed("ready");&nbsp;
+   202: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&lt;=&nbsp;'1';&nbsp;
+   203: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rst&nbsp;=&nbsp;'0';&nbsp;
+   204: &nbsp; &nbsp;
+   205: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   206: &nbsp; &nbsp;
+   207: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   208: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;1-in-12&nbsp;cycles,&nbsp;hold&nbsp;not-ready&nbsp;for&nbsp;a&nbsp;multi-cycle&nbsp;burst.&nbsp;
+   209: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(rv.DistValInt(((1,&nbsp;1),&nbsp;(0,&nbsp;11)))&nbsp;=&nbsp;1)&nbsp;then&nbsp;
+   210: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&lt;=&nbsp;'0';&nbsp;
+   211: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;burst&nbsp;&nbsp;:=&nbsp;rv.RandInt(2,&nbsp;2&nbsp;*&nbsp;BURST_DEPTH);&nbsp;
+   212: &nbsp; &nbsp;
+   213: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;1&nbsp;to&nbsp;burst&nbsp;loop&nbsp;
+   214: &nbsp; &nbsp;
+   215: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   216: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;sDriverDone;&nbsp;
+   217: &nbsp; &nbsp;
+   218: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   219: &nbsp; &nbsp;
+   220: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&lt;=&nbsp;'1';&nbsp;
+   221: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elsif&nbsp;(rv.DistValInt(((1,&nbsp;3),&nbsp;(0,&nbsp;1)))&nbsp;=&nbsp;1)&nbsp;then&nbsp;
+   222: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;~75%&nbsp;ready&nbsp;otherwise.&nbsp;
+   223: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&lt;=&nbsp;'1';&nbsp;
+   224: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   225: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&lt;=&nbsp;'0';&nbsp;
+   226: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   227: &nbsp; &nbsp;
+   228: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;sDriverDone;&nbsp;
+   229: &nbsp; &nbsp;
+   230: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   231: &nbsp; &nbsp;
+   232: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iReady&nbsp;&lt;=&nbsp;'1';&nbsp;
+   233: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait;&nbsp;
+   234: &nbsp; &nbsp;
+   235: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;ready_proc;&nbsp;
+   236: &nbsp; &nbsp;
+   237: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   238: &nbsp; &nbsp;&nbsp;--&nbsp;Output&nbsp;monitor:&nbsp;every&nbsp;cycle&nbsp;a&nbsp;beat&nbsp;is&nbsp;presented&nbsp;(oWordValid='1')&nbsp;the&nbsp;bytes&nbsp;
+   239: &nbsp; &nbsp;&nbsp;--&nbsp;have&nbsp;already&nbsp;been&nbsp;granted&nbsp;by&nbsp;a&nbsp;prior&nbsp;iReady,&nbsp;so&nbsp;they&nbsp;are&nbsp;checked&nbsp;
+   240: &nbsp; &nbsp;&nbsp;--&nbsp;unconditionally&nbsp;and&nbsp;in&nbsp;order&nbsp;against&nbsp;the&nbsp;scoreboard.&nbsp;oFlushDone&nbsp;marks&nbsp;the&nbsp;
+   241: &nbsp; &nbsp;&nbsp;--&nbsp;end&nbsp;of&nbsp;an&nbsp;image.&nbsp;
+   242: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   243: &nbsp; &nbsp;&nbsp;monitor_proc&nbsp;:&nbsp;process&nbsp;is&nbsp;
+   244: &nbsp; &nbsp;
+   245: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;nb&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural;&nbsp;
+   246: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;byte&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(7&nbsp;downto&nbsp;0);&nbsp;
+   247: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;cnt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural;&nbsp;
+   248: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;af&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer;&nbsp;
+   249: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;hasData&nbsp;:&nbsp;integer;&nbsp;
+   250: &nbsp; &nbsp;
+   251: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   252: &nbsp; &nbsp;
+   253: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;cnt&nbsp;:=&nbsp;0;&nbsp;
+   254: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rst&nbsp;=&nbsp;'0';&nbsp;
+   255: &nbsp; &nbsp;
+   256: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   257: &nbsp; &nbsp;
+   258: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   259: &nbsp; &nbsp;
+   260: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(oWordValid&nbsp;=&nbsp;'1'&nbsp;and&nbsp;not&nbsp;sIgnore)&nbsp;then&nbsp;
+   261: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nb&nbsp;:=&nbsp;to_integer(oValidBytes);&nbsp;
+   262: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(oAlmostFull&nbsp;=&nbsp;'1')&nbsp;then&nbsp;
+   263: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;af&nbsp;:=&nbsp;1;&nbsp;
+   264: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   265: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;af&nbsp;:=&nbsp;0;&nbsp;
+   266: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   267: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(nb&nbsp;&gt;&nbsp;0)&nbsp;then&nbsp;
+   268: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hasData&nbsp;:=&nbsp;1;&nbsp;
+   269: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   270: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hasData&nbsp;:=&nbsp;0;&nbsp;
+   271: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   272: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ICover(covEmit,&nbsp;nb);&nbsp;
+   273: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ICover(covCross,&nbsp;(hasData,&nbsp;af));&nbsp;
+   274: &nbsp; &nbsp;
+   275: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;0&nbsp;to&nbsp;nb&nbsp;-&nbsp;1&nbsp;loop&nbsp;
+   276: &nbsp; &nbsp;
+   277: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;byte&nbsp;:=&nbsp;oWord(OUT_WIDTH&nbsp;-&nbsp;1&nbsp;-&nbsp;i&nbsp;*&nbsp;8&nbsp;downto&nbsp;OUT_WIDTH&nbsp;-&nbsp;(i&nbsp;+&nbsp;1)&nbsp;*&nbsp;8);&nbsp;
+   278: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Check(SB_ID,&nbsp;byte);&nbsp;
+   279: &nbsp; &nbsp;
+   280: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   281: &nbsp; &nbsp;
+   282: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   283: &nbsp; &nbsp;
+   284: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(oFlushDone&nbsp;=&nbsp;'1'&nbsp;and&nbsp;not&nbsp;sIgnore)&nbsp;then&nbsp;
+   285: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(oWordValid&nbsp;=&nbsp;'1',&nbsp;"oFlushDone&nbsp;must&nbsp;coincide&nbsp;with&nbsp;oWordValid");&nbsp;
+   286: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cnt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;cnt&nbsp;+&nbsp;1;&nbsp;
+   287: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sFlushDone&nbsp;&lt;=&nbsp;cnt;&nbsp;
+   288: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   289: &nbsp; &nbsp;
+   290: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;sDriverDone&nbsp;and&nbsp;sFlushDone&nbsp;=&nbsp;sImagesSent&nbsp;and&nbsp;IsEmpty(SB_ID);&nbsp;
+   291: &nbsp; &nbsp;
+   292: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   293: &nbsp; &nbsp;
+   294: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait;&nbsp;
+   295: &nbsp; &nbsp;
+   296: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;monitor_proc;&nbsp;
+   297: &nbsp; &nbsp;
+   298: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   299: &nbsp; &nbsp;&nbsp;--&nbsp;Driver&nbsp;+&nbsp;reference&nbsp;model.&nbsp;
+   300: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   301: &nbsp; &nbsp;&nbsp;stim_proc&nbsp;:&nbsp;process&nbsp;is&nbsp;
+   302: &nbsp; &nbsp;
+   303: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;rv&nbsp;:&nbsp;RandomPType;&nbsp;
+   304: &nbsp; &nbsp;
+   305: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;constant&nbsp;ZERO_W&nbsp;:&nbsp;std_logic_vector(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0)&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   306: &nbsp; &nbsp;
+   307: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Reference&nbsp;FF-stuffer&nbsp;state&nbsp;(one&nbsp;image).&nbsp;
+   308: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;curByte&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(7&nbsp;downto&nbsp;0);&nbsp;
+   309: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;bitsInByte&nbsp;:&nbsp;natural&nbsp;range&nbsp;0&nbsp;to&nbsp;8;&nbsp;
+   310: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;anyBits&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;boolean;&nbsp;
+   311: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;lastEmitFF&nbsp;:&nbsp;boolean;&nbsp;
+   312: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;realSince&nbsp;&nbsp;:&nbsp;boolean;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;real&nbsp;bit&nbsp;since&nbsp;last&nbsp;emit&nbsp;
+   313: &nbsp; &nbsp;
+   314: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Append&nbsp;one&nbsp;payload&nbsp;bit&nbsp;(MSB-first)&nbsp;and&nbsp;emit&nbsp;expected&nbsp;bytes,&nbsp;stuffing&nbsp;a&nbsp;
+   315: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;'0'&nbsp;after&nbsp;every&nbsp;completed&nbsp;0xFF&nbsp;byte&nbsp;(the&nbsp;stuff&nbsp;bit&nbsp;becomes&nbsp;the&nbsp;next&nbsp;
+   316: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;byte's&nbsp;MSB,&nbsp;so&nbsp;a&nbsp;stuffed&nbsp;byte&nbsp;can&nbsp;never&nbsp;itself&nbsp;be&nbsp;0xFF).&nbsp;
+   317: &nbsp; &nbsp;
+   318: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;push_bit&nbsp;(&nbsp;
+   319: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b&nbsp;:&nbsp;std_logic&nbsp;
+   320: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;is&nbsp;
+   321: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   322: &nbsp; &nbsp;
+   323: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;curByte(7&nbsp;-&nbsp;bitsInByte)&nbsp;:=&nbsp;b;&nbsp;
+   324: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitsInByte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;bitsInByte&nbsp;+&nbsp;1;&nbsp;
+   325: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;anyBits&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;true;&nbsp;
+   326: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;realSince&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;true;&nbsp;
+   327: &nbsp; &nbsp;
+   328: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(bitsInByte&nbsp;=&nbsp;8)&nbsp;then&nbsp;
+   329: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Push(SB_ID,&nbsp;curByte);&nbsp;
+   330: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(curByte&nbsp;=&nbsp;x"FF")&nbsp;then&nbsp;
+   331: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lastEmitFF&nbsp;:=&nbsp;true;&nbsp;
+   332: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;realSince&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   333: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;curByte&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;--&nbsp;stuff&nbsp;'0'&nbsp;at&nbsp;MSB&nbsp;
+   334: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitsInByte&nbsp;:=&nbsp;1;&nbsp;
+   335: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   336: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lastEmitFF&nbsp;:=&nbsp;false;&nbsp;
+   337: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;curByte&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   338: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitsInByte&nbsp;:=&nbsp;0;&nbsp;
+   339: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   340: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   341: &nbsp; &nbsp;
+   342: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;push_bit;&nbsp;
+   343: &nbsp; &nbsp;
+   344: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Append&nbsp;the&nbsp;top&nbsp;`len`&nbsp;bits&nbsp;of&nbsp;a&nbsp;word&nbsp;(MSB-first),&nbsp;matching&nbsp;the&nbsp;DUT&nbsp;which&nbsp;
+   345: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;takes&nbsp;the&nbsp;top&nbsp;valid&nbsp;bits&nbsp;of&nbsp;iWord.&nbsp;
+   346: &nbsp; &nbsp;
+   347: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;push_word&nbsp;(&nbsp;
+   348: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector;&nbsp;
+   349: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len&nbsp;:&nbsp;natural&nbsp;
+   350: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;is&nbsp;
+   351: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   352: &nbsp; &nbsp;
+   353: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;0&nbsp;to&nbsp;len&nbsp;-&nbsp;1&nbsp;loop&nbsp;
+   354: &nbsp; &nbsp;
+   355: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push_bit(w(IN_WIDTH&nbsp;-&nbsp;1&nbsp;-&nbsp;i));&nbsp;
+   356: &nbsp; &nbsp;
+   357: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   358: &nbsp; &nbsp;
+   359: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;push_word;&nbsp;
+   360: &nbsp; &nbsp;
+   361: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Finalize&nbsp;the&nbsp;image&nbsp;at&nbsp;flush:&nbsp;push&nbsp;the&nbsp;padded&nbsp;final&nbsp;byte&nbsp;(if&nbsp;any),&nbsp;record&nbsp;
+   362: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;the&nbsp;terminal&nbsp;type&nbsp;for&nbsp;coverage,&nbsp;and&nbsp;reset&nbsp;for&nbsp;the&nbsp;next&nbsp;image.&nbsp;
+   363: &nbsp; &nbsp;
+   364: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;finish_image&nbsp;is&nbsp;
+   365: &nbsp; &nbsp;
+   366: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;ft&nbsp;:&nbsp;integer;&nbsp;
+   367: &nbsp; &nbsp;
+   368: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   369: &nbsp; &nbsp;
+   370: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(not&nbsp;anyBits)&nbsp;then&nbsp;
+   371: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ft&nbsp;:=&nbsp;FT_EMPTY;&nbsp;
+   372: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elsif&nbsp;(bitsInByte&nbsp;=&nbsp;0)&nbsp;then&nbsp;
+   373: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ft&nbsp;:=&nbsp;FT_CLEAN;&nbsp;
+   374: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elsif&nbsp;(bitsInByte&nbsp;=&nbsp;1&nbsp;and&nbsp;lastEmitFF&nbsp;and&nbsp;not&nbsp;realSince)&nbsp;then&nbsp;
+   375: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ft&nbsp;:=&nbsp;FT_DANGLING;&nbsp;
+   376: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   377: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ft&nbsp;:=&nbsp;FT_RESIDUE;&nbsp;
+   378: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   379: &nbsp; &nbsp;
+   380: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(bitsInByte&nbsp;&gt;&nbsp;0)&nbsp;then&nbsp;
+   381: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Push(SB_ID,&nbsp;curByte);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;unfilled&nbsp;low&nbsp;bits&nbsp;are&nbsp;already&nbsp;'0'&nbsp;(post-stuffing&nbsp;pad)&nbsp;
+   382: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   383: &nbsp; &nbsp;
+   384: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ICover(covFlush,&nbsp;ft);&nbsp;
+   385: &nbsp; &nbsp;
+   386: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;curByte&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   387: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bitsInByte&nbsp;:=&nbsp;0;&nbsp;
+   388: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;anyBits&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   389: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lastEmitFF&nbsp;:=&nbsp;false;&nbsp;
+   390: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;realSince&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   391: &nbsp; &nbsp;
+   392: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;finish_image;&nbsp;
+   393: &nbsp; &nbsp;
+   394: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Present&nbsp;one&nbsp;beat&nbsp;and&nbsp;advance&nbsp;only&nbsp;when&nbsp;iStall='0'&nbsp;on&nbsp;a&nbsp;rising&nbsp;edge&nbsp;
+   395: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;(==&nbsp;one&nbsp;DUT&nbsp;latch/consume;&nbsp;bit_packer&nbsp;holds&nbsp;its&nbsp;output&nbsp;across&nbsp;a&nbsp;stall).&nbsp;
+   396: &nbsp; &nbsp;
+   397: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;send_beat&nbsp;(&nbsp;
+   398: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector;&nbsp;
+   399: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len&nbsp;&nbsp;&nbsp;:&nbsp;natural;&nbsp;
+   400: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;valid&nbsp;:&nbsp;std_logic;&nbsp;
+   401: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flush&nbsp;:&nbsp;std_logic&nbsp;
+   402: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;is&nbsp;
+   403: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   404: &nbsp; &nbsp;
+   405: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;w;&nbsp;
+   406: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValidLen&nbsp;&lt;=&nbsp;to_unsigned(len,&nbsp;VLEN_W);&nbsp;
+   407: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValid&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;valid;&nbsp;
+   408: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;flush;&nbsp;
+   409: &nbsp; &nbsp;
+   410: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   411: &nbsp; &nbsp;
+   412: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   413: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;iStall&nbsp;=&nbsp;'0';&nbsp;
+   414: &nbsp; &nbsp;
+   415: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   416: &nbsp; &nbsp;
+   417: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;consumed&nbsp;on&nbsp;this&nbsp;edge;&nbsp;update&nbsp;reference&nbsp;model&nbsp;in&nbsp;DUT&nbsp;order&nbsp;(append&nbsp;then&nbsp;flush)&nbsp;
+   418: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(valid&nbsp;=&nbsp;'1')&nbsp;then&nbsp;
+   419: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push_word(w,&nbsp;len);&nbsp;
+   420: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   421: &nbsp; &nbsp;
+   422: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(flush&nbsp;=&nbsp;'1')&nbsp;then&nbsp;
+   423: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;finish_image;&nbsp;
+   424: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   425: &nbsp; &nbsp;
+   426: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValid&nbsp;&lt;=&nbsp;'0';&nbsp;
+   427: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   428: &nbsp; &nbsp;
+   429: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;send_beat;&nbsp;
+   430: &nbsp; &nbsp;
+   431: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;One&nbsp;image:&nbsp;random&nbsp;beats;&nbsp;flush&nbsp;rides&nbsp;the&nbsp;LAST&nbsp;valid&nbsp;word&nbsp;(the&nbsp;DUT&nbsp;
+   432: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;contract&nbsp;--&nbsp;iFlush&nbsp;pulses&nbsp;on&nbsp;the&nbsp;cycle&nbsp;the&nbsp;final&nbsp;word&nbsp;is&nbsp;presented,&nbsp;never&nbsp;
+   433: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;on&nbsp;an&nbsp;empty&nbsp;beat).&nbsp;Then&nbsp;wait&nbsp;for&nbsp;full&nbsp;drain&nbsp;before&nbsp;the&nbsp;next&nbsp;image.&nbsp;
+   434: &nbsp; &nbsp;
+   435: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;send_image&nbsp;(&nbsp;
+   436: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;beats&nbsp;:&nbsp;natural&nbsp;
+   437: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;is&nbsp;
+   438: &nbsp; &nbsp;
+   439: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;w&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+   440: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;len&nbsp;:&nbsp;natural;&nbsp;
+   441: &nbsp; &nbsp;
+   442: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   443: &nbsp; &nbsp;
+   444: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;n&nbsp;in&nbsp;1&nbsp;to&nbsp;beats&nbsp;loop&nbsp;
+   445: &nbsp; &nbsp;
+   446: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;~30%&nbsp;all-ones&nbsp;words&nbsp;to&nbsp;manufacture&nbsp;0xFF&nbsp;output&nbsp;bytes&nbsp;and&nbsp;stuff&nbsp;runs.&nbsp;
+   447: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(rv.DistValInt(((1,&nbsp;3),&nbsp;(0,&nbsp;7)))&nbsp;=&nbsp;1)&nbsp;then&nbsp;
+   448: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'1');&nbsp;
+   449: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   450: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   451: &nbsp; &nbsp;
+   452: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;k&nbsp;in&nbsp;0&nbsp;to&nbsp;IN_WIDTH&nbsp;/&nbsp;8&nbsp;-&nbsp;1&nbsp;loop&nbsp;
+   453: &nbsp; &nbsp;
+   454: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(rv.DistValInt(((1,&nbsp;1),&nbsp;(0,&nbsp;7)))&nbsp;=&nbsp;1)&nbsp;then&nbsp;
+   455: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w(IN_WIDTH&nbsp;-&nbsp;1&nbsp;-&nbsp;k&nbsp;*&nbsp;8&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;(k&nbsp;+&nbsp;1)&nbsp;*&nbsp;8)&nbsp;:=&nbsp;x"FF";&nbsp;
+   456: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   457: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w(IN_WIDTH&nbsp;-&nbsp;1&nbsp;-&nbsp;k&nbsp;*&nbsp;8&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;(k&nbsp;+&nbsp;1)&nbsp;*&nbsp;8)&nbsp;:=&nbsp;rv.RandSlv(0,&nbsp;255,&nbsp;8);&nbsp;
+   458: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   459: &nbsp; &nbsp;
+   460: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   461: &nbsp; &nbsp;
+   462: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   463: &nbsp; &nbsp;
+   464: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len&nbsp;:=&nbsp;rv.RandInt(1,&nbsp;IN_WIDTH);&nbsp;
+   465: &nbsp; &nbsp;
+   466: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(n&nbsp;=&nbsp;beats)&nbsp;then&nbsp;
+   467: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send_beat(w,&nbsp;len,&nbsp;'1',&nbsp;'1');&nbsp;&nbsp;&nbsp;--&nbsp;flush&nbsp;rides&nbsp;the&nbsp;final&nbsp;word&nbsp;
+   468: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   469: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send_beat(w,&nbsp;len,&nbsp;'1',&nbsp;'0');&nbsp;
+   470: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   471: &nbsp; &nbsp;
+   472: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   473: &nbsp; &nbsp;
+   474: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sImagesSent&nbsp;&lt;=&nbsp;sImagesSent&nbsp;+&nbsp;1;&nbsp;
+   475: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;serialize&nbsp;images:&nbsp;wait&nbsp;for&nbsp;full&nbsp;drain&nbsp;before&nbsp;the&nbsp;next&nbsp;one&nbsp;
+   476: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;sFlushDone&nbsp;=&nbsp;sImagesSent;&nbsp;
+   477: &nbsp; &nbsp;
+   478: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;send_image;&nbsp;
+   479: &nbsp; &nbsp;
+   480: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Directed&nbsp;beat&nbsp;helper:&nbsp;a&nbsp;single&nbsp;word&nbsp;of&nbsp;`len`&nbsp;valid&nbsp;bits.&nbsp;
+   481: &nbsp; &nbsp;
+   482: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;directed&nbsp;(&nbsp;
+   483: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+   484: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len&nbsp;:&nbsp;natural&nbsp;
+   485: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;is&nbsp;
+   486: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   487: &nbsp; &nbsp;
+   488: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send_beat(w,&nbsp;len,&nbsp;'1',&nbsp;'1');&nbsp;
+   489: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sImagesSent&nbsp;&lt;=&nbsp;sImagesSent&nbsp;+&nbsp;1;&nbsp;
+   490: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;sFlushDone&nbsp;=&nbsp;sImagesSent;&nbsp;
+   491: &nbsp; &nbsp;
+   492: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;procedure&nbsp;directed;&nbsp;
+   493: &nbsp; &nbsp;
+   494: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;ones&nbsp;:&nbsp;std_logic_vector(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+   495: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;wtmp&nbsp;:&nbsp;std_logic_vector(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+   496: &nbsp; &nbsp;
+   497: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   498: &nbsp; &nbsp;
+   499: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Stim-driven&nbsp;inputs&nbsp;(no&nbsp;signal&nbsp;defaults;&nbsp;assign&nbsp;before&nbsp;reset).&nbsp;
+   500: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;ZERO_W;&nbsp;
+   501: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iWordValid&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   502: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iWordValidLen&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   503: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   504: &nbsp; &nbsp;
+   505: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Reference&nbsp;FF-stuffer&nbsp;state.&nbsp;
+   506: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;curByte&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   507: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;bitsInByte&nbsp;:=&nbsp;0;&nbsp;
+   508: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;anyBits&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   509: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;lastEmitFF&nbsp;:=&nbsp;false;&nbsp;
+   510: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;realSince&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   511: &nbsp; &nbsp;
+   512: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;SetAlertLogName("tb_byte_stuffer_osvvm");&nbsp;
+   513: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;SetLogEnable(PASSED,&nbsp;FALSE);&nbsp;
+   514: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;rv.InitSeed(rv'instance_name);&nbsp;
+   515: &nbsp; &nbsp;
+   516: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;covEmit&nbsp;:=&nbsp;NewID("emitBytes");&nbsp;
+   517: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddBins(covEmit,&nbsp;"emitBytes",&nbsp;GenBin(0,&nbsp;OUT_BYTES,&nbsp;OUT_BYTES&nbsp;+&nbsp;1));&nbsp;
+   518: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;FT_EMPTY&nbsp;is&nbsp;unreachable&nbsp;(see&nbsp;directed-corner&nbsp;note)&nbsp;and&nbsp;excluded.&nbsp;
+   519: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;covFlush&nbsp;:=&nbsp;NewID("flushType");&nbsp;
+   520: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddBins(covFlush,&nbsp;"flushType",&nbsp;GenBin(FT_CLEAN,&nbsp;FT_DANGLING,&nbsp;3));&nbsp;
+   521: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Require&nbsp;seeing&nbsp;data&nbsp;output&nbsp;BOTH&nbsp;with&nbsp;and&nbsp;without&nbsp;almost-full&nbsp;backpressure.&nbsp;
+   522: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;(The&nbsp;0-byte&nbsp;terminal&nbsp;beat&nbsp;only&nbsp;fires&nbsp;after&nbsp;the&nbsp;FIFO&nbsp;has&nbsp;drained,&nbsp;so&nbsp;
+   523: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;0-byte&nbsp;x&nbsp;almostFull&nbsp;is&nbsp;unreachable&nbsp;and&nbsp;deliberately&nbsp;not&nbsp;a&nbsp;bin.)&nbsp;
+   524: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;covCross&nbsp;:=&nbsp;NewID("data&nbsp;x&nbsp;almostFull");&nbsp;
+   525: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(covCross,&nbsp;
+   526: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"data&nbsp;x&nbsp;almostFull",&nbsp;
+   527: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenBin(1,&nbsp;1,&nbsp;1),&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;data&nbsp;beat&nbsp;(emitBytes&nbsp;&gt;&nbsp;0)&nbsp;
+   528: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenBin(0,&nbsp;1,&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;oAlmostFull&nbsp;
+   529: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);&nbsp;
+   530: &nbsp; &nbsp;
+   531: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;apply_reset(clk,&nbsp;rst,&nbsp;6,&nbsp;'1');&nbsp;
+   532: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ones&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'1');&nbsp;
+   533: &nbsp; &nbsp;
+   534: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   535: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Directed&nbsp;corners&nbsp;(regression&nbsp;locks).&nbsp;
+   536: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   537: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;NOTE:&nbsp;a&nbsp;truly-empty&nbsp;flush&nbsp;(zero&nbsp;payload&nbsp;bits)&nbsp;is&nbsp;intentionally&nbsp;NOT&nbsp;tested&nbsp;
+   538: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;--&nbsp;it&nbsp;is&nbsp;unreachable.&nbsp;Every&nbsp;valid&nbsp;word&nbsp;into&nbsp;byte_stuffer&nbsp;carries&nbsp;&gt;=1&nbsp;bit&nbsp;
+   539: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;(regular/RI:&nbsp;the&nbsp;Golomb&nbsp;unary&nbsp;stop&nbsp;bit&nbsp;in&nbsp;the&nbsp;bit_packer;&nbsp;token_raw:&nbsp;
+   540: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;A15_A16&nbsp;guarantees&nbsp;raw&nbsp;suffix&nbsp;len&nbsp;&gt;=1),&nbsp;and&nbsp;flush&nbsp;rides&nbsp;the&nbsp;last&nbsp;valid&nbsp;
+   541: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;word,&nbsp;so&nbsp;the&nbsp;accumulator&nbsp;is&nbsp;never&nbsp;empty&nbsp;at&nbsp;flush.&nbsp;
+   542: &nbsp; &nbsp;
+   543: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Single&nbsp;non-FF&nbsp;byte,&nbsp;byte-aligned&nbsp;clean&nbsp;end.&nbsp;
+   544: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   545: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;8)&nbsp;:=&nbsp;x"5A";&nbsp;
+   546: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;directed(wtmp,&nbsp;8);&nbsp;
+   547: &nbsp; &nbsp;
+   548: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Single&nbsp;0xFF&nbsp;byte&nbsp;-&gt;&nbsp;trailing&nbsp;stuffed&nbsp;0x00&nbsp;(dangling-FF&nbsp;terminal).&nbsp;
+   549: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   550: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;8)&nbsp;:=&nbsp;x"FF";&nbsp;
+   551: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;directed(wtmp,&nbsp;8);&nbsp;
+   552: &nbsp; &nbsp;
+   553: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Sub-byte&nbsp;residue&nbsp;(5&nbsp;real&nbsp;bits)&nbsp;padded&nbsp;post-stuffing.&nbsp;
+   554: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   555: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;5)&nbsp;:=&nbsp;"10101";&nbsp;
+   556: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;directed(wtmp,&nbsp;5);&nbsp;
+   557: &nbsp; &nbsp;
+   558: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Long&nbsp;0xFF&nbsp;run&nbsp;in&nbsp;one&nbsp;beat:&nbsp;forces&nbsp;consecutive&nbsp;stuffs&nbsp;across&nbsp;the&nbsp;4-slot&nbsp;
+   559: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;chain&nbsp;(full-width&nbsp;all-ones).&nbsp;
+   560: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;directed(ones,&nbsp;IN_WIDTH);&nbsp;
+   561: &nbsp; &nbsp;
+   562: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Multi-word&nbsp;flush&nbsp;with&nbsp;residue:&nbsp;&gt;&nbsp;FIFO&nbsp;width&nbsp;of&nbsp;all-ones,&nbsp;flushed&nbsp;on&nbsp;a&nbsp;
+   563: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;final&nbsp;partial&nbsp;beat&nbsp;(regression&nbsp;for&nbsp;the&nbsp;multi-word&nbsp;valid-bits&nbsp;overflow).&nbsp;
+   564: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;send_beat(ones,&nbsp;IN_WIDTH,&nbsp;'1',&nbsp;'0');&nbsp;
+   565: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;send_beat(ones,&nbsp;IN_WIDTH,&nbsp;'1',&nbsp;'0');&nbsp;
+   566: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   567: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wtmp(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;12)&nbsp;:=&nbsp;x"FF"&nbsp;&amp;&nbsp;"0101";&nbsp;
+   568: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;directed(wtmp,&nbsp;12);&nbsp;
+   569: &nbsp; &nbsp;
+   570: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Back-to-back&nbsp;tiny&nbsp;images&nbsp;(context&nbsp;reset&nbsp;between&nbsp;flushes).&nbsp;
+   571: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;n&nbsp;in&nbsp;1&nbsp;to&nbsp;4&nbsp;loop&nbsp;
+   572: &nbsp; &nbsp;
+   573: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wtmp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   574: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wtmp(IN_WIDTH&nbsp;-&nbsp;1&nbsp;downto&nbsp;IN_WIDTH&nbsp;-&nbsp;8)&nbsp;:=&nbsp;std_logic_vector(to_unsigned(n&nbsp;*&nbsp;32,&nbsp;8));&nbsp;
+   575: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;directed(wtmp,&nbsp;8);&nbsp;
+   576: &nbsp; &nbsp;
+   577: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   578: &nbsp; &nbsp;
+   579: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   580: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Constrained-random&nbsp;images.&nbsp;
+   581: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   582: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;img&nbsp;in&nbsp;1&nbsp;to&nbsp;N_RANDOM&nbsp;loop&nbsp;
+   583: &nbsp; &nbsp;
+   584: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send_image(rv.RandInt(1,&nbsp;MAX_BEATS));&nbsp;
+   585: &nbsp; &nbsp;
+   586: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   587: &nbsp; &nbsp;
+   588: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   589: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Mid-operation&nbsp;iRst:&nbsp;drive&nbsp;a&nbsp;partial&nbsp;image&nbsp;(valid&nbsp;beats,&nbsp;no&nbsp;flush)&nbsp;then&nbsp;
+   590: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;assert&nbsp;iRst&nbsp;before&nbsp;the&nbsp;flush.&nbsp;The&nbsp;aborted&nbsp;bits&nbsp;are&nbsp;never&nbsp;scored&nbsp;(sIgnore);&nbsp;
+   591: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;after&nbsp;reset&nbsp;the&nbsp;byte_stuffer&nbsp;must&nbsp;be&nbsp;idle,&nbsp;and&nbsp;a&nbsp;fresh&nbsp;image&nbsp;must&nbsp;come&nbsp;out&nbsp;
+   592: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;byte-exact.&nbsp;The&nbsp;reference&nbsp;FF-stuffer&nbsp;state&nbsp;is&nbsp;clean&nbsp;here&nbsp;(last&nbsp;image&nbsp;was&nbsp;
+   593: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;flushed)&nbsp;and&nbsp;is&nbsp;re-initialised&nbsp;below&nbsp;to&nbsp;mirror&nbsp;the&nbsp;reset.&nbsp;
+   594: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   595: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;sIgnore&nbsp;&lt;=&nbsp;true;&nbsp;
+   596: &nbsp; &nbsp;
+   597: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;k&nbsp;in&nbsp;1&nbsp;to&nbsp;4&nbsp;loop&nbsp;
+   598: &nbsp; &nbsp;
+   599: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWord&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;rv.RandSlv(IN_WIDTH);&nbsp;
+   600: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValidLen&nbsp;&lt;=&nbsp;to_unsigned(IN_WIDTH,&nbsp;VLEN_W);&nbsp;
+   601: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iWordValid&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'1';&nbsp;
+   602: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   603: &nbsp; &nbsp;
+   604: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   605: &nbsp; &nbsp;
+   606: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   607: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;iStall&nbsp;=&nbsp;'0';&nbsp;
+   608: &nbsp; &nbsp;
+   609: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   610: &nbsp; &nbsp;
+   611: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop;&nbsp;
+   612: &nbsp; &nbsp;
+   613: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iWordValid&nbsp;&lt;=&nbsp;'0';&nbsp;
+   614: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iFlush&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;'0';&nbsp;
+   615: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;apply_reset(clk,&nbsp;rst,&nbsp;6,&nbsp;'1');&nbsp;
+   616: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;1&nbsp;ns;&nbsp;
+   617: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(oWordValid&nbsp;=&nbsp;'0',&nbsp;"mid-op&nbsp;reset:&nbsp;byte_stuffer&nbsp;output&nbsp;cleared");&nbsp;
+   618: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(oFlushDone&nbsp;=&nbsp;'0',&nbsp;"mid-op&nbsp;reset:&nbsp;no&nbsp;flush-done&nbsp;after&nbsp;reset");&nbsp;
+   619: &nbsp; &nbsp;
+   620: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Re-initialise&nbsp;the&nbsp;reference&nbsp;FF-stuffer&nbsp;state&nbsp;to&nbsp;mirror&nbsp;the&nbsp;reset.&nbsp;
+   621: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;curByte&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;
+   622: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;bitsInByte&nbsp;:=&nbsp;0;&nbsp;
+   623: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;anyBits&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   624: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;lastEmitFF&nbsp;:=&nbsp;false;&nbsp;
+   625: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;realSince&nbsp;&nbsp;:=&nbsp;false;&nbsp;
+   626: &nbsp; &nbsp;
+   627: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;sIgnore&nbsp;&lt;=&nbsp;false;&nbsp;
+   628: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;rising_edge(clk);&nbsp;
+   629: &nbsp; &nbsp;
+   630: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Recovery:&nbsp;a&nbsp;fresh&nbsp;image&nbsp;must&nbsp;encode&nbsp;byte-exact&nbsp;through&nbsp;the&nbsp;scoreboard.&nbsp;
+   631: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;send_image(rv.RandInt(1,&nbsp;MAX_BEATS));&nbsp;
+   632: &nbsp; &nbsp;
+   633: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   634: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Done:&nbsp;every&nbsp;image&nbsp;already&nbsp;drained&nbsp;(each&nbsp;send_image/directed&nbsp;waits&nbsp;for&nbsp;its&nbsp;
+   635: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;own&nbsp;oFlushDone),&nbsp;so&nbsp;just&nbsp;let&nbsp;the&nbsp;monitor&nbsp;settle,&nbsp;then&nbsp;report.&nbsp;
+   636: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--------------------------------------------------------------------------&nbsp;
+   637: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;sDriverDone&nbsp;&lt;=&nbsp;true;&nbsp;
+   638: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;10&nbsp;*&nbsp;CLK_PERIOD;&nbsp;
+   639: &nbsp; &nbsp;
+   640: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(IsEmpty(SB_ID),&nbsp;"scoreboard&nbsp;drained&nbsp;(all&nbsp;expected&nbsp;bytes&nbsp;consumed)");&nbsp;
+   641: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(GetErrorCount(SB_ID),&nbsp;0,&nbsp;"scoreboard&nbsp;mismatches");&nbsp;
+   642: &nbsp; &nbsp;
+   643: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;WriteBin(covEmit);&nbsp;
+   644: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;WriteBin(covFlush);&nbsp;
+   645: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;WriteBin(covCross);&nbsp;
+   646: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(IsCovered(covEmit),&nbsp;"emitBytes&nbsp;coverage&nbsp;closed");&nbsp;
+   647: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(IsCovered(covFlush),&nbsp;"flushType&nbsp;coverage&nbsp;closed");&nbsp;
+   648: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(IsCovered(covCross),&nbsp;"data&nbsp;x&nbsp;almostFull&nbsp;coverage&nbsp;closed");&nbsp;
+   649: &nbsp; &nbsp;
+   650: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end_of_test("tb_byte_stuffer_osvvm");&nbsp;
+   651: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait;&nbsp;
+   652: &nbsp; &nbsp;
+   653: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;stim_proc;&nbsp;
+   654: &nbsp; &nbsp;
+   655: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   656: &nbsp; &nbsp;&nbsp;--&nbsp;Watchdog.&nbsp;
+   657: &nbsp; &nbsp;&nbsp;-----------------------------------------------------------------------------&nbsp;
+   658: &nbsp; &nbsp;&nbsp;watchdog_proc&nbsp;:&nbsp;process&nbsp;is&nbsp;
+   659: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   660: &nbsp; &nbsp;
+   661: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;20&nbsp;ms;&nbsp;
+   662: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;Alert("tb_byte_stuffer_osvvm:&nbsp;watchdog&nbsp;timeout",&nbsp;FAILURE);&nbsp;
+   663: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;std.env.stop;&nbsp;
+   664: &nbsp; &nbsp;
+   665: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;watchdog_proc;&nbsp;
+   666: &nbsp; &nbsp;
+   667: &nbsp; end&nbsp;architecture&nbsp;sim;&nbsp;
+</code></pre>

@@ -158,6 +158,19 @@ echo "=============================================================="
 npass=$(grep -hc '^\*\* Note:.*: PASS ' "$LOGD"/shard_*.log 2>/dev/null | awk '{s+=$1} END{print s+0}')
 echo "Per-image PASS lines: $npass of $nelig"
 grep -h 'MANIFEST RESULT' "$LOGD"/shard_*.log 2>/dev/null || true
+
+# Status line for the published report (Verification/OSVVM/publish_reports.sh).
+if [ "$rc" -ne 0 ] || [ "$npass" -ne "$nelig" ]; then ps_status=FAIL; else ps_status=PASS; fi
+gpct=$(awk -v p="$npass" -v t="$nelig" 'BEGIN{ if (t > 0) printf "%.0f%%", 100 * p / t }')
+{
+  echo "NAME=\"Post-synth\""
+  echo "NOTE=\"golden byte-exact on funcsim netlist\""
+  echo "STATUS=$ps_status"
+  echo "PCT=\"$gpct\""
+  echo "SUMMARY=\"$npass of $nelig images byte-exact vs CharLS\""
+  echo "DATE=\"$(date -Iseconds)\""
+} > "$HERE/Output/report_status_golden.env"
+
 if [ "$rc" -ne 0 ] || [ "$npass" -ne "$nelig" ]; then
   echo "Post-synth golden: FAIL"
   grep -h 'FAIL ' "$LOGD"/shard_*.log 2>/dev/null || true

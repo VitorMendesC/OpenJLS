@@ -1,0 +1,161 @@
+<html>
+<style>
+details > summary {
+  position: sticky; 
+  top: 0; 
+}
+details[open] > summary {
+  color: white; 
+  background: black; 
+}
+.SummaryEnd {
+  color: white; 
+  background: gray; 
+}
+</style>
+<body>
+<pre>
+<details><summary>build ../../ThirdParty/osvvm/osvvm.pro</summary>
+Starting Build at time 17:52:00
+library DefaultLib /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0
+nvc --std=08 --work=defaultlib:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/DEFAULTLIB.08 --init
+set CurrentWorkingDirectory ../../ThirdParty/osvvm
+source ../../ThirdParty/osvvm/osvvm.pro
+library osvvm /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0
+nvc --std=08 --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 --init
+</details><details><summary>analyze IfElsePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/IfElsePkg.vhd
+
+</details><details><summary>analyze OsvvmTypesPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmTypesPkg.vhd
+
+</details><details><summary>analyze OsvvmScriptSettingsPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmScriptSettingsPkg.vhd
+
+</details><details><summary>analyze OsvvmSettingsPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmSettingsPkg.vhd
+
+</details><details><summary>include OsvvmVhdlSettings.pro </summary>
+set CurrentWorkingDirectory ../../ThirdParty/osvvm
+source ../../ThirdParty/osvvm/OsvvmVhdlSettings.pro
+Note: Putting setting in directory OsvvmLibraries/osvvm
+GeneratedPkg = /home/Vitor/Repos/OpenJLS/ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd
+</details><details><summary>analyze /home/Vitor/Repos/OpenJLS/ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmScriptSettingsPkg_generated.vhd
+
+</details><details><summary>analyze OsvvmSettingsPkg_default.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmSettingsPkg_default.vhd
+
+</details><details><summary>analyze TextUtilPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/TextUtilPkg.vhd
+
+</details><details><summary>analyze FileUtilPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/FileUtilPkg.vhd
+
+</details><details><summary>analyze ResolutionPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ResolutionPkg.vhd
+
+</details><details><summary>analyze NamePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/NamePkg.vhd
+
+</details><details><summary>analyze OsvvmGlobalPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmGlobalPkg.vhd
+
+</details><details><summary>analyze CoverageVendorApiPkg_default.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/CoverageVendorApiPkg_default.vhd
+
+</details><details><summary>analyze TranscriptPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/TranscriptPkg.vhd
+
+</details><details><summary>analyze deprecated/LanguageSupport2019Pkg_c.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/deprecated/LanguageSupport2019Pkg_c.vhd
+
+</details><details><summary>analyze deprecated/FileLinePathPkg_c.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/deprecated/FileLinePathPkg_c.vhd
+
+</details><details><summary>analyze deprecated/AssertApiPkg_c.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/deprecated/AssertApiPkg_c.vhd
+
+</details><details><summary>analyze AlertLogPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/AlertLogPkg.vhd
+
+</details><details><summary>analyze TbUtilPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/TbUtilPkg.vhd
+
+</details><details><summary>analyze NameStorePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/NameStorePkg.vhd
+
+</details><details><summary>analyze MessageListPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/MessageListPkg.vhd
+
+</details><details><summary>analyze SortListPkg_int.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/SortListPkg_int.vhd
+
+</details><details><summary>analyze RandomBasePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/RandomBasePkg.vhd
+
+</details><details><summary>analyze RandomPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/RandomPkg.vhd
+
+</details><details><summary>analyze RandomProcedurePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/RandomProcedurePkg.vhd
+
+</details><details><summary>analyze CoveragePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/CoveragePkg.vhd
+
+</details><details><summary>analyze DelayCoveragePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/DelayCoveragePkg.vhd
+
+</details><details><summary>analyze ClockResetPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ClockResetPkg.vhd
+
+</details><details><summary>analyze ResizePkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ResizePkg.vhd
+
+</details><details><summary>analyze ScoreboardGenericPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ScoreboardGenericPkg.vhd
+
+</details><details><summary>analyze ScoreboardPkg_IntV.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ScoreboardPkg_IntV.vhd
+
+</details><details><summary>analyze ScoreboardPkg_slv.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ScoreboardPkg_slv.vhd
+
+</details><details><summary>analyze ScoreboardPkg_int.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ScoreboardPkg_int.vhd
+
+</details><details><summary>analyze ScoreboardPkg_signed.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ScoreboardPkg_signed.vhd
+
+</details><details><summary>analyze ScoreboardPkg_unsigned.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ScoreboardPkg_unsigned.vhd
+
+</details><details><summary>analyze MemorySupportPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/MemorySupportPkg.vhd
+
+</details><details><summary>analyze MemoryGenericPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/MemoryGenericPkg.vhd
+
+</details><details><summary>analyze MemoryPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/MemoryPkg.vhd
+
+</details><details><summary>analyze ReportPkg.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/ReportPkg.vhd
+
+</details><details><summary>analyze deprecated/RandomPkg2019_c.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/deprecated/RandomPkg2019_c.vhd
+
+</details><details><summary>analyze OsvvmContext.vhd</summary>
+nvc --std=08 -H 128m --stderr=failure --ieee-warnings=off --work=osvvm:/home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0/OSVVM.08 -L /home/Vitor/Repos/OpenJLS/Verification/OSVVM/VHDL_LIBS/NVC-1.21.0 -a ../../ThirdParty/osvvm/OsvvmContext.vhd
+
+New OsvvmBuildOutputDirectory matches old one. Deleting old /home/Vitor/Repos/OpenJLS/Verification/OSVVM/osvvm 
+creating directory /home/Vitor/Repos/OpenJLS/Verification/OSVVM/osvvm
+creating directory /home/Vitor/Repos/OpenJLS/Verification/OSVVM/osvvm/reports
+creating directory /home/Vitor/Repos/OpenJLS/Verification/OSVVM/osvvm/reports/osvvm
+creating directory /home/Vitor/Repos/OpenJLS/Verification/OSVVM/osvvm/results
+</details>Build Start time  17:52:00 -03 Fri Jun 12 2026 
+Build Finish time 17:52:00, Elapsed time: 0:00:00 
+<span style=color:#00C000>Build: osvvm PASSED,  Passed: 0,  Failed: 0,  Skipped: 0,  Analyze Errors: 0,  Simulate Errors: 0</span>
+creating directory /home/Vitor/Repos/OpenJLS/Verification/OSVVM/osvvm/logs
+
+</body>

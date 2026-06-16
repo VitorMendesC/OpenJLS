@@ -1,0 +1,256 @@
+Version: "0.1"
+Coverage: 100.00
+Settings: 
+  WritePassFail: 0
+Models: 
+  - Name: "bp x inputStall x prelude"
+    TestCases: 
+      - "tb_openjls_top_osvvm"
+    Coverage: 100.00
+    Settings: 
+      CovWeight: 1
+      Goal: 100.0
+      WeightMode: "REMAIN"
+      Seeds: [346257367, 725587749]
+      CountMode: "COUNT_FIRST"
+      IllegalMode: "ILLEGAL_ON"
+      Threshold: 45.0
+      ThresholdEnable: "FALSE"
+      IsRequirement: "FALSE"
+      TotalCovCount: 12
+      TotalCovGoal: 12
+    BinInfo: 
+      Dimensions: 3
+      FieldNames: 
+        - "Bin1"
+        - "Bin2"
+        - "Bin3"
+      NumBins: 12
+    Bins: 
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 0, Max: 0}
+          - {Min: 0, Max: 0}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 0, Max: 0}
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 0, Max: 0}
+          - {Min: 2, Max: 2}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 1, Max: 1}
+          - {Min: 0, Max: 0}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 1, Max: 1}
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+          - {Min: 1, Max: 1}
+          - {Min: 2, Max: 2}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 0, Max: 0}
+          - {Min: 0, Max: 0}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 0, Max: 0}
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 0, Max: 0}
+          - {Min: 2, Max: 2}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 1, Max: 1}
+          - {Min: 0, Max: 0}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 1, Max: 1}
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "bp x inputStall x prelude"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+          - {Min: 1, Max: 1}
+          - {Min: 2, Max: 2}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+
+  - Name: "upstreamStallPropagated"
+    TestCases: 
+      - "tb_openjls_top_osvvm"
+    Coverage: 100.00
+    Settings: 
+      CovWeight: 1
+      Goal: 100.0
+      WeightMode: "REMAIN"
+      Seeds: [211982045, 223300558]
+      CountMode: "COUNT_FIRST"
+      IllegalMode: "ILLEGAL_ON"
+      Threshold: 45.0
+      ThresholdEnable: "FALSE"
+      IsRequirement: "FALSE"
+      TotalCovCount: 1
+      TotalCovGoal: 1
+    BinInfo: 
+      Dimensions: 1
+      FieldNames: 
+        - "Bin1"
+      NumBins: 1
+    Bins: 
+      - Name: "upstreamStallPropagated"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+
+  - Name: "backToBack clean/stressed/minimal"
+    TestCases: 
+      - "tb_openjls_top_osvvm"
+    Coverage: 100.00
+    Settings: 
+      CovWeight: 1
+      Goal: 100.0
+      WeightMode: "REMAIN"
+      Seeds: [1292260494, 1740210145]
+      CountMode: "COUNT_FIRST"
+      IllegalMode: "ILLEGAL_ON"
+      Threshold: 45.0
+      ThresholdEnable: "FALSE"
+      IsRequirement: "FALSE"
+      TotalCovCount: 3
+      TotalCovGoal: 3
+    BinInfo: 
+      Dimensions: 1
+      FieldNames: 
+        - "Bin1"
+      NumBins: 3
+    Bins: 
+      - Name: "backToBack clean/stressed/minimal"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "backToBack clean/stressed/minimal"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "backToBack clean/stressed/minimal"
+        Type: "COUNT"
+        Range: 
+          - {Min: 2, Max: 2}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+
+  - Name: "reset midFeed/midFeedStress/midDrain"
+    TestCases: 
+      - "tb_openjls_top_osvvm"
+    Coverage: 100.00
+    Settings: 
+      CovWeight: 1
+      Goal: 100.0
+      WeightMode: "REMAIN"
+      Seeds: [1988361918, 1692427412]
+      CountMode: "COUNT_FIRST"
+      IllegalMode: "ILLEGAL_ON"
+      Threshold: 45.0
+      ThresholdEnable: "FALSE"
+      IsRequirement: "FALSE"
+      TotalCovCount: 3
+      TotalCovGoal: 3
+    BinInfo: 
+      Dimensions: 1
+      FieldNames: 
+        - "Bin1"
+      NumBins: 3
+    Bins: 
+      - Name: "reset midFeed/midFeedStress/midDrain"
+        Type: "COUNT"
+        Range: 
+          - {Min: 0, Max: 0}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "reset midFeed/midFeedStress/midDrain"
+        Type: "COUNT"
+        Range: 
+          - {Min: 1, Max: 1}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+      - Name: "reset midFeed/midFeedStress/midDrain"
+        Type: "COUNT"
+        Range: 
+          - {Min: 2, Max: 2}
+        Count: 1
+        AtLeast: 1
+        PercentCov: 100.0000
+

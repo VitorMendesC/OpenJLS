@@ -1,0 +1,25 @@
+Version: "0.1"
+TestCaseName: "tb_jls_framer_osvvm"
+TestCaseFile:  "../../../Modules/tb_jls_framer_osvvm.vhd"
+TestSuiteName: "Modules"
+BuildName: "OSVVM_OpenJls"
+Generics:
+  OUT_WIDTH: "200"
+ReportsTestSuiteDirectory:  "reports/Modules"
+RequirementsYamlFile: ""
+AlertYamlFile:  "reports/Modules/tb_jls_framer_osvvm_OUT_WIDTH_200_alerts.yml"
+CovYamlFile:  "reports/Modules/tb_jls_framer_osvvm_OUT_WIDTH_200_cov.yml"
+ScoreboardDict:
+  slv: "reports/Modules/tb_jls_framer_osvvm_OUT_WIDTH_200_sb_slv.yml"
+TranscriptFiles: ""
+TestCaseFileName: "tb_jls_framer_osvvm_OUT_WIDTH_200"
+GenericNames: "_OUT_WIDTH_200"
+OsvvmSettingsInfo:
+  ReportsSubdirectory:  "reports"
+  SimulationLogFile: "logs/OSVVM_OpenJls.log"
+  SimulationHtmlLogFile: "logs/OSVVM_OpenJls_log.html"
+  RequirementsSubdirectory: ""
+  CoverageSubdirectory:    "CodeCoverage/OSVVM_OpenJls_code_cov.html"
+  Report2CssFiles:
+    - "reports/CssOsvvmStyle.css"
+  Report2PngFile:  "reports/OsvvmLogo.png"

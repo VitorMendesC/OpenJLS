@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="text-align: left;">
+   File:&nbsp; ../../Sources/A19_run_interruption_error.vhd
+</h2><pre><code>     0: &nbsp; ----------------------------------------------------------------------------------&nbsp;
+     1: &nbsp; --&nbsp;Engineer:&nbsp;&nbsp;&nbsp;&nbsp;Vitor&nbsp;Mendes&nbsp;Camilo&nbsp;
+     2: &nbsp; --&nbsp;
+     3: &nbsp; --&nbsp;Module&nbsp;Name:&nbsp;A19_run_interruption_error&nbsp;-&nbsp;Behavioral&nbsp;
+     4: &nbsp; --&nbsp;Description:&nbsp;Code&nbsp;segment&nbsp;A.19&nbsp;—&nbsp;error&nbsp;computation&nbsp;for&nbsp;run-interruption&nbsp;
+     5: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sample&nbsp;(lossless&nbsp;only).&nbsp;
+     6: &nbsp; --&nbsp;
+     7: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;With&nbsp;NEAR=0,&nbsp;the&nbsp;T.87&nbsp;Quantize()&nbsp;step&nbsp;is&nbsp;identity&nbsp;and&nbsp;
+     8: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rx&nbsp;=&nbsp;Ix,&nbsp;so&nbsp;no&nbsp;reconstruction&nbsp;is&nbsp;produced&nbsp;here.&nbsp;Only:&nbsp;
+     9: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;sign&nbsp;flip&nbsp;when&nbsp;RItype=0&nbsp;and&nbsp;Ra&nbsp;&gt;&nbsp;Rb&nbsp;
+    10: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;modulo&nbsp;reduction&nbsp;(A.9&nbsp;inlined)&nbsp;
+    11: &nbsp; ----------------------------------------------------------------------------------&nbsp;
+    12: &nbsp; &nbsp;
+    13: &nbsp; library&nbsp;ieee;&nbsp;
+    14: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
+    15: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
+    16: &nbsp; &nbsp;&nbsp;use&nbsp;work.common.all;&nbsp;
+    17: &nbsp; &nbsp;
+    18: &nbsp; entity&nbsp;a19_run_interruption_error&nbsp;is&nbsp;
+    19: &nbsp; &nbsp;&nbsp;generic&nbsp;(&nbsp;
+    20: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;BITNESS&nbsp;:&nbsp;natural&nbsp;range&nbsp;8&nbsp;to&nbsp;16&nbsp;:=&nbsp;CO_BITNESS_STD;&nbsp;
+    21: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;RANGE_P&nbsp;:&nbsp;natural&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;CO_RANGE_STD&nbsp;
+    22: &nbsp; &nbsp;&nbsp;);&nbsp;
+    23: &nbsp; &nbsp;&nbsp;port&nbsp;(&nbsp;
+    24: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iErrval&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;signed&nbsp;(BITNESS&nbsp;downto&nbsp;0);&nbsp;
+    25: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iRItype&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;std_logic;&nbsp;
+    26: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iRa&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;unsigned&nbsp;(BITNESS&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    27: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iRb&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;unsigned&nbsp;(BITNESS&nbsp;-&nbsp;1&nbsp;downto&nbsp;0);&nbsp;
+    28: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;oErrval&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;signed&nbsp;(BITNESS&nbsp;downto&nbsp;0);&nbsp;
+    29: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;oSign&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;std_logic&nbsp;
+    30: &nbsp; &nbsp;&nbsp;);&nbsp;
+    31: &nbsp; end&nbsp;entity&nbsp;a19_run_interruption_error;&nbsp;
+    32: &nbsp; &nbsp;
+    33: &nbsp; architecture&nbsp;behavioral&nbsp;of&nbsp;a19_run_interruption_error&nbsp;is&nbsp;
+    34: &nbsp; &nbsp;
+    35: &nbsp; begin&nbsp;
+    36: &nbsp; &nbsp;
+    37: &nbsp; &nbsp;&nbsp;p_ri_error&nbsp;:&nbsp;process&nbsp;(iErrval,&nbsp;iRItype,&nbsp;iRa,&nbsp;iRb)&nbsp;is&nbsp;
+    38: &nbsp; &nbsp;
+    39: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;vErr&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer;&nbsp;
+    40: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;vErrAdj&nbsp;:&nbsp;integer;&nbsp;
+    41: &nbsp; &nbsp;
+    42: &nbsp; &nbsp;&nbsp;begin&nbsp;
+    43: &nbsp; &nbsp;
+    44: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Sign&nbsp;adjustment:&nbsp;RItype=0&nbsp;and&nbsp;Ra&nbsp;&gt;&nbsp;Rb&nbsp;→&nbsp;negate&nbsp;error&nbsp;
+    45: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(iRItype&nbsp;=&nbsp;'0'&nbsp;and&nbsp;iRa&nbsp;&gt;&nbsp;iRb)&nbsp;then&nbsp;
+    46: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vErr&nbsp;&nbsp;:=&nbsp;-&nbsp;to_integer(iErrval);&nbsp;
+    47: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oSign&nbsp;&lt;=&nbsp;CO_SIGN_NEG;&nbsp;
+    48: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+    49: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vErr&nbsp;&nbsp;:=&nbsp;to_integer(iErrval);&nbsp;
+    50: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oSign&nbsp;&lt;=&nbsp;CO_SIGN_POS;&nbsp;
+    51: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+    52: &nbsp; &nbsp;
+    53: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Modulo&nbsp;reduction&nbsp;(A.9&nbsp;inline)&nbsp;
+    54: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;vErrAdj&nbsp;:=&nbsp;vErr;&nbsp;
+    55: &nbsp; &nbsp;
+    56: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(vErrAdj&nbsp;&lt;&nbsp;0)&nbsp;then&nbsp;
+    57: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vErrAdj&nbsp;:=&nbsp;vErrAdj&nbsp;+&nbsp;RANGE_P;&nbsp;
+    58: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+    59: &nbsp; &nbsp;
+    60: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(vErrAdj&nbsp;&gt;=&nbsp;(RANGE_P&nbsp;+&nbsp;1)&nbsp;/&nbsp;2)&nbsp;then&nbsp;
+    61: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vErrAdj&nbsp;:=&nbsp;vErrAdj&nbsp;-&nbsp;RANGE_P;&nbsp;
+    62: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+    63: &nbsp; &nbsp;
+    64: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;oErrval&nbsp;&lt;=&nbsp;to_signed(vErrAdj,&nbsp;oErrval'length);&nbsp;
+    65: &nbsp; &nbsp;
+    66: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;p_ri_error;&nbsp;
+    67: &nbsp; &nbsp;
+    68: &nbsp; end&nbsp;architecture&nbsp;behavioral;&nbsp;
+</code></pre>

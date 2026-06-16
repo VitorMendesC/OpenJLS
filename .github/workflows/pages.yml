@@ -1,0 +1,40 @@
+# Publish the committed verification reports (Docs/Reports/) to GitHub Pages.
+# This does NOT run the test suites — it only deploys the static HTML that
+# Verification/OSVVM/publish_reports.sh already generated and committed. Free
+# and unmetered on this public repo.
+#
+# One-time setup: repo Settings -> Pages -> Source -> "GitHub Actions".
+name: Deploy reports to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Docs/Reports/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; let a newer push supersede an in-flight run.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: Docs/Reports
+      - id: deployment
+        uses: actions/deploy-pages@v4

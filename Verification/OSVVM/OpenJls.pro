@@ -4,15 +4,14 @@
 #    tclsh> source ../../ThirdParty/osvvm-scripts/StartNVC.tcl
 #    tclsh> build ../../ThirdParty/osvvm/osvvm.pro
 #    tclsh> build OpenJls.pro
-#  ). Outputs land in this directory: VHDL_LIBS/ (compiled libraries),
-#  logs/, reports/ (per-test YAML + HTML), and the build summary
-#  OpenJls.html + index.html.
+#  ). Outputs land in this directory: VHDL_LIBS/ (compiled libraries) and the
+#  build report tree OSVVM_OpenJls/ (per-test YAML + HTML, logs, requirements),
+#  indexed by index.html.
 #
-#  build_run.sh remains the fast inner loop for a single TB; this flow is
-#  the full regression with HTML reports and merged functional coverage.
-#  Keep the file lists below in sync with build_run.sh.
+#  This is the single source of the file list; build_run.sh and
+#  build_reports.sh drive this flow rather than re-listing the sources.
 
-# NVC options matching build_run.sh: --relaxed permits the shared variables of
+# NVC options: --relaxed permits the shared variables of
 # non-protected types in open-logic and the TBs; --stderr=error keeps warnings
 # on stdout (tcl's exec treats any stderr output as failure, so analysis must
 # be warning-clean); --psl activates the "-- psl" contract assertions in
@@ -22,21 +21,21 @@ set ::osvvm::ExtendedGlobalOptions {--stderr=error}
 SetExtendedAnalyzeOptions {--relaxed --psl}
 SetExtendedRunOptions     {--ieee-warnings=off --exit-severity=error}
 
-# Statement+branch code coverage: ./build_coverage.sh sets CODE_COVERAGE=1.
+# Statement+branch code coverage: ./build_run.sh sets CODE_COVERAGE=1.
 # NVC's --cover-file must be unique per test, so the Test wrapper below
 # refreshes the option before every RunTest; the .covdb files are merged and
-# rendered to HTML by build_coverage.sh.
+# rendered to HTML by build_run.sh.
 set ::OpenJlsCodeCoverage [info exists ::env(CODE_COVERAGE)]
 if {$::OpenJlsCodeCoverage} {
   SetCoverageSimulateEnable true
-  file mkdir Coverage
+  file mkdir NVC_CodeCoverage
 }
 proc Test {TestFile args} {
   if {$::OpenJlsCodeCoverage} {
     # GenericNames suffix keeps [generic ...] variants of one TB from
     # overwriting each other's .covdb.
     set tn [file rootname [file tail $TestFile]]$::osvvm::GenericNames
-    SetCoverageSimulateOptions [list --cover=statement,branch --cover-file=Coverage/$tn.covdb]
+    SetCoverageSimulateOptions [list --cover=statement,branch --cover-file=NVC_CodeCoverage/$tn.covdb]
   }
   RunTest $TestFile {*}$args
 }

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="text-align: left;">
+   File:&nbsp; ../../Sources/A4_2_Q_mapping.vhd
+</h2><pre><code>     0: &nbsp; ----------------------------------------------------------------------------------&nbsp;
+     1: &nbsp; --&nbsp;Company:&nbsp;
+     2: &nbsp; --&nbsp;Engineer:&nbsp;&nbsp;&nbsp;&nbsp;Vitor&nbsp;Mendes&nbsp;Camilo&nbsp;
+     3: &nbsp; --&nbsp;
+     4: &nbsp; --&nbsp;Create&nbsp;Date:&nbsp;08/30/2025&nbsp;06:46:04&nbsp;PM&nbsp;
+     5: &nbsp; --&nbsp;Design&nbsp;Name:&nbsp;
+     6: &nbsp; --&nbsp;Module&nbsp;Name:&nbsp;A4_2_Q_mapping&nbsp;-&nbsp;Behavioral&nbsp;
+     7: &nbsp; --&nbsp;Project&nbsp;Name:&nbsp;
+     8: &nbsp; --&nbsp;Target&nbsp;Devices:&nbsp;
+     9: &nbsp; --&nbsp;Tool&nbsp;Versions:&nbsp;
+    10: &nbsp; --&nbsp;Description:&nbsp;
+    11: &nbsp; --&nbsp;
+    12: &nbsp; --&nbsp;Dependencies:&nbsp;
+    13: &nbsp; --&nbsp;
+    14: &nbsp; --&nbsp;Revision:&nbsp;
+    15: &nbsp; --&nbsp;Revision&nbsp;0.01&nbsp;-&nbsp;File&nbsp;Created&nbsp;
+    16: &nbsp; --&nbsp;Additional&nbsp;Comments:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Written&nbsp;requirement&nbsp;A.4.2&nbsp;-&nbsp;Merge&nbsp;quantized&nbsp;vector&nbsp;into&nbsp;Q&nbsp;
+    17: &nbsp; --&nbsp;
+    18: &nbsp; ----------------------------------------------------------------------------------&nbsp;
+    19: &nbsp; &nbsp;
+    20: &nbsp; library&nbsp;ieee;&nbsp;
+    21: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
+    22: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
+    23: &nbsp; &nbsp;
+    24: &nbsp; entity&nbsp;a4_2_q_mapping&nbsp;is&nbsp;
+    25: &nbsp; &nbsp;&nbsp;port&nbsp;(&nbsp;
+    26: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iQ1&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;signed(3&nbsp;downto&nbsp;0);&nbsp;&nbsp;--&nbsp;[0,&nbsp;4]&nbsp;
+    27: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iQ2&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;signed(3&nbsp;downto&nbsp;0);&nbsp;&nbsp;--&nbsp;[-4,&nbsp;4]&nbsp;
+    28: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;iQ3&nbsp;:&nbsp;in&nbsp;&nbsp;&nbsp;&nbsp;signed(3&nbsp;downto&nbsp;0);&nbsp;&nbsp;--&nbsp;[-4,&nbsp;4]&nbsp;
+    29: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;oQ&nbsp;&nbsp;:&nbsp;out&nbsp;&nbsp;&nbsp;unsigned(8&nbsp;downto&nbsp;0)&nbsp;--&nbsp;[0..364]&nbsp;
+    30: &nbsp; &nbsp;&nbsp;);&nbsp;
+    31: &nbsp; end&nbsp;entity&nbsp;a4_2_q_mapping;&nbsp;
+    32: &nbsp; &nbsp;
+    33: &nbsp; architecture&nbsp;behavioral&nbsp;of&nbsp;a4_2_q_mapping&nbsp;is&nbsp;
+    34: &nbsp; &nbsp;
+    35: &nbsp; &nbsp;&nbsp;--&nbsp;Q&nbsp;=&nbsp;81*Q1&nbsp;+&nbsp;9*Q2&nbsp;+&nbsp;Q3&nbsp;&nbsp;(Mert,&nbsp;2018)&nbsp;
+    36: &nbsp; &nbsp;&nbsp;signal&nbsp;sQ1&nbsp;:&nbsp;unsigned(2&nbsp;downto&nbsp;0);&nbsp;
+    37: &nbsp; &nbsp;&nbsp;signal&nbsp;s81&nbsp;:&nbsp;unsigned(8&nbsp;downto&nbsp;0);&nbsp;--&nbsp;81*Q1,&nbsp;&nbsp;[0..324]&nbsp;
+    38: &nbsp; &nbsp;&nbsp;signal&nbsp;s9&nbsp;&nbsp;:&nbsp;signed(7&nbsp;downto&nbsp;0);&nbsp;&nbsp;&nbsp;--&nbsp;9*Q2,&nbsp;&nbsp;[-72..72]&nbsp;
+    39: &nbsp; &nbsp;
+    40: &nbsp; begin&nbsp;
+    41: &nbsp; &nbsp;
+    42: &nbsp; &nbsp;&nbsp;sQ1&nbsp;&lt;=&nbsp;unsigned(iQ1(2&nbsp;downto&nbsp;0));&nbsp;--&nbsp;Q1&nbsp;is&nbsp;in&nbsp;range&nbsp;[0..4]&nbsp;
+    43: &nbsp; &nbsp;
+    44: &nbsp; &nbsp;&nbsp;s81&nbsp;&lt;=&nbsp;shift_left(resize(sQ1,&nbsp;9),&nbsp;6)&nbsp;
+    45: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or&nbsp;shift_left(resize(sQ1,&nbsp;9),&nbsp;4)&nbsp;
+    46: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or&nbsp;resize(sQ1,&nbsp;9);&nbsp;
+    47: &nbsp; &nbsp;
+    48: &nbsp; &nbsp;&nbsp;s9&nbsp;&lt;=&nbsp;shift_left(resize(iQ2,&nbsp;8),&nbsp;3)&nbsp;
+    49: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+&nbsp;resize(iQ2,&nbsp;8);&nbsp;
+    50: &nbsp; &nbsp;
+    51: &nbsp; &nbsp;&nbsp;oQ&nbsp;&lt;=&nbsp;resize(unsigned(signed('0'&nbsp;&amp;&nbsp;s81)&nbsp;+&nbsp;s9&nbsp;+&nbsp;iQ3),&nbsp;9);&nbsp;
+    52: &nbsp; &nbsp;
+    53: &nbsp; end&nbsp;architecture&nbsp;behavioral;&nbsp;
+</code></pre>
