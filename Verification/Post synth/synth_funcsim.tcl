@@ -1,6 +1,7 @@
 #-----------------------------------------------------------------------------
 # synth_funcsim.tcl - Synthesize openjls_top and export a VHDL funcsim netlist
-# for gate-level simulation under NVC (driven by build_run.sh).
+# for gate-level simulation under NVC (driven by build_run_osvvm.sh and
+# build_run_golden.sh).
 #
 # Non-project batch mode. The generics MUST mirror tb_openjls_top_osvvm's
 # defaults (BITNESS is an architecture constant there): the netlist bakes its
@@ -15,8 +16,8 @@ set HERE [file dirname [file normalize [info script]]]
 set ROOT [file normalize [file join $HERE .. ..]]
 # Outputs go to the cwd: Vivado mishandles space-containing paths (this
 # script's directory has one) in shell-outs during synthesis, dropping a
-# stray prefix-truncated file. build_run.sh runs this from a space-free
-# scratch dir and collects the artifacts into Output/.
+# stray prefix-truncated file. The build_run_*.sh drivers run this from a
+# space-free scratch dir and collect the artifacts into Output/.
 set OUT [pwd]
 
 # Same device as the fmax characterization project.

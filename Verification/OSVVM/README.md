@@ -103,7 +103,7 @@ OUT_WIDTH around the 64-bit default (floor 48 / 56 / header-on-beat-boundary
 200 / ceiling 1024) plus non-power-of-2 MAX dims this way; the byte stream
 they check is configuration-invariant.
 
-The top TB also runs gate-level: `Verification/Post synth/build_run.sh`
+The top TB also runs gate-level: `Verification/Post synth/build_run_osvvm.sh`
 synthesizes openjls_top at the TB's default config (Vivado, from PATH) and
 re-runs the full stress TB against the funcsim netlist under NVC
 (`POST_SYNTH` generic). Release-gated, not part of the routine suite.

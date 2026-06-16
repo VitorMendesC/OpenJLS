@@ -8,8 +8,8 @@
 # point a local shim at it) and, for the one-time vendor-library compile,
 # XILINX_VIVADO set to the Vivado install directory.
 #
-# Usage:  ./build_run.sh          synthesize + simulate
-#         ./build_run.sh --sim    skip synthesis, reuse Output/ netlist
+# Usage:  ./build_run_osvvm.sh          synthesize + simulate
+#         ./build_run_osvvm.sh --sim    skip synthesis, reuse Output/ netlist
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
