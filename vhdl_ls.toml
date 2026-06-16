@@ -2,17 +2,18 @@ standard = "2008"
 preferred_case = "lower"
 
 [libraries]
-# Sources and every TB compile into one library (--work=work), so `work`
-# resolves to `common` and the DUT entities from any TB file.
+# The RTL, the open-logic primitives it instantiates as work.*, and every TB
+# all compile into one library (--work=work), so `work` resolves design-wide:
+# `common`, the DUT entities, and the OLO packages/RAM/FIFO. open-logic must
+# live here too (it can't be a separate is_third_party library, or work.olo_*
+# wouldn't resolve from the sources).
 lib.files = [
     'Sources/*.vhd',
+    'ThirdParty/open-logic/src/base/vhdl/*.vhd',
     'Verification/OSVVM/Modules/*.vhd',
     'Verification/OSVVM/Top/*.vhd',
     'Verification/T87 conformance/*.vhd',
 ]
-
-openlogic_base.files = ['ThirdParty/open-logic/src/base/vhdl/*.vhd']
-openlogic_base.is_third_party = true
 
 osvvm.files = ['ThirdParty/osvvm/*.vhd', 'ThirdParty/osvvm/deprecated/*.vhd']
 osvvm.is_third_party = true
