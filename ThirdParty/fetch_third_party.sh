@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
-# Materialize the third-party dependencies this project relies on, pinned to the
-# versions below. This script is the provenance record: the pins and file lists
-# are the source of truth for what lives under ThirdParty/ and where it came
-# from.
+# Rebuild this project's third-party environment from scratch, pinned to the
+# versions below. Run it on a fresh clone to get everything the build and
+# verification flows need. This script is also the provenance record: the pins
+# and file lists are the source of truth for what each dependency is and where
+# it came from.
 #
-# Two kinds of dependency live here:
+# Three kinds of dependency live here:
 #   - Vendored HDL (open-logic, osvvm, osvvm-scripts, tcllib): a curated set of
 #     files is copied in and committed; the build then reads them offline and
 #     never needs the network. Re-run only to (re)materialize or bump them.
 #   - Built-from-source tools (charls): cloned at a pinned commit and compiled
 #     locally; the source tree and binary are gitignored (reproducible from the
-#     pin). Built on demand by the golden-model flows, which call this script.
+#     pin). Also built on demand by the golden-model flows, which call this.
+#   - System packages (nvc): the VHDL simulator, installed via the OS package
+#     manager. Runs last so the vendored deps land first; needs sudo (Ubuntu)
+#     or an AUR helper (Arch), so a no-arg run may prompt for elevation.
 #
-# Usage:  ./fetch_third_party.sh                 all components
-#         ./fetch_third_party.sh charls          one or more named components
-#         (names: open-logic osvvm osvvm-scripts tcllib charls)
+# Usage:  ./fetch_third_party.sh                 everything (full environment)
+#         ./fetch_third_party.sh nvc             one or more named components
+#         (names: open-logic osvvm osvvm-scripts tcllib charls nvc)
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -36,6 +40,10 @@ TCLLIB_TAG="tcllib-2-0"
 
 CHARLS_URL="https://github.com/team-charls/charls.git"   # JPEG-LS reference encoder
 CHARLS_COMMIT=57ac3c337083bedbdfc93d19ec75a02101b1cd71    # polished cli/ lives on main, not in 2.4.x tags
+
+NVC_URL="https://github.com/nickg/nvc"   # GPL-3.0 VHDL simulator (system install, not vendored)
+NVC_DOCS="https://www.nickg.me.uk/nvc/"
+NVC_VERSION="1.21.0"                     # the version this project develops and tests against
 
 # --- open-logic: base packages + RAM/FIFO primitives the RTL instantiates ---
 fetch_open_logic() {
@@ -179,9 +187,55 @@ fetch_charls() {
   echo "Built: $CLI"
 }
 
+# --- NVC: the VHDL simulator every flow runs on ------------------------------
+# Not vendored (its GPL covers the simulator, not the IP it runs); installed as
+# a system package. Auto-installs the pinned version on the platforms we can
+# detect, and otherwise points you at the upstream instructions. Idempotent:
+# skips when nvc is already on PATH.
+fetch_nvc() {
+  if command -v nvc > /dev/null 2>&1; then
+    echo "==> nvc already installed: $(nvc --version | head -n1)"
+    return 0
+  fi
+
+  local id ver arch
+  id="$( [ -r /etc/os-release ] && . /etc/os-release && printf '%s' "${ID:-}" )"
+  ver="$( [ -r /etc/os-release ] && . /etc/os-release && printf '%s' "${VERSION_ID:-}" )"
+  arch="$(uname -m)"
+
+  manual_nvc() {
+    echo "Due to your system OS or version we can't automatically install NVC." >&2
+    echo "Install it manually — releases: $NVC_URL/releases  docs: $NVC_DOCS" >&2
+    return 1
+  }
+
+  case "$id" in
+    ubuntu)
+      # Prebuilt .deb is amd64-only and published per Ubuntu LTS.
+      [ "$arch" = "x86_64" ] || { manual_nvc; return 1; }
+      case "$ver" in
+        22.04 | 24.04)
+          local deb="nvc_${NVC_VERSION}-1_amd64_ubuntu-${ver}.deb"
+          echo "==> nvc $NVC_VERSION (Ubuntu $ver)"
+          curl -fLo "$TMP/$deb" "$NVC_URL/releases/download/r${NVC_VERSION}/$deb"
+          sudo apt install -y "$TMP/$deb"
+          ;;
+        *) manual_nvc; return 1 ;;
+      esac
+      ;;
+    arch | manjaro | endeavouros)
+      echo "==> nvc (Arch, via yay)"
+      command -v yay > /dev/null 2>&1 \
+        || { echo "yay not found — install an AUR helper, or build from source: $NVC_URL" >&2; return 1; }
+      yay -S --needed nvc
+      ;;
+    *) manual_nvc; return 1 ;;
+  esac
+}
+
 # --- dispatch ---------------------------------------------------------------
 components=("$@")
-[ ${#components[@]} -eq 0 ] && components=(open-logic osvvm osvvm-scripts tcllib charls)
+[ ${#components[@]} -eq 0 ] && components=(open-logic osvvm osvvm-scripts tcllib charls nvc)
 for c in "${components[@]}"; do
   case "$c" in
     open-logic)    fetch_open_logic ;;
@@ -189,7 +243,8 @@ for c in "${components[@]}"; do
     osvvm-scripts) fetch_osvvm_scripts ;;
     tcllib)        fetch_tcllib ;;
     charls)        fetch_charls ;;
-    *) echo "unknown component: $c (open-logic osvvm osvvm-scripts tcllib charls)" >&2; exit 1 ;;
+    nvc)           fetch_nvc ;;
+    *) echo "unknown component: $c (open-logic osvvm osvvm-scripts tcllib charls nvc)" >&2; exit 1 ;;
   esac
 done
 
