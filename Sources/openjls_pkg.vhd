@@ -4,7 +4,7 @@
 --
 -- Create Date: 08/18/2025 09:44:52 PM
 -- Design Name:
--- Module Name: Common - Behavioral
+-- Module Name: openjls_pkg
 -- Project Name:
 -- Target Devices:
 -- Tool Versions:
@@ -26,7 +26,7 @@ library work;
   use work.olo_base_pkg_math.log2ceil;
   use work.olo_base_pkg_math.log2;
 
-package common is
+package openjls_pkg is
 
   -- Internal ----------------------------------------------------------------------------
   constant CO_SIGN_POS         : std_logic := '0';
@@ -151,9 +151,9 @@ package common is
   constant CO_BYTE_STUFFER_OUT_WIDTH           : natural := CO_BYTE_STUFFER_OUT_BYTES_PER_CYCLE * 8;
   constant CO_BYTE_STUFFER_BURST_DEPTH         : natural := 16;
 
-end package common;
+end package openjls_pkg;
 
-package body common is
+package body openjls_pkg is
 
   function math_min (
     a,
@@ -222,4 +222,4 @@ package body common is
 
   end function bool2bit;
 
-end package body common;
+end package body openjls_pkg;

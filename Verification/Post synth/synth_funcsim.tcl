@@ -40,7 +40,7 @@ foreach f {
 
 set SRC [file join $ROOT Sources]
 foreach f {
-  Common.vhd
+  openjls_pkg.vhd
   A1_gradient_comp.vhd
   A3_mode_selection.vhd
   A4_quantization_gradients.vhd

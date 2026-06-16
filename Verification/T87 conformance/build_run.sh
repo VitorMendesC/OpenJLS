@@ -36,10 +36,10 @@ OL_FILES=(
 "${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" \
   "${OL_FILES[@]/#/$OL_SRC/}"
 
-# 2. Project sources (Common first, openjls_top last)
+# 2. Project sources (openjls_pkg first, openjls_top last)
 SRC="$ROOT/Sources"
 SRC_FILES=(
-  Common.vhd
+  openjls_pkg.vhd
   A1_gradient_comp.vhd
   A3_mode_selection.vhd
   A4_quantization_gradients.vhd

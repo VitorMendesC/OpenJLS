@@ -63,7 +63,7 @@ mkdir -p "$LIBS"
 NVC=(nvc --std=2008 --ieee-warnings=off -L "$LIBS" -L "$OSVVM_DIR/nvc-libs")
 
 # 4. Packages the TB needs (the netlist itself is self-contained + unisim):
-#    olo math for log2ceil, Common for CO_OUT_WIDTH_STD.
+#    olo math for log2ceil, openjls_pkg for CO_OUT_WIDTH_STD.
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
 "${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed \
   "$OL_SRC/olo_base_pkg_array.vhd" \
@@ -71,7 +71,7 @@ OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
   "$OL_SRC/olo_base_pkg_string.vhd" \
   "$OL_SRC/olo_base_pkg_logic.vhd" \
   "$OL_SRC/olo_base_pkg_attribute.vhd"
-"${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed "$ROOT/Sources/Common.vhd"
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed "$ROOT/Sources/openjls_pkg.vhd"
 
 # 5. The netlist takes the RTL's place: work.openjls_top is the funcsim
 #    netlist, and the TB's POST_SYNTH component default-binds to it.

@@ -61,7 +61,7 @@ analyze Support/tb_support_pkg.vhd
 # Project RTL. TBs are analyzed into this same library by RunTest, so their
 # `entity work.<dut>` references resolve here.
 library openjls
-analyze ../../Sources/Common.vhd
+analyze ../../Sources/openjls_pkg.vhd
 analyze ../../Sources/A1_gradient_comp.vhd
 analyze ../../Sources/A3_mode_selection.vhd
 analyze ../../Sources/A4_quantization_gradients.vhd

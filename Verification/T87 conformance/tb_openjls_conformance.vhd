@@ -20,7 +20,7 @@ library ieee;
   use ieee.numeric_std.all;
   use std.textio.all;
   use std.env.all;
-  use work.common.all;
+  use work.openjls_pkg.all;
 
 library work;
   use work.olo_base_pkg_math.log2ceil;

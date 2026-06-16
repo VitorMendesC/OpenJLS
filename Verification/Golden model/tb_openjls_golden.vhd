@@ -16,7 +16,7 @@
   --
   -- Behavioral (NVC) or post-synthesis netlist sim via POST_SYNTH_FRIENDLY.
   ----------------------------------------------------------------------------------
-  use work.common.all;
+  use work.openjls_pkg.all;
 
 library ieee;
   use ieee.std_logic_1164.all;

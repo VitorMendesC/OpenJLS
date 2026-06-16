@@ -4,7 +4,7 @@ preferred_case = "lower"
 [libraries]
 # The RTL, the open-logic primitives it instantiates as work.*, and every TB
 # all compile into one library (--work=work), so `work` resolves design-wide:
-# `common`, the DUT entities, and the OLO packages/RAM/FIFO. open-logic must
+# `openjls_pkg`, the DUT entities, and the OLO packages/RAM/FIFO. open-logic must
 # live here too (it can't be a separate is_third_party library, or work.olo_*
 # wouldn't resolve from the sources).
 lib.files = [

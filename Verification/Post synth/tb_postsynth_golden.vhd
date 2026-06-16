@@ -18,7 +18,7 @@
   -- Driven by build_run_golden.sh, which synthesizes the netlist, mints the CharLS
   -- goldens, writes the manifest, and runs this TB once.
   ----------------------------------------------------------------------------------
-  use work.common.all;
+  use work.openjls_pkg.all;
 
 library ieee;
   use ieee.std_logic_1164.all;

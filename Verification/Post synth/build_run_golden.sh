@@ -119,7 +119,7 @@ for ((s=0; s<NSH; s++)); do tac "$HERE/Output/shard_$s.txt" > "$HERE/Output/shar
 echo "8-bit images: $nelig across $NSH shard(s) (heap=$NVC_HEAP, per-worker cap=$PER_MEM)"
 echo "=============================================================="
 
-# 4. Analyze: olo math (log2ceil) + Common, the netlist as work.openjls_top,
+# 4. Analyze: olo math (log2ceil) + openjls_pkg, the netlist as work.openjls_top,
 #    then the dedicated post-synth TB (binds work.openjls_top(STRUCTURE)).
 NVC=(nvc --std=2008 --ieee-warnings=off -H "$NVC_HEAP" -L "$LIBS")
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
@@ -127,7 +127,7 @@ OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
   "$OL_SRC/olo_base_pkg_array.vhd" "$OL_SRC/olo_base_pkg_math.vhd" \
   "$OL_SRC/olo_base_pkg_string.vhd" "$OL_SRC/olo_base_pkg_logic.vhd" \
   "$OL_SRC/olo_base_pkg_attribute.vhd"
-"${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed "$ROOT/Sources/Common.vhd"
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed "$ROOT/Sources/openjls_pkg.vhd"
 "${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed "$NETLIST"
 "${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed "$HERE/$TB.vhd"
 

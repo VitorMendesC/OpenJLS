@@ -27,7 +27,7 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
-  use work.common.all;
+  use work.openjls_pkg.all;
 
 entity a15_a16_encode_run is
   generic (
