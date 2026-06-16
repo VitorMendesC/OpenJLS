@@ -88,9 +88,15 @@ Resource usage by image width (default strategy; near-identical across strategie
 
 ## Verification
 
-OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) and the [OSVVM](https://osvvm.org/) methodology, pairing self-checking constrained-random tests with byte-exact comparison against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large corpus of real images.
+OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using a layered suite that combines constrained-random self-checking tests, functional coverage, and byte-exact comparison against an independent reference encoder — run at both the RTL and post-synthesis (gate-level) stages:
 
-**Real-image golden-model conformance.** Each encoded bitstream is byte-compared against [CharLS](https://github.com/team-charls/charls) and the official ISO/IEC 14495-1 reference vectors. The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
+- **OSVVM** — Control-plane verification. 28 module-level testbenches and a top-level system stress test (reset injection, output backpressure, randomized image sizes), each checked against a behavioral reference model derived from the ITU-T T.87 specification, with requirements tracking. Confirms the encoder sustains one pixel per clock and stalls *only* under downstream backpressure, and streams images back-to-back with no gap or data loss.
+- **Coverage** — Two complementary metrics, both gathered within the OSVVM verification suite: OSVVM provides functional (behavioral) coverage, while NVC provides structural code coverage, reaching 99%+ statement coverage.
+- **Golden model** — Byte-exact comparison of the output bitstream against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large dataset of real images — natural photographs and synthetic stress patterns that push the algorithm past anything natural images reach (see below). Also validated against the official ISO/IEC 14495-1 reference vectors.
+- **Design contracts** — Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked on every simulation run.
+- **Post-synthesis** — The top-level OSVVM stress test and a subset of the golden-model dataset are re-run on the synthesized gate-level netlist, guaranteeing synthesis did not change the encoder's behavior.
+
+**Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
 
 | Source | Set | Images |
 |---|---|--:|
@@ -104,14 +110,6 @@ The real datasets give natural image statistics from 256×256 up to **39 megapix
 - **Boundary geometries** — the smallest legal image (4×1), tall single-column images, and maximum-width single rows up to 65535×1.
 - **Predictor-adversarial content** — checkerboard, vertical/horizontal stripes and sparse spikes that defeat the MED predictor on every pixel, plus incompressible uniform noise.
 - **Tiny-image fuzz batch** — many small randomized images that stress start and end-of-image edge conditions far more densely than full-size images can.
-
-**OSVVM suite.** 28 module-level testbenches plus a top-level control-plane stress test (reset injection, output backpressure, randomized image sizes), with functional coverage, per-module behavioral reference models derived from the T.87 specification, requirements tracking, and 99%+ statement coverage measured under NVC.
-
-**Throughput and streaming.** The top-level stress test verifies the encoder sustains one pixel per clock and stalls *only* when the downstream sink applies backpressure — never on its own — and that it streams consecutive images back-to-back with no gap or data loss between them. Measured on un-backpressured feeds: zero internal stalls across thousands of offered-pixel checks and hundreds of line- and image-boundary checks.
-
-**Design contracts.** Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked on every simulation run.
-
-**Post-synthesis.** The synthesized gate-level netlist is re-run through the same OSVVM tooling and base images and is bit-identical to the RTL, confirming the encoder survives synthesis unchanged.
 
 ---
 
