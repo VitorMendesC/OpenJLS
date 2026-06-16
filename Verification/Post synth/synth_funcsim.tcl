@@ -73,13 +73,23 @@ foreach f {
   read_vhdl -vhdl2008 [file join $SRC $f]
 }
 
+# Config bakes into the netlist at synthesis. Defaults mirror the OSVVM top
+# TB; the golden post-synth flow overrides via env to size an 8-bit netlist
+# that fits the largest real image (e.g. MAX_IMAGE_WIDTH/HEIGHT for the 8-bit
+# corpus). The consuming TB declares matching fixed port widths.
+set BITNESS          [expr {[info exists ::env(SYNTH_BITNESS)]     ? $::env(SYNTH_BITNESS)     : 8}]
+set MAX_IMAGE_WIDTH  [expr {[info exists ::env(SYNTH_MAX_WIDTH)]   ? $::env(SYNTH_MAX_WIDTH)   : 4096}]
+set MAX_IMAGE_HEIGHT [expr {[info exists ::env(SYNTH_MAX_HEIGHT)]  ? $::env(SYNTH_MAX_HEIGHT)  : 4096}]
+set OUT_WIDTH        [expr {[info exists ::env(SYNTH_OUT_WIDTH)]   ? $::env(SYNTH_OUT_WIDTH)   : 64}]
+puts "Synthesizing openjls_top: BITNESS=$BITNESS MAX=${MAX_IMAGE_WIDTH}x${MAX_IMAGE_HEIGHT} OUT_WIDTH=$OUT_WIDTH"
+
 # out_of_context: no IO buffer insertion, so the netlist ports stay
 # bit-for-bit those of the RTL entity.
 synth_design -top openjls_top -part $PART -mode out_of_context \
-  -generic BITNESS=8 \
-  -generic MAX_IMAGE_WIDTH=4096 \
-  -generic MAX_IMAGE_HEIGHT=4096 \
-  -generic OUT_WIDTH=64
+  -generic BITNESS=$BITNESS \
+  -generic MAX_IMAGE_WIDTH=$MAX_IMAGE_WIDTH \
+  -generic MAX_IMAGE_HEIGHT=$MAX_IMAGE_HEIGHT \
+  -generic OUT_WIDTH=$OUT_WIDTH
 
 write_vhdl -mode funcsim -force [file join $OUT openjls_top_funcsim.vhd]
 report_utilization -file [file join $OUT synth_util.rpt]
