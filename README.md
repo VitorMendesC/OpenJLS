@@ -1,12 +1,12 @@
 # OpenJLS
 
-OpenJLS is a **JPEG-LS encoder IP core for FPGAs**, written in VHDL.
+OpenJLS is a **JPEG-LS encoder IP core for FPGAs** for real-time image compression.
 
-It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
+It implements the JPEG-LS standard (described by ISO/IEC 14495-1 or ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
+
+OpenJLS can reach a maximum frequency up to ~250 MHz on a Xilinx UltraScale+ ZU7EG, an MPSoC often used in space applications, and it processes 1 pixel per clock, resulting in ~250 MPixels/s. It operates on single-component data, often called grayscale, so in a satellite camera with multiple bands each band would need its own compressor; this is not an issue since the resource usage is minimal, and it greatly increases throughput since each compressor can operate in parallel.
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform.
-
-> **Status:** v1.0 — feature-complete and verified. The lossless encoder is integrated end-to-end with AXI4-Stream interfaces, bit-exact against the ISO/IEC 14495-1 reference and the CharLS golden model, validated at the gate level after synthesis, and characterized for timing and resources (~250 MHz on UltraScale+, see below). See the [Verification](#verification) section and the [roadmap](Docs/roadmap.md).
 
 ---
 
@@ -27,13 +27,8 @@ Specifications
 - **Memory** — Line buffer, as big as image width, on-chip
 - **Throughput** — One pixel per clock cycle
 - **Interface** — AXI4-Stream input/output
-- **Conformance** — Bit-exact against the ISO/IEC 14495-1 reference and gold-model [CharLS](https://github.com/team-charls/charls) 
-- **Design contracts** — Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked in every simulation
-- **Portability** — Vendor-agnostic VHDL, portable across FPGA families via [open-logic](https://github.com/open-logic/open-logic)
-
-Planned
-
-- Decoder IP core
+- **Conformance** — Bit-exact against the ISO/IEC 14495-1 reference and golden-model [CharLS](https://github.com/team-charls/charls)
+- **Portability** — Vendor-agnostic VHDL, due to memory-agnostic IPs from [open-logic](https://github.com/open-logic/open-logic)
 
 ---
 
@@ -55,7 +50,7 @@ The hardware architecture is based on the optimizations in Mert's [*Key Architec
 
 ## Performance & Resources
 
-Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning and vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s.
+Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning or vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s.
 
 ### Maximum frequency vs image size
 
@@ -93,7 +88,7 @@ Resource usage by image width (default strategy; near-identical across strategie
 
 ## Verification
 
-OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) and the [OSVVM](https://osvvm.org/) methodology, pairing self-checking constrained-random tests with byte-exact comparison against an independent reference encoder over a large corpus of real images.
+OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) and the [OSVVM](https://osvvm.org/) methodology, pairing self-checking constrained-random tests with byte-exact comparison against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large corpus of real images.
 
 **Real-image golden-model conformance.** Each encoded bitstream is byte-compared against [CharLS](https://github.com/team-charls/charls) and the official ISO/IEC 14495-1 reference vectors. The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
 
@@ -105,10 +100,10 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) and t
 
 The real datasets give natural image statistics from 256×256 up to **39 megapixels** (7216×5412); the generated probes deliberately target what real images never reach. [`gen_stress.py`](Verification/Golden%20model/imageprep/gen_stress.py) emits them deterministically — seeded and byte-reproducible, so the committed generator is the source of truth — covering:
 
-- **Intermediate bit depths (9–15)** — no natural dataset exists here, so these probes are the *only* coverage of the T.87 constant derivations (code-length limit, *k* range, counter widths) between 8- and 16-bit.
+- **Intermediate bit depths (9–15)** — no natural dataset exists here, so these probes are the only coverage of the 9–15-bit range.
 - **Boundary geometries** — the smallest legal image (4×1), tall single-column images, and maximum-width single rows up to 65535×1.
 - **Predictor-adversarial content** — checkerboard, vertical/horizontal stripes and sparse spikes that defeat the MED predictor on every pixel, plus incompressible uniform noise.
-- **Tiny-image fuzz batch** — many small randomized images that stress start- and end-of-image edge conditions far more densely than full-size images can; this batch caught a real end-of-image corner-case bug that no natural image exposed.
+- **Tiny-image fuzz batch** — many small randomized images that stress start and end-of-image edge conditions far more densely than full-size images can.
 
 **OSVVM suite.** 28 module-level testbenches plus a top-level control-plane stress test (reset injection, output backpressure, randomized image sizes), with functional coverage, per-module behavioral reference models derived from the T.87 specification, requirements tracking, and 99%+ statement coverage measured under NVC.
 
@@ -133,19 +128,43 @@ OpenJLS is dual-licensed:
 
 ## Dependencies
 
-All third-party components are vendored under `ThirdParty/` with their license texts, pinned to fixed releases by [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh). Only open-logic is part of the synthesizable IP; everything else is verification tooling and is never distributed in a product.
+Dependencies fall into two independent sets. **Using the IP** needs only the base set below — the core is plain VHDL-1993 and synthesizes in any EDA tool on any OS. **Running the verification suite** needs the Linux toolchain in the second table; none of it is part of, or distributed with, the IP.
 
-| Component | License | Scope | Notes |
-|---|---|---|---|
-| [open-logic](https://github.com/open-logic/open-logic) | LGPL-2.1+ with PSI HDL exception | Synthesized RTL | Memory and FIFO primitives. Weak copyleft confined to its own files; the exception explicitly permits distributing FPGA bitstreams under the user's own terms. |
-| [OSVVM](https://github.com/OSVVM/OSVVM) | Apache-2.0 | Verification only | VHDL verification library used by the testbench suite. |
-| [OSVVM-Scripts](https://github.com/OSVVM/OSVVM-Scripts) | Apache-2.0 | Verification only | Regression and report-generation script flow. |
-| [tcllib](https://github.com/tcltk/tcllib) | Tcl/BSD-style | Verification only | `fileutil` and `yaml` modules required by the report scripts. |
-| [CharLS](https://github.com/team-charls/charls) | BSD-3-Clause | Verification only | Golden reference encoder for conformance testing; built from source, not vendored or redistributed. |
+### Base IP
 
-No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution of the repository or the IP must retain the third-party copyright notices and license texts in `ThirdParty/`.
+| Component | License | Notes |
+|---|---|---|
+| [open-logic](https://github.com/open-logic/open-logic) | LGPL-2.1+ with PSI HDL exception | Vendor-agnostic memory and FIFO primitives. Weak copyleft confined to its own files; the exception explicitly permits distributing FPGA bitstreams under your own terms. |
 
-**Toolchain.** Simulation, code coverage, and post-synthesis verification run on [NVC](https://www.nickg.me.uk/nvc/) — the sole simulator, having replaced GHDL across all flows. Synthesis and timing/resource characterization use AMD Vivado. Both are external tools, not vendored, and are needed only to verify and implement the IP — not to use it.
+The IP carries no OS or vendor lock-in — it builds with Vivado, Quartus, Libero, Lattice, or open-source tools. (The performance figures above were characterized with AMD Vivado, but any synthesis tool works.)
+
+### Verification (Linux)
+
+The verification flows are bash-driven and built around the NVC simulator; they run on Linux and are not supported on Windows.
+Every component below is easily sourced by running [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh), with the exception of NVC that must be installed in the machine.
+
+| Component | License | Notes |
+|---|---|---|
+| [NVC](https://www.nickg.me.uk/nvc/) | GPL-3.0 | VHDL simulator for all simulation, coverage, and post-synthesis flows; developed and tested with NVC 1.21. Installed separately (see below), not vendored — its GPL covers the simulator, not the IP it runs. |
+| [CharLS](https://github.com/team-charls/charls) | BSD-3-Clause | JPEG-LS reference encoder for the golden-model cross-check; built from source at a pinned commit by `build_charls.sh`. |
+| [OSVVM](https://github.com/OSVVM/OSVVM) | Apache-2.0 | VHDL verification library used by the testbench suite. |
+| [OSVVM-Scripts](https://github.com/OSVVM/OSVVM-Scripts) | Apache-2.0 | Regression and report-generation script flow. |
+| [tcllib](https://github.com/tcltk/tcllib) | Tcl/BSD-style | `fileutil` and `yaml` modules required by the report scripts. |
+
+For Ubuntu, NVC ships prebuilt `.deb` packages on its [releases](https://github.com/nickg/nvc/releases); install the one matching your Ubuntu (22.04 or 24.04), and if you run into any issues try the same version this project uses, 1.21.0. On Ubuntu 24.04 the following commands fetch and install the 1.21.0 release:
+
+```bash
+curl -LO https://github.com/nickg/nvc/releases/download/r1.21.0/nvc_1.21.0-1_amd64_ubuntu-24.04.deb
+sudo apt install ./nvc_1.21.0-1_amd64_ubuntu-24.04.deb
+```
+
+On Arch Linux you can easily install NVC with
+
+```bash
+yay -S nvc
+```
+
+The vendored libraries (open-logic, OSVVM, OSVVM-Scripts, tcllib) live under `ThirdParty/` with their license texts, pinned by [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh). No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution must retain the third-party copyright notices and license texts in `ThirdParty/`.
 
 ---
 
