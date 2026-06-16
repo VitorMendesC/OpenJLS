@@ -32,6 +32,33 @@ Specifications
 
 ---
 
+## Verification
+
+OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using a layered suite that combines constrained-random self-checking tests, functional coverage, and byte-exact comparison against an independent reference encoder — run at both the RTL and post-synthesis (gate-level) stages:
+
+- **OSVVM** — Per-module correctness and system-level control-plane stress. Each of 28 module-level testbenches verifies its module against an independent behavioral reference model derived from the ITU-T T.87 specification; a top-level testbench stresses the control plane (reset injection, output backpressure, randomized image sizes), all with requirements tracking. Confirms the encoder sustains one pixel per clock and stalls *only* under downstream backpressure, and streams images back-to-back with no gap or data loss.
+- **Coverage** — Two complementary metrics, both gathered within the OSVVM verification suite: OSVVM provides functional (behavioral) coverage, while NVC provides structural code coverage, reaching 99%+ statement coverage.
+- **Golden model** — Byte-exact comparison of the output bitstream against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large dataset of real images — natural photographs and synthetic stress patterns that push the algorithm past anything natural images reach (see below). Also validated against the official ISO/IEC 14495-1 reference vectors.
+- **Design contracts** — Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked on every simulation run.
+- **Post-synthesis** — The top-level OSVVM stress test and a subset of the golden-model dataset are re-run on the synthesized gate-level netlist, guaranteeing synthesis did not change the encoder's behavior.
+
+**Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
+
+| Source | Set | Images |
+|---|---|--:|
+| [USC-SIPI](https://sipi.usc.edu/database/) | Aerials, textures, miscellaneous, sequences | 210 |
+| [imagecompression.info](http://imagecompression.info/test_images/) | 8-bit and 16-bit natural photographs | 30 |
+| Generated stress probes | Boundary, predictor-adversarial, high-entropy and fuzz patterns | 47 |
+
+The real datasets give natural image statistics from 256×256 up to **39 megapixels** (7216×5412); the generated probes deliberately target what real images never reach. [`gen_stress.py`](Verification/Golden%20model/imageprep/gen_stress.py) emits them deterministically — seeded and byte-reproducible, so the committed generator is the source of truth — covering:
+
+- **Intermediate bit depths (9–15)** — no natural dataset exists here, so these probes are the only coverage of the 9–15-bit range.
+- **Boundary geometries** — the smallest legal image (4×1), tall single-column images, and maximum-width single rows up to 65535×1.
+- **Predictor-adversarial content** — checkerboard, vertical/horizontal stripes and sparse spikes that defeat the MED predictor on every pixel, plus incompressible uniform noise.
+- **Tiny-image fuzz batch** — many small randomized images that stress start and end-of-image edge conditions far more densely than full-size images can.
+
+---
+
 ## Architecture
 
 ![OpenJLS Architecture](Docs/Images/OpenJLS_arch.png)
@@ -83,33 +110,6 @@ Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~
 | 32768 | 7990 | 2095 | 11.0 |
 
 Resource usage by image width (default strategy; near-identical across strategies). Reproduce both tables with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
-
----
-
-## Verification
-
-OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using a layered suite that combines constrained-random self-checking tests, functional coverage, and byte-exact comparison against an independent reference encoder — run at both the RTL and post-synthesis (gate-level) stages:
-
-- **OSVVM** — Control-plane verification. 28 module-level testbenches and a top-level system stress test (reset injection, output backpressure, randomized image sizes), each checked against a behavioral reference model derived from the ITU-T T.87 specification, with requirements tracking. Confirms the encoder sustains one pixel per clock and stalls *only* under downstream backpressure, and streams images back-to-back with no gap or data loss.
-- **Coverage** — Two complementary metrics, both gathered within the OSVVM verification suite: OSVVM provides functional (behavioral) coverage, while NVC provides structural code coverage, reaching 99%+ statement coverage.
-- **Golden model** — Byte-exact comparison of the output bitstream against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large dataset of real images — natural photographs and synthetic stress patterns that push the algorithm past anything natural images reach (see below). Also validated against the official ISO/IEC 14495-1 reference vectors.
-- **Design contracts** — Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked on every simulation run.
-- **Post-synthesis** — The top-level OSVVM stress test and a subset of the golden-model dataset are re-run on the synthesized gate-level netlist, guaranteeing synthesis did not change the encoder's behavior.
-
-**Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
-
-| Source | Set | Images |
-|---|---|--:|
-| [USC-SIPI](https://sipi.usc.edu/database/) | Aerials, textures, miscellaneous, sequences | 210 |
-| [imagecompression.info](http://imagecompression.info/test_images/) | 8-bit and 16-bit natural photographs | 30 |
-| Generated stress probes | Boundary, predictor-adversarial, high-entropy and fuzz patterns | 47 |
-
-The real datasets give natural image statistics from 256×256 up to **39 megapixels** (7216×5412); the generated probes deliberately target what real images never reach. [`gen_stress.py`](Verification/Golden%20model/imageprep/gen_stress.py) emits them deterministically — seeded and byte-reproducible, so the committed generator is the source of truth — covering:
-
-- **Intermediate bit depths (9–15)** — no natural dataset exists here, so these probes are the only coverage of the 9–15-bit range.
-- **Boundary geometries** — the smallest legal image (4×1), tall single-column images, and maximum-width single rows up to 65535×1.
-- **Predictor-adversarial content** — checkerboard, vertical/horizontal stripes and sparse spikes that defeat the MED predictor on every pixel, plus incompressible uniform noise.
-- **Tiny-image fuzz batch** — many small randomized images that stress start and end-of-image edge conditions far more densely than full-size images can.
 
 ---
 
