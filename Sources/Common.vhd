@@ -36,20 +36,18 @@ package common is
 
   -- Functions
 
-  function math_min (
-    a,
-    b      : in natural
-  ) return natural;
+  -- math_max/math_min over integers alias open-logic's max/min: an alias is
+  -- usable in the package-declaration constants below (a local function body is
+  -- not yet elaborated there — LRM 14.4.2), and gives `min` a name that doesn't
+  -- clash with the predefined TIME unit.
+  alias math_max is work.olo_base_pkg_math.max [integer, integer return integer];
+  alias math_min is work.olo_base_pkg_math.min [integer, integer return integer];
 
+  -- unsigned overloads (olo has none); used only at run time in architectures.
   function math_min (
     a,
     b      : in unsigned
   ) return unsigned;
-
-  function math_max (
-    a,
-    b      : in natural
-  ) return natural;
 
   function math_max (
     a,
@@ -83,11 +81,8 @@ package common is
   -- Initialization
   constant CO_RANGE_STD : natural := CO_MAX_VAL_STD + 1;
   constant CO_QBPP_STD  : natural := log2ceil(CO_RANGE_STD);                     -- number of bits to represent RANGE (ceil(log2(RANGE)))
-  -- These constants use olo's max/min by expanded name: calling this
-  -- package's own math_max/math_min here is an LRM 14.4.2 violation (their
-  -- bodies are not elaborated yet); cross-library calls are legal.
-  constant CO_BPP_STD   : natural := work.olo_base_pkg_math.max(2, log2ceil(CO_MAX_VAL_STD + 1));  -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
-  constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + work.olo_base_pkg_math.max(8, CO_BPP_STD)); -- max length of the limited Golomb code
+  constant CO_BPP_STD   : natural := math_max(2, log2ceil(CO_MAX_VAL_STD + 1));  -- number of bits per pixel (ceil(log2(MAXVAL + 1)))
+  constant CO_LIMIT_STD : natural := 2 * (CO_BPP_STD + math_max(8, CO_BPP_STD)); -- max length of the limited Golomb code
 
   type j_table_array is array (0 to 31) of natural;
 
@@ -134,7 +129,7 @@ package common is
   constant CO_RESET_MAX_WIDTH   : natural := 16;
   constant CO_MAX_CQ            : integer := 127;
   constant CO_MIN_CQ            : integer := - 128;
-  constant CO_NEAR_MAX_STD      : natural := work.olo_base_pkg_math.min(255, CO_MAX_VAL_STD / 2);
+  constant CO_NEAR_MAX_STD      : natural := math_min(255, CO_MAX_VAL_STD / 2);
 
   constant CO_RESET_STD : natural := 64;                                        -- T.87 default RESET
 
@@ -147,7 +142,7 @@ package common is
   constant CO_NNQ_WIDTH_STD       : natural := log2ceil(CO_RESET_STD);                         -- Nn counts up to RESET
   constant CO_UNARY_WIDTH_STD     : natural := log2ceil(CO_LIMIT_STD - CO_QBPP_STD);           -- regular quotient / escape threshold (LIMIT-QBPP-1)
   constant CO_SUFFIX_WIDTH_STD    : natural := CO_AQ_WIDTH_STD;                                -- regular k bits / escape QBPP, both <= MAX_K (= A_WIDTH)
-  constant CO_SUFFIXLEN_WIDTH_STD : natural := work.olo_base_pkg_math.max(CO_K_WIDTH_STD, log2ceil(15 + 2));     -- T.87 J max = 15
+  constant CO_SUFFIXLEN_WIDTH_STD : natural := math_max(CO_K_WIDTH_STD, log2ceil(15 + 2));     -- T.87 J max = 15
   constant CO_TOTAL_WIDTH_STD     : natural := CO_AQ_WIDTH_STD + CO_BQ_WIDTH_STD + CO_CQ_WIDTH + CO_NQ_WIDTH_STD;
 
   -- Bit-packer / byte-stuffer / framer interface widths -------------------------
@@ -162,20 +157,6 @@ package body common is
 
   function math_min (
     a,
-    b : in natural
-  ) return natural is
-  begin
-
-    if (a < b) then
-      return a;
-    else
-      return b;
-    end if;
-
-  end function math_min;
-
-  function math_min (
-    a,
     b : in unsigned
   ) return unsigned is
   begin
@@ -192,20 +173,6 @@ package body common is
     a,
     b : in unsigned
   ) return unsigned is
-  begin
-
-    if (a > b) then
-      return a;
-    else
-      return b;
-    end if;
-
-  end function math_max;
-
-  function math_max (
-    a,
-    b : in natural
-  ) return natural is
   begin
 
     if (a > b) then
