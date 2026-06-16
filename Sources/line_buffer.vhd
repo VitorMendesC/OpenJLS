@@ -36,8 +36,8 @@ library ieee;
   use ieee.numeric_std.all;
   use work.common.all;
 
-library openlogic_base;
-  use openlogic_base.olo_base_pkg_math.log2ceil;
+library work;
+  use work.olo_base_pkg_math.log2ceil;
 
 entity line_buffer is
   generic (
@@ -244,7 +244,7 @@ begin
   end process clocked_proc; -----------------------------------------------------------------------------
 
   -- Instance FIFO -------------------------------------------------------------------------
-  fifo_inst : entity openlogic_base.olo_base_fifo_sync(rtl)
+  fifo_inst : entity work.olo_base_fifo_sync(rtl)
     generic map (
       WIDTH_G       => BITNESS,
       DEPTH_G       => MAX_IMAGE_WIDTH,

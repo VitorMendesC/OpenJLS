@@ -22,8 +22,8 @@ library ieee;
   use std.env.all;
   use work.common.all;
 
-library openlogic_base;
-  use openlogic_base.olo_base_pkg_math.log2ceil;
+library work;
+  use work.olo_base_pkg_math.log2ceil;
 
 entity tb_openjls_t87_conformance is
   generic (

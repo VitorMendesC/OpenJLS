@@ -35,7 +35,7 @@ foreach f {
   olo_base_ram_tdp.vhd
   olo_base_fifo_sync.vhd
 } {
-  read_vhdl -vhdl2008 -library openlogic_base [file join $OL_SRC $f]
+  read_vhdl -vhdl2008 [file join $OL_SRC $f]
 }
 
 set SRC [file join $ROOT Sources]

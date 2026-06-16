@@ -104,8 +104,8 @@ library ieee;
   use ieee.numeric_std.all;
   use work.common.all;
 
-library openlogic_base;
-  use openlogic_base.olo_base_pkg_math.log2ceil;
+library work;
+  use work.olo_base_pkg_math.log2ceil;
 
 entity jls_framer is
   generic (

@@ -65,7 +65,7 @@ NVC=(nvc --std=2008 --ieee-warnings=off -L "$LIBS" -L "$OSVVM_DIR/nvc-libs")
 # 4. Packages the TB needs (the netlist itself is self-contained + unisim):
 #    olo math for log2ceil, Common for CO_OUT_WIDTH_STD.
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
-"${NVC[@]}" --work=openlogic_base:"$LIBS/openlogic_base.08" -a --relaxed \
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed \
   "$OL_SRC/olo_base_pkg_array.vhd" \
   "$OL_SRC/olo_base_pkg_math.vhd" \
   "$OL_SRC/olo_base_pkg_string.vhd" \

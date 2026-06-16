@@ -7,8 +7,8 @@ library ieee;
   use ieee.numeric_std.all;
   use work.common.all;
 
-library openlogic_base;
-  use openlogic_base.olo_base_pkg_math.all;
+library work;
+  use work.olo_base_pkg_math.all;
 
 entity context_ram is
   generic (
@@ -66,7 +66,7 @@ begin
   -- init flag, and the read result is consumed by nothing (downstream is
   -- reset). Verified by directed cases in the module TB.
 
-  olo_base_ram_sdp_inst : entity openlogic_base.olo_base_ram_sdp(rtl)
+  olo_base_ram_sdp_inst : entity work.olo_base_ram_sdp(rtl)
     generic map (
       DEPTH_G         => RAM_DEPTH,
       WIDTH_G         => TOTAL_WIDTH,

@@ -41,8 +41,9 @@ proc Test {TestFile args} {
   RunTest $TestFile {*}$args
 }
 
-# open-logic base: packages + RAM/FIFO primitives the RTL instantiates.
-library openlogic_base
+# open-logic base: packages + RAM/FIFO primitives the RTL instantiates. Shares
+# the openjls design library (the RTL references them as work.*).
+library openjls
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_array.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_math.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_string.vhd

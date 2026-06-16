@@ -35,7 +35,7 @@ OL_FILES=(
   olo_base_ram_tdp.vhd
   olo_base_fifo_sync.vhd
 )
-"${NVC[@]}" --work=openlogic_base:"$LIBS/openlogic_base.08" -a "${A_FLAGS[@]}" \
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a "${A_FLAGS[@]}" \
   "${OL_FILES[@]/#/$OL_SRC/}"
 
 # 2. Project sources

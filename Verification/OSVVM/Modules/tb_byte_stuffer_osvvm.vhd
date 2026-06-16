@@ -34,8 +34,8 @@ library osvvm;
   context osvvm.OsvvmContext;
   use osvvm.ScoreboardPkg_slv.all;
 
-library openlogic_base;
-  use openlogic_base.olo_base_pkg_math.log2ceil;
+library work;
+  use work.olo_base_pkg_math.log2ceil;
 
 library tb_support;
   use tb_support.tb_support_pkg.all;

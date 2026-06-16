@@ -63,8 +63,8 @@ library ieee;
   use ieee.numeric_std.all;
   use work.common.all;
 
-library openlogic_base;
-  use openlogic_base.olo_base_pkg_math.log2ceil;
+library work;
+  use work.olo_base_pkg_math.log2ceil;
 
 entity byte_stuffer is
   generic (
@@ -402,7 +402,7 @@ begin
   -------------------------------------------------------------------------------------------------------------------------
   -- STAGE 2: FIFOs (Data and byte valid)
   -------------------------------------------------------------------------------------------------------------------------
-  fifo_inst : entity openlogic_base.olo_base_fifo_sync(rtl)
+  fifo_inst : entity work.olo_base_fifo_sync(rtl)
     generic map (
       WIDTH_G        => FIFO_WIDTH,
       DEPTH_G        => BURST_DEPTH,
@@ -429,7 +429,7 @@ begin
   -- Read last-word valid-bit-count FIFO on Last word
   sBvQueueOutReady <= sSkidTaken and sSkidLast;
 
-  byte_valid_fifo_inst : entity openlogic_base.olo_base_fifo_sync(rtl)
+  byte_valid_fifo_inst : entity work.olo_base_fifo_sync(rtl)
     generic map (
       WIDTH_G       => LAST_BITS_WIDTH,
       DEPTH_G       => BYTE_VALID_QUEUE_DEPTH,

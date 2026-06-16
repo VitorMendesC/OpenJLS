@@ -123,7 +123,7 @@ echo "=============================================================="
 #    then the dedicated post-synth TB (binds work.openjls_top(STRUCTURE)).
 NVC=(nvc --std=2008 --ieee-warnings=off -H "$NVC_HEAP" -L "$LIBS")
 OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
-"${NVC[@]}" --work=openlogic_base:"$LIBS/openlogic_base.08" -a --relaxed \
+"${NVC[@]}" --work=work:"$LIBS/work.08" -a --relaxed \
   "$OL_SRC/olo_base_pkg_array.vhd" "$OL_SRC/olo_base_pkg_math.vhd" \
   "$OL_SRC/olo_base_pkg_string.vhd" "$OL_SRC/olo_base_pkg_logic.vhd" \
   "$OL_SRC/olo_base_pkg_attribute.vhd"

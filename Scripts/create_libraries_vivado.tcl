@@ -1,4 +1,7 @@
-# This script creates the libraries needed by the RTL in Vivado.
+# This script adds the open-logic base sources the RTL depends on to a Vivado
+# project. They share the design's default library (the RTL references them as
+# work.*), so no separate library is created — just add these files alongside
+# the OpenJLS sources.
 
 # Get the third party directory
 set script_dir [file dirname [file normalize [info script]]]
@@ -35,6 +38,5 @@ set olo_other_files [list \
 set olo_files [concat $olo_pkg_files $olo_other_files]
 
 add_files -fileset sources_1 $olo_files
-set_property library openlogic_base [get_files $olo_files]
-# Set VHDL-2008 for all the files (packages + RTL)
+# VHDL-2008; default library (work) — same as the OpenJLS sources.
 set_property FILE_TYPE {VHDL 2008} [get_files $olo_files]
