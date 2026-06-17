@@ -18,12 +18,12 @@
 \graphicspath{{../Images/}}
 \setlist{nosep,leftmargin=1.4em}
 \newcolumntype{C}{>{\centering\arraybackslash}m{0.10\textwidth}}
-\renewcommand{\arraystretch}{1.15}
+\renewcommand{\arraystretch}{1.08}
 
 \definecolor{ojblue}{RGB}{0,80,140}
 
 \lstset{
-  basicstyle=\ttfamily\footnotesize,
+  basicstyle=\ttfamily\scriptsize,
   keywordstyle=\color{ojblue}\bfseries,
   commentstyle=\color{gray},
   language=VHDL,
@@ -57,7 +57,8 @@
 OpenJLS is a JPEG-LS (ISO/IEC 14495-1 / ITU-T T.87) lossless encoder for FPGAs.
 It encodes single-component (grayscale) images at one pixel per clock with no
 external memory, streaming a standards-compliant JPEG-LS bitstream out over
-AXI4-Stream.
+AXI4-Stream. Source, license and the full verification suite are public at
+\url{https://github.com/VitorMendesC/OpenJLS}.
 
 \begin{tabularx}{\textwidth}{@{}>{\bfseries}l X@{}}
   \toprule
@@ -85,7 +86,7 @@ End-of-image is derived internally from the configured dimensions; the output
 bitstream is self-delimiting.
 
 \begin{center}
-  \includegraphics[width=0.92\textwidth]{OpenJLS_arch.png}
+  \includegraphics[width=0.80\textwidth]{OpenJLS_arch.png}
 \end{center}
 
 %======================================================================
@@ -148,16 +149,16 @@ under downstream backpressure.
 \texttt{oReady} returns high; no pixel is dropped while \texttt{oReady} is low.
 
 \textbf{Reset and configuration.} The image dimensions are sampled while
-\texttt{iRst} is high: present \texttt{iImageWidth}/\texttt{iImageHeight} and
-hold them stable across a reset pulse, and the values latch into the internal
-\texttt{sImageWidth}/\texttt{sImageHeight} registers on the next clock. Pulse
-reset again before streaming a new resolution. Tying the dimension ports to
-\texttt{0} selects the \texttt{MAX\_IMAGE\_*} maxima; an out-of-range value
-falls back to the maximum with a simulation warning.
+\texttt{iRst} is high: present \texttt{iImageWidth} and \texttt{iImageHeight}
+and hold them stable across a reset pulse; they latch into the internal
+registers on the next clock. Pulse reset again before streaming a new
+resolution. Tying the dimension ports to \texttt{0} selects the
+\texttt{MAX\_IMAGE\_*} maxima; an out-of-range value falls back to the maximum
+with a simulation warning.
 
 \begin{center}
-\begin{tikztimingtable}[timing/slope=0.1,xscale=1.7]
-  iClk         & 7{C}          \\
+\begin{tikztimingtable}[timing/slope=0.1,xscale=1.45]
+  iClk         & 0.5L 6{C} 0.5H \\
   iImageWidth  & D{W0} 6D{W1}  \\
   iImageHeight & D{H0} 6D{H1}  \\
   iRst         & LLLLHLL        \\
@@ -175,10 +176,10 @@ its valid bytes. Pipeline latency is 14 clock cycles.
 
 %======================================================================
 \section{Resources and performance}
-Characterized on Xilinx Zynq UltraScale+ \texttt{xczu7eg-fbvb900-1-e}
-(speed grade $-1$), Vivado 2025.2, 12-bit, RTL-only (no floorplanning).
-$f_{max}$ is true fmax (over-constrained until timing fails). At one
-pixel/clock, $\sim$250\,MHz is $\sim$250\,Mpixel/s.
+Characterized on Xilinx Zynq UltraScale+ \texttt{xczu7eg-fbvb900-1-e},
+Vivado 2025.2, 12-bit, RTL-only (no floorplanning). $f_{max}$ is true fmax
+(over-constrained until timing fails); at one pixel/clock $\sim$250\,MHz is
+$\sim$250\,Mpixel/s.
 
 \begin{minipage}[t]{0.49\textwidth}
 \centering
@@ -241,13 +242,33 @@ u_enc : entity work.openjls_top
 
 %======================================================================
 \section{Conformance and verification}
-Verified by simulation (NVC) with a layered suite: per-module OSVVM tests
-against T.87-derived reference models, top-level control-plane stress with
-requirements tracking, embedded PSL protocol contracts, 99\%+ NVC statement
-coverage, and byte-exact comparison against the CharLS reference encoder over
-287 images. The OSVVM stress test and a golden-model subset are re-run on the
-post-synthesis gate-level netlist. Live results:
-\url{https://vitormendesc.github.io/OpenJLS/}.
+Verified by simulation with NVC using a layered, self-checking suite run at
+both RTL and post-synthesis (gate-level) stages:
+\begin{itemize}
+  \item \textbf{OSVVM} --- per-module tests against independent T.87-derived
+        reference models, plus top-level control-plane stress (reset injection,
+        backpressure, randomized sizes) with requirements tracking.
+  \item \textbf{Coverage} --- OSVVM functional coverage with NVC structural code coverage (99\%+ statements).
+  \item \textbf{Golden model} --- byte-exact vs the independent CharLS C++
+        encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
+  \item \textbf{Design contracts} --- embedded PSL assertions (AXI4-Stream protocol, internal handshakes) on every run.
+  \item \textbf{Post-synthesis} --- the stress test and a golden-model subset re-run on the synthesized netlist.
+\end{itemize}
+
+\noindent Latest regression snapshot (live, per-test reports at
+\url{https://vitormendesc.github.io/OpenJLS/}):
+
+\begin{tabularx}{\textwidth}{@{}l c c X@{}}
+  \toprule
+  \textbf{Suite} & \textbf{Status} & \textbf{Test/Cov} & \textbf{Summary} \\
+  \midrule
+  OSVVM suite             & PASS & 100\%  & 36 tests, 129\,810 affirmations (module + top control-plane) \\
+  NVC code coverage       & info & 99.2\% & Per-file statement breakdown \\
+  Golden model            & PASS & 100\%  & 287/287 images byte-exact vs CharLS \\
+  Post-synth OSVVM        & PASS & 100\%  & Control-plane stress on the gate-level netlist \\
+  Post-synth golden model & PASS & 100\%  & 156/156 images byte-exact vs CharLS \\
+  \bottomrule
+\end{tabularx}
 
 %======================================================================
 \section*{Revision history}
