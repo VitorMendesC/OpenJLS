@@ -220,10 +220,10 @@ table, th, td {
     60: &nbsp; library&nbsp;ieee;&nbsp;
     61: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
     62: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
-    63: &nbsp; &nbsp;&nbsp;use&nbsp;work.common.all;&nbsp;
+    63: &nbsp; &nbsp;&nbsp;use&nbsp;work.openjls_pkg.all;&nbsp;
     64: &nbsp; &nbsp;
-    65: &nbsp; library&nbsp;openlogic_base;&nbsp;
-    66: &nbsp; &nbsp;&nbsp;use&nbsp;openlogic_base.olo_base_pkg_math.log2ceil;&nbsp;
+    65: &nbsp; library&nbsp;work;&nbsp;
+    66: &nbsp; &nbsp;&nbsp;use&nbsp;work.olo_base_pkg_math.log2ceil;&nbsp;
     67: &nbsp; &nbsp;
     68: &nbsp; entity&nbsp;byte_stuffer&nbsp;is&nbsp;
     69: &nbsp; &nbsp;&nbsp;generic&nbsp;(&nbsp;
@@ -561,7 +561,7 @@ table, th, td {
    401: &nbsp; &nbsp;&nbsp;-------------------------------------------------------------------------------------------------------------------------&nbsp;
    402: &nbsp; &nbsp;&nbsp;--&nbsp;STAGE&nbsp;2:&nbsp;FIFOs&nbsp;(Data&nbsp;and&nbsp;byte&nbsp;valid)&nbsp;
    403: &nbsp; &nbsp;&nbsp;-------------------------------------------------------------------------------------------------------------------------&nbsp;
-   404: &nbsp; &nbsp;&nbsp;fifo_inst&nbsp;:&nbsp;entity&nbsp;openlogic_base.olo_base_fifo_sync(rtl)&nbsp;
+   404: &nbsp; &nbsp;&nbsp;fifo_inst&nbsp;:&nbsp;entity&nbsp;work.olo_base_fifo_sync(rtl)&nbsp;
    405: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;generic&nbsp;map&nbsp;(&nbsp;
    406: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WIDTH_G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;FIFO_WIDTH,&nbsp;
    407: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DEPTH_G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;BURST_DEPTH,&nbsp;
@@ -588,7 +588,7 @@ table, th, td {
    428: &nbsp; &nbsp;&nbsp;--&nbsp;Read&nbsp;last-word&nbsp;valid-bit-count&nbsp;FIFO&nbsp;on&nbsp;Last&nbsp;word&nbsp;
    429: &nbsp; &nbsp;&nbsp;sBvQueueOutReady&nbsp;&lt;=&nbsp;sSkidTaken&nbsp;and&nbsp;sSkidLast;&nbsp;
    430: &nbsp; &nbsp;
-   431: &nbsp; &nbsp;&nbsp;byte_valid_fifo_inst&nbsp;:&nbsp;entity&nbsp;openlogic_base.olo_base_fifo_sync(rtl)&nbsp;
+   431: &nbsp; &nbsp;&nbsp;byte_valid_fifo_inst&nbsp;:&nbsp;entity&nbsp;work.olo_base_fifo_sync(rtl)&nbsp;
    432: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;generic&nbsp;map&nbsp;(&nbsp;
    433: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WIDTH_G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;LAST_BITS_WIDTH,&nbsp;
    434: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DEPTH_G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;BYTE_VALID_QUEUE_DEPTH,&nbsp;

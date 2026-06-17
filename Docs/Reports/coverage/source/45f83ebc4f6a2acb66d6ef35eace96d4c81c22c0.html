@@ -164,10 +164,10 @@ table, th, td {
      4: &nbsp; library&nbsp;ieee;&nbsp;
      5: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all;&nbsp;
      6: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all;&nbsp;
-     7: &nbsp; &nbsp;&nbsp;use&nbsp;work.common.all;&nbsp;
+     7: &nbsp; &nbsp;&nbsp;use&nbsp;work.openjls_pkg.all;&nbsp;
      8: &nbsp; &nbsp;
-     9: &nbsp; library&nbsp;openlogic_base;&nbsp;
-    10: &nbsp; &nbsp;&nbsp;use&nbsp;openlogic_base.olo_base_pkg_math.all;&nbsp;
+     9: &nbsp; library&nbsp;work;&nbsp;
+    10: &nbsp; &nbsp;&nbsp;use&nbsp;work.olo_base_pkg_math.all;&nbsp;
     11: &nbsp; &nbsp;
     12: &nbsp; entity&nbsp;context_ram&nbsp;is&nbsp;
     13: &nbsp; &nbsp;&nbsp;generic&nbsp;(&nbsp;
@@ -225,7 +225,7 @@ table, th, td {
     65: &nbsp; &nbsp;&nbsp;--&nbsp;init&nbsp;flag,&nbsp;and&nbsp;the&nbsp;read&nbsp;result&nbsp;is&nbsp;consumed&nbsp;by&nbsp;nothing&nbsp;(downstream&nbsp;is&nbsp;
     66: &nbsp; &nbsp;&nbsp;--&nbsp;reset).&nbsp;Verified&nbsp;by&nbsp;directed&nbsp;cases&nbsp;in&nbsp;the&nbsp;module&nbsp;TB.&nbsp;
     67: &nbsp; &nbsp;
-    68: &nbsp; &nbsp;&nbsp;olo_base_ram_sdp_inst&nbsp;:&nbsp;entity&nbsp;openlogic_base.olo_base_ram_sdp(rtl)&nbsp;
+    68: &nbsp; &nbsp;&nbsp;olo_base_ram_sdp_inst&nbsp;:&nbsp;entity&nbsp;work.olo_base_ram_sdp(rtl)&nbsp;
     69: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;generic&nbsp;map&nbsp;(&nbsp;
     70: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DEPTH_G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;RAM_DEPTH,&nbsp;
     71: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WIDTH_G&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TOTAL_WIDTH,&nbsp;

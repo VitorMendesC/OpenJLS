@@ -7,7 +7,7 @@ Generics:           null
 ReportsTestSuiteDirectory:  "reports/Modules"
 RequirementsYamlFile:  "reports/Modules/tb_a4_2_osvvm_req.yml"
 AlertYamlFile:  "reports/Modules/tb_a4_2_osvvm_alerts.yml"
-CovYamlFile: ""
+CovYamlFile:  "reports/Modules/tb_a4_2_osvvm_cov.yml"
 ScoreboardDict:           null
 TranscriptFiles: ""
 TestCaseFileName: "tb_a4_2_osvvm"

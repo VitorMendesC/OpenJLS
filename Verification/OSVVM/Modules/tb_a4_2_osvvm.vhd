@@ -47,6 +47,7 @@ begin
     variable q      : integer;
     variable expQ   : integer;
     variable req    : AlertLogIDType;
+    variable cov    : CoverageIDType;
 
     procedure drive_check (
       q1 : integer;
@@ -74,6 +75,7 @@ begin
 
       -- Property: one-to-one.
       if (e >= 0 and e <= 364) then
+        ICover(cov, e);                             -- record this Q code as produced
         AffirmIf(req, seen(e) = -1,
                  "Q=" & integer'image(e) & " collides with vector index " &
                  integer'image(seen(e)));
@@ -90,6 +92,11 @@ begin
     SetAlertLogName("tb_a4_2_osvvm");
     SetLogEnable(PASSED, FALSE);
     req := GetReqID("T87.A4.2", 365);
+
+    -- Functional coverage: one bin per valid Q code, closed once every one of
+    -- the 365 contexts has been produced (the exhaustive sweep guarantees it).
+    cov := NewID("a4_2_Q_codes");
+    AddBins(cov, GenBin(0, 364));
 
     -- Exhaustive over the post-merge domain (leading non-zero non-negative).
     for q1 in 0 to 4 loop
@@ -114,6 +121,7 @@ begin
     end loop;
 
     AffirmIfEqual(req, nSeen, 365, "all 365 contexts mapped (total + complete)");
+    AffirmIf(req, IsCovered(cov), "functional coverage closed (all 365 Q codes)");
 
     end_of_test("tb_a4_2_osvvm");
     wait;

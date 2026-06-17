@@ -1,5 +1,5 @@
 Version: "0.1"
-Date: 2026-06-12T17:52:01-03:00
+Date: 2026-06-17T01:42:44-03:00
 TestSuites: 
   - Name: Modules
     TestCases:
@@ -11,7 +11,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 616, AffirmCount: 616, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a1_osvvm"
         Generics:           null
-        ElapsedTime: 0.053
+        ElapsedTime: 0.056
       - TestCaseName: "tb_a3_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "106000000 fs"
@@ -20,7 +20,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 107, AffirmCount: 107, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a3_osvvm"
         Generics:           null
-        ElapsedTime: 0.044
+        ElapsedTime: 0.048
       - TestCaseName: "tb_a4_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "207000000 fs"
@@ -29,7 +29,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 622, AffirmCount: 622, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a4_osvvm"
         Generics:           null
-        ElapsedTime: 0.053
+        ElapsedTime: 0.061
       - TestCaseName: "tb_a4_1_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "736000000 fs"
@@ -38,16 +38,16 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 2945, AffirmCount: 2945, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a4_1_osvvm"
         Generics:           null
-        ElapsedTime: 0.060
+        ElapsedTime: 0.052
       - TestCaseName: "tb_a4_2_osvvm"
-        FunctionalCoverage:  ""
+        FunctionalCoverage: 100.00
         SimulationTime: "365000000 fs"
         Name: "tb_a4_2_osvvm"
         Status: PASSED
-        Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 1096, AffirmCount: 1096, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
+        Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 1097, AffirmCount: 1097, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a4_2_osvvm"
         Generics:           null
-        ElapsedTime: 0.040
+        ElapsedTime: 0.203
       - TestCaseName: "tb_a5_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "208000000 fs"
@@ -65,7 +65,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 307, AffirmCount: 307, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a6_osvvm"
         Generics:           null
-        ElapsedTime: 0.063
+        ElapsedTime: 0.060
       - TestCaseName: "tb_a7_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "206000000 fs"
@@ -74,7 +74,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 207, AffirmCount: 207, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a7_osvvm"
         Generics:           null
-        ElapsedTime: 0.050
+        ElapsedTime: 0.051
       - TestCaseName: "tb_a9_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "207000000 fs"
@@ -83,7 +83,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 208, AffirmCount: 208, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a9_osvvm"
         Generics:           null
-        ElapsedTime: 0.051
+        ElapsedTime: 0.050
       - TestCaseName: "tb_a10_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "406000000 fs"
@@ -92,7 +92,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 407, AffirmCount: 407, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a10_osvvm"
         Generics:           null
-        ElapsedTime: 0.057
+        ElapsedTime: 0.055
       - TestCaseName: "tb_a11_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "507000000 fs"
@@ -101,7 +101,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 508, AffirmCount: 508, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a11_osvvm"
         Generics:           null
-        ElapsedTime: 0.059
+        ElapsedTime: 0.077
       - TestCaseName: "tb_a11_1_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "407000000 fs"
@@ -119,7 +119,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 642, AffirmCount: 642, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a11_2_osvvm"
         Generics:           null
-        ElapsedTime: 0.073
+        ElapsedTime: 0.075
       - TestCaseName: "tb_a12_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "305000000 fs"
@@ -137,7 +137,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 617, AffirmCount: 617, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a13_osvvm"
         Generics:           null
-        ElapsedTime: 0.059
+        ElapsedTime: 0.061
       - TestCaseName: "tb_a14_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "105000000 fs"
@@ -146,7 +146,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 316, AffirmCount: 316, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a14_osvvm"
         Generics:           null
-        ElapsedTime: 0.054
+        ElapsedTime: 0.056
       - TestCaseName: "tb_a15_a16_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "839870000000 fs"
@@ -155,7 +155,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 303, AffirmCount: 303, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a15_a16_osvvm"
         Generics:           null
-        ElapsedTime: 0.135
+        ElapsedTime: 0.144
       - TestCaseName: "tb_a17_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "104000000 fs"
@@ -173,7 +173,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 206, AffirmCount: 206, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a18_osvvm"
         Generics:           null
-        ElapsedTime: 0.056
+        ElapsedTime: 0.054
       - TestCaseName: "tb_a19_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "305000000 fs"
@@ -182,7 +182,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 611, AffirmCount: 611, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a19_osvvm"
         Generics:           null
-        ElapsedTime: 0.055
+        ElapsedTime: 0.052
       - TestCaseName: "tb_a20_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "55000000 fs"
@@ -191,7 +191,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 56, AffirmCount: 56, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a20_osvvm"
         Generics:           null
-        ElapsedTime: 0.045
+        ElapsedTime: 0.050
       - TestCaseName: "tb_a21_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "406000000 fs"
@@ -200,7 +200,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 407, AffirmCount: 407, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a21_osvvm"
         Generics:           null
-        ElapsedTime: 0.058
+        ElapsedTime: 0.056
       - TestCaseName: "tb_a22_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "407000000 fs"
@@ -209,7 +209,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 409, AffirmCount: 409, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a22_osvvm"
         Generics:           null
-        ElapsedTime: 0.057
+        ElapsedTime: 0.058
       - TestCaseName: "tb_a23_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "601000000 fs"
@@ -218,7 +218,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 1809, AffirmCount: 1809, RequirementsPassed: 1, RequirementsGoal: 1, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_a23_osvvm"
         Generics:           null
-        ElapsedTime: 0.062
+        ElapsedTime: 0.068
       - TestCaseName: "tb_line_buffer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "2410000000 fs"
@@ -227,7 +227,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 1451, AffirmCount: 1451, RequirementsPassed: 0, RequirementsGoal: 0, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_line_buffer_osvvm"
         Generics:           null
-        ElapsedTime: 0.059
+        ElapsedTime: 0.067
       - TestCaseName: "tb_context_ram_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "2601000000 fs"
@@ -236,7 +236,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 221, AffirmCount: 221, RequirementsPassed: 0, RequirementsGoal: 0, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_context_ram_osvvm"
         Generics:           null
-        ElapsedTime: 0.074
+        ElapsedTime: 0.076
       - TestCaseName: "tb_byte_stuffer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "49710000000 fs"
@@ -245,7 +245,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 3979, AffirmCount: 3979, RequirementsPassed: 0, RequirementsGoal: 0, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_byte_stuffer_osvvm"
         Generics:           null
-        ElapsedTime: 0.117
+        ElapsedTime: 0.118
       - TestCaseName: "tb_jls_framer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "7820000000 fs"
@@ -254,7 +254,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 1706, AffirmCount: 1706, RequirementsPassed: 0, RequirementsGoal: 0, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_jls_framer_osvvm"
         Generics:           null
-        ElapsedTime: 0.091
+        ElapsedTime: 0.094
       - TestCaseName: "tb_jls_framer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "8010000000 fs"
@@ -264,7 +264,7 @@ TestSuites:
         TestCaseFileName: "tb_jls_framer_osvvm_OUT_WIDTH_48"
         Generics:
           OUT_WIDTH: "48"
-        ElapsedTime: 0.068
+        ElapsedTime: 0.066
       - TestCaseName: "tb_jls_framer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "7900000000 fs"
@@ -274,7 +274,7 @@ TestSuites:
         TestCaseFileName: "tb_jls_framer_osvvm_OUT_WIDTH_56"
         Generics:
           OUT_WIDTH: "56"
-        ElapsedTime: 0.090
+        ElapsedTime: 0.092
       - TestCaseName: "tb_jls_framer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "15740000000 fs"
@@ -284,7 +284,7 @@ TestSuites:
         TestCaseFileName: "tb_jls_framer_osvvm_OUT_WIDTH_200"
         Generics:
           OUT_WIDTH: "200"
-        ElapsedTime: 0.103
+        ElapsedTime: 0.105
       - TestCaseName: "tb_jls_framer_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "81100000000 fs"
@@ -294,8 +294,8 @@ TestSuites:
         TestCaseFileName: "tb_jls_framer_osvvm_OUT_WIDTH_1024"
         Generics:
           OUT_WIDTH: "1024"
-        ElapsedTime: 0.102
-    ElapsedTime: 2.600
+        ElapsedTime: 0.098
+    ElapsedTime: 2.838
   - Name: Top
     TestCases:
       - TestCaseName: "tb_openjls_top_osvvm"
@@ -306,7 +306,7 @@ TestSuites:
         Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 22627, AffirmCount: 22627, RequirementsPassed: 4, RequirementsGoal: 4, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
         TestCaseFileName: "tb_openjls_top_osvvm"
         Generics:           null
-        ElapsedTime: 0.783
+        ElapsedTime: 0.793
       - TestCaseName: "tb_openjls_top_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "229505000000 fs"
@@ -317,7 +317,7 @@ TestSuites:
         Generics:
           MAX_W: "320"
           MAX_H: "200"
-        ElapsedTime: 0.802
+        ElapsedTime: 0.804
       - TestCaseName: "tb_openjls_top_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "229365000000 fs"
@@ -327,7 +327,7 @@ TestSuites:
         TestCaseFileName: "tb_openjls_top_osvvm_OUT_WIDTH_48"
         Generics:
           OUT_WIDTH: "48"
-        ElapsedTime: 0.788
+        ElapsedTime: 0.790
       - TestCaseName: "tb_openjls_top_osvvm"
         FunctionalCoverage: 100.00
         SimulationTime: "227165000000 fs"
@@ -337,13 +337,13 @@ TestSuites:
         TestCaseFileName: "tb_openjls_top_osvvm_OUT_WIDTH_1024"
         Generics:
           OUT_WIDTH: "1024"
-        ElapsedTime: 0.785
-    ElapsedTime: 3.243
+        ElapsedTime: 0.777
+    ElapsedTime: 3.249
 Name:     "OSVVM_OpenJls"
 BuildInfo:
-  StartTime:            2026-06-12T17:52:01-03:00
-  FinishTime:           2026-06-12T17:52:08-03:00
-  ElapsedTime:              6.182
+  StartTime:            2026-06-17T01:42:44-03:00
+  FinishTime:           2026-06-17T01:42:51-03:00
+  ElapsedTime:              6.445
   Simulator:            "NVC"
   SimulatorVersion:     "1.21.0"
   OsvvmVersion:         "2026.01"
