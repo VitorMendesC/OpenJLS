@@ -64,9 +64,11 @@ if [ -f "$HERE/index.html" ] && [ -f "$OSVVM_YML" ]; then
   [ -z "$rdate" ] && rdate=$(awk '/^Date:/{print $2; exit}' "$OSVVM_YML")
   st=PASS; [ "$fail" -ne 0 ] && st=FAIL
   opct=$(awk -v p="$pass" -v t="$total" 'BEGIN{ if (t > 0) printf "%.0f%%", 100 * p / t }')
+  # Deep-link to this build's summary, not osvvm/index.html (the "Index of
+  # Builds" accumulates every past build, including stale failed ones).
   emit_row "OSVVM suite" "module + top control-plane" "$st" "$opct" \
     "$total tests &middot; $affirm affirmations" \
-    "osvvm/index.html" "${rdate%T*}"
+    "osvvm/OSVVM_OpenJls/OSVVM_OpenJls.html" "${rdate%T*}"
 else
   emit_row "OSVVM suite" "module + top control-plane" "NA" "" \
     "run ./build_run.sh to populate" "" ""
