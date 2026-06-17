@@ -31,7 +31,7 @@ set CLKPORT iClk
 set OVERCONSTRAIN_NS 3.000 ;# aggressive probe period; keep tighter than real fmax
 set JOBS 12
 
-set SIZES      {4096 8192 12288 16384 32768}
+set SIZES      {4096 8192 12288 16384 32768 65535}
 # Line 1 is the pinned "Vivado Implementation Defaults" baseline (set below).
 # These are the performance lines. Congestion_SpreadLogic_high directly targets
 # this design's routing/congestion-bound wall (deliberately spreads logic to
@@ -49,6 +49,40 @@ proc grab {pattern text default} {
 open_project $PROJ
 set FS [current_fileset]
 puts "INFO: top = [get_property top $FS]"
+
+# Repair stale design-source references. The common package was renamed
+# Common.vhd -> openjls_pkg.vhd (commit 6e17df8); the project still pointed at
+# the deleted Common.vhd, so synth failed with "package 'openjls_pkg' not
+# found". Idempotent: drops any missing files from sources_1 and re-adds the
+# package if absent. A no-op once the project is in sync.
+foreach f [get_files -quiet -of_objects [get_filesets sources_1]] {
+  if {![file exists $f]} {
+    puts "INFO: removing missing source from project: $f"
+    remove_files -fileset sources_1 $f
+  }
+}
+set PKG "$::env(HOME)/Repos/OpenJLS/Sources/openjls_pkg.vhd"
+if {[llength [get_files -quiet $PKG]] == 0} {
+  puts "INFO: adding renamed package to sources_1: $PKG"
+  add_files -norecurse -fileset sources_1 $PKG
+}
+# The package compiles into work as VHDL-2008, like the rest of the RTL.
+set_property FILE_TYPE {VHDL 2008} [get_files $PKG]
+# Ensure the open-logic base dependencies (RAM/FIFO + olo_base_pkg_*) are in the
+# synthesis source set. Reuse the canonical helper; guard so it only runs when
+# they are genuinely absent from sources_1.
+if {[llength [get_files -quiet -of_objects [get_filesets sources_1] *olo_base*]] == 0} {
+  puts "INFO: open-logic base sources missing from sources_1; adding via create_libraries_vivado.tcl"
+  source "$::env(HOME)/Repos/OpenJLS/Scripts/create_libraries_vivado.tcl"
+}
+# The RTL references open-logic as work.olo_* (commit 6688b7b). An older project
+# state compiled these files into a named 'openlogic_base' library, so work.olo_*
+# failed to resolve. Force them into the default library to match the RTL.
+set olo_in_src [get_files -quiet -of_objects [get_filesets sources_1] *olo_base*]
+if {[llength $olo_in_src] > 0} {
+  puts "INFO: reassigning [llength $olo_in_src] open-logic files to xil_defaultlib"
+  set_property LIBRARY xil_defaultlib $olo_in_src
+}
 
 # Pin the baseline to the real Vivado default BY NAME. Do NOT read it from the
 # project: a prior manual session may have left impl_1 on another strategy
