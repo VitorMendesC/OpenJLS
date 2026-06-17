@@ -33,11 +33,19 @@ set JOBS 12
 
 set SIZES      {4096 8192 12288 16384 32768 65535}
 # Line 1 is the pinned "Vivado Implementation Defaults" baseline (set below).
-# These are the performance lines. Congestion_SpreadLogic_high directly targets
-# this design's routing/congestion-bound wall (deliberately spreads logic to
-# de-congest). Swap/extend freely (Performance_NetDelay_high,
-# Performance_ExplorePostRoutePhysOpt, ...).
-set PERF_STRATEGIES {Performance_Explore Congestion_SpreadLogic_high}
+# These are the performance lines; each uniquely wins at least one size, so all
+# are kept (build time is amortized when the IP ships as an OOC checkpoint):
+#   - Congestion_SpreadLogic_high: wins at 4k. Small images have a tiny line-
+#     buffer BRAM footprint, so the logic packs tight and goes congestion-bound;
+#     spreading logic de-congests it (+20 MHz vs every other strategy). At large
+#     sizes the BRAM footprint already spreads the design, so it's redundant and
+#     over-spreads the byte_stuffer recurrence (the 8k dip) — diagnostic, not noise.
+#   - Performance_NetDelay_high: best average; wins 8k/16k and lifts the 32k
+#     congestion soft spot. Heaviest build (~2x EPRPO), fine under OOC.
+#   - Performance_ExplorePostRoutePhysOpt: most consistent (highest floor); wins
+#     12k/64k. Dominates plain Performance_Explore (= Explore + post-route physopt).
+# Best-of envelope across these: avg ~248 MHz, floor ~242 MHz.
+set PERF_STRATEGIES {Performance_ExplorePostRoutePhysOpt Performance_NetDelay_high Congestion_SpreadLogic_high}
 
 # ---- Helpers ----------------------------------------------------------------
 proc grab {pattern text default} {
