@@ -77,6 +77,47 @@ The hardware architecture is based on the optimizations in Mert's [*Key Architec
 
 ---
 
+## Interface
+
+The core is a single entity, `openjls_top`, configured by generics and driven through a pixel-in / bitstream-out streaming interface.
+
+### Generics
+
+| Generic | Range | Default | Description |
+|---|:--:|:--:|---|
+| `BITNESS` | 8–16 | 12 | Pixel bit depth. |
+| `MAX_IMAGE_WIDTH` | 4–65535 | 4096 | Largest image width supported; sets the on-chip line-buffer depth. |
+| `MAX_IMAGE_HEIGHT` | 1–65535 | 4096 | Largest image height supported. |
+| `OUT_WIDTH` | 48–1024 | 64 | Output data-bus width in bits (multiple of 8). |
+
+### Ports
+
+| Port | Dir | Width | Role |
+|---|:--:|---|---|
+| `iClk` | in | 1 | Clock; whole core is synchronous to its rising edge. |
+| `iRst` | in | 1 | Synchronous reset, active high. Also latches the image dimensions (see below). |
+| `iImageWidth` | in | `⌈log2(MAX_IMAGE_WIDTH+1)⌉` | Image width in pixels (configuration). |
+| `iImageHeight` | in | `⌈log2(MAX_IMAGE_HEIGHT+1)⌉` | Image height in pixels (configuration). |
+| `iValid` | in | 1 | Input pixel valid — AXI4-Stream `TVALID`. |
+| `iPixel` | in | `BITNESS` | Input pixel — AXI4-Stream `TDATA`. |
+| `oReady` | out | 1 | Input ready — AXI4-Stream `TREADY`. |
+| `oData` | out | `OUT_WIDTH` | Output bitstream beat — AXI4-Stream `TDATA`. |
+| `oValid` | out | 1 | Output valid — AXI4-Stream `TVALID`. |
+| `oKeep` | out | `OUT_WIDTH/8` | Valid-byte mask on the final beat — AXI4-Stream `TKEEP`. |
+| `oLast` | out | 1 | End of image — AXI4-Stream `TLAST`. |
+| `iReady` | in | 1 | Output ready / downstream backpressure — AXI4-Stream `TREADY`. |
+
+### Integration notes
+
+- **Pixel stream.** Feed pixels **row-major**, one per accepted handshake (`iValid and oReady`), right-justified in `iPixel`. The encoder sustains one pixel per clock and deasserts `oReady` *only* under downstream backpressure (`iReady` low).
+- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before streaming a new resolution. Leaving them unwired (`0`) selects the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Minimum image is **4 × 1**.
+- **No input `TLAST`.** End-of-image is derived internally from the dimensions, so the input omits `TLAST` (which AXI4-Stream permits). The *output* stream is self-delimiting: `oLast` marks the last beat and `oKeep` flags its valid bytes.
+- **Naming.** Port names follow the project's house style; the signals map 1:1 onto AXI4-Stream as noted above, so a conventional-naming `s_axis`/`m_axis` wrapper can be layered on top without touching the core.
+
+> Full signal timing, the reset/configuration sequence, latency figures, and a worked instantiation example live in the **datasheet** (`Docs/datasheet/`).
+
+---
+
 ## Performance & Resources
 
 Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning or vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s.
