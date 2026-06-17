@@ -36,6 +36,8 @@ Specifications
 
 OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using a layered suite that combines constrained-random self-checking tests, functional coverage, and byte-exact comparison against an independent reference encoder — run at both the RTL and post-synthesis (gate-level) stages:
 
+> ** Browse the latest [Verification report](https://vitormendesc.github.io/OpenJLS/)** a live dashboard of every suite that congregates OSVMM, NVC html reports and logs from post-synth verification.
+
 - **OSVVM** — Per-module correctness and system-level control-plane stress. Each of 28 module-level testbenches verifies its module against an independent behavioral reference model derived from the ITU-T T.87 specification; a top-level testbench stresses the control plane (reset injection, output backpressure, randomized image sizes), all with requirements tracking. Confirms the encoder sustains one pixel per clock and stalls *only* under downstream backpressure, and streams images back-to-back with no gap or data loss.
 - **Coverage** — Two complementary metrics, both gathered within the OSVVM verification suite: OSVVM provides functional (behavioral) coverage, while NVC provides structural code coverage, reaching 99%+ statement coverage.
 - **Golden model** — Byte-exact comparison of the output bitstream against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large dataset of real images — natural photographs and synthetic stress patterns that push the algorithm past anything natural images reach (see below). Also validated against the official ISO/IEC 14495-1 reference vectors.
