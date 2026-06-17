@@ -163,13 +163,48 @@ grep -h 'MANIFEST RESULT' "$LOGD"/shard_*.log 2>/dev/null || true
 if [ "$rc" -ne 0 ] || [ "$npass" -ne "$nelig" ]; then ps_status=FAIL; else ps_status=PASS; fi
 gpct=$(awk -v p="$npass" -v t="$nelig" 'BEGIN{ if (t > 0) printf "%.0f%%", 100 * p / t }')
 {
-  echo "NAME=\"Post-synth\""
-  echo "NOTE=\"golden byte-exact on funcsim netlist\""
+  echo "NAME=\"Post-synth Golden Model\""
+  echo "NOTE=\"byte-exact vs CharLS on funcsim netlist\""
   echo "STATUS=$ps_status"
   echo "PCT=\"$gpct\""
   echo "SUMMARY=\"$npass of $nelig images byte-exact vs CharLS\""
   echo "DATE=\"$(date -Iseconds)\""
 } > "$HERE/Output/report_status_golden.env"
+
+# Per-image results table (rendered to HTML by publish_reports.sh), same idea as
+# the RTL golden flow. Parse the per-image PASS/FAIL lines the TB logged into the
+# shard logs; the PASS line carries the output byte count (byte-exact, so
+# matched == total), and a FAIL leaves a _PS.jls the TB saved, which we diff
+# against the CharLS golden to count matched bytes.
+PREP="$GMODEL/imageprep"
+PSOUT="$GMODEL/Output/OpenJLS"
+declare -A PS_RES PS_BYTES
+while read -r kind stem rest; do
+  if [ "$kind" = PASS ]; then
+    PS_RES["$stem"]=PASS; PS_BYTES["$stem"]="$(printf '%s' "$rest" | tr -dc '0-9')"
+  else
+    PS_RES["$stem"]=FAIL
+  fi
+done < <(grep -hoE 'PASS [^ ]+ \([0-9]+ B\)|FAIL [^ ]+' "$LOGD"/shard_*.log 2>/dev/null)
+{
+  printf 'Image\tDims\tBits\tBytes (match/total)\tResult\n'
+  while IFS= read -r stem; do
+    [ -z "$stem" ] && continue
+    read -r W H _ _ < <(python3 "$PREP/pgm_info.py" "$IMAGES_DIR/$stem.pgm" 2>/dev/null) || true
+    total=$(stat -c%s "$GOLDEN/${stem}_charls.jls" 2>/dev/null || echo 0)
+    case "${PS_RES[$stem]:-}" in
+      PASS) result=PASS; matched="${PS_BYTES[$stem]:-$total}" ;;
+      FAIL) result=FAIL; ps="$PSOUT/${stem}_PS.jls"
+            if [ -f "$ps" ]; then
+              diffb=$(cmp -l "$GOLDEN/${stem}_charls.jls" "$ps" 2>/dev/null | wc -l)
+              osz=$(stat -c%s "$ps"); minsz=$(( total < osz ? total : osz ))
+              matched=$(( minsz - diffb )); [ "$matched" -lt 0 ] && matched=0
+            else matched=0; fi ;;
+      *)    result="no result"; matched=0 ;;
+    esac
+    printf '%s\t%sx%s\t%s\t%s\t%s\n' "$stem" "${W:-?}" "${H:-?}" "$BITNESS" "$matched/$total" "$result"
+  done < "$MANIFEST" | sort
+} > "$HERE/Output/ps_golden_image_results.tsv" || true
 
 if [ "$rc" -ne 0 ] || [ "$npass" -ne "$nelig" ]; then
   echo "Post-synth golden: FAIL"

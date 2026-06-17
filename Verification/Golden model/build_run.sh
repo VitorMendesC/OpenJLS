@@ -133,14 +133,17 @@ fi
 
 # Eligible images (under the MP cap), tagged with file size for balancing.
 skip=0
-ELIG=()   # entries: "<size_bytes>\t<pgm_path>\t<bits>"
+ELIG=()      # entries: "<size_bytes>\t<pgm_path>\t<bits>"
+SKIPPED=()   # processed-image report rows for over-cap skips: "stem\tWxH\tmp\tbits\tSKIP"
 for pgm in "${PGMS[@]}"; do
   stem="$(basename "${pgm%.pgm}")"
   read -r W H MX BITS < <(python3 "$PREP/pgm_info.py" "$pgm")
   mp=$(awk -v w="$W" -v h="$H" 'BEGIN{printf "%.3f", w*h/1e6}')
   if awk -v mp="$mp" -v cap="$MAX_MP" 'BEGIN{exit !(mp>cap)}'; then
     echo "SKIP $stem (${W}x${H}, ${mp} MP > ${MAX_MP} cap)"
-    skip=$((skip + 1)); continue
+    skip=$((skip + 1))
+    SKIPPED+=("$stem"$'\t'"${W}x${H}"$'\t'"$mp"$'\t'"$BITS"$'\t'"—"$'\t'SKIP)
+    continue
   fi
   ELIG+=("$(stat -c%s "$pgm")"$'\t'"$pgm"$'\t'"$BITS")
 done
@@ -156,25 +159,43 @@ trap 'rm -rf "$TMPD"' EXIT
 
 # One image: mint golden, run the DUT, byte-compare (log to $LOGD/<stem>.log).
 run_image() {
-  local w="$1" pgm="$2" bits="$3" stem rc st
+  local w="$1" pgm="$2" bits="$3" stem rc st result W H MX mp
+  local ref out rsz osz diffb minsz matched bytes
   stem="$(basename "${pgm%.pgm}")"
+  read -r W H MX _ < <(python3 "$PREP/pgm_info.py" "$pgm")
+  mp=$(awk -v w="$W" -v h="$H" 'BEGIN{printf "%.3f", w*h/1e6}')
   if ! "$CLI" encode "$pgm" "$GOLDEN/${stem}_charls.jls" >"$LOGD/$stem.log" 2>&1; then
-    echo "[t$w] FAIL $stem (charls encode)"; echo "$stem" >>"$TMPD/failures"; return 1
-  fi
-  if "${NVC[@]}" --work=work:"$LIBS/work.08" \
+    rc=1; result="FAIL (charls)"
+  elif "${NVC[@]}" --work=work:"$LIBS/work.08" \
       -e --jit --no-save \
       -g REPO_ROOT="$ROOT/" \
       -g PGM_PATH="Verification/Golden model/Images/${stem}.pgm" \
       -g JLS_PATH="Verification/Golden model/Output/Golden/${stem}_charls.jls" \
       -g OUT_PATH="Verification/Golden model/Output/OpenJLS/${stem}_OPENJLS.jls" \
       -g BITNESS="$bits" "$TB" \
-      -r --exit-severity=error "$TB" >>"$LOGD/$stem.log" 2>&1; then rc=0; else rc=1; fi
+      -r --exit-severity=error "$TB" >>"$LOGD/$stem.log" 2>&1; then rc=0; result=PASS; else rc=1; result=FAIL; fi
   # Surface the TB's internal-stall warning regardless of pass/fail.
   st="$(grep -m1 -ao 'Pipeline stalled.*' "$LOGD/$stem.log" 2>/dev/null || true)"
   if [ -n "$st" ]; then
     echo "[t$w] STALL $stem: $st"
     printf '%s\t%s\n' "$stem" "$st" >>"$TMPD/stalls"
   fi
+  # Byte match/mismatch vs the CharLS golden (matched / reference total). cmp -l
+  # lists differing bytes over the common prefix; a length difference counts the
+  # missing/extra bytes as unmatched via minsz.
+  ref="$GOLDEN/${stem}_charls.jls"; out="$OUTPUT/${stem}_OPENJLS.jls"
+  rsz=$(stat -c%s "$ref" 2>/dev/null || echo 0)
+  osz=$(stat -c%s "$out" 2>/dev/null || echo 0)
+  if [ "$rsz" -gt 0 ] && [ -f "$out" ]; then
+    diffb=$(cmp -l "$ref" "$out" 2>/dev/null | wc -l)
+    minsz=$(( rsz < osz ? rsz : osz ))
+    matched=$(( minsz - diffb )); [ "$matched" -lt 0 ] && matched=0
+    bytes="$matched/$rsz"
+  else
+    bytes="0/$rsz"
+  fi
+  # Per-image report row (assembled into golden_image_results.* at the end).
+  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$stem" "${W}x${H}" "$mp" "$bits" "$bytes" "$result" >>"$TMPD/results"
   if [ "$rc" -eq 0 ]; then echo "[t$w] PASS $stem"; return 0; fi
   echo "[t$w] FAIL $stem"; echo "$stem" >>"$TMPD/failures"; return 1
 }
@@ -223,14 +244,25 @@ fi
 echo "=============================================================="
 echo "Golden-model suite: PASS=$pass FAIL=$fail SKIP=$skip (cap ${MAX_MP} MP, ${NT} thread(s))"
 
+# Per-image results table (rendered to HTML by publish_reports.sh). Header row
+# first, then processed images and any over-cap skips, sorted by name.
+{
+  printf 'Image\tDims\tMP\tBits\tBytes (match/total)\tResult\n'
+  {
+    [ -f "$TMPD/results" ] && cat "$TMPD/results"
+    [ "${#SKIPPED[@]}" -gt 0 ] && printf '%s\n' "${SKIPPED[@]}"
+    :   # keep the producer's exit 0 (empty SKIPPED + pipefail would else abort)
+  } | sort
+} > "$HERE/Output/golden_image_results.tsv" || true
+
 # Status line for the published report (Verification/OSVVM/publish_reports.sh).
 gpct=$(awk -v p="$pass" -v t="$((pass + fail))" 'BEGIN{ if (t > 0) printf "%.0f%%", 100 * p / t }')
 {
   echo "NAME=\"Golden model\""
-  echo "NOTE=\"CharLS byte-exact, 8-bit corpus\""
+  echo "NOTE=\"CharLS byte-exact cross-check\""
   echo "STATUS=$([ "$fail" -eq 0 ] && echo PASS || echo FAIL)"
   echo "PCT=\"$gpct\""
-  echo "SUMMARY=\"$pass passed &middot; $fail failed &middot; $skip skipped (cap ${MAX_MP} MP)\""
+  echo "SUMMARY=\"$pass of $((pass + fail)) images byte-exact vs CharLS (cap ${MAX_MP} MP)\""
   echo "DATE=\"$(date -Iseconds)\""
 } > "$HERE/Output/report_status.env"
 if [ -f "$TMPD/stalls" ]; then

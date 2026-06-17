@@ -24,9 +24,11 @@ OSVVM_YML="$HERE/OSVVM_OpenJls/OSVVM_OpenJls.yml"
 COV_HTML="$HERE/NVC_CodeCoverage/html"
 COVDB="$HERE/NVC_CodeCoverage/merged.covdb"
 GOLDEN_ENV="$ROOT/Verification/Golden model/Output/report_status.env"
-GOLDEN_MD="$ROOT/Verification/Golden model/Output/golden_sweep_report.md"
+GOLDEN_TSV="$ROOT/Verification/Golden model/Output/golden_image_results.tsv"
 PS_OSVVM_ENV="$ROOT/Verification/Post synth/Output/report_status_osvvm.env"
+PS_OSVVM_LOG="$ROOT/Verification/Post synth/Output/postsynth_osvvm.log"
 PS_GOLDEN_ENV="$ROOT/Verification/Post synth/Output/report_status_golden.env"
+PS_GOLDEN_TSV="$ROOT/Verification/Post synth/Output/ps_golden_image_results.tsv"
 
 rm -rf "$DEST"
 mkdir -p "$DEST"
@@ -62,11 +64,11 @@ if [ -f "$HERE/index.html" ] && [ -f "$OSVVM_YML" ]; then
   [ -z "$rdate" ] && rdate=$(awk '/^Date:/{print $2; exit}' "$OSVVM_YML")
   st=PASS; [ "$fail" -ne 0 ] && st=FAIL
   opct=$(awk -v p="$pass" -v t="$total" 'BEGIN{ if (t > 0) printf "%.0f%%", 100 * p / t }')
-  emit_row "OSVVM regression" "module + top control-plane" "$st" "$opct" \
+  emit_row "OSVVM suite" "module + top control-plane" "$st" "$opct" \
     "$total tests &middot; $affirm affirmations" \
     "osvvm/index.html" "${rdate%T*}"
 else
-  emit_row "OSVVM regression" "module + top control-plane" "NA" "" \
+  emit_row "OSVVM suite" "module + top control-plane" "NA" "" \
     "run ./build_run.sh to populate" "" ""
 fi
 
@@ -100,16 +102,94 @@ env_row() {
     "${SUMMARY:-}" "$link" "${DATE%%T*}"
 }
 
-# Golden detail markdown — only when the suite actually ran (status present),
-# so a stale Output/ report doesn't get linked under a "not run" row.
+# render_tsv_page <tsv> <dest-subdir> <title> -> echoes the relative link (or
+# nothing if the tsv is absent). First TSV line is the header; PASS/FAIL/SKIP
+# cells get coloured. Styled to match this dashboard.
+render_tsv_page() {
+  local tsv="$1" sub="$2" title="$3"
+  [ -f "$tsv" ] || { echo ""; return; }
+  mkdir -p "$DEST/$sub"
+  {
+    cat <<HDR
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px/1.5 system-ui, sans-serif; max-width: 64rem; margin: 2.5rem auto; padding: 0 1.2rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  th, td { text-align: left; padding: .4rem .7rem; border-bottom: 1px solid #8884; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: #888; }
+  td { font-variant-numeric: tabular-nums; }
+  td.r-ok { color: #1a7f37; font-weight: 600; }
+  td.r-bad { color: #cf222e; font-weight: 600; }
+  td.r-na { color: #888; }
+  a { color: #0969da; }
+</style></head><body>
+<p><a href="../index.html">&larr; all reports</a></p>
+<h1>$title</h1>
+<table><thead><tr>
+HDR
+    head -1 "$tsv" | awk -F'\t' '{for (i=1;i<=NF;i++) printf "<th>%s</th>", $i; print ""}'
+    echo "</tr></thead><tbody>"
+    tail -n +2 "$tsv" | awk -F'\t' '{
+      printf "<tr>"
+      for (i=1;i<=NF;i++) {
+        cls=""
+        if ($i=="PASS") cls=" class=\"r-ok\""
+        else if ($i ~ /^FAIL/) cls=" class=\"r-bad\""
+        else if ($i=="SKIP" || $i=="no result") cls=" class=\"r-na\""
+        printf "<td%s>%s</td>", cls, $i
+      }
+      print "</tr>"
+    }'
+    echo "</tbody></table></body></html>"
+  } > "$DEST/$sub/index.html"
+  echo "$sub/index.html"
+}
+
+# render_log_page <log> <dest-subdir> <title> -> echoes the relative link. For
+# suites with no table/HTML (post-synth OSVVM is a single plain-NVC TB run): the
+# captured console log is the report. HTML-escaped into a <pre>.
+render_log_page() {
+  local log="$1" sub="$2" title="$3"
+  [ -f "$log" ] || { echo ""; return; }
+  mkdir -p "$DEST/$sub"
+  {
+    cat <<HDR
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2.5rem auto; padding: 0 1.2rem; }
+  pre { white-space: pre-wrap; word-break: break-word; background: #8881; padding: 1rem;
+        border-radius: .5rem; font: 12px/1.45 ui-monospace, monospace; }
+  a { color: #0969da; }
+</style></head><body>
+<p><a href="../index.html">&larr; all reports</a></p>
+<h1>$title</h1>
+<pre>
+HDR
+    sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$log"
+    echo "</pre></body></html>"
+  } > "$DEST/$sub/index.html"
+  echo "$sub/index.html"
+}
+
+# Only link the detail page when the suite actually ran (status file present).
 golden_link=""
-if [ -f "$GOLDEN_ENV" ] && [ -f "$GOLDEN_MD" ]; then
-  mkdir -p "$DEST/golden"; cp "$GOLDEN_MD" "$DEST/golden/"
-  golden_link="golden/$(basename "$GOLDEN_MD")"
-fi
-env_row "$GOLDEN_ENV"    "Golden model" "CharLS byte-exact, 8-bit corpus"  "$golden_link"
-env_row "$PS_OSVVM_ENV"  "Post-synth"   "control-plane stress on netlist"  ""
-env_row "$PS_GOLDEN_ENV" "Post-synth"   "golden byte-exact on netlist"     ""
+[ -f "$GOLDEN_ENV" ] && golden_link="$(render_tsv_page "$GOLDEN_TSV" golden "Golden model — processed images")"
+ps_osvvm_link=""
+[ -f "$PS_OSVVM_ENV" ] && ps_osvvm_link="$(render_log_page "$PS_OSVVM_LOG" post-synth-osvvm "Post-synth OSVVM — simulation log")"
+ps_golden_link=""
+[ -f "$PS_GOLDEN_ENV" ] && ps_golden_link="$(render_tsv_page "$PS_GOLDEN_TSV" post-synth-golden "Post-synth Golden Model — processed images")"
+
+env_row "$GOLDEN_ENV"    "Golden model"            "CharLS byte-exact, 8-bit corpus"   "$golden_link"
+env_row "$PS_OSVVM_ENV"  "Post-synth OSVVM"        "control-plane stress on netlist"   "$ps_osvvm_link"
+env_row "$PS_GOLDEN_ENV" "Post-synth Golden Model" "byte-exact vs CharLS on netlist"   "$ps_golden_link"
 
 # --- landing page ----------------------------------------------------------
 GEN_DATE="$(date -u '+%Y-%m-%d %H:%M UTC')"

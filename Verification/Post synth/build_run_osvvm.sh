@@ -86,13 +86,17 @@ OL_SRC="$ROOT/ThirdParty/open-logic/src/base/vhdl"
 # 7. Elaborate + run from a scratch dir (contains the OSVVM YAML droppings)
 mkdir -p "$HERE/sim-out"
 cd "$HERE/sim-out"
+# tee the run to a log so publish_reports.sh can render it as this suite's
+# report (it has no per-image table or OSVVM HTML — it is a single TB run via
+# plain NVC). pipefail makes ps_rc reflect nvc's status, not tee's.
+PSLOG="$HERE/Output/postsynth_osvvm.log"
 if "${NVC[@]}" --work=work:"$LIBS/work.08" \
     -e --jit --no-save -g POST_SYNTH=true "$TB" \
-    -r --exit-severity=error "$TB"; then ps_rc=0; else ps_rc=1; fi
+    -r --exit-severity=error "$TB" 2>&1 | tee "$PSLOG"; then ps_rc=0; else ps_rc=1; fi
 
 # Status line for the published report (Verification/OSVVM/publish_reports.sh).
 {
-  echo "NAME=\"Post-synth\""
+  echo "NAME=\"Post-synth OSVVM\""
   echo "NOTE=\"control-plane stress on funcsim netlist\""
   echo "STATUS=$([ "$ps_rc" -eq 0 ] && echo PASS || echo FAIL)"
   echo "PCT=\"$([ "$ps_rc" -eq 0 ] && echo 100% || echo 0%)\""
