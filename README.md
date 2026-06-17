@@ -4,7 +4,7 @@ OpenJLS is a **JPEG-LS encoder IP core for FPGAs** for real-time image compressi
 
 It implements the JPEG-LS standard (described by ISO/IEC 14495-1 or ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
 
-OpenJLS can reach a maximum frequency up to ~250 MHz on a Xilinx UltraScale+ ZU7EG, an MPSoC often used in space applications, and it processes 1 pixel per clock, resulting in ~250 MPixels/s. It operates on single-component data, often called grayscale, so in a satellite camera with multiple bands each band would need its own compressor; this is not an issue since the resource usage is minimal, and it greatly increases throughput since each compressor can operate in parallel.
+OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG, an MPSoC often used in space applications, and it processes 1 pixel per clock, resulting in ~240 MPixels/s. It operates on single-component data, often called grayscale, so in a satellite camera with multiple bands each band would need its own compressor; this is not an issue since the resource usage is minimal, and it greatly increases throughput since each compressor can operate in parallel.
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform.
 
@@ -122,23 +122,24 @@ The core is a single entity, `openjls_top`, configured by generics and driven th
 
 ## Performance & Resources
 
-Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning or vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~250 MHz is ~250 Mpixel/s.
+Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning or vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~240 MHz is ~240 Mpixel/s.
 
 ### Maximum frequency vs image size
 
 ![Maximum frequency vs image size](Docs/Images/fmax_vs_size.png)
 
-The encoder holds ~250 MHz largely independent of image size with a strategy focusing on *handling congestion* and ~240 MHz on Default strategy.
+No single strategy wins at every size: the design is congestion-bound, so the best implementation strategy shifts with the image's on-chip BRAM footprint. Small images pack the logic tightly (little line-buffer BRAM to spread it) and favour congestion-spreading; large images are already spread by their BRAM and favour net-delay or post-route optimisation. Taking the best strategy per size, fmax stays in the **~242–252 MHz** band; the Default strategy ranges ~200–241 MHz.
 
-| Image width | Default | Performance_Explore | Congestion_SpreadLogic_high |
-|------------:|--------:|--------------------:|----------------------------:|
-| 4096 | 243.9 | 238.7 | **258.0** |
-| 8192 | 240.0 | 243.0 | **252.8** |
-| 12288 | 243.5 | **248.5** | 247.9 |
-| 16384 | 235.9 | 244.1 | **256.7** |
-| 32768 | 232.2 | 212.8 | **247.5** |
+| Image width | Default | ExplorePostRoutePhysOpt | NetDelay_high | Congestion_SpreadLogic_high |
+|------------:|--------:|------------------------:|--------------:|----------------------------:|
+| 4096 | 226.7 | 229.0 | 223.8 | **249.2** |
+| 8192 | 241.0 | 247.8 | **248.1** | 205.9 |
+| 12288 | 237.8 | **250.4** | 241.3 | 231.9 |
+| 16384 | 201.5 | 241.8 | **252.0** | 247.5 |
+| 32768 | 223.3 | 229.7 | **242.0** | 221.3 |
+| 65535 | 235.0 | **246.2** | 243.1 | 243.8 |
 
-Maximum frequency (MHz) by image width and implementation strategy; best per row in bold.
+Maximum frequency (MHz) by image width and implementation strategy; best per row in bold. Results are deterministic (re-running a given size/strategy reproduces the number exactly), so the per-size winner is a reliable selection — pick the strategy for the target resolution.
 
 ### Resource usage vs image size
 
@@ -148,11 +149,12 @@ Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~
 
 | Image width | LUTs | FFs | BRAM tiles |
 |------------:|-----:|----:|-----------:|
-| 4096 | 8048 | 2059 | 1.5 |
-| 8192 | 7930 | 2062 | 3.0 |
-| 12288 | 7855 | 2087 | 4.5 |
-| 16384 | 7877 | 2089 | 5.5 |
-| 32768 | 7990 | 2095 | 11.0 |
+| 4096 | 7512 | 2055 | 1.5 |
+| 8192 | 7545 | 2091 | 3.0 |
+| 12288 | 7546 | 2123 | 4.5 |
+| 16384 | 7674 | 2137 | 5.5 |
+| 32768 | 7636 | 2137 | 11.0 |
+| 65535 | 7781 | 2162 | 22.0 |
 
 Resource usage by image width (default strategy; near-identical across strategies). Reproduce both tables with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
 

@@ -68,7 +68,7 @@ AXI4-Stream. Source, license and the full verification suite are public at
   Image size    & Up to $65535\times65535$ px, minimum $4\times1$ \\
   Throughput    & 1 pixel / clock \\
   Latency       & 14 clock cycles \\
-  $f_{max}$     & $\sim$250\,MHz (Xilinx UltraScale+ \texttt{xczu7eg-1}, RTL-only) \\
+  $f_{max}$     & $\sim$240\,MHz (Xilinx UltraScale+ \texttt{xczu7eg-1}, RTL-only) \\
   Interface     & AXI4-Stream input (pixels) and output (bitstream) \\
   Memory        & On-chip line buffer, one image row; no external RAM \\
   Resources     & $\sim$8k LUT, $\sim$2.1k FF + BRAM scaling with image width \\
@@ -103,7 +103,7 @@ bitstream is self-delimiting.
 \end{tabularx}
 
 %======================================================================
-\section{Signals}
+\section{Ports}
 All ports are synchronous to the rising edge of \texttt{iClk}. The streaming
 ports map one-to-one onto AXI4-Stream as shown.
 
@@ -140,7 +140,7 @@ under downstream backpressure.
 \begin{center}
 \begin{tikztimingtable}[timing/slope=0.1,xscale=1.7]
   iClk    & 8{C}        \\
-  iPixel  & D{P0} D{P1} 3D{P2} D{P3} D{P4} D{P5} \\
+  iPixel  & D{P0} 4D{P1} 2D{P2} D{P3}\\
   iValid  & 8H          \\
   oReady  & HHLLHHHH     \\
 \end{tikztimingtable}
@@ -158,10 +158,10 @@ with a simulation warning.
 
 \begin{center}
 \begin{tikztimingtable}[timing/slope=0.1,xscale=1.45]
-  iClk         & 0.5L 6{C} 0.5H \\
+  iClk         & 7{C}          \\
   iImageWidth  & D{W0} 6D{W1}  \\
   iImageHeight & D{H0} 6D{H1}  \\
-  iRst         & LLLLHLL        \\
+  iRst         & LLLHHLL        \\
   sImageWidth  & 5D{W0} 2D{W1} \\
   sImageHeight & 5D{H0} 2D{H1} \\
 \end{tikztimingtable}
@@ -178,21 +178,22 @@ its valid bytes. Pipeline latency is 14 clock cycles.
 \section{Resources and performance}
 Characterized on Xilinx Zynq UltraScale+ \texttt{xczu7eg-fbvb900-1-e},
 Vivado 2025.2, 12-bit, RTL-only (no floorplanning). $f_{max}$ is true fmax
-(over-constrained until timing fails); at one pixel/clock $\sim$250\,MHz is
-$\sim$250\,Mpixel/s.
+(over-constrained until timing fails); at one pixel/clock $\sim$240\,MHz is
+$\sim$240\,Mpixel/s.
 
 \begin{minipage}[t]{0.49\textwidth}
 \centering
 \textbf{$f_{max}$ (MHz) vs image width}\\[2pt]
-\begin{tabular}{@{}r r r r@{}}
+\begin{tabular}{@{}r r r@{}}
   \toprule
-  Width & Default & Perf.Exp. & Cong.Spread \\
+  Width & Default & Best-of$^\dagger$ \\
   \midrule
-  4096  & 243.9 & 238.7 & \textbf{258.0} \\
-  8192  & 240.0 & 243.0 & \textbf{252.8} \\
-  12288 & 243.5 & \textbf{248.5} & 247.9 \\
-  16384 & 235.9 & 244.1 & \textbf{256.7} \\
-  32768 & 232.2 & 212.8 & \textbf{247.5} \\
+  4096  & 226.7 & \textbf{249.2} \\
+  8192  & 241.0 & \textbf{248.1} \\
+  12288 & 237.8 & \textbf{250.4} \\
+  16384 & 201.5 & \textbf{252.0} \\
+  32768 & 223.3 & \textbf{242.0} \\
+  65535 & 235.0 & \textbf{246.2} \\
   \bottomrule
 \end{tabular}
 \end{minipage}\hfill
@@ -203,18 +204,23 @@ $\sim$250\,Mpixel/s.
   \toprule
   Width & LUT & FF & BRAM \\
   \midrule
-  4096  & 8048 & 2059 & 1.5 \\
-  8192  & 7930 & 2062 & 3.0 \\
-  12288 & 7855 & 2087 & 4.5 \\
-  16384 & 7877 & 2089 & 5.5 \\
-  32768 & 7990 & 2095 & 11.0 \\
+  4096  & 7512 & 2055 & 1.5 \\
+  8192  & 7545 & 2091 & 3.0 \\
+  12288 & 7546 & 2123 & 4.5 \\
+  16384 & 7674 & 2137 & 5.5 \\
+  32768 & 7636 & 2137 & 11.0 \\
+  65535 & 7781 & 2162 & 22.0 \\
   \bottomrule
 \end{tabular}
 \end{minipage}
 
 \vspace{6pt}
-\noindent Logic is essentially constant with image size; only the line-buffer
-BRAM scales with width and pixel depth.
+\noindent $^\dagger$Best of three implementation strategies
+(\texttt{Congestion\_SpreadLogic\_high}, \texttt{Performance\_NetDelay\_high},
+\texttt{Performance\_ExplorePostRoutePhysOpt}); the design is congestion-bound,
+so the winning strategy shifts with image size (results are deterministic, so
+the per-size winner is a reliable selection). Logic is essentially constant with
+image size; only the line-buffer BRAM scales with width and pixel depth.
 
 %======================================================================
 \section{Integration example}
