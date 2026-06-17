@@ -529,6 +529,12 @@ begin
   sReadyOut <= not iRst and not sStallUpstream; -- Stalls upstream
   oReady    <= sReadyOut;
 
+  -- Input-port AXI4-Stream slave contract (iValid/iPixel/oReady).
+  -- psl default clock is rising_edge(iClk);
+  -- psl assert always (iRst = '1' -> oReady = '0') report "openjls_top: reset must hold oReady low";
+  -- psl assert always ((iRst = '0' and sStallLogic = '1') -> oReady = '0') report "openjls_top: oReady must stay low while the input latch is frozen (no dropped beat)";
+  -- psl assert always ((iRst = '0' and iValid = '1' and oReady = '1') -> next (sValid = '1')) report "openjls_top: an accepted pixel (iValid and oReady) must be committed next cycle";
+
   -------------------------------------------------------------------------------------------------------------
   -- Input Stage — Input register
   -------------------------------------------------------------------------------------------------------------
