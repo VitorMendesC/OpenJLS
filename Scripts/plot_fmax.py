@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot fmax vs image size (one line per strategy) from fmax_sweep.csv.
+"""Plot fmax vs maximum image width (one line per strategy) from fmax_sweep.csv.
 
 Usage:
     python3 Scripts/plot_fmax.py [csv_path] [out_png]
@@ -54,12 +54,9 @@ ax = plt.gca()
 ax.set_xticks(all_sizes)
 # Label ticks as 4k, 8k, 12k, ... instead of raw pixel counts
 ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{int(round(x / 1024))}k"))
-plt.xlabel("Image size (px)")
+plt.xlabel("Maximum image width  (px)")
 plt.ylabel("Max. frequency  (MHz)")
-# Bold headline + small grey subtitle keeps the provenance without the clutter.
-fig.suptitle("OpenJLS — Max. frequency vs Image size", fontsize=13, fontweight="bold")
-ax.set_title("xczu7eg-fbvb900-1-e · Vivado 2025.2 · 12-bit depth",
-             fontsize=9, color="0.4")
+# No in-figure title: the LaTeX float caption supplies it.
 plt.grid(True, which="major", ls=":", alpha=0.5)
 plt.legend(title="Implementation strategy")
 plt.tight_layout()

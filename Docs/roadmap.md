@@ -30,6 +30,10 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 - [ ] Verified configurations for Microchip (Microsemi) devices
 - [ ] Verified configurations for Lattice devices
 
+## Phase 4 — Large Images (v1.1+)
+
+- [ ] Support images larger than 64k via LSE
+
 ---
 
 *Last updated: June 2026*

@@ -10,6 +10,16 @@ OpenJLS is vendor-agnostic, targeting any FPGA platform.
 
 ---
 
+## Resources
+
+- **[Datasheet (PDF)](Docs/datasheet/openjls_datasheet.pdf)**
+- **[Verification report](https://vitormendesc.github.io/OpenJLS/)**
+- **[Interface & integration](#interface)**
+- **[Roadmap](Docs/roadmap.md)**
+- **[Licensing](#licensing)**
+
+---
+
 ## Why JPEG-LS?
 
 JPEG-LS hits a sweet spot for hardware: Close to state-of-the-art lossless ratios from a single-pass, low-memory algorithm that needs no external RAM. It matches or beats older standards like PNG and lossless JPEG 2000, and while heavier modern codecs (JPEG XL, FLIF) compress somewhat tighter, they cost far more logic and memory than an embedded pipeline can spare.
@@ -26,7 +36,7 @@ Specifications
 - **Image size** — Configurable up to 64k × 64k px (minimum 4 × 1)
 - **Memory** — Line buffer, as big as image width, on-chip
 - **Throughput** — One pixel per clock cycle
-- **Interface** — AXI4-Stream input/output
+- **Interface** — Ready/valid streaming handshake (AXI4-Stream / Avalon-ST compatible)
 - **Conformance** — Bit-exact against the ISO/IEC 14495-1 reference and golden-model [CharLS](https://github.com/team-charls/charls)
 - **Portability** — Vendor-agnostic VHDL, due to memory-agnostic IPs from [open-logic](https://github.com/open-logic/open-logic)
 
@@ -38,12 +48,18 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 
 > ** Browse the latest [Verification report](https://vitormendesc.github.io/OpenJLS/)** a live dashboard of every suite that congregates OSVMM, NVC html reports and logs from post-synth verification.
 
-[![Verification suite results](Docs/Images/verification_results_snapshot.png)](https://vitormendesc.github.io/OpenJLS/)
+| Suite | Status | Test/Cov | Summary |
+|---|---|---|---|
+| OSVVM suite | PASS | 100% | 36 tests, 129,810 affirmations (module + top control-plane) |
+| NVC code coverage | info | 99.2% | Per-file statement breakdown |
+| Golden model | PASS | 100% | 287/287 images byte-exact vs CharLS |
+| Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
+| Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |
 
 - **OSVVM** — Per-module correctness and system-level control-plane stress. Each of 28 module-level testbenches verifies its module against an independent behavioral reference model derived from the ITU-T T.87 specification; a top-level testbench stresses the control plane (reset injection, output backpressure, randomized image sizes), all with requirements tracking. Confirms the encoder sustains one pixel per clock and stalls *only* under downstream backpressure, and streams images back-to-back with no gap or data loss.
 - **Coverage** — Two complementary metrics, both gathered within the OSVVM verification suite: OSVVM provides functional (behavioral) coverage, while NVC provides structural code coverage, reaching 99%+ statement coverage.
 - **Golden model** — Byte-exact comparison of the output bitstream against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large dataset of real images — natural photographs and synthetic stress patterns that push the algorithm past anything natural images reach (see below). Also validated against the official ISO/IEC 14495-1 reference vectors.
-- **Design contracts** — Embedded PSL assertions (AXI-Stream protocol, internal handshakes) checked on every simulation run.
+- **Design contracts** — Embedded PSL assertions (ready/valid handshake protocol, internal handshakes) checked on every simulation run.
 - **Post-synthesis** — The top-level OSVVM stress test and a subset of the golden-model dataset are re-run on the synthesized gate-level netlist, guaranteeing synthesis did not change the encoder's behavior.
 
 **Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
@@ -94,27 +110,29 @@ The core is a single entity, `openjls_top`, configured by generics and driven th
 
 ### Ports
 
-| Port | Dir | Width | Role |
-|---|:--:|---|---|
-| `iClk` | in | 1 | Clock; whole core is synchronous to its rising edge. |
-| `iRst` | in | 1 | Synchronous reset, active high. Also latches the image dimensions (see below). |
-| `iImageWidth` | in | `⌈log2(MAX_IMAGE_WIDTH+1)⌉` | Image width in pixels (configuration). |
-| `iImageHeight` | in | `⌈log2(MAX_IMAGE_HEIGHT+1)⌉` | Image height in pixels (configuration). |
-| `iValid` | in | 1 | Input pixel valid — AXI4-Stream `TVALID`. |
-| `iPixel` | in | `BITNESS` | Input pixel — AXI4-Stream `TDATA`. |
-| `oReady` | out | 1 | Input ready — AXI4-Stream `TREADY`. |
-| `oData` | out | `OUT_WIDTH` | Output bitstream beat — AXI4-Stream `TDATA`. |
-| `oValid` | out | 1 | Output valid — AXI4-Stream `TVALID`. |
-| `oKeep` | out | `OUT_WIDTH/8` | Valid-byte mask on the final beat — AXI4-Stream `TKEEP`. |
-| `oLast` | out | 1 | End of image — AXI4-Stream `TLAST`. |
-| `iReady` | in | 1 | Output ready / downstream backpressure — AXI4-Stream `TREADY`. |
+The streaming ports use a plain **ready/valid handshake**; the *AXIS* column gives the 1:1 AXI4-Stream signal mapping for that ecosystem (Avalon-ST maps the same way at `readyLatency = 0`).
+
+| Port | Dir | Width | AXIS | Role |
+|---|:--:|---|:--:|---|
+| `iClk` | in | 1 | — | Clock; whole core is synchronous to its rising edge. |
+| `iRst` | in | 1 | — | Synchronous reset, active high. Also latches the image dimensions (see below). |
+| `iImageWidth` | in | `⌈log2(MAX_IMAGE_WIDTH+1)⌉` | — | Image width in pixels (configuration). |
+| `iImageHeight` | in | `⌈log2(MAX_IMAGE_HEIGHT+1)⌉` | — | Image height in pixels (configuration). |
+| `iValid` | in | 1 | `TVALID` | Input pixel valid. |
+| `iPixel` | in | `BITNESS` | `TDATA` | Input pixel. |
+| `oReady` | out | 1 | `TREADY` | Input ready. |
+| `oData` | out | `OUT_WIDTH` | `TDATA` | Output bitstream beat. |
+| `oValid` | out | 1 | `TVALID` | Output valid. |
+| `oKeep` | out | `OUT_WIDTH/8` | `TKEEP` | Valid-byte mask on the final beat. |
+| `oLast` | out | 1 | `TLAST` | End of image. |
+| `iReady` | in | 1 | `TREADY` | Output ready / downstream backpressure. |
 
 ### Integration notes
 
 - **Pixel stream.** Feed pixels **row-major**, one per accepted handshake (`iValid and oReady`), right-justified in `iPixel`. The encoder sustains one pixel per clock and deasserts `oReady` *only* under downstream backpressure (`iReady` low).
-- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before streaming a new resolution. Leaving them unwired (`0`) selects the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Minimum image is **4 × 1**.
-- **No input `TLAST`.** End-of-image is derived internally from the dimensions, so the input omits `TLAST` (which AXI4-Stream permits). The *output* stream is self-delimiting: `oLast` marks the last beat and `oKeep` flags its valid bytes.
-- **Naming.** Port names follow the project's house style; the signals map 1:1 onto AXI4-Stream as noted above, so a conventional-naming `s_axis`/`m_axis` wrapper can be layered on top without touching the core.
+- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before streaming a new resolution. Leaving them unwired (`0`) selects the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Because each port is only `⌈log2(MAX+1)⌉` bits wide, a value far above the maximum can overflow the port and wrap back into the valid range — the encoder cannot detect that case and won't substitute the maximum. Minimum image is **4 × 1**.
+- **No input end-of-frame.** End-of-image is derived internally from the dimensions, so the input has no `TLAST` (optional in AXI4-Stream). The *output* stream is self-delimiting: `oLast` marks the last beat and `oKeep` flags its valid bytes.
+- **Naming.** Port names follow the project's house style; the signals map 1:1 onto AXI4-Stream (see the *AXIS* column), so a conventional-naming `s_axis`/`m_axis` wrapper can be layered on top without touching the core.
 
 > Full signal timing, the reset/configuration sequence, latency figures, and a worked instantiation example live in the **datasheet** (`Docs/datasheet/`).
 
@@ -124,14 +142,14 @@ The core is a single entity, `openjls_top`, configured by generics and driven th
 
 Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade −1, slowest), Vivado 2025.2, 12-bit grayscale. Frequencies are *true fmax* — read by over-constraining the clock until the design failed timing. Results are RTL-only, no floorplanning or vendor-specific optimizations, and vary with device, tool version, and implementation strategy; treat them as representative, not guaranteed. At one pixel/clock, ~240 MHz is ~240 Mpixel/s.
 
-### Maximum frequency vs image size
+### Maximum frequency vs `MAX_IMAGE_WIDTH`
 
-![Maximum frequency vs image size](Docs/Images/fmax_vs_size.png)
+<img src="Docs/Images/fmax_vs_size.png" alt="Maximum frequency vs MAX_IMAGE_WIDTH" width="600">
 
 No single strategy wins at every size: the design is congestion-bound, so the best implementation strategy shifts with the image's on-chip BRAM footprint. Small images pack the logic tightly (little line-buffer BRAM to spread it) and favour congestion-spreading; large images are already spread by their BRAM and favour net-delay or post-route optimisation. Taking the best strategy per size, fmax stays in the **~242–252 MHz** band; the Default strategy ranges ~200–241 MHz.
 
-| Image width | Default | ExplorePostRoutePhysOpt | NetDelay_high | Congestion_SpreadLogic_high |
-|------------:|--------:|------------------------:|--------------:|----------------------------:|
+| `MAX_IMAGE_WIDTH` | Default | ExplorePostRoutePhysOpt | NetDelay_high | Congestion_SpreadLogic_high |
+|------------------:|--------:|------------------------:|--------------:|----------------------------:|
 | 4096 | 226.7 | 229.0 | 223.8 | **249.2** |
 | 8192 | 241.0 | 247.8 | **248.1** | 205.9 |
 | 12288 | 237.8 | **250.4** | 241.3 | 231.9 |
@@ -139,16 +157,16 @@ No single strategy wins at every size: the design is congestion-bound, so the be
 | 32768 | 223.3 | 229.7 | **242.0** | 221.3 |
 | 65535 | 235.0 | **246.2** | 243.1 | 243.8 |
 
-Maximum frequency (MHz) by image width and implementation strategy; best per row in bold. Results are deterministic (re-running a given size/strategy reproduces the number exactly), so the per-size winner is a reliable selection — pick the strategy for the target resolution.
+Maximum frequency (MHz) by `MAX_IMAGE_WIDTH` and implementation strategy; best per row in bold. Results are deterministic (re-running a given size/strategy reproduces the number exactly), so the per-size winner is a reliable selection — pick the strategy for the target resolution.
 
-### Resource usage vs image size
+### Resource usage vs `MAX_IMAGE_WIDTH`
 
-![Resource usage vs image size](Docs/Images/util_vs_size.png)
+<img src="Docs/Images/util_vs_size.png" alt="Resource usage vs MAX_IMAGE_WIDTH" width="600">
 
 Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~2.1k) are set by the encoder, not the image. Only Block RAM scales: the line buffer holds one image row, so it grows ~linearly with image width and pixel bit depth.
 
-| Image width | LUTs | FFs | BRAM tiles |
-|------------:|-----:|----:|-----------:|
+| `MAX_IMAGE_WIDTH` | LUTs | FFs | BRAM tiles |
+|------------------:|-----:|----:|-----------:|
 | 4096 | 7512 | 2055 | 1.5 |
 | 8192 | 7545 | 2091 | 3.0 |
 | 12288 | 7546 | 2123 | 4.5 |
@@ -156,7 +174,7 @@ Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~
 | 32768 | 7636 | 2137 | 11.0 |
 | 65535 | 7781 | 2162 | 22.0 |
 
-Resource usage by image width (default strategy; near-identical across strategies). Reproduce both tables with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
+Resource usage by `MAX_IMAGE_WIDTH` (default strategy; near-identical across strategies). Reproduce both tables with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
 
 ---
 

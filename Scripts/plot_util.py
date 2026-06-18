@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot resource usage vs image size (default strategy only) from fmax_sweep.csv.
+"""Plot resource usage vs maximum image width (default strategy only) from fmax_sweep.csv.
 
 LUTs/FFs (counts) and Block-RAM tiles (~1-11) are on very different scales, so
 LUT/FF go on the left y-axis and BRAM on a right y-axis.
@@ -44,15 +44,13 @@ l_bram, = ax2.plot(sizes, bram, marker="^", color="C2", label="Block RAM")
 ax1.set_xticks(sizes)
 ax1.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{int(round(x / 1024))}k"))
 
-ax1.set_xlabel("Image size (px)")
+ax1.set_xlabel("Maximum image width  (px)")
 ax1.set_ylabel("LUT / FF  (count)")
 ax2.set_ylabel("Block RAM (tiles)")
 ax1.set_ylim(bottom=0)
 ax2.set_ylim(bottom=0)
 
-fig.suptitle("OpenJLS — Resource usage vs Image size", fontsize=13, fontweight="bold")
-ax1.set_title("xczu7eg-fbvb900-1-e · Vivado 2025.2 · 12-bit depth · default implementation",
-              fontsize=9, color="0.4")
+# No in-figure title: the LaTeX float caption supplies it.
 ax1.grid(True, which="major", ls=":", alpha=0.5)
 ax1.legend(handles=[l_lut, l_ff, l_bram], title="Resource", loc="center left")
 

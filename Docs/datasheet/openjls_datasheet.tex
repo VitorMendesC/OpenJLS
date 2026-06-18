@@ -9,6 +9,10 @@
 \usepackage{tabularx}
 \usepackage{xcolor}
 \usepackage{enumitem}
+\usepackage{ragged2e}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,position=top,skip=6pt}
 \usepackage{fancyhdr}
 \usepackage{listings}
 \usepackage{tikz}
@@ -54,27 +58,34 @@
 
 %======================================================================
 \section{Overview}
-OpenJLS is a JPEG-LS (ISO/IEC 14495-1 / ITU-T T.87) lossless encoder for FPGAs.
+OpenJLS is a JPEG-LS lossless encoder for FPGAs.
 It encodes single-component (grayscale) images at one pixel per clock with no
 external memory, streaming a standards-compliant JPEG-LS bitstream out over
-AXI4-Stream. Source, license and the full verification suite are public at
+a standard ready/valid streaming handshake. Source code, license and the full
+verification suite are public at
 \url{https://github.com/VitorMendesC/OpenJLS}.
 
+\begin{table}[H]
+  \centering
+  \caption{Key specifications.}
+  \label{tab:overview}
 \begin{tabularx}{\textwidth}{@{}>{\bfseries}l X@{}}
   \toprule
-  Standard      & JPEG-LS lossless (ISO/IEC 14495-1, ITU-T T.87) \\
+  Standard      & JPEG-LS (ISO/IEC 14495-1, ITU-T T.87) \\
+  Compression   & Lossless only \\
   Components    & Single (grayscale) \\
   Pixel depth   & 8--16 bits (\texttt{BITNESS}) \\
-  Image size    & Up to $65535\times65535$ px, minimum $4\times1$ \\
+  Image size    & Up to $64k\times64k$ px\\
   Throughput    & 1 pixel / clock \\
   Latency       & 14 clock cycles \\
-  $f_{max}$     & $\sim$240\,MHz (Xilinx UltraScale+ \texttt{xczu7eg-1}, RTL-only) \\
-  Interface     & AXI4-Stream input (pixels) and output (bitstream) \\
+  $f_{max}$     & $\sim$240\,MHz (Xilinx \texttt{xczu7eg-1}) \\
+  Interface     & Ready/valid streaming (AXI4-Stream / Avalon-ST compatible) \\
   Memory        & On-chip line buffer, one image row; no external RAM \\
   Resources     & $\sim$8k LUT, $\sim$2.1k FF + BRAM scaling with image width \\
-  Portability   & Vendor-agnostic VHDL (open-logic primitives) \\
+  Portability   & Vendor-agnostic VHDL \\
   \bottomrule
 \end{tabularx}
+\end{table}
 
 %======================================================================
 \section{Functional description}
@@ -82,15 +93,26 @@ The core is a fully pipelined encoder with a latency of 14 clock cycles: an
 input register, six processing stages (gradient computation, context modeling,
 MED prediction with bias correction, Golomb--Rice / run-length coding) and
 three internally registered output stages (bit packer, byte stuffer, framer).
-End-of-image is derived internally from the configured dimensions; the output
-bitstream is self-delimiting.
 
-\begin{center}
+End-of-image is derived internally from the dimensions provided at the ports \texttt{iImageWidth} and \texttt{iImageHeight}.
+The core never stalls --- neither at EOI (end of image) nor at EOL (end of line) --- which allows processing multiple images back-to-back, with no bubbles.
+The only exception is when the downstream stalls long enough for the byte-stuffer buffer to fill, which in turn stalls the upstream.
+
+\begin{figure}[H]
+  \centering
+  \caption{Encoder pipeline architecture.}
+  \label{fig:arch}
   \includegraphics[width=0.80\textwidth]{OpenJLS_arch.png}
-\end{center}
+\end{figure}
 
 %======================================================================
 \section{Generics}
+The core is configured by the four generics in Table~\ref{tab:generics}.
+
+\begin{table}[H]
+  \centering
+  \caption{Configuration generics.}
+  \label{tab:generics}
 \begin{tabularx}{\textwidth}{@{}l C X@{}}
   \toprule
   \textbf{Generic} & \textbf{Range} & \textbf{Description} \\
@@ -101,12 +123,19 @@ bitstream is self-delimiting.
   \texttt{OUT\_WIDTH}        & 48--1024    & Output bus width in bits; multiple of 8. \\
   \bottomrule
 \end{tabularx}
+\end{table}
 
 %======================================================================
 \section{Ports}
 All ports are synchronous to the rising edge of \texttt{iClk}. The streaming
-ports map one-to-one onto AXI4-Stream as shown.
+ports use a plain ready/valid handshake; in Table~\ref{tab:ports} the
+\textbf{AXIS} column gives the one-to-one AXI4-Stream signal mapping for that
+ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
 
+\begin{table}[H]
+  \centering
+  \caption{Port list and AXI4-Stream mapping.}
+  \label{tab:ports}
 \begin{tabularx}{\textwidth}{@{}l c l l X@{}}
   \toprule
   \textbf{Port} & \textbf{Dir} & \textbf{Width} & \textbf{AXIS} & \textbf{Role} \\
@@ -125,38 +154,50 @@ ports map one-to-one onto AXI4-Stream as shown.
   \texttt{iReady}      & in  & 1                       & \texttt{TREADY} & Downstream ready. \\
   \bottomrule
 \end{tabularx}
+\end{table}
 
-\noindent The input omits \texttt{TLAST} (optional in AXI4-Stream); house-style
-port names map directly onto \texttt{s\_axis}/\texttt{m\_axis} for a thin wrapper.
+\textit{IMPORTANT:}
+\begin{itemize}
+  \item \texttt{iImageWidth} and \texttt{iImageHeight} are only sampled while \texttt{iRst} is asserted (\texttt{'1'}).
+  \item If an invalid value is provided to \texttt{iImageWidth}, that is \texttt{iImageWidth > MAX\_IMAGE\_WIDTH} or \texttt{iImageWidth < 4}, the encoder uses \texttt{MAX\_IMAGE\_WIDTH} as the image width.
+  \item If an invalid value is provided to \texttt{iImageHeight}, that is \texttt{iImageHeight > MAX\_IMAGE\_HEIGHT} or \texttt{iImageHeight < 1}, the encoder uses \texttt{MAX\_IMAGE\_HEIGHT} as the image height.
+  \item If you don't intend to change the image dimensions at run-time, wire both inputs to \texttt{0} so that the maximum values are used.
+  \item The ports are only \texttt{$\lceil\log_2(\mathrm{MAX}{+}1)\rceil$} bits wide, so a value far above the maximum can overflow the port and wrap back into the valid range; the encoder cannot detect this case and won't substitute the maximum.
+\end{itemize}
 
 %======================================================================
 \section{Timing and protocol}
 
 \textbf{Pixel input.} A pixel transfers on every cycle where
 \texttt{iValid} and \texttt{oReady} are both high. The core asserts
-\texttt{oReady} continuously and deasserts it only when the output FIFO fills
-under downstream backpressure.
+\texttt{oReady} continuously and deasserts it only when the FIFO in byte stuffer fills
+under downstream backpressure. Figure~\ref{fig:timing-input} shows a transfer
+with a brief downstream stall.
 
-\begin{center}
+\begin{figure}[H]
+  \centering
+  \caption{Pixel-input handshake.}
+  \label{fig:timing-input}
 \begin{tikztimingtable}[timing/slope=0.1,xscale=1.7]
   iClk    & 8{C}        \\
   iPixel  & D{P0} 4D{P1} 2D{P2} D{P3}\\
   iValid  & 8H          \\
   oReady  & HHLLHHHH     \\
 \end{tikztimingtable}
-\end{center}
-\noindent \texttt{P2} is held flat across the stall and accepted when
-\texttt{oReady} returns high; no pixel is dropped while \texttt{oReady} is low.
+\end{figure}
+\noindent In Figure~\ref{fig:timing-input}, \texttt{P2} is held flat across the
+stall and accepted when \texttt{oReady} returns high; no pixel is dropped while
+\texttt{oReady} is low.
 
 \textbf{Reset and configuration.} The image dimensions are sampled while
 \texttt{iRst} is high: present \texttt{iImageWidth} and \texttt{iImageHeight}
 and hold them stable across a reset pulse; they latch into the internal
-registers on the next clock. Pulse reset again before streaming a new
-resolution. Tying the dimension ports to \texttt{0} selects the
-\texttt{MAX\_IMAGE\_*} maxima; an out-of-range value falls back to the maximum
-with a simulation warning.
+registers on the next clock (Figure~\ref{fig:timing-reset}).
 
-\begin{center}
+\begin{figure}[H]
+  \centering
+  \caption{Reset and dimension capture.}
+  \label{fig:timing-reset}
 \begin{tikztimingtable}[timing/slope=0.1,xscale=1.45]
   iClk         & 7{C}          \\
   iImageWidth  & D{W0} 6D{W1}  \\
@@ -165,44 +206,65 @@ with a simulation warning.
   sImageWidth  & 5D{W0} 2D{W1} \\
   sImageHeight & 5D{H0} 2D{H1} \\
 \end{tikztimingtable}
-\end{center}
-\noindent The new size (\texttt{W1}/\texttt{H1}) is driven for several cycles,
-then \texttt{iRst} pulses high; the dimensions register one clock after the
-reset is sampled.
+\end{figure}
+\noindent In Figure~\ref{fig:timing-reset}, the new size (\texttt{W1}/\texttt{H1})
+is driven for several cycles, then \texttt{iRst} pulses high; the dimensions
+register one clock after the reset is sampled.
 
 \textbf{Output.} Beats appear on \texttt{oData}/\texttt{oValid} subject to
-\texttt{iReady}; \texttt{oLast} marks the final beat and \texttt{oKeep} flags
+\texttt{iReady}; \texttt{oLast} marks the final beat (EOI) and \texttt{oKeep} flags
 its valid bytes. Pipeline latency is 14 clock cycles.
 
 %======================================================================
 \section{Resources and performance}
 Characterized on Xilinx Zynq UltraScale+ \texttt{xczu7eg-fbvb900-1-e},
-Vivado 2025.2, 12-bit, RTL-only (no floorplanning). $f_{max}$ is true fmax
-(over-constrained until timing fails); at one pixel/clock $\sim$240\,MHz is
-$\sim$240\,Mpixel/s.
+Vivado 2025.2, using the generics \texttt{BITNESS = 12} and \texttt{OUT\_WIDTH = 64}, RTL-only with no floorplanning.
+$f_{max}$ is the true maximum, found by over-constraining the clock until timing fails.
+At one pixel per clock, $\sim$240\,MHz is $\sim$240\,Mpixel/s.
 
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\textbf{$f_{max}$ (MHz) vs image width}\\[2pt]
-\begin{tabular}{@{}r r r@{}}
+\noindent Figure~\ref{fig:fmax} and Table~\ref{tab:fmax} report $f_{max}$ across
+\texttt{MAX\_IMAGE\_WIDTH}; Figure~\ref{fig:util} and Table~\ref{tab:util} report
+the resource usage.
+
+\begin{figure}[H]
+  \centering
+  \caption{Maximum frequency vs maximum image width.}
+  \label{fig:fmax}
+  \includegraphics[width=0.70\linewidth]{fmax_vs_size.png}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Maximum frequency by maximum image width and strategy.}
+  \label{tab:fmax}
+\begin{tabular}{@{}r @{\hspace{1.2em}}|@{\hspace{1.2em}} r r r r@{}}
   \toprule
-  Width & Default & Best-of$^\dagger$ \\
+  \texttt{MAX\_IMAGE\_WIDTH} & Default & EPRPO & NetDelay & Congestion \\
   \midrule
-  4096  & 226.7 & \textbf{249.2} \\
-  8192  & 241.0 & \textbf{248.1} \\
-  12288 & 237.8 & \textbf{250.4} \\
-  16384 & 201.5 & \textbf{252.0} \\
-  32768 & 223.3 & \textbf{242.0} \\
-  65535 & 235.0 & \textbf{246.2} \\
+  4096  & 226.7 & 229.0          & 223.8          & \textbf{249.2} \\
+  8192  & 241.0 & 247.8          & \textbf{248.1} & 205.9          \\
+  12288 & 237.8 & \textbf{250.4} & 241.3          & 231.9          \\
+  16384 & 201.5 & 241.8          & \textbf{252.0} & 247.5          \\
+  32768 & 223.3 & 229.7          & \textbf{242.0} & 221.3          \\
+  65535 & 235.0 & \textbf{246.2} & 243.1          & 243.8          \\
   \bottomrule
 \end{tabular}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\textbf{Resources vs image width}\\[2pt]
-\begin{tabular}{@{}r r r r@{}}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \caption{Resource usage vs maximum image width.}
+  \label{fig:util}
+  \includegraphics[width=0.70\linewidth]{util_vs_size.png}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Resource usage by maximum image width.}
+  \label{tab:util}
+\begin{tabular}{@{}r @{\hspace{1.2em}}|@{\hspace{1.2em}} r r r@{}}
   \toprule
-  Width & LUT & FF & BRAM \\
+  \texttt{MAX\_IMAGE\_WIDTH} & LUT & FF & BRAM \\
   \midrule
   4096  & 7512 & 2055 & 1.5 \\
   8192  & 7545 & 2091 & 3.0 \\
@@ -212,15 +274,19 @@ $\sim$240\,Mpixel/s.
   65535 & 7781 & 2162 & 22.0 \\
   \bottomrule
 \end{tabular}
-\end{minipage}
+\end{table}
 
-\vspace{6pt}
-\noindent $^\dagger$Best of three implementation strategies
-(\texttt{Congestion\_SpreadLogic\_high}, \texttt{Performance\_NetDelay\_high},
-\texttt{Performance\_ExplorePostRoutePhysOpt}); the design is congestion-bound,
-so the winning strategy shifts with image size (results are deterministic, so
-the per-size winner is a reliable selection). Logic is essentially constant with
-image size; only the line-buffer BRAM scales with width and pixel depth.
+\begin{sloppypar}
+\noindent In Table~\ref{tab:fmax} frequencies are in MHz and the best strategy
+per row is in bold; the strategies are \texttt{Performance\_\allowbreak Explore\allowbreak PostRoute\allowbreak PhysOpt}
+(EPRPO), \texttt{Performance\_\allowbreak NetDelay\_\allowbreak high} (NetDelay) and
+\texttt{Congestion\_\allowbreak SpreadLogic\_\allowbreak high} (Congestion). The design is congestion-bound,
+so the winning strategy shifts with image size (results are deterministic, so the
+per-size winner is a reliable selection). Table~\ref{tab:util} is for the default
+strategy; utilization is near-identical across strategies. Logic is essentially
+constant with image size; only the line-buffer BRAM scales with width and pixel
+depth.
+\end{sloppypar}
 
 %======================================================================
 \section{Integration example}
@@ -233,12 +299,12 @@ u_enc : entity work.openjls_top
     OUT_WIDTH        => 64 )
   port map (
     iClk         => clk,
-    iRst         => rst,                  -- hold high while dims are stable
+    iRst         => rst,
     iImageWidth  => img_w,                -- latched on reset
-    iImageHeight => img_h,
-    iValid       => px_valid,             -- pixel stream (AXIS slave)
-    iPixel       => px_data,
-    oReady       => px_ready,
+    iImageHeight => img_h,                -- latched on reset
+    iValid       => s_valid,              -- pixel stream (AXIS slave)
+    iPixel       => s_data,
+    oReady       => s_ready,
     oData        => m_tdata,              -- bitstream (AXIS master)
     oValid       => m_tvalid,
     oKeep        => m_tkeep,
@@ -257,13 +323,17 @@ both RTL and post-synthesis (gate-level) stages:
   \item \textbf{Coverage} --- OSVVM functional coverage with NVC structural code coverage (99\%+ statements).
   \item \textbf{Golden model} --- byte-exact vs the independent CharLS C++
         encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
-  \item \textbf{Design contracts} --- embedded PSL assertions (AXI4-Stream protocol, internal handshakes) on every run.
+  \item \textbf{Design contracts} --- embedded PSL assertions (ready/valid handshake protocol, internal handshakes) on every run.
   \item \textbf{Post-synthesis} --- the stress test and a golden-model subset re-run on the synthesized netlist.
 \end{itemize}
 
-\noindent Latest regression snapshot (live, per-test reports at
-\url{https://vitormendesc.github.io/OpenJLS/}):
+\noindent Table~\ref{tab:regression} is the latest regression snapshot (live,
+per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
 
+\begin{table}[H]
+  \centering
+  \caption{Latest regression snapshot.}
+  \label{tab:regression}
 \begin{tabularx}{\textwidth}{@{}l c c X@{}}
   \toprule
   \textbf{Suite} & \textbf{Status} & \textbf{Test/Cov} & \textbf{Summary} \\
@@ -275,9 +345,11 @@ both RTL and post-synthesis (gate-level) stages:
   Post-synth golden model & PASS & 100\%  & 156/156 images byte-exact vs CharLS \\
   \bottomrule
 \end{tabularx}
+\end{table}
 
 %======================================================================
 \section*{Revision history}
+\vspace{8pt}
 \begin{tabular}{@{}l l l@{}}
   \toprule
   \textbf{Version} & \textbf{Date} & \textbf{Notes} \\
@@ -286,7 +358,7 @@ both RTL and post-synthesis (gate-level) stages:
   \bottomrule
 \end{tabular}
 
-\vspace{6pt}
+\vspace{10pt}
 \noindent\textbf{References.}
 ITU-T T.87 / ISO/IEC 14495-1;
 Y.\,M.\,Mert, \emph{Key Architectural Optimizations for Hardware Efficient
