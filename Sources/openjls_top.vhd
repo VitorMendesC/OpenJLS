@@ -561,6 +561,12 @@ begin
             severity warning;
 
           sImageWidth <= to_unsigned(MAX_IMAGE_WIDTH, sImageWidth'length);
+        elsif (vImageWidthUnsi > MAX_IMAGE_WIDTH) then
+          assert false
+            report "iImageWidth larger than the maximum allowed: " & integer'image(MAX_IMAGE_WIDTH) & ", using max value instead: " & integer'image(MAX_IMAGE_WIDTH)
+            severity warning;
+
+          sImageWidth <= to_unsigned(MAX_IMAGE_WIDTH, sImageWidth'length);
         else
           sImageWidth <= vImageWidthUnsi;
         end if;
@@ -568,6 +574,12 @@ begin
         if (vImageHeightUnsi < CO_MIN_IMAGE_HEIGHT) then
           assert false
             report "iImageHeight smaller than the minimum allowed: " & integer'image(CO_MIN_IMAGE_HEIGHT) & ", using max value instead: " & integer'image(MAX_IMAGE_HEIGHT)
+            severity warning;
+
+          sImageHeight <= to_unsigned(MAX_IMAGE_HEIGHT, sImageHeight'length);
+        elsif (vImageHeightUnsi > MAX_IMAGE_HEIGHT) then
+          assert false
+            report "iImageHeight larger than the maximum allowed: " & integer'image(MAX_IMAGE_HEIGHT) & ", using max value instead: " & integer'image(MAX_IMAGE_HEIGHT)
             severity warning;
 
           sImageHeight <= to_unsigned(MAX_IMAGE_HEIGHT, sImageHeight'length);
