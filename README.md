@@ -51,7 +51,7 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 | Suite | Status | Test/Cov | Summary |
 |---|---|---|---|
 | OSVVM suite | PASS | 100% | 36 tests, 129,810 affirmations (module + top control-plane) |
-| NVC code coverage | info | 98.8% | Per-file statement breakdown |
+| NVC code coverage | info | 99.3% | Per-file statement breakdown |
 | Golden model | PASS | 100% | 287/287 images byte-exact vs CharLS |
 | Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
 | Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |

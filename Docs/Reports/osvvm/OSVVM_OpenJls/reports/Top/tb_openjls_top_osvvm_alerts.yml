@@ -1,12 +1,12 @@
 Version: "0.1"
 Name: "tb_openjls_top_osvvm"
 Status: PASSED
-Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 22627, AffirmCount: 22627, RequirementsPassed: 4, RequirementsGoal: 4, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
+Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 22633, AffirmCount: 22633, RequirementsPassed: 4, RequirementsGoal: 4, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}, ExpectedCount: {Failure: 0, Error: 0, Warning: 0}}
 Settings: {ExternalErrors: {Failure: 0, Error: 0, Warning: 0}, FailOnDisabledErrors: "true", FailOnRequirementErrors: "true", FailOnWarning: "true"}
 Children: 
   - Name: "Default"
     Status: PASSED
-    Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 13911, AffirmCount: 13911, RequirementsPassed: 0, RequirementsGoal: 0, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}}
+    Results: {TotalErrors: 0, AlertCount: {Failure: 0, Error: 0, Warning: 0}, PassedCount: 13917, AffirmCount: 13917, RequirementsPassed: 0, RequirementsGoal: 0, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}}
     Children: []
   - Name: "OSVVM"
     Status: PASSED

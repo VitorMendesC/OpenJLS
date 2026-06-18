@@ -803,6 +803,46 @@ begin
                   std_logic_vector(to_unsigned(MAX_W mod 256, 8)),
                   "D: header X lo = MAX_IMAGE_WIDTH");
 
+    --------------------------------------------------------------------------
+    -- Phase D2: above-maximum dimensions clamp to MAX_IMAGE_WIDTH/HEIGHT too
+    -- (the mirror of Phase D's below-minimum fallback). Same observable
+    -- contract: the header Y/X fields read back the clamped maxima. Reachable
+    -- only when MAX+1 fits the port width (e.g. 4096 -> 13-bit port, so 4097
+    -- is representable); a power-of-two-minus-one MAX leaves the port saturated
+    -- at MAX with no representable over-max value (see README), so guard on it.
+    --------------------------------------------------------------------------
+    if (MAX_W < 2 ** iWidth'length - 1 and MAX_H < 2 ** iHeight'length - 1) then
+
+      sImgW    <= MAX_W + 1;
+      sImgH    <= MAX_H + 1;
+      sNoStall <= false;
+      do_reset;
+      base    := collectedCount;
+      sBpMode <= 0;
+      feed(bigImg, false, bigImg'length);
+
+      for i in 0 to 199999 loop
+
+        exit when collectedCount - base >= 14;
+        wait until rising_edge(clk);
+
+      end loop;
+
+      AffirmIfEqual(collected(base + 7),
+                    std_logic_vector(to_unsigned(MAX_H / 256, 8)),
+                    "D2: header Y hi = MAX_IMAGE_HEIGHT (over-max clamp)");
+      AffirmIfEqual(collected(base + 8),
+                    std_logic_vector(to_unsigned(MAX_H mod 256, 8)),
+                    "D2: header Y lo = MAX_IMAGE_HEIGHT (over-max clamp)");
+      AffirmIfEqual(collected(base + 9),
+                    std_logic_vector(to_unsigned(MAX_W / 256, 8)),
+                    "D2: header X hi = MAX_IMAGE_WIDTH (over-max clamp)");
+      AffirmIfEqual(collected(base + 10),
+                    std_logic_vector(to_unsigned(MAX_W mod 256, 8)),
+                    "D2: header X lo = MAX_IMAGE_WIDTH (over-max clamp)");
+
+    end if;
+
     sImgW <= IMG_W;
     sImgH <= IMG_H;
     do_reset;                                  -- abort the fallback image
