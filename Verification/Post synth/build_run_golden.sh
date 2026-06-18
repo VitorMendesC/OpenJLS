@@ -100,6 +100,12 @@ nelig=${#EL_STEM[@]}
 [ "$nelig" -gt 0 ] || { echo "no eligible 8-bit images" >&2; exit 1; }
 NSH=$(( NT < nelig ? NT : nelig ))
 
+# Clear shard files from any previous run: shard_<s> files are truncated per
+# shard below, but a run with fewer shards than the last leaves higher-numbered
+# shard_*.{txt,log} behind, and the shard_*.log glob in the aggregation would
+# count their stale PASS lines (npass > nelig => false FAIL).
+rm -f "$HERE/Output"/shard_*.txt "$LOGD"/shard_*.log
+
 # Greedy bin-packing: heaviest image first onto the least-loaded shard.
 ORDER=$(for i in "${!EL_STEM[@]}"; do echo "${EL_MP[$i]} $i"; done | sort -rn | awk '{print $2}')
 declare -a SH_LOAD

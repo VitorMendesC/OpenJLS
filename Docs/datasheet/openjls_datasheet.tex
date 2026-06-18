@@ -241,11 +241,11 @@ the resource usage.
   \toprule
   \texttt{MAX\_IMAGE\_WIDTH} & Default & EPRPO & NetDelay & Congestion \\
   \midrule
-  4096  & 226.7 & 229.0          & 223.8          & \textbf{249.2} \\
-  8192  & 241.0 & 247.8          & \textbf{248.1} & 205.9          \\
-  12288 & 237.8 & \textbf{250.4} & 241.3          & 231.9          \\
-  16384 & 201.5 & 241.8          & \textbf{252.0} & 247.5          \\
-  32768 & 223.3 & 229.7          & \textbf{242.0} & 221.3          \\
+  4096  & 238.2 & 247.9          & \textbf{248.9} & 238.9          \\
+  8192  & 197.8 & 245.2          & \textbf{248.8} & 240.6          \\
+  12288 & 220.0 & 236.8          & \textbf{247.4} & 196.8          \\
+  16384 & 227.4 & 234.6          & \textbf{253.0} & 236.7          \\
+  32768 & 220.9 & 225.6          & 234.8          & \textbf{241.1} \\
   65535 & 235.0 & \textbf{246.2} & 243.1          & 243.8          \\
   \bottomrule
 \end{tabular}
@@ -266,11 +266,11 @@ the resource usage.
   \toprule
   \texttt{MAX\_IMAGE\_WIDTH} & LUT & FF & BRAM \\
   \midrule
-  4096  & 7512 & 2055 & 1.5 \\
-  8192  & 7545 & 2091 & 3.0 \\
-  12288 & 7546 & 2123 & 4.5 \\
-  16384 & 7674 & 2137 & 5.5 \\
-  32768 & 7636 & 2137 & 11.0 \\
+  4096  & 7517 & 2075 & 1.5 \\
+  8192  & 7600 & 2099 & 3.0 \\
+  12288 & 7604 & 2088 & 4.5 \\
+  16384 & 7652 & 2103 & 5.5 \\
+  32768 & 7667 & 2126 & 11.0 \\
   65535 & 7781 & 2162 & 22.0 \\
   \bottomrule
 \end{tabular}
@@ -281,8 +281,9 @@ the resource usage.
 per row is in bold; the strategies are \texttt{Performance\_\allowbreak Explore\allowbreak PostRoute\allowbreak PhysOpt}
 (EPRPO), \texttt{Performance\_\allowbreak NetDelay\_\allowbreak high} (NetDelay) and
 \texttt{Congestion\_\allowbreak SpreadLogic\_\allowbreak high} (Congestion). The design is congestion-bound,
-so the winning strategy shifts with image size (results are deterministic, so the
-per-size winner is a reliable selection). Table~\ref{tab:util} is for the default
+so the winning strategy shifts with image size; a given netlist is deterministic,
+but the per-size winner is placement-sensitive and can shift when the netlist
+changes, so the best-of band ($\sim$241--253\,MHz) is the headline figure. Table~\ref{tab:util} is for the default
 strategy; utilization is near-identical across strategies. Logic is essentially
 constant with image size; only the line-buffer BRAM scales with width and pixel
 depth.
@@ -339,7 +340,7 @@ per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
   \textbf{Suite} & \textbf{Status} & \textbf{Test/Cov} & \textbf{Summary} \\
   \midrule
   OSVVM suite             & PASS & 100\%  & 36 tests, 129\,810 affirmations (module + top control-plane) \\
-  NVC code coverage       & info & 99.2\% & Per-file statement breakdown \\
+  NVC code coverage       & info & 98.8\% & Per-file statement breakdown \\
   Golden model            & PASS & 100\%  & 287/287 images byte-exact vs CharLS \\
   Post-synth OSVVM        & PASS & 100\%  & Control-plane stress on the gate-level netlist \\
   Post-synth golden model & PASS & 100\%  & 156/156 images byte-exact vs CharLS \\

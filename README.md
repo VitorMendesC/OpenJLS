@@ -51,7 +51,7 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 | Suite | Status | Test/Cov | Summary |
 |---|---|---|---|
 | OSVVM suite | PASS | 100% | 36 tests, 129,810 affirmations (module + top control-plane) |
-| NVC code coverage | info | 99.2% | Per-file statement breakdown |
+| NVC code coverage | info | 98.8% | Per-file statement breakdown |
 | Golden model | PASS | 100% | 287/287 images byte-exact vs CharLS |
 | Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
 | Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |
@@ -146,18 +146,18 @@ Characterized on a Xilinx Zynq UltraScale+ `xczu7eg-fbvb900-1-e` (speed grade �
 
 <img src="Docs/Images/fmax_vs_size.png" alt="Maximum frequency vs MAX_IMAGE_WIDTH" width="600">
 
-No single strategy wins at every size: the design is congestion-bound, so the best implementation strategy shifts with the image's on-chip BRAM footprint. Small images pack the logic tightly (little line-buffer BRAM to spread it) and favour congestion-spreading; large images are already spread by their BRAM and favour net-delay or post-route optimisation. Taking the best strategy per size, fmax stays in the **~242–252 MHz** band; the Default strategy ranges ~200–241 MHz.
+No single strategy wins at every size: the design is congestion-bound, so the best implementation strategy shifts with the image's on-chip BRAM footprint. `NetDelay_high` is the most consistent, winning across the small-to-mid range, while congestion-spreading and post-route optimisation each take a large size. Taking the best strategy per size, fmax stays in the **~241–253 MHz** band; the Default strategy ranges ~198–238 MHz.
 
 | `MAX_IMAGE_WIDTH` | Default | ExplorePostRoutePhysOpt | NetDelay_high | Congestion_SpreadLogic_high |
 |------------------:|--------:|------------------------:|--------------:|----------------------------:|
-| 4096 | 226.7 | 229.0 | 223.8 | **249.2** |
-| 8192 | 241.0 | 247.8 | **248.1** | 205.9 |
-| 12288 | 237.8 | **250.4** | 241.3 | 231.9 |
-| 16384 | 201.5 | 241.8 | **252.0** | 247.5 |
-| 32768 | 223.3 | 229.7 | **242.0** | 221.3 |
+| 4096 | 238.2 | 247.9 | **248.9** | 238.9 |
+| 8192 | 197.8 | 245.2 | **248.8** | 240.6 |
+| 12288 | 220.0 | 236.8 | **247.4** | 196.8 |
+| 16384 | 227.4 | 234.6 | **253.0** | 236.7 |
+| 32768 | 220.9 | 225.6 | 234.8 | **241.1** |
 | 65535 | 235.0 | **246.2** | 243.1 | 243.8 |
 
-Maximum frequency (MHz) by `MAX_IMAGE_WIDTH` and implementation strategy; best per row in bold. Results are deterministic (re-running a given size/strategy reproduces the number exactly), so the per-size winner is a reliable selection — pick the strategy for the target resolution.
+Maximum frequency (MHz) by `MAX_IMAGE_WIDTH` and implementation strategy; best per row in bold. A given netlist is deterministic (re-running a size/strategy reproduces the number exactly), but because the design is congestion-bound the per-size winner is placement-sensitive and can shift when the netlist changes — treat the best-of band as the headline number rather than any single cell.
 
 ### Resource usage vs `MAX_IMAGE_WIDTH`
 
@@ -167,11 +167,11 @@ Logic is essentially constant across image size — LUTs (~8k) and flip-flops (~
 
 | `MAX_IMAGE_WIDTH` | LUTs | FFs | BRAM tiles |
 |------------------:|-----:|----:|-----------:|
-| 4096 | 7512 | 2055 | 1.5 |
-| 8192 | 7545 | 2091 | 3.0 |
-| 12288 | 7546 | 2123 | 4.5 |
-| 16384 | 7674 | 2137 | 5.5 |
-| 32768 | 7636 | 2137 | 11.0 |
+| 4096 | 7517 | 2075 | 1.5 |
+| 8192 | 7600 | 2099 | 3.0 |
+| 12288 | 7604 | 2088 | 4.5 |
+| 16384 | 7652 | 2103 | 5.5 |
+| 32768 | 7667 | 2126 | 11.0 |
 | 65535 | 7781 | 2162 | 22.0 |
 
 Resource usage by `MAX_IMAGE_WIDTH` (default strategy; near-identical across strategies). Reproduce both tables with [`Scripts/run_fmax_sweep.sh`](Scripts/run_fmax_sweep.sh).
