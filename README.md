@@ -1,5 +1,9 @@
 # OpenJLS
 
+[![RTL](https://img.shields.io/badge/RTL-VHDL--93-1f6feb)](Sources/)
+[![standard](https://img.shields.io/badge/JPEG--LS-ISO%2FIEC_14495--1-8a2be2)](https://www.itu.int/rec/T-REC-T.87)
+[![verification](https://img.shields.io/badge/verification-report-0969da)](https://vitormendesc.github.io/OpenJLS/)
+
 OpenJLS is a **JPEG-LS encoder IP core for FPGAs** for real-time image compression.
 
 It implements the JPEG-LS standard (described by ISO/IEC 14495-1 or ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
