@@ -82,6 +82,16 @@ architecture sim of tb_byte_stuffer_osvvm is
   shared variable covEmit  : CoverageIDType;      -- bytes emitted per accepted beat (0..4)
   shared variable covFlush : CoverageIDType;      -- flush terminal type (0..3)
   shared variable covCross : CoverageIDType;      -- (emitBytes>0) x (oAlmostFull)
+  shared variable covStuff : CoverageIDType;      -- stuff event per emitted byte (none/first/run)
+
+  -- Stuff-event codes (the module's headline behaviour: a '0' is stuffed after
+  -- every 0xFF payload byte). (this-byte-FF x prev-byte-FF) would have an
+  -- unreachable cell -- the byte after a stuff carries the stuff bit as its MSB
+  -- so it can never itself be 0xFF -- so the reachable axis is per-image run
+  -- count: an image with no stuff, its first stuff, and a subsequent (run) stuff.
+  constant SE_NONE         : integer := 0;  -- emitted byte != 0xFF, no stuff
+  constant SE_FIRST        : integer := 1;  -- first 0xFF (stuff) of the image
+  constant SE_RUN          : integer := 2;  -- a later 0xFF (stuff) in the same image
 
   -- Driver -> monitor image handshake.
   signal sImagesSent       : natural;       -- flushes presented by the driver
@@ -311,6 +321,7 @@ begin
     variable anyBits    : boolean;
     variable lastEmitFF : boolean;
     variable realSince  : boolean;       -- real bit since last emit
+    variable stuffSeen  : boolean;       -- a stuff already emitted in this image
 
     -- Append one payload bit (MSB-first) and emit expected bytes, stuffing a
     -- '0' after every completed 0xFF byte (the stuff bit becomes the next
@@ -329,11 +340,18 @@ begin
       if (bitsInByte = 8) then
         Push(SB_ID, curByte);
         if (curByte = x"FF") then
+          if (stuffSeen) then
+            ICover(covStuff, SE_RUN);
+          else
+            ICover(covStuff, SE_FIRST);
+          end if;
+          stuffSeen  := true;
           lastEmitFF := true;
           realSince  := false;
           curByte    := (others => '0'); -- stuff '0' at MSB
           bitsInByte := 1;
         else
+          ICover(covStuff, SE_NONE);
           lastEmitFF := false;
           curByte    := (others => '0');
           bitsInByte := 0;
@@ -389,6 +407,7 @@ begin
       anyBits    := false;
       lastEmitFF := false;
       realSince  := false;
+      stuffSeen  := false;
 
     end procedure finish_image;
 
@@ -509,6 +528,7 @@ begin
     anyBits    := false;
     lastEmitFF := false;
     realSince  := false;
+    stuffSeen  := false;
 
     SetAlertLogName("tb_byte_stuffer_osvvm");
     SetLogEnable(PASSED, FALSE);
@@ -528,6 +548,13 @@ begin
                       GenBin(1, 1, 1),                                                    -- data beat (emitBytes > 0)
                       GenBin(0, 1, 2)                                                     -- oAlmostFull
                     );
+    -- Stuff event per emitted byte: at least one image with no stuff, one with
+    -- its first stuff, and one with a subsequent (run) stuff. Makes the FF->'0'
+    -- stuffing -- the module's whole purpose -- visible in its own coverage.
+    covStuff := NewID("stuffEvent");
+    AddBins(covStuff, "noStuff",    GenBin(SE_NONE, SE_NONE));
+    AddBins(covStuff, "firstStuff", GenBin(SE_FIRST, SE_FIRST));
+    AddBins(covStuff, "runStuff",   GenBin(SE_RUN, SE_RUN));
 
     apply_reset(clk, rst, 6, '1');
     ones := (others => '1');
@@ -624,6 +651,7 @@ begin
     anyBits    := false;
     lastEmitFF := false;
     realSince  := false;
+    stuffSeen  := false;
 
     sIgnore <= false;
     wait until rising_edge(clk);
@@ -644,9 +672,11 @@ begin
     WriteBin(covEmit);
     WriteBin(covFlush);
     WriteBin(covCross);
+    WriteBin(covStuff);
     AffirmIf(IsCovered(covEmit), "emitBytes coverage closed");
     AffirmIf(IsCovered(covFlush), "flushType coverage closed");
     AffirmIf(IsCovered(covCross), "data x almostFull coverage closed");
+    AffirmIf(IsCovered(covStuff), "stuff-event coverage closed");
 
     end_of_test("tb_byte_stuffer_osvvm");
     wait;
