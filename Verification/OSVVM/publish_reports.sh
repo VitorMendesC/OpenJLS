@@ -82,8 +82,11 @@ if [ -d "$COV_HTML" ]; then
     pct=$(cd "$HERE" && python3 cover_summary.py NVC_CodeCoverage ../../Sources 2>/dev/null \
             | awk '/^TOTAL/{print $3}')
   fi
+  # Coverage HTML carries no machine-readable date, so take the generation time
+  # from the report's mtime (it is rewritten on every build_run.sh).
+  cov_date=$(date -u -r "$COV_HTML/index.html" '+%Y-%m-%d' 2>/dev/null || true)
   emit_row "NVC code coverage" "statement, union over all tests" "INFO" \
-    "${pct:-n/a}" "per-file breakdown in report" "coverage/index.html" ""
+    "${pct:-n/a}" "per-file breakdown in report" "coverage/index.html" "$cov_date"
 else
   emit_row "NVC code coverage" "statement, union over all tests" "NA" "" \
     "run ./build_run.sh to populate" "" ""
