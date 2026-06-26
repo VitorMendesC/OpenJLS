@@ -31,6 +31,8 @@
 -- Requirements tracked (see Verification/OSVVM/README.md registry):
 --   T87.H3               output byte-identical to the Annex H.3 golden stream
 --   OJLS.BackToBack      next image accepted while the previous one drains
+--   OJLS.RIForward       run-interruption context forwarding (sFwdRiHit) emits
+--                        the CharLS golden byte-for-byte (Phase A3)
 --   OJLS.NoStallCompress oReady never drops during a clean feed (byte_stuffer
 --                        buffer must not fill while compressing)
 --   OJLS.NoStallEOL      ... including across line / image boundaries
@@ -101,6 +103,26 @@ architecture sim of tb_openjls_top_osvvm is
      x"00", x"00", x"05", x"D8", x"00", x"00", x"91", x"60",
      x"FF", x"D9");
   constant EXP_BYTES : natural := EXPECTED'length;
+
+  -- Run-interruption forwarding image (6x6, 8-bit, 3 grey levels). The flat
+  -- regions enter run mode and interrupt on consecutive samples, so two
+  -- run-interruption updates land on the same context one pipeline stage apart
+  -- and exercise the sFwdRiHit data-forwarding path (the RI twin of the regular
+  -- Q3==Q4 forward the H.3 image already covers). RI_EXPECTED is the CharLS
+  -- golden for this image; the byte stream is independent of OUT_WIDTH.
+  constant RI_W      : natural := 6;
+  constant RI_H      : natural := 6;
+
+  constant RI_PIXELS : pixel_array_t(0 to RI_W * RI_H - 1) :=
+    (2, 2, 2, 0, 1, 1, 2, 2, 2, 0, 1, 2, 2, 0, 0, 2, 2, 1,
+     1, 0, 1, 2, 1, 2, 0, 1, 1, 1, 1, 0, 1, 0, 2, 0, 2, 1);
+
+  constant RI_EXPECTED : byte_array_t(0 to 39) :=
+    (x"FF", x"D8", x"FF", x"F7", x"00", x"0B", x"08", x"00", x"06", x"00", x"06",
+     x"01", x"01", x"11", x"00", x"FF", x"DA", x"00", x"08", x"01", x"01", x"00",
+     x"00", x"00", x"00", x"79", x"12", x"F3", x"48", x"E5", x"12", x"7A", x"94",
+     x"A9", x"ED", x"CA", x"4E", x"00", x"FF", x"D9");
+  constant RI_EXP_BYTES : natural := RI_EXPECTED'length;
 
   signal clk     : std_logic := '0';
   signal rst     : std_logic;
@@ -399,6 +421,7 @@ begin
     variable vStallSnap : natural;
     variable reqH3      : AlertLogIDType;
     variable reqB2B     : AlertLogIDType;
+    variable reqRI      : AlertLogIDType;
 
     procedure do_reset is
     begin
@@ -553,6 +576,7 @@ begin
     -- three directed b2b runs (b2b x3, B5 stressed, C minimal).
     reqH3  := GetReqID("T87.H3", EXP_BYTES);
     reqB2B := GetReqID("OJLS.BackToBack", 3);
+    reqRI  := GetReqID("OJLS.RIForward", RI_EXP_BYTES);
 
     do_reset;
 
@@ -617,6 +641,32 @@ begin
                 " pre=" & to_string(pt(3)));
 
       ICover(covSweep, pt);
+
+    end loop;
+
+    --------------------------------------------------------------------------
+    -- Phase A3: run-interruption context forwarding. The 6x6 RI image drives
+    -- two run-interruption updates to the same context one pipeline stage
+    -- apart (sFwdRiHit). Byte-compared against the CharLS golden — the H.3
+    -- image never takes this path, so it is the only directed cover for it.
+    --------------------------------------------------------------------------
+    sImgW    <= RI_W;
+    sImgH    <= RI_H;
+    do_reset;
+    base     := collectedCount;
+    baseL    := lastCount;
+    sBpMode  <= 0;
+    sNoStall <= false;
+    feed(RI_PIXELS, false, RI_PIXELS'length);
+    wait_images(1);
+
+    AffirmIfEqual(reqRI, collectedCount - base, RI_EXP_BYTES, "RI-forward byte count");
+    for i in 0 to RI_EXP_BYTES - 1 loop
+
+      if (base + i < collectedCount) then
+        AffirmIfEqual(reqRI, collected(base + i), RI_EXPECTED(i),
+                      "RI-forward byte " & integer'image(i));
+      end if;
 
     end loop;
 

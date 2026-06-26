@@ -403,6 +403,7 @@ counts described above.
 | `T87.A23` | Run interruption update | `tb_a23_osvvm` | 600 |
 | `T87.H3` | Output byte-identical to the Annex H.3 golden stream under every Phase A stress | `tb_openjls_top_osvvm` | 57 |
 | `OJLS.BackToBack` | Next image accepted while the previous one is still draining — no inter-image gap required | `tb_openjls_top_osvvm` | 3 |
+| `OJLS.RIForward` | Run-interruption context forwarding (two RI updates to the same context one stage apart) emits the CharLS golden byte-for-byte | `tb_openjls_top_osvvm` | 40 |
 | `OJLS.NoStallCompress` | With downstream ready, `oReady` never drops during a feed: the byte_stuffer buffer must not fill while compressing | `tb_openjls_top_osvvm` | 5000 |
 | `OJLS.NoStallEOL` | …including across every line and image boundary | `tb_openjls_top_osvvm` | 100 |
 
