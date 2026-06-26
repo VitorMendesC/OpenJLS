@@ -59,6 +59,7 @@ begin
 
     variable rv      : RandomPType;
     variable cov     : CoverageIDType;
+    variable covC    : CoverageIDType;   -- C-register update: held / moved / clamp-min / clamp-max
     variable req     : AlertLogIDType;
     constant N_RAND  : natural := 8000;
 
@@ -73,6 +74,7 @@ begin
       variable bNew : integer;
       variable cNew : integer;
       variable ev   : integer;
+      variable cev  : integer;   -- 0 held (none), 1 moved, 2 clamp@MIN, 3 clamp@MAX
 
     begin
 
@@ -84,11 +86,15 @@ begin
       bNew := b;
       cNew := c;
       ev   := 4;
+      cev  := 0;
 
       if (b <= -n) then
         bNew := b + n;
         if (c > MIN_C) then
           cNew := c - 1;
+          cev  := 1;
+        else
+          cev := 2;          -- C already at MIN_C: decrement clamped
         end if;
         if (bNew <= -n) then
           bNew := -n + 1;
@@ -100,6 +106,9 @@ begin
         bNew := b - n;
         if (c < MAX_C) then
           cNew := c + 1;
+          cev  := 1;
+        else
+          cev := 3;          -- C already at MAX_C: increment clamped
         end if;
         if (bNew > 0) then
           bNew := 0;
@@ -112,6 +121,7 @@ begin
       AffirmIfEqual(req, to_integer(sBqO), bNew, msg & " B");
       AffirmIfEqual(req, to_integer(sCqO), cNew, msg & " C");
       ICover(cov, ev);
+      ICover(covC, cev);
 
     end procedure drive_check;
 
@@ -124,6 +134,15 @@ begin
 
     cov := NewID("event");
     AddBins(cov, "event", GenBin(0, 4, 5));
+
+    -- C-register saturation: the event bins above don't distinguish a clamped
+    -- C from a moved C, so bin the C update separately (held in the none branch,
+    -- moved within range, or clamped at MIN_C/MAX_C).
+    covC := NewID("cUpdate");
+    AddBins(covC, "held",     GenBin(0, 0));
+    AddBins(covC, "moved",    GenBin(1, 1));
+    AddBins(covC, "clampMin", GenBin(2, 2));
+    AddBins(covC, "clampMax", GenBin(3, 3));
 
     -- Directed: one per event.
     drive_check(-100, 10, 0, "neg branch, big B (clamp)");   -- B=-100<=-10; B+N=-90<=-10 -> clamp
@@ -144,12 +163,14 @@ begin
         drive_check(rv.RandInt(-4096, 4095), rv.RandInt(1, RESET),
                     rv.RandInt(MIN_C, MAX_C), "rand wide");
       end if;
-      exit when IsCovered(cov) and i > 300;
+      exit when IsCovered(cov) and IsCovered(covC) and i > 300;
 
     end loop;
 
     WriteBin(cov);
+    WriteBin(covC);
     AffirmIf(IsCovered(cov), "branch/clamp coverage closed");
+    AffirmIf(IsCovered(covC), "C-update coverage closed");
 
     end_of_test("tb_a13_osvvm");
     wait;
