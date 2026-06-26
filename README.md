@@ -8,7 +8,7 @@ OpenJLS is a **JPEG-LS encoder IP core for FPGAs** for real-time image compressi
 
 It implements the JPEG-LS standard (described by ISO/IEC 14495-1 or ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
 
-OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG, an MPSoC often used in space applications, and it processes 1 pixel per clock, resulting in ~240 MPixels/s. It operates on single-component data, often called grayscale, so in a satellite camera with multiple bands each band would need its own compressor; this is not an issue since the resource usage is minimal, and it greatly increases throughput since each compressor can operate in parallel.
+OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (an MPSoC common in space applications) and processes one pixel per clock — ~240 Mpixel/s. It handles single-component (grayscale) data, so a multi-band sensor uses one compressor per band; resource usage is low enough that this stays cheap and runs all bands in parallel.
 
 OpenJLS is vendor-agnostic, targeting any FPGA platform.
 
@@ -21,12 +21,6 @@ OpenJLS is vendor-agnostic, targeting any FPGA platform.
 - **[Interface & integration](#interface)**
 - **[Roadmap](Docs/roadmap.md)**
 - **[Licensing](#licensing)**
-
----
-
-## Why JPEG-LS?
-
-JPEG-LS hits a sweet spot for hardware: Close to state-of-the-art lossless ratios from a single-pass, low-memory algorithm that needs no external RAM. It matches or beats older standards like PNG and lossless JPEG 2000, and while heavier modern codecs (JPEG XL, FLIF) compress somewhat tighter, they cost far more logic and memory than an embedded pipeline can spare.
 
 ---
 
@@ -60,11 +54,11 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 | Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
 | Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |
 
-- **OSVVM** — Per-module correctness and system-level control-plane stress. Each of 28 module-level testbenches verifies its module against an independent behavioral reference model derived from the ITU-T T.87 specification; a top-level testbench stresses the control plane (reset injection, output backpressure, randomized image sizes), all with requirements tracking. Confirms the encoder sustains one pixel per clock and stalls *only* under downstream backpressure, and streams images back-to-back with no gap or data loss.
-- **Coverage** — Two complementary metrics, both gathered within the OSVVM verification suite: OSVVM provides functional (behavioral) coverage, while NVC provides structural code coverage, reaching 99%+ statement coverage.
-- **Golden model** — Byte-exact comparison of the output bitstream against [CharLS](https://github.com/team-charls/charls), an independent open-source C++ reference encoder, over a large dataset of real images — natural photographs and synthetic stress patterns that push the algorithm past anything natural images reach (see below). Also validated against the official ISO/IEC 14495-1 reference vectors.
-- **Design contracts** — Embedded PSL assertions (ready/valid handshake protocol, internal handshakes) checked on every simulation run.
-- **Post-synthesis** — The top-level OSVVM stress test and a subset of the golden-model dataset are re-run on the synthesized gate-level netlist, guaranteeing synthesis did not change the encoder's behavior.
+- **OSVVM** — 28 module testbenches check each module against an independent behavioral reference derived from ITU-T T.87; a top-level testbench stresses the control plane (reset injection, backpressure, randomized sizes) with requirements tracking.
+- **Coverage** — OSVVM functional coverage plus NVC structural code coverage (99%+ statements).
+- **Golden model** — Output bitstream compared byte-exact against [CharLS](https://github.com/team-charls/charls), an independent C++ reference encoder, plus the official ISO/IEC 14495-1 reference vectors.
+- **Design contracts** — Embedded PSL assertions (ready/valid and internal handshakes) checked every run.
+- **Post-synthesis** — The top-level stress test and a golden-model subset re-run on the synthesized gate-level netlist, confirming synthesis preserved behavior.
 
 **Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
 
@@ -74,12 +68,12 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 | [imagecompression.info](http://imagecompression.info/test_images/) | 8-bit and 16-bit natural photographs | 30 |
 | Generated stress probes | Boundary, predictor-adversarial, high-entropy and fuzz patterns | 47 |
 
-The real datasets give natural image statistics from 256×256 up to **39 megapixels** (7216×5412); the generated probes deliberately target what real images never reach. [`gen_stress.py`](Verification/Golden%20model/imageprep/gen_stress.py) emits them deterministically — seeded and byte-reproducible, so the committed generator is the source of truth — covering:
+The real datasets give natural image statistics from 256×256 up to **39 megapixels** (7216×5412); the generated probes target what real images never reach. [`gen_stress.py`](Verification/Golden%20model/imageprep/gen_stress.py) emits them deterministically (seeded, byte-reproducible), covering:
 
-- **Intermediate bit depths (9–15)** — no natural dataset exists here, so these probes are the only coverage of the 9–15-bit range.
-- **Boundary geometries** — the smallest legal image (4×1), tall single-column images, and maximum-width single rows up to 65535×1.
-- **Predictor-adversarial content** — checkerboard, vertical/horizontal stripes and sparse spikes that defeat the MED predictor on every pixel, plus incompressible uniform noise.
-- **Tiny-image fuzz batch** — many small randomized images that stress start and end-of-image edge conditions far more densely than full-size images can.
+- **Intermediate bit depths (9–15)** — the only coverage of this range; no natural dataset exists here.
+- **Boundary geometries** — smallest legal image (4×1), tall single-column images, and single rows up to 65535×1.
+- **Predictor-adversarial content** — checkerboard, stripes, and sparse spikes that defeat the MED predictor every pixel, plus incompressible noise.
+- **Tiny-image fuzz batch** — many small randomized images stressing start/end-of-image edges more densely than full-size images can.
 
 ---
 
@@ -138,7 +132,7 @@ The streaming ports use a plain **ready/valid handshake**; the *AXIS* column giv
 ### Integration notes
 
 - **Pixel stream.** Feed pixels in **scan order** — the first row left to right, then the second row, and so on — one per accepted handshake (`iValid and oReady`), each an unsigned value on `iPixel`. The encoder sustains one pixel per clock and deasserts `oReady` *only* under downstream backpressure (`iReady` low). The output bitstream is byte-serial, MSB-first.
-- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before streaming a new resolution. Dimensions latch only during reset, so a reset is needed before the first image and again whenever the size changes; **no reset is needed between images** — same-size images encode back-to-back. Leaving the dimension inputs unwired (`0`) selects the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Because each port is only `⌈log2(MAX+1)⌉` bits wide, a value far above the maximum can overflow the port and wrap back into the valid range — the encoder cannot detect that case and won't substitute the maximum. Minimum image is **4 × 1**.
+- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before a new resolution. They latch only during reset, so reset before the first image and whenever the size changes; **no reset is needed between same-size images** — they encode back-to-back. Unwired inputs (`0`) select the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Each port is only `⌈log2(MAX+1)⌉` bits wide, so a value far above the maximum wraps back into range undetected. Minimum image is **4 × 1**.
 - **No input end-of-frame.** End-of-image is derived internally from the dimensions, so the input has no `TLAST` (optional in AXI4-Stream). The *output* stream is self-delimiting: `oLast` marks the last beat and `oKeep` flags its valid bytes.
 - **Naming.** Port names follow the project's house style; the signals map 1:1 onto AXI4-Stream (see the *AXIS* column), so a conventional-naming `s_axis`/`m_axis` wrapper can be layered on top without touching the core.
 - **Block-diagram drop-in.** Being a single entity with standard ready/valid ports, `openjls_top` can be dropped onto a block diagram and wired there instead of instantiated in HDL.
@@ -223,7 +217,7 @@ None of the components below are committed to the repository — running [`Third
 | [OSVVM-Scripts](https://github.com/OSVVM/OSVVM-Scripts) | Apache-2.0 | Regression and report-generation script flow. |
 | [tcllib](https://github.com/tcltk/tcllib) | Tcl/BSD-style | `fileutil` and `yaml` modules required by the report scripts. |
 
-The verification libraries (OSVVM, OSVVM-Scripts, tcllib) are not committed; [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh) materializes each one under `ThirdParty/` from its pinned upstream, license text included. open-logic is committed in-tree (the core RTL instantiates its primitives, so the IP builds without the fetch step). NVC is installed through your OS package manager — the script handles Ubuntu and Arch automatically; on other systems install it manually from the [NVC docs](https://www.nickg.me.uk/nvc/). No dependency imposes copyleft obligations on the OpenJLS sources; the dual-licensing model above is unaffected. Redistribution must retain the third-party copyright notices and license texts in `ThirdParty/`.
+open-logic is committed in-tree, so the IP builds without the fetch step. NVC installs through your OS package manager — the script handles Ubuntu and Arch automatically; elsewhere install it manually from the [NVC docs](https://www.nickg.me.uk/nvc/). No dependency imposes copyleft on the OpenJLS sources, so the dual-licensing model above is unaffected. Redistribution must retain the third-party notices and license texts in `ThirdParty/`.
 
 ---
 
