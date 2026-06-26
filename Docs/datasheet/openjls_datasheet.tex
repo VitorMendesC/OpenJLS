@@ -95,7 +95,7 @@ MED prediction with bias correction, Golomb--Rice / run-length coding) and
 three internally registered output stages (bit packer, byte stuffer, framer).
 
 End-of-image is derived internally from the dimensions provided at the ports \texttt{iImageWidth} and \texttt{iImageHeight}.
-The core never stalls --- neither at EOI (end of image) nor at EOL (end of line) --- which allows processing multiple images back-to-back, with no bubbles.
+The core never stalls --- neither at EOI (end of image) nor at EOL (end of line) --- which allows processing multiple images back-to-back.
 The only exception is when the downstream stalls long enough for the byte-stuffer buffer to fill, which in turn stalls the upstream.
 
 \begin{figure}[H]
@@ -200,15 +200,13 @@ with a brief downstream stall.
 stall and accepted when \texttt{oReady} returns high; no pixel is dropped while
 \texttt{oReady} is low.
 
-\textbf{Reset and configuration.} The image dimensions are sampled while
-\texttt{iRst} is high: present \texttt{iImageWidth} and \texttt{iImageHeight}
-and hold them stable across a reset pulse; they latch into the internal
-registers on the rising edge while \texttt{iRst} is high
-(Figure~\ref{fig:timing-reset}). \texttt{iRst} is level-sensitive --- hold it
-high for at least one clock --- and also clears the pipeline. No reset is needed
-between images: with the dimensions unchanged, images encode back-to-back. A
-reset is needed only to capture the dimensions --- before the first image (they
-latch only during reset) and again whenever the image size changes.
+\textbf{Reset and configuration.} \texttt{iRst} is level-sensitive (hold it high
+for at least one clock) and clears the pipeline. The image dimensions are
+captured only while \texttt{iRst} is high: present \texttt{iImageWidth} and
+\texttt{iImageHeight}, hold them stable across the reset pulse, and they latch on
+the rising edge (Figure~\ref{fig:timing-reset}). A reset is therefore needed only
+to capture the dimensions --- before the first image and whenever the image size
+changes; with the size unchanged, images encode back-to-back.
 
 \begin{figure}[H]
   \centering
