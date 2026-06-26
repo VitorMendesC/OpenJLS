@@ -5,7 +5,11 @@
 # Output: $FMAX_OUTDIR (default ~/EDA/Logs): fmax_sweep.csv + per-point
 #         rpt_*.log, vivado.log
 #
-# Expect a long run: 7 sizes x 3 strategies = 21 impl + 7 synth (~3-4 h on this box).
+# 6 sizes x 4 strategies = 24 impl + 6 synth, launched as one dependency DAG and
+# scheduled by Vivado (default 4 concurrent runs; see MAX_PARALLEL / THREADS_PER_RUN
+# in the tcl). Each concurrent run is a full ~5-6 GB Vivado process, so RAM — not
+# CPU — is the limit: 4-way ~= 24 GB. Drop FMAX_MAX_PARALLEL if other apps need
+# the RAM (we OOM'd a 30 GB box running it alongside other heavy apps).
 # Watch progress with:  tail -f "$FMAX_OUTDIR"/vivado.log
 set -euo pipefail
 
