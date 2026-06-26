@@ -4,8 +4,8 @@
 -- Module Name: openjls_top - rtl
 -- Description: JPEG-LS T.87 lossless encoder top level.
 --
---          The architecture is a 10 stage pipeline with:
---          1 input stage + 6 processing stages + 3 output stages.
+--          The architecture is a 14 stage pipeline with:
+--          1 input stage + 6 processing stages + 7 output stages.
 --          The output stages are internally registered in the IPs, while the processing
 --          stages are purely combinational and the inter-stage registers are placed in
 --          this top-level wrapper
@@ -66,12 +66,8 @@ library work;
 entity openjls_top is
   generic (
     BITNESS          : positive range 8 to 16    := 12;
-    -- 65535: the T.87 frame header Y/X fields are 16 bits.
     MAX_IMAGE_WIDTH  : positive range 4 to 65535 := 4096;
     MAX_IMAGE_HEIGHT : positive range 1 to 65535 := 4096;
-    -- Default 64. 48 is the conventional-width floor; the hard limit is 40 —
-    -- jls_framer FIFO stability needs BYTES_OUT >= BYTES_IN + 1 over the
-    -- 32-bit byte_stuffer feed (asserted there).
     OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD
   );
   port (
@@ -164,15 +160,9 @@ architecture rtl of openjls_top is
 
   --------------------------------------------------------------------------------------------
   -- Bit packer / byte stuffer / framer interface widths.
-  --
-  -- byte_stuffer is sized for AVERAGE output rate (not worst-case). Bursts of
-  -- worst-case input words are absorbed by its internal buffer; if the buffer
-  -- nears full, oAlmostFull asserts and stalls the upstream pipeline.
-  --
-  -- BYTE_STUFFER_OUT_BYTES_PER_CYCLE: tune for fmax vs. throughput. Half the
-  -- worst-case post-stuff byte rate is a reasonable default.
-  -- BYTE_STUFFER_BURST_DEPTH: consecutive worst-case words absorbed without
-  -- stalling. 64 covers all natural images plus comfortable margin.
+  -- byte_stuffer is sized for AVERAGE rate; bursts absorbed by its buffer, which
+  -- asserts oAlmostFull and stalls upstream near full. OUT_BYTES_PER_CYCLE trades
+  -- fmax vs throughput; BURST_DEPTH=64 covers natural images with margin.
   --------------------------------------------------------------------------------------------
   constant BYTE_STUFFER_OUT_BYTES_PER_CYCLE : natural := 4;                                           -- Hardcoded, fixed
   constant BYTE_STUFFER_BURST_DEPTH         : natural := 64;                                          -- Can be tuned
@@ -286,16 +276,14 @@ architecture rtl of openjls_top is
   signal sReg3Eoi                           : std_logic;
   signal sReg4Eoi                           : std_logic;
 
-  -- Per-image parity ("colour"): 1 bit assigned at Reg1, flipped at each EOI,
-  -- carried to the writeback stage. A finished image's trailing context updates
-  -- (writeback + Q3==Q4 forwarding) still drain while the next image starts
-  -- reading; refusing any update whose colour no longer owns the context RAM
-  -- stops the stale context bleeding into the next image (back-to-back).
+  -- Per-image parity bit: 1 bit assigned at Reg1, flipped at each EOI,
+  -- carried to the writeback stage. Avoid old image writing values into
+  -- the context ram that belongs to the new image.
   signal sGenPar                            : std_logic;
   signal sReg1Par                           : std_logic;
   signal sReg2Par                           : std_logic;
   signal sReg3Par                           : std_logic;
-  signal sCtxOwnerPar                       : std_logic;                                              -- sticky: colour owning the ctx RAM (held thru bubbles)
+  signal sCtxOwnerPar                       : std_logic;                                              -- sticky: parity owning the ctx RAM (held thru bubbles)
   signal sCtxRdPar                          : std_logic;                                              -- effective owner this cycle (combinational)
   signal sReg1ModeRun                       : std_logic;
   signal sReg1D1                            : signed(BITNESS downto 0);
@@ -322,8 +310,7 @@ architecture rtl of openjls_top is
   signal sS1ModeRun                         : std_logic;
   -- Sticky run flag: A15_16's next-state sInRun, fed back to stage 1 so the
   -- pixel currently in stage 1 inherits "still in run" from the prior pixel
-  -- in stage 2. Without it, A.3's gradient-based decision can break runs
-  -- silently because the FSM is gated by iModeIsRun.
+  -- in stage 2. Without it, A.3's gradient-based decision can break runs.
   signal sS1InRunNext                       : std_logic;
 
   -- Stage 2 — regular
@@ -689,8 +676,8 @@ begin
         sReg1V   <= sValid;
         sReg1Eol <= sLbValid and sLbEol;
         sReg1Eoi <= sLbValid and sLbEoi;
-        -- Tag this token with the current colour; flip after an EOI so the next
-        -- image's first token (and onward) carries the opposite colour.
+        -- Tag this token with the current parity; flip after an EOI so the next
+        -- image's first token (and onward) carries the opposite parity.
         sReg1Par <= sGenPar;
         if (sLbValid = '1' and sLbEoi = '1') then
           sGenPar <= not sGenPar;
@@ -810,7 +797,6 @@ begin
       oErrval => sS2RiErr18
     );
 
-  -- Run counter register
   p_run_cnt : process (iClk) is
   begin
 
@@ -834,15 +820,13 @@ begin
                   token_raw when sS2RawValid = '1' else
                   token_none;
 
-  -- A20_1
   -- A.20.1 inline: regular Q from A.4.2; run Q = 366 if RItype else 365
   sS2Q <= sS2QReg when sReg1.mode = token_regular else
           to_unsigned(366, 9) when sS2RItype = '1' else
           to_unsigned(365, 9);
 
-  -- Sticky context-RAM owner: remembers the colour of the last valid token that
-  -- issued a read, held across read-stage bubbles. The effective owner this
-  -- cycle is the live Reg1 colour when valid, else the held value.
+  -- Sticky context-RAM owner: parity of the last valid token that issued a read,
+  -- held across read bubbles. Effective owner = live Reg1 parity, else held.
   p_ctx_owner : process (iClk) is
   begin
 
@@ -859,19 +843,16 @@ begin
   sCtxRdPar <= sReg1Par when sReg1V = '1' else
                sCtxOwnerPar;
 
-  -- Refuse a writeback whose colour no longer owns the context RAM: it is a
+  -- Refuse a writeback whose parity no longer owns the context RAM: it is a
   -- straggler from a finished image and would corrupt the next image's contexts.
   sCtxWrEn <= sReg3V and
               bool2bit(sReg3Par = sCtxRdPar) and
               (bool2bit(sReg3.mode = token_regular) or
                bool2bit(sReg3.mode = token_run_interruption));
 
-  -- Pack writeback word by mode. Murat encoding at the BRAM boundary:
-  --   A : narrow A_WIDTH → A_STORED (oAq from A.12 is bounded by
-  --       (RESET-1)*RANGE/2 + |Errval|max, which fits A_STORED bits since the
-  --       only iNq=RESET-1 → RESET transition halves before storing).
-  --   B : write magnitude only (Bq always ≤ 0 after A.13 clamp).
-  --   N : 0 ⇔ RESET (power-of-2 RESET trick).
+  -- Pack writeback word by mode (Murat BRAM encoding):
+  --   A : A_WIDTH → A_STORED (A.12 output fits; the iNq=RESET-1→RESET halving caps it).
+  --   B : magnitude only (Bq ≤ 0 after A.13 clamp).   N : 0 ⇔ RESET.
   sCtxWrData <= std_logic_vector(resize(sS4AqNew, A_STORED)) &
                 std_logic_vector(resize(unsigned(-sS4BqNew), B_STORED)) &
                 std_logic_vector(sS4CqNew) &
@@ -890,32 +871,30 @@ begin
 
   u_ctx_ram : entity work.context_ram(behavioral)
     generic map (
-      RANGE_P         => RANGE_P,
-      RAM_DEPTH       => RAM_DEPTH,
-      A_WIDTH         => A_STORED,
-      B_WIDTH         => B_STORED,
-      C_WIDTH         => C_STORED,
-      N_WIDTH         => N_STORED,
-      TOTAL_WIDTH     => TOTAL_WIDTH
+      RANGE_P     => RANGE_P,
+      RAM_DEPTH   => RAM_DEPTH,
+      A_WIDTH     => A_STORED,
+      B_WIDTH     => B_STORED,
+      C_WIDTH     => C_STORED,
+      N_WIDTH     => N_STORED,
+      TOTAL_WIDTH => TOTAL_WIDTH
     )
     port map (
-      iClk            => iClk,
-      iRst            => iRst,
-      iWrAddr         => std_logic_vector(sReg3.Q),
-      iWrEn           => sCtxWrEn and sCE3,
-      iWrData         => sCtxWrData,
-      iRdAddr         => std_logic_vector(sS2Q),
-      iRdEn           => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
+      iClk        => iClk,
+      iRst        => iRst,
+      iWrAddr     => std_logic_vector(sReg3.Q),
+      iWrEn       => sCtxWrEn and sCE3,
+      iWrData     => sCtxWrData,
+      iRdAddr     => std_logic_vector(sS2Q),
+      iRdEn       => sReg1V and sCE1 and (bool2bit(sS2TokenMode = TOKEN_REGULAR) or
       bool2bit(sS2TokenMode = TOKEN_RUN_INTERRUPTION)),
-      iEndOfImage     => sReg1Eoi,
-      oRdData         => sCtxRdData
+      iEndOfImage => sReg1Eoi,
+      oRdData     => sCtxRdData
     );
 
-  -- Unpack read port (BRAM RdLatency=1 → valid at Stage 3), with Q3==Q4
-  -- forwarding: when Stage 4 is writing back to the Q that Stage 3 is
-  -- reading, forward the live Stage-4 update outputs instead of the BRAM
-  -- read (which would be stale by one cycle). Murat decoding mirrors the
-  -- write encoding: A zero-extend, B = -unsigned(stored), N 0 ⇒ RESET.
+  -- Unpack read port (RdLatency=1 → valid at Stage 3). Q3==Q4 forwarding: when
+  -- Stage 4 writes back the Q Stage 3 is reading, use the live update outputs
+  -- (BRAM read is stale). Decode mirrors encode: A zero-extend, B = -stored, N 0 ⇒ RESET.
   sS3Aq <= sS4AqNew when sFwdRegHit = '1' else
            sS4RiAqNew when sFwdRiHit = '1' else
            resize(unsigned(sCtxRdData(CTX_A_HI downto CTX_A_LO)), A_WIDTH);
@@ -967,10 +946,8 @@ begin
         sReg2Px  <= (others => '0');
         sReg2Par <= '0';
       elsif (sCE2 = '1') then
-        -- Build Reg2 per mode. Fields not meaningful for the current mode
-        -- stay at CO_TOKEN_NONE defaults so downstream mode-specific logic
-        -- (A.22, A.21, …) never sees stale values that could drive invalid
-        -- arithmetic.
+        -- Build Reg2 per mode; unused fields stay at CO_TOKEN_NONE defaults so
+        -- downstream never sees stale values.
         v      := CO_TOKEN_NONE;
         v.mode := sS2TokenMode;
         v.Q    := sS2Q;
@@ -1024,14 +1001,13 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Stage 3 — Regular: A.5 + speculative 3-chain A.6..A.9
   -------------------------------------------------------------------------------------------------------------
-  -- TODO: Add logic gating on the speculative paths to only run on context hit
 
   sS3Px <= sReg2Px;
 
   -- Forwarding hits: Stage 2 read Q matches Stage 4 writeback Q.
   -- Stage-4 mode selects which update output to forward; Stage-2 mode is
   -- implied by the Q match (regular Q < 365, RI Q ∈ {365,366}).
-  -- Same-colour guard: never forward an update across an image boundary (the
+  -- Same-parity guard: never forward an update across an image boundary (the
   -- two tokens can alias on the same Q — e.g. the run contexts — when one is a
   -- straggler from the previous image).
   sFwdRegHit <= '1' when sReg2V = '1' and sReg3V = '1'
@@ -1046,10 +1022,8 @@ begin
                         and sReg3.mode = token_run_interruption else
                '0';
 
-  -- Cq base for the speculative 3-chain: on a forwarding hit use sReg3.Cq
-  -- (pre-update Cq for the pixel currently in Stage 4) and let ΔCq pick the
-  -- ±1/0 candidate so the effective Cq matches sS4CqNew. On a miss, the BRAM
-  -- read (now also forwarded into sS3Cq) is already the correct base.
+  -- Speculative-chain Cq base: on a hit use the pre-update sReg3.Cq (DeltaCq picks
+  -- the ±1/0 candidate matching sS4CqNew); on a miss the BRAM read is already correct.
   sS3CqBase <= sReg3.Cq when sFwdRegHit = '1' else
                sS3Cq;
 
@@ -1059,7 +1033,7 @@ begin
   sS3CqM1 <= to_signed(MIN_C, C_WIDTH) when sS3CqBase = to_signed(MIN_C, C_WIDTH) else
              sS3CqBase - 1;
 
-  -- Central chain (ΔCq = 0)
+  -- Central chain (DeltaCq = 0)
   u_a6_c : entity work.a6_prediction_correction(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
@@ -1091,7 +1065,7 @@ begin
       oErrorVal => sS3Err9C
     );
 
-  -- +1 chain (ΔCq = +1)
+  -- +1 chain (DeltaCq = +1)
   u_a6_p : entity work.a6_prediction_correction(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
@@ -1123,7 +1097,7 @@ begin
       oErrorVal => sS3Err9P
     );
 
-  -- −1 chain (ΔCq = −1)
+  -- −1 chain (DeltaCq = −1)
   u_a6_m : entity work.a6_prediction_correction(behavioral)
     generic map (
       BITNESS => BITNESS, MAX_VAL => MAX_VAL
@@ -1155,7 +1129,7 @@ begin
       oErrorVal => sS3Err9M
     );
 
-  -- ΔCq from live Stage-4 A.13. On miss, sDeltaCq is irrelevant (sFwdRegHit=0).
+  -- DeltaCq from live Stage-4 A.13. On miss, sDeltaCq is irrelevant (sFwdRegHit=0).
   sDeltaCq <= sS4CqNew - sReg3.Cq;
 
   sSpecUseM <= '1' when sFwdRegHit = '1' and sDeltaCq < 0 else
@@ -1574,17 +1548,8 @@ begin
   -------------------------------------------------------------------------------------------------------------
   -- Flush / framer control
   -------------------------------------------------------------------------------------------------------------
-  -- Timing (T = cycle when sReg6Eoi is sampled high, i.e. Reg6 holds the
-  -- image's last token, which is the cycle bit_packer consumes it):
-  --   T+1: bit_packer's registered output presents the last bit-packed word
-  --        for image N. byte_stuffer must see iFlush='1' on this cycle so it
-  --        zero-pads its sub-byte residue and enters the drain state.
-  --   T+1..T+k: byte_stuffer drains its buffer at OUT_BYTES_PER_CYCLE
-  --        bytes/cycle. k depends on buffer occupancy at flush time.
-  --   T+k: byte_stuffer emits the final beat of image N and pulses oFlushDone.
-  --        framer sees iEOI='1' aligned with that beat and pushes FF D9 into
-  --        the FIFO right after, latching sEndOfImage.
-  -------------------------------------------------------------------------------------------------------------
+
+  -- Pass the flush control from the EOI pipeline to the output stages
   p_flush_control : process (iClk) is
   begin
 
@@ -1601,10 +1566,7 @@ begin
   sFramerEoi <= sBsFlushDone;
 
   -- First-pixel tracker. line_buffer flags EOI combinationally on the image's
-  -- last accepted pixel, so the next accepted pixel starts the following
-  -- image. Deriving iStart from the pixel stream itself (rather than from the
-  -- previous image's flush, as before) cannot lose a start when images
-  -- shorter than the flush latency are fed back-to-back.
+  -- last accepted pixel, so the next accepted pixel starts the following image
   p_first_pixel : process (iClk) is
   begin
 
@@ -1619,66 +1581,5 @@ begin
   end process p_first_pixel;
 
   sFramerStart <= sValid and sFirstPixel;
-
-  -------------------------------------------------------------------------------------------------------------
-  -- DEBUG: per-valid-token trace at Reg6 boundary
-  -------------------------------------------------------------------------------------------------------------
-  dbg_probe : process (iClk) is
-  begin
-
-    if rising_edge(iClk) then
-      if (iRst = '0' and sReg6V = '1' and sStallLogic = '0' and DEBUG_MODE = true) then
-
-        case sReg6.mode is
-
-          when token_regular =>
-
-            report "REG  Ix=" & integer'image(to_integer(sReg6.Ix)) &
-                   " Ra=" & integer'image(to_integer(sReg6.Ra)) &
-                   " Rb=" & integer'image(to_integer(sReg6.Rb)) &
-                   " Q=" & integer'image(to_integer(sReg6.Q)) &
-                   " Sign=" & std_logic'image(sReg6.Sign) &
-                   " Errval=" & integer'image(to_integer(sReg6.Errval)) &
-                   " Aq=" & integer'image(to_integer(sReg6.Aq)) &
-                   " Bq=" & integer'image(to_integer(sReg6.Bq)) &
-                   " Nq=" & integer'image(to_integer(sReg6.Nq)) &
-                   " k=" & integer'image(to_integer(sReg6.k)) &
-                   " unary=" & integer'image(to_integer(sReg6Unary)) &
-                   " sufL=" & integer'image(to_integer(sReg6SufLen)) &
-                   " sufV=" & integer'image(to_integer(sReg6SufVal));
-
-          when token_run_interruption =>
-
-            report "RI   Ix=" & integer'image(to_integer(sReg6.Ix)) &
-                   " Ra=" & integer'image(to_integer(sReg6.Ra)) &
-                   " Rb=" & integer'image(to_integer(sReg6.Rb)) &
-                   " Q=" & integer'image(to_integer(sReg6.Q)) &
-                   " RItype=" & std_logic'image(sReg6.RiType) &
-                   " Errval=" & integer'image(to_integer(sReg6.Errval)) &
-                   " Aq=" & integer'image(to_integer(sReg6.Aq)) &
-                   " Nq=" & integer'image(to_integer(sReg6.Nq)) &
-                   " Nn=" & integer'image(to_integer(sReg6.Nn)) &
-                   " k=" & integer'image(to_integer(sReg6.k)) &
-                   " unary=" & integer'image(to_integer(sReg6Unary)) &
-                   " sufL=" & integer'image(to_integer(sReg6SufLen)) &
-                   " sufV=" & integer'image(to_integer(sReg6SufVal)) &
-                   " rawL=" & integer'image(to_integer(sReg6.RawLen)) &
-                   " rawV=" & integer'image(to_integer(sReg6.RawVal));
-
-          when token_raw =>
-
-            report "RAW  rawL=" & integer'image(to_integer(sReg6.RawLen)) &
-                   " rawV=" & integer'image(to_integer(sReg6.RawVal));
-
-          when others =>
-
-            null;
-
-        end case;
-
-      end if;
-    end if;
-
-  end process dbg_probe;
 
 end architecture rtl;
