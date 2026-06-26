@@ -75,7 +75,7 @@ verification suite are public at
   Compression   & Lossless only \\
   Components    & Single (grayscale) \\
   Pixel depth   & 8--16 bits (\texttt{BITNESS}) \\
-  Image size    & Up to $64k\times64k$ px\\
+  Image size    & Up to $65535\times65535$ px\\
   Throughput    & 1 pixel / clock \\
   Latency       & 14 clock cycles \\
   $f_{max}$     & $\sim$240\,MHz (Xilinx \texttt{xczu7eg-1}) \\
@@ -135,7 +135,8 @@ configured maximum.
 
 %======================================================================
 \section{Ports}
-All ports are synchronous to the rising edge of \texttt{iClk}. The streaming
+All ports are synchronous to the rising edge of \texttt{iClk} --- the core is a
+single clock domain. The streaming
 ports use a plain ready/valid handshake; in Table~\ref{tab:ports} the
 \textbf{AXIS} column gives the one-to-one AXI4-Stream signal mapping for that
 ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
@@ -176,7 +177,9 @@ ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
 %======================================================================
 \section{Timing and protocol}
 
-\textbf{Pixel input.} A pixel transfers on every cycle where
+\textbf{Pixel input.} Pixels are streamed in scan order --- the first row left
+to right, then the second row, and so on --- each an unsigned value on
+\texttt{iPixel}. A pixel transfers on every cycle where
 \texttt{iValid} and \texttt{oReady} are both high. The core asserts
 \texttt{oReady} continuously and deasserts it only when the FIFO in byte stuffer fills
 under downstream backpressure. Figure~\ref{fig:timing-input} shows a transfer
@@ -201,7 +204,11 @@ stall and accepted when \texttt{oReady} returns high; no pixel is dropped while
 \texttt{iRst} is high: present \texttt{iImageWidth} and \texttt{iImageHeight}
 and hold them stable across a reset pulse; they latch into the internal
 registers on the rising edge while \texttt{iRst} is high
-(Figure~\ref{fig:timing-reset}).
+(Figure~\ref{fig:timing-reset}). \texttt{iRst} is level-sensitive --- hold it
+high for at least one clock --- and also clears the pipeline. No reset is needed
+between images: with the dimensions unchanged, images encode back-to-back. A
+reset is needed only to capture the dimensions --- before the first image (they
+latch only during reset) and again whenever the image size changes.
 
 \begin{figure}[H]
   \centering
@@ -222,7 +229,9 @@ register on the rising edge while \texttt{iRst} is high.
 
 \textbf{Output.} Beats appear on \texttt{oData}/\texttt{oValid} subject to
 \texttt{iReady}; \texttt{oLast} marks the final beat (EOI) and \texttt{oKeep} flags
-its valid bytes. Pipeline latency is 14 clock cycles.
+its valid bytes. The bitstream is byte-serial and MSB-first: the earliest byte
+occupies the most-significant byte of \texttt{oData}. Pipeline latency is 14
+clock cycles.
 
 %======================================================================
 \section{Resources and performance}
