@@ -310,7 +310,7 @@ before it when checking a cleared output.
 
 Combinational module TBs (e.g. `tb_a5_osvvm`) follow one shape: instantiate the
 DUT; define a reference function transcribed from the **T.87 C model** in
-`Docs/Project.md`; run directed corner cases, then a constrained-random sweep
+`Docs/Requirements.md`; run directed corner cases, then a constrained-random sweep
 checking each vector with `AffirmIfEqual(dut_output, reference(inputs))`; close
 functional coverage; `end_of_test`.
 
@@ -321,7 +321,7 @@ scoreboard for streamed output and a clock plus `apply_reset`.
 
 ### Reference models come from the spec, not the RTL
 
-Every reference is derived from the T.87 C model in `Docs/Project.md` (code
+Every reference is derived from the T.87 C model in `Docs/Requirements.md` (code
 segments A.1–A.23), not from `Sources/*.vhd`, so an RTL bug cannot appear on both
 sides and pass. Where T.87 leaves something open (e.g. the A.4.2 context map) the
 TB checks the required properties (range, one-to-one, totality). Where the RTL
