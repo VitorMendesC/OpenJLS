@@ -98,6 +98,12 @@ End-of-image is derived internally from the dimensions provided at the ports \te
 The core never stalls --- neither at EOI (end of image) nor at EOL (end of line) --- which allows processing multiple images back-to-back.
 The only exception is when the downstream stalls long enough for the byte-stuffer buffer to fill, which in turn stalls the upstream.
 
+While the pipeline latency is 14 cycles, the core does not emit an output beat
+every cycle: the output stages accumulate compressed bits and assert
+\texttt{oValid} only once a full \texttt{OUT\_WIDTH} word is ready. As the
+bitstream is compressed, these output beats are infrequent relative to the
+one-pixel-per-clock input.
+
 \begin{figure}[H]
   \centering
   \caption{Encoder pipeline architecture.}
