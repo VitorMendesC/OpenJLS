@@ -12,7 +12,7 @@ This document tracks the development plan for OpenJLS. It reflects current prior
 - [x] Context memory (vendor-agnostic via open-logic)
 - [x] Top-level integration with pipelining and registers
 - [x] Lossless mode — fully functional end-to-end encoder
-- [x] AXI4-Stream input/output interfaces
+- [x] AXI4-Stream-compatible input/output (ready/valid, 1:1 AXIS signal mapping)
 
 ## Phase 2 — Verification
 

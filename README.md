@@ -10,7 +10,7 @@ It implements the JPEG-LS standard (described by ISO/IEC 14495-1 or ITU-T T.87) 
 
 OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (an MPSoC common in space applications) and processes one pixel per clock — ~240 Mpixel/s. It handles single-component (grayscale) data, so a multi-band sensor uses one compressor per band; resource usage is low enough that this stays cheap and runs all bands in parallel.
 
-OpenJLS is vendor-agnostic, targeting any FPGA platform.
+OpenJLS is vendor-neutral by construction (RTL-only, on open-logic memory primitives) and characterized on Xilinx.
 
 ---
 
@@ -44,7 +44,7 @@ Specifications
 
 OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using a layered suite that combines constrained-random self-checking tests, functional coverage, and byte-exact comparison against an independent reference encoder — run at both the RTL and post-synthesis (gate-level) stages:
 
-> ** Browse the latest [Verification report](https://vitormendesc.github.io/OpenJLS/)** a live dashboard of every suite that congregates OSVMM, NVC html reports and logs from post-synth verification.
+> **Browse the latest [verification report](https://vitormendesc.github.io/OpenJLS/)** — a published snapshot aggregating the OSVVM and NVC HTML reports and the post-synthesis verification logs. It is updated when the reports are regenerated and committed, not on every push.
 
 | Suite | Status | Test/Cov | Summary |
 |---|---|---|---|

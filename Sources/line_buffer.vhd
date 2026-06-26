@@ -1,10 +1,7 @@
 ----------------------------------------------------------------------------------
--- Company:
 -- Engineer:    Vitor Mendes Camilo
 --
--- Create Date:
 -- Module Name: line_buffer - Behavioral
--- Description:
 --
 -- Notes:
 --              Stores one row of pixels on FIFO and provides the four T.87 causal
@@ -25,10 +22,10 @@
 --                                   = first pixel of the row before that
 --                Col W-1        : d = b (replicate last pixel of previous row)
 --
---
 -- Assumptions:
 --              iImageWidth >= 3, iImageHeight >= 1.
 --              iImageWidth and iImageHeight are stable for the entire image.
+--
 ----------------------------------------------------------------------------------
 
 library ieee;

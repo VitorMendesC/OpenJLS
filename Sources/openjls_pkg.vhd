@@ -1,20 +1,8 @@
 ----------------------------------------------------------------------------------
--- Company:
 -- Engineer:    Vitor Mendes Camilo
 --
--- Create Date: 08/18/2025 09:44:52 PM
--- Design Name:
 -- Module Name: openjls_pkg
--- Project Name:
--- Target Devices:
--- Tool Versions:
--- Description:
---
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
+-- Description: JPEG-LS (ITU-T T.87) shared constants, types and helper functions.
 --
 ----------------------------------------------------------------------------------
 

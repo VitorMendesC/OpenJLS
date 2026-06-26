@@ -1,20 +1,9 @@
 ----------------------------------------------------------------------------------
--- Company:
 -- Engineer:    Vitor Mendes Camilo
 --
--- Create Date: 08/30/2025 06:46:04 PM
--- Design Name:
 -- Module Name: A4_2_Q_mapping - Behavioral
--- Project Name:
--- Target Devices:
--- Tool Versions:
--- Description:
 --
--- Dependencies:
---
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:             Written requirement A.4.2 - Merge quantized vector into Q
+-- Description:                     Written requirement A.4.2 - Merge quantized vector into Q
 --
 ----------------------------------------------------------------------------------
 
