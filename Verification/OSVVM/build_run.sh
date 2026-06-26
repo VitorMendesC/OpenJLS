@@ -28,7 +28,12 @@ echo "== merge + report =="
 # --work: nvc creates a default ./work library stub even for these
 # library-less commands — point it into the (gitignored) coverage dir.
 nvc --work=work:"$COV/work" --cover-merge -o "$COV/merged.covdb" "$COV"/tb_*.covdb
-nvc --work=work:"$COV/work" --cover-report -o "$COV/html" "$COV/merged.covdb"
+# --per-file: report per source file (DUT files show their real coverage)
+# instead of per testbench instance (which buries the DUT under TB scaffolding).
+nvc --work=work:"$COV/work" --cover-report --per-file -o "$COV/html" "$COV/merged.covdb"
+# dut_only.spec leaves the testbenches/primitives uninstrumented (all-N.A. rows);
+# drop those rows so the report lists only the DUT source files.
+python3 cover_prune.py "$COV/html"
 echo "== Sources/ statement coverage (union over all tests) =="
 python3 cover_summary.py "$COV" ../../Sources
 

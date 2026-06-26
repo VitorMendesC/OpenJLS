@@ -29,13 +29,23 @@ set ::OpenJlsCodeCoverage [info exists ::env(CODE_COVERAGE)]
 if {$::OpenJlsCodeCoverage} {
   SetCoverageSimulateEnable true
   file mkdir NVC_CodeCoverage
+  # DUT-only coverage spec: enable everything, then keep only our Sources/
+  # entities so the report excludes the OSVVM testbenches and the open-logic
+  # primitives. Regenerated from Sources/ each run so it stays in sync.
+  set specfd [open NVC_CodeCoverage/dut_only.spec w]
+  puts $specfd "-hierarchy *"
+  foreach src [lsort [glob ../../Sources/*.vhd]] {
+    set ent [file rootname [file tail $src]]
+    if {$ent ne "openjls_pkg"} { puts $specfd "+block $ent" }
+  }
+  close $specfd
 }
 proc Test {TestFile args} {
   if {$::OpenJlsCodeCoverage} {
     # GenericNames suffix keeps [generic ...] variants of one TB from
     # overwriting each other's .covdb.
     set tn [file rootname [file tail $TestFile]]$::osvvm::GenericNames
-    SetCoverageSimulateOptions [list --cover=statement,branch --cover-file=NVC_CodeCoverage/$tn.covdb]
+    SetCoverageSimulateOptions [list --cover=statement,branch --cover-spec=NVC_CodeCoverage/dut_only.spec --cover-file=NVC_CodeCoverage/$tn.covdb]
   }
   RunTest $TestFile {*}$args
 }

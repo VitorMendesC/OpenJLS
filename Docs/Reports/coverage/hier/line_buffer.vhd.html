@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="float: left; margin-bottom: 0px; margin-top: 0px;"><a href=../index.html>Back to summary</a></h2>
+<h2 style="float: left; clear: left;">Coverage report for file:</h2>
+<nav style="clear: left">
+<p style="margin-left: 10px"><a href=A7_prediction_error.vhd.html>A7_prediction_error.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a17_osvvm.vhd.html>tb_a17_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A13_update_bias.vhd.html>A13_update_bias.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a11_osvvm.vhd.html>tb_a11_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A23_run_interruption_update.vhd.html>A23_run_interruption_update.vhd</a></p>
+<p style="margin-left: 10px"><a href=A10_compute_k.vhd.html>A10_compute_k.vhd</a></p>
+<p style="margin-left: 10px"><a href=A19_run_interruption_error.vhd.html>A19_run_interruption_error.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a21_osvvm.vhd.html>tb_a21_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a4_2_osvvm.vhd.html>tb_a4_2_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A5_edge_detecting_predictor.vhd.html>A5_edge_detecting_predictor.vhd</a></p>
+<p style="margin-left: 10px"><a href=jls_framer.vhd.html>jls_framer.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a14_osvvm.vhd.html>tb_a14_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A17_run_interruption_index.vhd.html>A17_run_interruption_index.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a9_osvvm.vhd.html>tb_a9_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A11_error_mapping.vhd.html>A11_error_mapping.vhd</a></p>
+<p style="margin-left: 10px"><a href=olo_base_ram_sdp.vhd.html>olo_base_ram_sdp.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a11_1_osvvm.vhd.html>tb_a11_1_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A21_compute_map.vhd.html>A21_compute_map.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a3_osvvm.vhd.html>tb_a3_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A4_2_Q_mapping.vhd.html>A4_2_Q_mapping.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_line_buffer_osvvm.vhd.html>tb_line_buffer_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A14_run_length_determination.vhd.html>A14_run_length_determination.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a1_osvvm.vhd.html>tb_a1_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a6_osvvm.vhd.html>tb_a6_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A9_modulo_reduction.vhd.html>A9_modulo_reduction.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a12_osvvm.vhd.html>tb_a12_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a18_osvvm.vhd.html>tb_a18_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A11_1_golomb_encoder.vhd.html>A11_1_golomb_encoder.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a22_osvvm.vhd.html>tb_a22_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A3_mode_selection.vhd.html>A3_mode_selection.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a4_osvvm.vhd.html>tb_a4_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=line_buffer.vhd.html>line_buffer.vhd</a></p>
+<p style="margin-left: 10px"><a href=A1_gradient_comp.vhd.html>A1_gradient_comp.vhd</a></p>
+<p style="margin-left: 10px"><a href=A6_prediction_correction.vhd.html>A6_prediction_correction.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_byte_stuffer_osvvm.vhd.html>tb_byte_stuffer_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_context_ram_osvvm.vhd.html>tb_context_ram_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A12_variables_update.vhd.html>A12_variables_update.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a15_a16_osvvm.vhd.html>tb_a15_a16_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A18_run_interruption_prediction_error.vhd.html>A18_run_interruption_prediction_error.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a11_2_osvvm.vhd.html>tb_a11_2_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A22_errval_mapping.vhd.html>A22_errval_mapping.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a4_1_osvvm.vhd.html>tb_a4_1_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A4_quantization_gradients.vhd.html>A4_quantization_gradients.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_openjls_top_osvvm.vhd.html>tb_openjls_top_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a20_osvvm.vhd.html>tb_a20_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=byte_stuffer.vhd.html>byte_stuffer.vhd</a></p>
+<p style="margin-left: 10px"><a href=context_ram.vhd.html>context_ram.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a13_osvvm.vhd.html>tb_a13_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A15_A16_encode_run.vhd.html>A15_A16_encode_run.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a7_osvvm.vhd.html>tb_a7_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A11_2_bit_packer.vhd.html>A11_2_bit_packer.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a23_osvvm.vhd.html>tb_a23_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A4_1_quant_gradient_merging.vhd.html>A4_1_quant_gradient_merging.vhd</a></p>
+<p style="margin-left: 10px"><a href=openjls_top.vhd.html>openjls_top.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a10_osvvm.vhd.html>tb_a10_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a19_osvvm.vhd.html>tb_a19_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=A20_compute_temp.vhd.html>A20_compute_temp.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_a5_osvvm.vhd.html>tb_a5_osvvm.vhd</a></p>
+<p style="margin-left: 10px"><a href=olo_base_fifo_sync.vhd.html>olo_base_fifo_sync.vhd</a></p>
+<p style="margin-left: 10px"><a href=tb_jls_framer_osvvm.vhd.html>tb_jls_framer_osvvm.vhd</a></p>
+</nav>
+
+<h2 style="margin-left: var(--margin-left); width: 76%;">
+   File:&nbsp; <a href="../source/d91ea62f302cd18326219dd6fb932fef8a2cca96.html">../../Sources/line_buffer.vhd</a>
+</h2>
+
+<h2 style="margin-left: var(--margin-left);">
+  Current File:
+</h2>
+
+<table id="cur_file_table" style="width: 76%;margin-left:var(--margin-left);margin-right:auto;"> 
+  <tr style="height:40px">
+    <th class="cbg" onclick="sortTable(0, &quot;cur_file_table&quot;)"  style="width:30%">File</th>
+    <th class="cbg" onclick="sortTable(1, &quot;cur_file_table&quot;)"  style="width:8%">Statement</th>
+    <th class="cbg" onclick="sortTable(2, &quot;cur_file_table&quot;)"  style="width:8%">Branch</th>
+    <th class="cbg" onclick="sortTable(3, &quot;cur_file_table&quot;)"  style="width:8%">Toggle</th>
+    <th class="cbg" onclick="sortTable(4, &quot;cur_file_table&quot;)"  style="width:8%">Expression</th>
+    <th class="cbg" onclick="sortTable(5, &quot;cur_file_table&quot;)"  style="width:8%">FSM state</th>
+    <th class="cbg" onclick="sortTable(6, &quot;cur_file_table&quot;)"  style="width:8%">Functional</th>
+    <th class="cbg" onclick="sortTable(7, &quot;cur_file_table&quot;)"  style="width:8%">Average</th>
+  </tr>
+  <tr>
+    <td style="background-color:var(--table-row-color)">
+<a href="line_buffer.vhd.html">line_buffer.vhd</a></td>
+    <td class="percent100">100.0 % (72/72)</td>
+    <td class="percent100">100.0 % (24/24)</td>
+    <td class="percentna">N.A.</td>
+    <td class="percentna">N.A.</td>
+    <td class="percentna">N.A.</td>
+    <td class="percentna">N.A.</td>
+    <td class="percent100">100.0 % (96/96)</td>
+  </tr>
+</table>
+
+<h2 style="margin-left: var(--margin-left);">
+  Details:
+</h2>
+
+<table style="width:76%;margin-left:var(--margin-left);margin-right:auto;"> 
+   <tr style="height:40px">
+      <th class="cbg" onclick="selectCoverage(event, 'Statement')" id="defaultOpen">Statement</th>
+      <th class="cbg" onclick="selectCoverage(event, 'Branch')">Branch</th>
+      <th class="cbg" onclick="selectCoverage(event, 'Toggle')">Toggle</th>
+      <th class="cbg" onclick="selectCoverage(event, 'Expression')">Expression</th>
+      <th class="cbg" onclick="selectCoverage(event, 'FSM_state')">FSM state</th>
+      <th class="cbg" onclick="selectCoverage(event, 'Functional')">Functional</th>
+   </tr>
+</table>
+
+<div id="Statement" class="tabcontent" style="width:76%;margin-left:var(--margin-left); margin-right:auto; margin-top:-2px; border: 2px solid black;">
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ffcccc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Uncovered statements:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#d6eaf8;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Excluded statements:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ccffcc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Covered statements:</h2>
+  <div style="padding:0px 10px;">
+<h3>Signal assignment statement on line 100:</h3><code>100:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oValid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;iValid;</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 101:</h3><code>101:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sIsLastCol&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;sColCounter&nbsp;=&nbsp;iImageWidth&nbsp;-&nbsp;1;</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 102:</h3><code>102:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sIsLastRow&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;sRowCounter&nbsp;=&nbsp;iImageHeight&nbsp;-&nbsp;1;</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 103:</h3><code>103:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sIsFirstCol&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;sColCounter&nbsp;=&nbsp;0;</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 104:</h3><code>104:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sIsEol&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;sIsLastCol&nbsp;and&nbsp;iValid&nbsp;=&nbsp;'1';</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 105:</h3><code>105:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sIsEoi&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;sIsLastCol&nbsp;and&nbsp;sIsLastRow&nbsp;and&nbsp;iValid&nbsp;=&nbsp;'1';</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 106:</h3><code>106:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oEoi&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;bool2bit(sIsEoi);</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 107:</h3><code>107:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oEol&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;bool2bit(sIsEol);</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 108:</h3><code>108:&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sIsFifoOutHandshake&nbsp;&lt;=&nbsp;(sFifoOutReady&nbsp;and&nbsp;sFifoOutValid)&nbsp;=&nbsp;'1';</code>&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 111 to 113:</h3><code>111:&nbsp;&nbsp;&nbsp;&nbsp;sFifoOutReady&nbsp;&lt;=&nbsp;'1'&nbsp;when&nbsp;sFifoState&nbsp;=&nbsp;preload&nbsp;else&nbsp;<br>112:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iValid&nbsp;when&nbsp;sFifoState&nbsp;=&nbsp;nominal&nbsp;else&nbsp;<br>113:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'0';&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 112:</h3><code>112:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">iValid</code>&nbsp;when&nbsp;sFifoState&nbsp;=&nbsp;nominal&nbsp;else&nbsp;</code><br><b>Count:</b> 97597<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 113:</h3><code>113:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">'0'</code>;&nbsp;</code><br><b>Count:</b> 16058<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 116 to 133:</h3><code>116:&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sRowCounter&nbsp;=&nbsp;0)&nbsp;then&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;First&nbsp;row:&nbsp;b&nbsp;=&nbsp;c&nbsp;=&nbsp;d&nbsp;=&nbsp;0&nbsp;<br>117:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oB&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>...<br>132:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>133:&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 117:</h3><code>117:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oB&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 17817<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 118:</h3><code>118:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oC&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 17817<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 119:</h3><code>119:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oD&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 17817<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 121:</h3><code>121:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oB&nbsp;&lt;=&nbsp;sB;</code>&nbsp;</code><br><b>Count:</b> 97607<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 122 to 126:</h3><code>122:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsFirstCol)&nbsp;then&nbsp;<br>123:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oC&nbsp;&lt;=&nbsp;sBorderC;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Col&nbsp;0:&nbsp;c&nbsp;=&nbsp;Ra&nbsp;from&nbsp;start&nbsp;of&nbsp;previous&nbsp;row&nbsp;<br>124:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;<br>125:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oC&nbsp;&lt;=&nbsp;sC;&nbsp;<br>126:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 97607<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 123:</h3><code>123:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oC&nbsp;&lt;=&nbsp;sBorderC;</code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Col&nbsp;0:&nbsp;c&nbsp;=&nbsp;Ra&nbsp;from&nbsp;start&nbsp;of&nbsp;previous&nbsp;row&nbsp;</code><br><b>Count:</b> 5300<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 125:</h3><code>125:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oC&nbsp;&lt;=&nbsp;sC;</code>&nbsp;</code><br><b>Count:</b> 92307<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 128 to 132:</h3><code>128:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsLastCol)&nbsp;then&nbsp;<br>129:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oD&nbsp;&lt;=&nbsp;sB;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Last&nbsp;col:&nbsp;replicate&nbsp;last&nbsp;pixel&nbsp;of&nbsp;previous&nbsp;row&nbsp;(=&nbsp;b)&nbsp;<br>130:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;<br>131:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oD&nbsp;&lt;=&nbsp;sD;&nbsp;<br>132:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 97607<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 129:</h3><code>129:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oD&nbsp;&lt;=&nbsp;sB;</code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Last&nbsp;col:&nbsp;replicate&nbsp;last&nbsp;pixel&nbsp;of&nbsp;previous&nbsp;row&nbsp;(=&nbsp;b)&nbsp;</code><br><b>Count:</b> 5243<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 131:</h3><code>131:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oD&nbsp;&lt;=&nbsp;sD;</code>&nbsp;</code><br><b>Count:</b> 92364<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 135 to 139:</h3><code>135:&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsFirstCol)&nbsp;then&nbsp;<br>136:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oA&nbsp;&lt;=&nbsp;sB;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;First&nbsp;col:&nbsp;replicate&nbsp;first&nbsp;pixel&nbsp;of&nbsp;previous&nbsp;row&nbsp;(=&nbsp;b)&nbsp;<br>137:&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;<br>138:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;oA&nbsp;&lt;=&nbsp;sA;&nbsp;<br>139:&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 115424<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 136:</h3><code>136:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oA&nbsp;&lt;=&nbsp;sB;</code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;First&nbsp;col:&nbsp;replicate&nbsp;first&nbsp;pixel&nbsp;of&nbsp;previous&nbsp;row&nbsp;(=&nbsp;b)&nbsp;</code><br><b>Count:</b> 5880<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 138:</h3><code>138:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">oA&nbsp;&lt;=&nbsp;sA;</code>&nbsp;</code><br><b>Count:</b> 109544<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 147 to 242:</h3><code>147:&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;rising_edge(iClk)&nbsp;then&nbsp;<br>148:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(iRst&nbsp;=&nbsp;'1')&nbsp;then&nbsp;<br>...<br>241:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>242:&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 202068<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 148 to 241:</h3><code>148:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(iRst&nbsp;=&nbsp;'1')&nbsp;then&nbsp;<br>149:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sPreloadCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>...<br>240:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>241:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 101034<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 149:</h3><code>149:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sPreloadCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 150:</h3><code>150:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sFifoState&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;preload;</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 152:</h3><code>152:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sColCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 153:</h3><code>153:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sRowCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 155:</h3><code>155:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 156:</h3><code>156:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 157:</h3><code>157:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 158:</h3><code>158:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 159:</h3><code>159:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sBorderC&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 216<br><b>Threshold:</b> 1<hr/>
+<h3>Sequential statement on lines 163 to 197:</h3><code>163:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case&nbsp;sFifoState&nbsp;is&nbsp;<br>164:&nbsp;<br>...<br>196:&nbsp;<br>197:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;case;&nbsp;</code><br><b>Count:</b> 100818<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 170 to 179:</h3><code>170:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsFifoOutHandshake)&nbsp;then&nbsp;<br>171:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sPreloadCounter&nbsp;&lt;=&nbsp;sPreloadCounter&nbsp;+&nbsp;1;&nbsp;<br>...<br>178:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>179:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 2917<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 171:</h3><code>171:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sPreloadCounter&nbsp;&lt;=&nbsp;sPreloadCounter&nbsp;+&nbsp;1;</code>&nbsp;</code><br><b>Count:</b> 334<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 172 to 178:</h3><code>172:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sPreloadCounter&nbsp;=&nbsp;1)&nbsp;then&nbsp;<br>173:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sFifoState&nbsp;&lt;=&nbsp;wait_end_first_row;&nbsp;<br>...<br>177:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>178:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 334<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 173:</h3><code>173:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sFifoState&nbsp;&lt;=&nbsp;wait_end_first_row;</code>&nbsp;</code><br><b>Count:</b> 167<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 175 to 177:</h3><code>175:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsEol)&nbsp;then&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;needs&nbsp;this&nbsp;check&nbsp;to&nbsp;work&nbsp;with&nbsp;images&nbsp;with&nbsp;width=4&nbsp;(Annex&nbsp;H.3&nbsp;test&nbsp;image)&nbsp;<br>176:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sFifoState&nbsp;&lt;=&nbsp;nominal;&nbsp;<br>177:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 167<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 176:</h3><code>176:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sFifoState&nbsp;&lt;=&nbsp;nominal;</code>&nbsp;</code><br><b>Count:</b> 101<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 184 to 186:</h3><code>184:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsEol)&nbsp;then&nbsp;<br>185:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sFifoState&nbsp;&lt;=&nbsp;nominal;&nbsp;<br>186:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 15956<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 185:</h3><code>185:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sFifoState&nbsp;&lt;=&nbsp;nominal;</code>&nbsp;</code><br><b>Count:</b> 60<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 192 to 195:</h3><code>192:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsEoi)&nbsp;then&nbsp;<br>193:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sFifoState&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;preload;&nbsp;<br>194:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sPreloadCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>195:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 81945<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 193:</h3><code>193:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sFifoState&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;preload;</code>&nbsp;</code><br><b>Count:</b> 130<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 194:</h3><code>194:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sPreloadCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 130<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 200 to 211:</h3><code>200:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(iValid&nbsp;=&nbsp;'1')&nbsp;then&nbsp;<br>201:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsLastCol)&nbsp;then&nbsp;<br>...<br>210:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>211:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 100818<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 201 to 210:</h3><code>201:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsLastCol)&nbsp;then&nbsp;<br>202:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sColCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>...<br>209:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sColCounter&nbsp;&lt;=&nbsp;sColCounter&nbsp;+&nbsp;1;&nbsp;<br>210:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 85024<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 202:</h3><code>202:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sColCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 1841<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 203 to 207:</h3><code>203:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsLastRow)&nbsp;then&nbsp;<br>204:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sRowCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>205:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;<br>206:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sRowCounter&nbsp;&lt;=&nbsp;sRowCounter&nbsp;+&nbsp;1;&nbsp;<br>207:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 1841<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 204:</h3><code>204:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sRowCounter&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 147<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 206:</h3><code>206:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sRowCounter&nbsp;&lt;=&nbsp;sRowCounter&nbsp;+&nbsp;1;</code>&nbsp;</code><br><b>Count:</b> 1694<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 209:</h3><code>209:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sColCounter&nbsp;&lt;=&nbsp;sColCounter&nbsp;+&nbsp;1;</code>&nbsp;</code><br><b>Count:</b> 83183<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 215 to 223:</h3><code>215:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsFifoOutHandshake)&nbsp;then&nbsp;<br>216:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sC&nbsp;&lt;=&nbsp;sB;&nbsp;<br>...<br>222:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sB&nbsp;&lt;=&nbsp;sD;&nbsp;<br>223:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 100818<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 216:</h3><code>216:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sC&nbsp;&lt;=&nbsp;sB;</code>&nbsp;</code><br><b>Count:</b> 68675<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 217:</h3><code>217:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sB&nbsp;&lt;=&nbsp;sD;</code>&nbsp;</code><br><b>Count:</b> 68675<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 218:</h3><code>218:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sD&nbsp;&lt;=&nbsp;unsigned(sFifoOutData);</code>&nbsp;</code><br><b>Count:</b> 68675<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 221:</h3><code>221:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sC&nbsp;&lt;=&nbsp;sB;</code>&nbsp;</code><br><b>Count:</b> 264<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 222:</h3><code>222:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sB&nbsp;&lt;=&nbsp;sD;</code>&nbsp;</code><br><b>Count:</b> 264<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 225 to 232:</h3><code>225:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(iValid&nbsp;=&nbsp;'1')&nbsp;then&nbsp;<br>226:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Store&nbsp;last&nbsp;pixel&nbsp;<br>...<br>231:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;<br>232:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 100818<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 227:</h3><code>227:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sA&nbsp;&lt;=&nbsp;iPixel;</code>&nbsp;</code><br><b>Count:</b> 85024<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 229 to 231:</h3><code>229:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsFirstCol)&nbsp;then&nbsp;<br>230:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sBorderC&nbsp;&lt;=&nbsp;sB;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Capture&nbsp;sB&nbsp;at&nbsp;col&nbsp;0&nbsp;for&nbsp;use&nbsp;as&nbsp;c&nbsp;border&nbsp;at&nbsp;col&nbsp;0&nbsp;of&nbsp;next&nbsp;ro&nbsp;<br>231:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 85024<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 230:</h3><code>230:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sBorderC&nbsp;&lt;=&nbsp;sB;</code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Capture&nbsp;sB&nbsp;at&nbsp;col&nbsp;0&nbsp;for&nbsp;use&nbsp;as&nbsp;c&nbsp;border&nbsp;at&nbsp;col&nbsp;0&nbsp;of&nbsp;next&nbsp;ro&nbsp;</code><br><b>Count:</b> 1874<br><b>Threshold:</b> 1<hr/>
+<h3>If statement on lines 234 to 240:</h3><code>234:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sIsEoi)&nbsp;then&nbsp;<br>235:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>...<br>239:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sBorderC&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');&nbsp;<br>240:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;</code><br><b>Count:</b> 100818<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 235:</h3><code>235:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sB&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 147<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 236:</h3><code>236:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sC&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 147<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 237:</h3><code>237:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 147<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 238:</h3><code>238:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 147<br><b>Threshold:</b> 1<hr/>
+<h3>Signal assignment statement on line 239:</h3><code>239:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code class="cbg">sBorderC&nbsp;&lt;=&nbsp;(others&nbsp;=&gt;&nbsp;'0');</code>&nbsp;</code><br><b>Count:</b> 147<br><b>Threshold:</b> 1  </div>
+  </section>
+
+</div>
+<div id="Branch" class="tabcontent" style="width:76%;margin-left:var(--margin-left); margin-right:auto; margin-top:-2px; border: 2px solid black;">
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ffcccc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Uncovered branches:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#d6eaf8;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Excluded branches:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ccffcc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Covered branches:</h2>
+  <div style="padding:0px 10px;">
+<h3>"if" / "when" / "else" condition on line 111:</h3><code>111:&nbsp;&nbsp;&nbsp;&nbsp;sFifoOutReady&nbsp;&lt;=&nbsp;'1'&nbsp;when&nbsp;<code class="cbg">sFifoState&nbsp;=&nbsp;preload</code>&nbsp;else&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>1769</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 112:</h3><code>112:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iValid&nbsp;when&nbsp;<code class="cbg">sFifoState&nbsp;=&nbsp;nominal</code>&nbsp;else&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>97597</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 116:</h3><code>116:&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sRowCounter&nbsp;=&nbsp;0</code>)&nbsp;then&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;First&nbsp;row:&nbsp;b&nbsp;=&nbsp;c&nbsp;=&nbsp;d&nbsp;=&nbsp;0&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>17817</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 122:</h3><code>122:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsFirstCol</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>5300</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 128:</h3><code>128:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsLastCol</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>5243</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 135:</h3><code>135:&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsFirstCol</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>5880</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 147:</h3><code>147:&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;<code class="cbg">rising_edge(iClk)</code>&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>101034</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 148:</h3><code>148:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">iRst&nbsp;=&nbsp;'1'</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>216</td><td>1</td></tr></table><hr/>
+<h3>"case" / "with" / "select" choice on line 165:</h3><code>165:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;<code class="cbg">preload</code>&nbsp;=&gt;&nbsp;</code><br><table class="cbt"><tr><th></th><th>Choice of</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td><code>preload</code></td><td>2917</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 170:</h3><code>170:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsFifoOutHandshake</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>334</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 172:</h3><code>172:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sPreloadCounter&nbsp;=&nbsp;1</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>167</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 175:</h3><code>175:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsEol</code>)&nbsp;then&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;needs&nbsp;this&nbsp;check&nbsp;to&nbsp;work&nbsp;with&nbsp;images&nbsp;with&nbsp;width=4&nbsp;(Annex&nbsp;H.3&nbsp;test&nbsp;image)&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>101</td><td>1</td></tr></table><hr/>
+<h3>"case" / "with" / "select" choice on line 181:</h3><code>181:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;<code class="cbg">wait_end_first_row</code>&nbsp;=&gt;&nbsp;</code><br><table class="cbt"><tr><th></th><th>Choice of</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td><code>wait_end_first_row</code></td><td>15956</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 184:</h3><code>184:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsEol</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>60</td><td>1</td></tr></table><hr/>
+<h3>"case" / "with" / "select" choice on line 188:</h3><code>188:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;<code class="cbg">nominal</code>&nbsp;=&gt;&nbsp;</code><br><table class="cbt"><tr><th></th><th>Choice of</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td><code>nominal</code></td><td>81945</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 192:</h3><code>192:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsEoi</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>130</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 200:</h3><code>200:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">iValid&nbsp;=&nbsp;'1'</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>85024</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 201:</h3><code>201:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsLastCol</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>1841</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 203:</h3><code>203:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsLastRow</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>147</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 215:</h3><code>215:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsFifoOutHandshake</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>68675</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 219:</h3><code>219:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;elsif&nbsp;(<code class="cbg">sFifoState&nbsp;=&nbsp;nominal&nbsp;and&nbsp;iValid&nbsp;=&nbsp;'1'</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>264</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 225:</h3><code>225:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">iValid&nbsp;=&nbsp;'1'</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>85024</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 229:</h3><code>229:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsFirstCol</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>1874</td><td>1</td></tr></table><hr/>
+<h3>"if" / "when" / "else" condition on line 234:</h3><code>234:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(<code class="cbg">sIsEoi</code>)&nbsp;then&nbsp;</code><br><table class="cbt"><tr><th></th><th>Evaluated to</th><th>Count</th><th>Threshold</th></tr><tr><td><b>Bin</b></td><td>True</td><td>147</td><td>1</td></tr></table>  </div>
+  </section>
+
+</div>
+<div id="Toggle" class="tabcontent" style="width:76%;margin-left:var(--margin-left); margin-right:auto; margin-top:-2px; border: 2px solid black;">
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ffcccc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Uncovered toggles:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#d6eaf8;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Excluded toggles:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ccffcc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Covered toggles:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+</div>
+<div id="Expression" class="tabcontent" style="width:76%;margin-left:var(--margin-left); margin-right:auto; margin-top:-2px; border: 2px solid black;">
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ffcccc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Uncovered expressions:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#d6eaf8;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Excluded expressions:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ccffcc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Covered expressions:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+</div>
+<div id="FSM_state" class="tabcontent" style="width:76%;margin-left:var(--margin-left); margin-right:auto; margin-top:-2px; border: 2px solid black;">
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ffcccc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Uncovered FSM states:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#d6eaf8;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Excluded FSM states:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ccffcc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Covered FSM states:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+</div>
+<div id="Functional" class="tabcontent" style="width:76%;margin-left:var(--margin-left); margin-right:auto; margin-top:-2px; border: 2px solid black;">
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ffcccc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Uncovered functional coverage:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#d6eaf8;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Excluded functional coverage:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+  <section style="padding-left:10px; padding-top: 10px; padding-bottom: 10px; padding-right:10px;background-color:#ccffcc;">
+ <h2 style="margin-top: 0px; margin-bottom: 0px">Covered functional coverage:</h2>
+  <div style="padding:0px 10px;">
+  </div>
+  </section>
+
+</div>
+<script>
+   function selectCoverage(evt, coverageType) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+         tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+         tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(coverageType).style.display = "block";
+      evt.currentTarget.className += " active";
+   }
+   function GetExclude(excludeCmd) {
+      navigator.clipboard.writeText(excludeCmd);
+   }
+   function getCellValue (tr, n) {
+      let v = tr.getElementsByTagName("TD")[n];
+      v = parseInt(v.innerHTML.split("%")[0]);
+      if (isNaN(v)) {
+         v = -1;
+      }
+      return v;
+   }
+   function sortTable(n, tableId) {
+     const table = document.getElementById(tableId);
+     const rows = Array.from(table.querySelectorAll('tr:nth-child(n+2)'));
+     rows.sort((a, b) => {
+       const left = getCellValue(this.ascending ? a : b, n);
+       const right = getCellValue(this.ascending ? b : a, n);
+       if (!isNaN(left) && !isNaN(right)) {
+         return left - right;
+       } else {
+         return left.localeCompare(right);
+       }
+     });
+     rows.forEach(tr => table.appendChild(tr));
+     this.ascending = !this.ascending;
+   }
+   document.getElementById("defaultOpen").click();
+</script>
+<footer>   <p> NVC version: 1.21.0 </p>
+   <p> Generated on: Fri Jun 26 18:58:04 2026
+ </p>
+</footer>
+</body>
+</html>
