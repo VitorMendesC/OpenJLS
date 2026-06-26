@@ -74,6 +74,7 @@ begin
       variable result : integer;
       variable eSign  : std_logic;
       variable gh     : integer;
+      variable wn     : integer;   -- wrapNeg modulo branch (adj < 0 -> +RANGE)
 
     begin
 
@@ -95,6 +96,9 @@ begin
       adj := e;
       if (adj < 0) then
         adj := adj + RANGE_P;
+        wn  := 1;
+      else
+        wn := 0;
       end if;
       if (adj >= (RANGE_P + 1) / 2) then
         result := adj - RANGE_P;
@@ -106,7 +110,7 @@ begin
 
       AffirmIfEqual(req, to_integer(sErrOut), result, msg & " err");
       AffirmIfEqual(req, std_to_int(sSign), std_to_int(eSign), msg & " sign");
-      ICover(cov, (std_to_int(eSign), gh));
+      ICover(cov, (std_to_int(eSign), wn, gh));
 
     end procedure drive_check;
 
@@ -116,8 +120,8 @@ begin
     SetLogEnable(PASSED, FALSE);
     rv.InitSeed(rv'instance_name);
     req := GetReqID("T87.A19", 300);
-    cov := NewID("sign x geHalf");
-    AddCross(cov, "sign x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2));
+    cov := NewID("sign x wrapNeg x geHalf");
+    AddCross(cov, "sign x wrapNeg x geHalf", GenBin(0, 1, 2), GenBin(0, 1, 2), GenBin(0, 1, 2));
 
     -- Directed corners.
     drive_check(0, '0', 5, 1, "flip err0");           -- flip, e=0
@@ -140,7 +144,7 @@ begin
     end loop;
 
     WriteBin(cov);
-    AffirmIf(IsCovered(cov), "sign x geHalf coverage closed");
+    AffirmIf(IsCovered(cov), "sign x wrapNeg x geHalf coverage closed");
 
     end_of_test("tb_a19_osvvm");
     wait;
