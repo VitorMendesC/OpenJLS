@@ -51,7 +51,7 @@
 \begin{center}
   {\LARGE\bfseries OpenJLS}\\[2pt]
   {\large JPEG-LS Lossless Encoder IP Core --- Datasheet}\\[2pt]
-  {\small Version 1.0 \quad\textbullet\quad Single-component, fully pipelined, vendor-agnostic VHDL}
+  {\small By Vitor Mendes Camilo}
 \end{center}
 
 \vspace{4pt}
@@ -88,6 +88,21 @@ verification suite are public at
 \end{table}
 
 %======================================================================
+\section*{Revision history}
+\begin{table}[H]
+  \centering
+  \caption{Revision history.}
+  \label{tab:revision}
+\begin{tabular}{@{}l l l@{}}
+  \toprule
+  \textbf{Version} & \textbf{Date} & \textbf{Notes} \\
+  \midrule
+  1.0 & 2026-06 & Initial release. \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+%======================================================================
 \section{Functional description}
 The core is a fully pipelined encoder with a latency of 14 clock cycles: an
 input register, six processing stages (gradient computation, context modeling,
@@ -108,7 +123,7 @@ one-pixel-per-clock input.
   \centering
   \caption{Encoder pipeline architecture.}
   \label{fig:arch}
-  \includegraphics[width=0.80\textwidth]{OpenJLS_arch.png}
+  \includegraphics[width=\textwidth]{OpenJLS_arch.png}
 \end{figure}
 
 \noindent A full-resolution version of this diagram is available in the
@@ -377,16 +392,7 @@ per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
 \end{tabularx}
 \end{table}
 
-%======================================================================
-\section*{Revision history}
-\vspace{8pt}
-\begin{tabular}{@{}l l l@{}}
-  \toprule
-  \textbf{Version} & \textbf{Date} & \textbf{Notes} \\
-  \midrule
-  1.0 & 2026-06 & Initial release. \\
-  \bottomrule
-\end{tabular}
+
 
 \vspace{10pt}
 \noindent\textbf{References.}
