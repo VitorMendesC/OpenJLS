@@ -101,12 +101,14 @@ The core is a single entity, `openjls_top`, configured by generics and driven th
 
 ### Generics
 
-| Generic | Range | Default | Description |
-|---|:--:|:--:|---|
-| `BITNESS` | 8–16 | 12 | Pixel bit depth. |
-| `MAX_IMAGE_WIDTH` | 4–65535 | 4096 | Largest image width supported; sets the on-chip line-buffer depth. |
-| `MAX_IMAGE_HEIGHT` | 1–65535 | 4096 | Largest image height supported. |
-| `OUT_WIDTH` | 48–1024 | 64 | Output data-bus width in bits (multiple of 8). |
+| Generic | Range | Description |
+|---|:--:|---|
+| `BITNESS` | 8–16 | Pixel bit depth. |
+| `MAX_IMAGE_WIDTH` | 4–65535 | Largest image width supported; sets the on-chip line-buffer depth. |
+| `MAX_IMAGE_HEIGHT` | 1–65535 | Largest image height supported. |
+| `OUT_WIDTH` | 48–1024 | Output data-bus width in bits (multiple of 8). |
+
+> `MAX_IMAGE_WIDTH` and `MAX_IMAGE_HEIGHT` set the **compile-time** maximum image size — they size the on-chip line buffer and the dimension counters, so a larger maximum costs more BRAM. They don't pick the size of any given image: the dimensions of each encoded image are selected at **run time** through the `iImageWidth`/`iImageHeight` ports (see [Ports](#ports)), which accept any value from the minimum up to the configured maximum.
 
 ### Ports
 
@@ -133,6 +135,7 @@ The streaming ports use a plain **ready/valid handshake**; the *AXIS* column giv
 - **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before streaming a new resolution. Leaving them unwired (`0`) selects the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Because each port is only `⌈log2(MAX+1)⌉` bits wide, a value far above the maximum can overflow the port and wrap back into the valid range — the encoder cannot detect that case and won't substitute the maximum. Minimum image is **4 × 1**.
 - **No input end-of-frame.** End-of-image is derived internally from the dimensions, so the input has no `TLAST` (optional in AXI4-Stream). The *output* stream is self-delimiting: `oLast` marks the last beat and `oKeep` flags its valid bytes.
 - **Naming.** Port names follow the project's house style; the signals map 1:1 onto AXI4-Stream (see the *AXIS* column), so a conventional-naming `s_axis`/`m_axis` wrapper can be layered on top without touching the core.
+- **Block-diagram drop-in.** Being a single entity with standard ready/valid ports, `openjls_top` can be dropped onto a block diagram and wired there instead of instantiated in HDL.
 
 > Full signal timing, the reset/configuration sequence, latency figures, and a worked instantiation example live in the **datasheet** (`Docs/datasheet/`).
 

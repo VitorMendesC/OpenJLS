@@ -125,6 +125,14 @@ The core is configured by the four generics in Table~\ref{tab:generics}.
 \end{tabularx}
 \end{table}
 
+\noindent \texttt{MAX\_IMAGE\_WIDTH} and \texttt{MAX\_IMAGE\_HEIGHT} fix the
+\emph{compile-time} maximum image size: they size the on-chip line buffer and the
+dimension counters, so a larger maximum costs more BRAM. They do not select the
+size of a given image --- the dimensions of each encoded image are chosen at
+\emph{run time} through the \texttt{iImageWidth} and \texttt{iImageHeight} ports
+(Table~\ref{tab:ports}), which accept any value from the minimum up to the
+configured maximum.
+
 %======================================================================
 \section{Ports}
 All ports are synchronous to the rising edge of \texttt{iClk}. The streaming
@@ -142,8 +150,8 @@ ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
   \midrule
   \texttt{iClk}        & in  & 1                       & ---             & Clock. \\
   \texttt{iRst}        & in  & 1                       & ---             & Synchronous reset, active high; latches dimensions. \\
-  \texttt{iImageWidth} & in  & $\lceil\log_2(\mathrm{MAX\_W}{+}1)\rceil$ & --- & Image width, pixels (configuration). \\
-  \texttt{iImageHeight}& in  & $\lceil\log_2(\mathrm{MAX\_H}{+}1)\rceil$ & --- & Image height, pixels (configuration). \\
+  \texttt{iImageWidth} & in  & $\lceil\log_2(\mathrm{MAX\_IMAGE\_WIDTH}{+}1)\rceil$ & --- & Image width, pixels (configuration). \\
+  \texttt{iImageHeight}& in  & $\lceil\log_2(\mathrm{MAX\_IMAGE\_HEIGHT}{+}1)\rceil$ & --- & Image height, pixels (configuration). \\
   \texttt{iValid}      & in  & 1                       & \texttt{TVALID} & Pixel valid. \\
   \texttt{iPixel}      & in  & \texttt{BITNESS}        & \texttt{TDATA}  & Pixel data. \\
   \texttt{oReady}      & out & 1                       & \texttt{TREADY} & Input ready. \\
@@ -156,7 +164,7 @@ ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
 \end{tabularx}
 \end{table}
 
-\textit{IMPORTANT:}
+\noindent \textit{IMPORTANT:}
 \begin{itemize}
   \item \texttt{iImageWidth} and \texttt{iImageHeight} are only sampled while \texttt{iRst} is asserted (\texttt{'1'}).
   \item If an invalid value is provided to \texttt{iImageWidth}, that is \texttt{iImageWidth > MAX\_IMAGE\_WIDTH} or \texttt{iImageWidth < 4}, the encoder uses \texttt{MAX\_IMAGE\_WIDTH} as the image width.
@@ -192,7 +200,8 @@ stall and accepted when \texttt{oReady} returns high; no pixel is dropped while
 \textbf{Reset and configuration.} The image dimensions are sampled while
 \texttt{iRst} is high: present \texttt{iImageWidth} and \texttt{iImageHeight}
 and hold them stable across a reset pulse; they latch into the internal
-registers on the next clock (Figure~\ref{fig:timing-reset}).
+registers on the rising edge while \texttt{iRst} is high
+(Figure~\ref{fig:timing-reset}).
 
 \begin{figure}[H]
   \centering
@@ -209,7 +218,7 @@ registers on the next clock (Figure~\ref{fig:timing-reset}).
 \end{figure}
 \noindent In Figure~\ref{fig:timing-reset}, the new size (\texttt{W1}/\texttt{H1})
 is driven for several cycles, then \texttt{iRst} pulses high; the dimensions
-register one clock after the reset is sampled.
+register on the rising edge while \texttt{iRst} is high.
 
 \textbf{Output.} Beats appear on \texttt{oData}/\texttt{oValid} subject to
 \texttt{iReady}; \texttt{oLast} marks the final beat (EOI) and \texttt{oKeep} flags
@@ -312,6 +321,10 @@ u_enc : entity work.openjls_top
     oLast        => m_tlast,
     iReady       => m_tready );
 \end{lstlisting}
+
+\noindent Being a single entity with standard ready/valid ports, \texttt{openjls\_top}
+can equally be dropped onto a block diagram and wired there, instead of instantiating
+it in HDL.
 
 %======================================================================
 \section{Conformance and verification}
