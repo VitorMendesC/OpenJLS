@@ -8,7 +8,7 @@ OpenJLS is an open, verification-signed JPEG-LS encoder IP core for FPGAs - the 
 
 It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87), a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost. Every release is checked byte-exact against an independent reference encoder across 287 images, including post-synthesis (see [Verification report](https://vitormendesc.github.io/OpenJLS/)).
 
-OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (an MPSoC common in space applications), processing one pixel per clock (~240 Mpixel/s) for ~7.5k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
+OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (the MPSoC family used in onboard processors such as the Xiphos Q8), processing one pixel per clock (~240 Mpixel/s) for ~7.5k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
 
 The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory primitives) and builds in any synthesis tool; the figures above were characterized on Xilinx.
 
