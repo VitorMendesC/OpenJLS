@@ -4,13 +4,13 @@
 [![standard](https://img.shields.io/badge/JPEG--LS-ISO%2FIEC_14495--1-8a2be2)](https://www.itu.int/rec/T-REC-T.87)
 [![verification](https://img.shields.io/badge/verification-report-0969da)](https://vitormendesc.github.io/OpenJLS/)
 
-OpenJLS is a **JPEG-LS encoder IP core for FPGAs** for real-time image compression.
+OpenJLS is an open, verification-signed JPEG-LS encoder IP core for FPGAs - the open alternative to closed, commercial JPEG-LS cores, for teams who want to audit the RTL and evaluate before they buy.
 
-It implements the JPEG-LS standard (described by ISO/IEC 14495-1 or ITU-T T.87) — a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost, and no external memory required.
+It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87), a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost. Every release is checked byte-exact against an independent reference encoder across 287 images, including post-synthesis (see [Verification report](https://vitormendesc.github.io/OpenJLS/)).
 
-OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (an MPSoC common in space applications) and processes one pixel per clock — ~240 Mpixel/s. It handles single-component (grayscale) data, so a multi-band sensor uses one compressor per band; resource usage is low enough that this stays cheap and runs all bands in parallel, greatly increasing throughput.
+OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (an MPSoC common in space applications), processing one pixel per clock (~240 Mpixel/s) for ~7.5k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
 
-OpenJLS is vendor-neutral by construction (RTL-only, on open-logic memory primitives) and characterized on Xilinx.
+The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory primitives) and builds in any synthesis tool; the figures above were characterized on Xilinx.
 
 ---
 
@@ -204,7 +204,7 @@ Dependencies fall into two independent sets. **Using the IP** needs only the bas
 
 The IP carries no OS or vendor lock-in — it builds with Vivado, Quartus, Libero, Lattice, or open-source tools. (The performance figures above were characterized with AMD Vivado, but any synthesis tool works.)
 
-### Verification (Linux)
+### Verification
 
 The verification flows are bash-driven and built around the NVC simulator; they run on Linux and are not supported on Windows.
 None of the components below are committed to the repository — running [`ThirdParty/fetch_third_party.sh`](ThirdParty/fetch_third_party.sh) materializes them all: vendoring the HDL with its license texts, building CharLS from source, and installing NVC.
