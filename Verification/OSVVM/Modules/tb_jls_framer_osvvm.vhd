@@ -2,7 +2,7 @@
 -- OSVVM testbench: jls_framer (stateful AXI-stream framer).
 --
 -- Wraps the byte-stuffed payload with the JPEG-LS frame: 25-byte header
--- (SOI + SOF55 + SOS, with runtime precision/height/width/NEAR) before the data
+-- (SOI + SOF55 + SOS, with runtime height/width) before the data
 -- and the EOI footer FF D9 after it. The reference is the JPEG-LS frame format
 -- (T.87): for each image the expected output byte stream is
 --   header(W,H) ++ payload_bytes ++ 0xFF 0xD9

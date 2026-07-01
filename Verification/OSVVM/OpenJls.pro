@@ -131,6 +131,10 @@ Test Modules/tb_a23_osvvm.vhd
 Test Modules/tb_line_buffer_osvvm.vhd
 Test Modules/tb_context_ram_osvvm.vhd
 Test Modules/tb_byte_stuffer_osvvm.vhd
+# IN_WIDTH tracks LIMIT (default CO_LIMIT_STD = 48, the 12-bit config); 32 and
+# 64 are the 8-/16-bit LIMITs.
+Test Modules/tb_byte_stuffer_osvvm.vhd [generic IN_WIDTH 32]
+Test Modules/tb_byte_stuffer_osvvm.vhd [generic IN_WIDTH 64]
 Test Modules/tb_jls_framer_osvvm.vhd
 # Non-default OUT_WIDTH sweep around the 64 default (range 48..1024): 48 =
 # range floor; 56 = another final-header-beat split; 200 = the 25-byte header

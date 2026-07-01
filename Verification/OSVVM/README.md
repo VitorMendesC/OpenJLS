@@ -94,7 +94,8 @@ Configuration variants re-run a TB with non-default generics:
 `.covdb` files get a `_OUT_WIDTH_56` suffix. The framer and top TBs sweep
 OUT_WIDTH around the 64-bit default (floor 48 / 56 / header-on-beat-boundary
 200 / ceiling 1024) plus non-power-of-2 MAX dims this way; the byte stream
-they check is configuration-invariant.
+they check is configuration-invariant. The byte_stuffer TB sweeps IN_WIDTH
+(= LIMIT) across the 8-/12-/16-bit configs (32 / 48 / 64).
 
 The top TB also runs gate-level: `Verification/Post synth/build_run_osvvm.sh`
 synthesizes openjls_top at the TB's default config (Vivado, from PATH) and

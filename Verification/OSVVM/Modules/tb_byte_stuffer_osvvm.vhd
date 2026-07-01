@@ -20,9 +20,9 @@
 -- contract) and additionally asserted at random — stalling more is always safe,
 -- stalling less would overrun the FIFO and trip the DUT's own write-drop assert.
 --
--- IN_WIDTH is a generic (= byte_stuffer LIMIT). Defaults to 48 (12-bit config);
--- run with -gIN_WIDTH=32 or 64 for the 8-/16-bit configs:
---   ./build_run.sh tb_byte_stuffer_osvvm -gIN_WIDTH=64
+-- IN_WIDTH is a generic (= byte_stuffer LIMIT). Defaults to CO_LIMIT_STD (48,
+-- the 12-bit config); OpenJls.pro re-runs it at 32 and 64 (the 8-/16-bit
+-- LIMITs) via [generic IN_WIDTH ...].
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -42,7 +42,7 @@ library tb_support;
 
 entity tb_byte_stuffer_osvvm is
   generic (
-    IN_WIDTH : natural := 48
+    IN_WIDTH : natural := CO_LIMIT_STD
   );
 end entity tb_byte_stuffer_osvvm;
 
