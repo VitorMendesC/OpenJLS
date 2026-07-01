@@ -1,0 +1,11 @@
+Version: "0.1"
+TestCase: "tb_byte_stuffer_osvvm"
+Scoreboards: 
+  - Name:         "byte_stuffer SB"
+    ParentName:   "OSVVM"
+    ItemCount:    2784
+    ErrorCount:   0
+    ItemsChecked: 2784
+    ItemsPopped:  2784
+    ItemsDropped: 0
+    FifoCount:    0

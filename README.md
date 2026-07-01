@@ -8,7 +8,7 @@ OpenJLS is an open, verification-signed JPEG-LS encoder IP core for FPGAs - the 
 
 It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87), a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost. Every release is checked byte-exact against an independent reference encoder across 287 images, including post-synthesis (see [Verification report](https://vitormendesc.github.io/OpenJLS/)).
 
-OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (the MPSoC family used in onboard processors such as the Xiphos Q8), processing one pixel per clock (~240 Mpixel/s) for ~7.5k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
+OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (the MPSoC family used in onboard processors such as the Xiphos Q8), processing one pixel per clock (~240 Mpixel/s) for ~8k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
 
 The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory primitives) and builds in any synthesis tool; the figures above were characterized on Xilinx.
 
@@ -48,13 +48,13 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 
 | Suite | Status | Test/Cov | Summary |
 |---|---|---|---|
-| OSVVM suite | PASS | 100% | 36 tests, 129,810 affirmations (module + top control-plane) |
+| OSVVM suite | PASS | 100% | 38 tests, 138,010 affirmations (module + top control-plane) |
 | NVC code coverage | info | 99.8% | Per-DUT-file statement breakdown |
 | Golden model | PASS | 100% | 287/287 images byte-exact vs CharLS |
 | Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
 | Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |
 
-- **OSVVM** — 28 module testbenches check each module against an independent behavioral reference derived from ITU-T T.87; a top-level testbench stresses the control plane (reset injection, backpressure, randomized sizes) with requirements tracking.
+- **OSVVM** — 28 module testbenches check each module against an independent behavioral reference derived from ITU-T T.87; a top-level testbench stresses the control plane (reset injection, backpressure, back-to-back images, dimension fallback) with requirements tracking.
 - **Coverage** — OSVVM functional coverage plus NVC structural code coverage (99%+ statements).
 - **Golden model** — Output bitstream compared byte-exact against [CharLS](https://github.com/team-charls/charls), an independent C++ reference encoder, plus the official ISO/IEC 14495-1 reference vectors.
 - **Design contracts** — Embedded PSL assertions (ready/valid and internal handshakes) checked every run.

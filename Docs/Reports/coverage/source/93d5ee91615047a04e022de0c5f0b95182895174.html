@@ -179,9 +179,9 @@ table, th, td {
     19: &nbsp; --&nbsp;contract)&nbsp;and&nbsp;additionally&nbsp;asserted&nbsp;at&nbsp;random&nbsp;—&nbsp;stalling&nbsp;more&nbsp;is&nbsp;always&nbsp;safe,&nbsp;
     20: &nbsp; --&nbsp;stalling&nbsp;less&nbsp;would&nbsp;overrun&nbsp;the&nbsp;FIFO&nbsp;and&nbsp;trip&nbsp;the&nbsp;DUT's&nbsp;own&nbsp;write-drop&nbsp;assert.&nbsp;
     21: &nbsp; --&nbsp;
-    22: &nbsp; --&nbsp;IN_WIDTH&nbsp;is&nbsp;a&nbsp;generic&nbsp;(=&nbsp;byte_stuffer&nbsp;LIMIT).&nbsp;Defaults&nbsp;to&nbsp;48&nbsp;(12-bit&nbsp;config);&nbsp;
-    23: &nbsp; --&nbsp;run&nbsp;with&nbsp;-gIN_WIDTH=32&nbsp;or&nbsp;64&nbsp;for&nbsp;the&nbsp;8-/16-bit&nbsp;configs:&nbsp;
-    24: &nbsp; --&nbsp;&nbsp;&nbsp;./build_run.sh&nbsp;tb_byte_stuffer_osvvm&nbsp;-gIN_WIDTH=64&nbsp;
+    22: &nbsp; --&nbsp;IN_WIDTH&nbsp;is&nbsp;a&nbsp;generic&nbsp;(=&nbsp;byte_stuffer&nbsp;LIMIT).&nbsp;Defaults&nbsp;to&nbsp;CO_LIMIT_STD&nbsp;(48,&nbsp;
+    23: &nbsp; --&nbsp;the&nbsp;12-bit&nbsp;config);&nbsp;OpenJls.pro&nbsp;re-runs&nbsp;it&nbsp;at&nbsp;32&nbsp;and&nbsp;64&nbsp;(the&nbsp;8-/16-bit&nbsp;
+    24: &nbsp; --&nbsp;LIMITs)&nbsp;via&nbsp;[generic&nbsp;IN_WIDTH&nbsp;...].&nbsp;
     25: &nbsp; --------------------------------------------------------------------------------&nbsp;
     26: &nbsp; &nbsp;
     27: &nbsp; library&nbsp;ieee;&nbsp;
@@ -201,7 +201,7 @@ table, th, td {
     41: &nbsp; &nbsp;
     42: &nbsp; entity&nbsp;tb_byte_stuffer_osvvm&nbsp;is&nbsp;
     43: &nbsp; &nbsp;&nbsp;generic&nbsp;(&nbsp;
-    44: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;IN_WIDTH&nbsp;:&nbsp;natural&nbsp;:=&nbsp;48&nbsp;
+    44: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;IN_WIDTH&nbsp;:&nbsp;natural&nbsp;:=&nbsp;CO_LIMIT_STD&nbsp;
     45: &nbsp; &nbsp;&nbsp;);&nbsp;
     46: &nbsp; end&nbsp;entity&nbsp;tb_byte_stuffer_osvvm;&nbsp;
     47: &nbsp; &nbsp;

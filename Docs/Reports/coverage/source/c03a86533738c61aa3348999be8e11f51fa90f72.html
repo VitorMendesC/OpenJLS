@@ -161,7 +161,7 @@ table, th, td {
      1: &nbsp; --&nbsp;OSVVM&nbsp;testbench:&nbsp;jls_framer&nbsp;(stateful&nbsp;AXI-stream&nbsp;framer).&nbsp;
      2: &nbsp; --&nbsp;
      3: &nbsp; --&nbsp;Wraps&nbsp;the&nbsp;byte-stuffed&nbsp;payload&nbsp;with&nbsp;the&nbsp;JPEG-LS&nbsp;frame:&nbsp;25-byte&nbsp;header&nbsp;
-     4: &nbsp; --&nbsp;(SOI&nbsp;+&nbsp;SOF55&nbsp;+&nbsp;SOS,&nbsp;with&nbsp;runtime&nbsp;precision/height/width/NEAR)&nbsp;before&nbsp;the&nbsp;data&nbsp;
+     4: &nbsp; --&nbsp;(SOI&nbsp;+&nbsp;SOF55&nbsp;+&nbsp;SOS,&nbsp;with&nbsp;runtime&nbsp;height/width)&nbsp;before&nbsp;the&nbsp;data&nbsp;
      5: &nbsp; --&nbsp;and&nbsp;the&nbsp;EOI&nbsp;footer&nbsp;FF&nbsp;D9&nbsp;after&nbsp;it.&nbsp;The&nbsp;reference&nbsp;is&nbsp;the&nbsp;JPEG-LS&nbsp;frame&nbsp;format&nbsp;
      6: &nbsp; --&nbsp;(T.87):&nbsp;for&nbsp;each&nbsp;image&nbsp;the&nbsp;expected&nbsp;output&nbsp;byte&nbsp;stream&nbsp;is&nbsp;
      7: &nbsp; --&nbsp;&nbsp;&nbsp;header(W,H)&nbsp;++&nbsp;payload_bytes&nbsp;++&nbsp;0xFF&nbsp;0xD9&nbsp;

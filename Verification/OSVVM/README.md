@@ -26,25 +26,27 @@ Verification/OSVVM/
 └── Top/tb_openjls_top_osvvm.vhd # top-level stress TB
 ```
 
-OSVVM itself is vendored under `ThirdParty/osvvm/`, and the OSVVM tcl script
-flow under `ThirdParty/osvvm-scripts/`, both pinned to the same release (see
-`ThirdParty/fetch_third_party.sh`). The routine flow builds its own libraries;
-`./build_osvvm.sh` is a one-time prerequisite only for the post-synth
-gate-level flow (`Verification/Post synth/`), which reuses `./nvc-libs`.
+OSVVM itself lives under `ThirdParty/osvvm/`, and the OSVVM tcl script flow
+under `ThirdParty/osvvm-scripts/`, both pinned to the same release. They are
+not committed — `ThirdParty/fetch_third_party.sh` materializes them (the IP
+itself needs no fetch; only reproducing the verification does). The routine
+flow builds its own libraries; `./build_osvvm.sh` is a one-time prerequisite
+only for the post-synth gate-level flow (`Verification/Post synth/`), which
+reuses `./nvc-libs`.
 
 ## Dependencies
 
 OSVVM publishes no dependency manifest; its scripts just `package require`
-what they need. Everything tcl-side is vendored in this repo, so a fresh
-clone needs only two system packages:
+what they need. `ThirdParty/fetch_third_party.sh` pins everything tcl-side
+in-tree, so after running it the suite needs only two system packages:
 
 - **nvc** — the simulator (Arch: `nvc` from the AUR)
 - **tcl** ≥ 8.6 — drives the OSVVM `.pro` flow (Arch: `sudo pacman -S tcl`)
 
-The tcllib modules the scripts require (`fileutil`, `yaml`) are vendored in
+The tcllib modules the scripts require (`fileutil`, `yaml`) are fetched into
 `ThirdParty/tcllib/` and picked up via `TCLLIBPATH`; OSVVM and OSVVM-Scripts
-are vendored alongside. `build_osvvm.sh` and `build_reports.sh` check for
-the system tools and print these hints if one is missing.
+land alongside. `build_osvvm.sh` and `build_reports.sh` check for the system
+tools and print these hints if one is missing.
 
 Optional: the HTML reports mark not-applicable cells with U+2E3B (⸻); if it
 renders as a missing-glyph box, install a font that covers it (Arch:

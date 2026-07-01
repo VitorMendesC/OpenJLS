@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <testsuites 
    name="OSVVM_OpenJls"
-   timestamp="2026-06-26T03:02:15-03:00"
-   time="6.716"
-   tests="36"
+   timestamp="2026-07-01T17:47:50-03:00"
+   time="7.271"
+   tests="38"
    failures="0"
    errors="0"
    skipped="0"
@@ -15,8 +15,8 @@
 </properties> 
 <testsuite 
    name="Modules"
-   time="2.848"
-   tests="32"
+   time="3.317"
+   tests="34"
    failures="0"
    errors="0"
    skipped="0"
@@ -25,70 +25,70 @@
    name="tb_a1_osvvm"
    classname="Modules"
    assertions="616"
-   time="0.052"
+   time="0.057"
 >
 </testcase>
 <testcase 
    name="tb_a3_osvvm"
    classname="Modules"
    assertions="107"
-   time="0.051"
+   time="0.055"
 >
 </testcase>
 <testcase 
    name="tb_a4_osvvm"
    classname="Modules"
    assertions="622"
-   time="0.055"
+   time="0.058"
 >
 </testcase>
 <testcase 
    name="tb_a4_1_osvvm"
    classname="Modules"
    assertions="2945"
-   time="0.056"
+   time="0.065"
 >
 </testcase>
 <testcase 
    name="tb_a4_2_osvvm"
    classname="Modules"
    assertions="1097"
-   time="0.191"
+   time="0.210"
 >
 </testcase>
 <testcase 
    name="tb_a5_osvvm"
    classname="Modules"
    assertions="209"
-   time="0.060"
+   time="0.058"
 >
 </testcase>
 <testcase 
    name="tb_a6_osvvm"
    classname="Modules"
    assertions="307"
-   time="0.058"
+   time="0.059"
 >
 </testcase>
 <testcase 
    name="tb_a7_osvvm"
    classname="Modules"
    assertions="207"
-   time="0.049"
+   time="0.063"
 >
 </testcase>
 <testcase 
    name="tb_a9_osvvm"
    classname="Modules"
    assertions="208"
-   time="0.055"
+   time="0.059"
 >
 </testcase>
 <testcase 
    name="tb_a10_osvvm"
    classname="Modules"
    assertions="407"
-   time="0.060"
+   time="0.061"
 >
 </testcase>
 <testcase 
@@ -102,42 +102,42 @@
    name="tb_a11_1_osvvm"
    classname="Modules"
    assertions="1222"
-   time="0.054"
+   time="0.058"
 >
 </testcase>
 <testcase 
    name="tb_a11_2_osvvm"
    classname="Modules"
    assertions="642"
-   time="0.073"
+   time="0.075"
 >
 </testcase>
 <testcase 
    name="tb_a12_osvvm"
    classname="Modules"
    assertions="916"
-   time="0.064"
+   time="0.061"
 >
 </testcase>
 <testcase 
    name="tb_a13_osvvm"
    classname="Modules"
    assertions="618"
-   time="0.069"
+   time="0.073"
 >
 </testcase>
 <testcase 
    name="tb_a14_osvvm"
    classname="Modules"
    assertions="316"
-   time="0.054"
+   time="0.055"
 >
 </testcase>
 <testcase 
    name="tb_a15_a16_osvvm"
    classname="Modules"
    assertions="303"
-   time="0.137"
+   time="0.142"
 >
 </testcase>
 <testcase 
@@ -151,77 +151,97 @@
    name="tb_a18_osvvm"
    classname="Modules"
    assertions="206"
-   time="0.055"
+   time="0.060"
 >
 </testcase>
 <testcase 
    name="tb_a19_osvvm"
    classname="Modules"
    assertions="611"
-   time="0.059"
+   time="0.063"
 >
 </testcase>
 <testcase 
    name="tb_a20_osvvm"
    classname="Modules"
    assertions="56"
-   time="0.045"
+   time="0.047"
 >
 </testcase>
 <testcase 
    name="tb_a21_osvvm"
    classname="Modules"
    assertions="407"
-   time="0.054"
+   time="0.059"
 >
 </testcase>
 <testcase 
    name="tb_a22_osvvm"
    classname="Modules"
    assertions="409"
-   time="0.059"
+   time="0.063"
 >
 </testcase>
 <testcase 
    name="tb_a23_osvvm"
    classname="Modules"
    assertions="1809"
-   time="0.070"
+   time="0.071"
 >
 </testcase>
 <testcase 
    name="tb_line_buffer_osvvm"
    classname="Modules"
    assertions="1451"
-   time="0.066"
+   time="0.074"
 >
 </testcase>
 <testcase 
    name="tb_context_ram_osvvm"
    classname="Modules"
    assertions="221"
-   time="0.075"
+   time="0.076"
 >
 </testcase>
 <testcase 
    name="tb_byte_stuffer_osvvm"
    classname="Modules"
    assertions="3980"
-   time="0.128"
+   time="0.152"
 >
+</testcase>
+<testcase 
+   name="tb_byte_stuffer_osvvm_IN_WIDTH_32"
+   classname="Modules"
+   assertions="2862"
+   time="0.123"
+>
+<properties> 
+  <property name="generic" value="IN_WIDTH=32" /> 
+</properties> 
+</testcase>
+<testcase 
+   name="tb_byte_stuffer_osvvm_IN_WIDTH_64"
+   classname="Modules"
+   assertions="5140"
+   time="0.123"
+>
+<properties> 
+  <property name="generic" value="IN_WIDTH=64" /> 
+</properties> 
 </testcase>
 <testcase 
    name="tb_jls_framer_osvvm"
    classname="Modules"
    assertions="1706"
-   time="0.095"
+   time="0.097"
 >
 </testcase>
 <testcase 
    name="tb_jls_framer_osvvm_OUT_WIDTH_48"
    classname="Modules"
    assertions="1706"
-   time="0.069"
+   time="0.097"
 >
 <properties> 
   <property name="generic" value="OUT_WIDTH=48" /> 
@@ -231,7 +251,7 @@
    name="tb_jls_framer_osvvm_OUT_WIDTH_56"
    classname="Modules"
    assertions="1706"
-   time="0.089"
+   time="0.075"
 >
 <properties> 
   <property name="generic" value="OUT_WIDTH=56" /> 
@@ -241,7 +261,7 @@
    name="tb_jls_framer_osvvm_OUT_WIDTH_200"
    classname="Modules"
    assertions="2718"
-   time="0.105"
+   time="0.109"
 >
 <properties> 
   <property name="generic" value="OUT_WIDTH=200" /> 
@@ -251,7 +271,7 @@
    name="tb_jls_framer_osvvm_OUT_WIDTH_1024"
    classname="Modules"
    assertions="10963"
-   time="0.101"
+   time="0.103"
 >
 <properties> 
   <property name="generic" value="OUT_WIDTH=1024" /> 
@@ -260,7 +280,7 @@
 </testsuite>
 <testsuite 
    name="Top"
-   time="3.509"
+   time="3.547"
    tests="4"
    failures="0"
    errors="0"
@@ -269,15 +289,15 @@
 <testcase 
    name="tb_openjls_top_osvvm"
    classname="Top"
-   assertions="22633"
-   time="0.853"
+   assertions="22676"
+   time="0.862"
 >
 </testcase>
 <testcase 
    name="tb_openjls_top_osvvm_MAX_W_320_MAX_H_200"
    classname="Top"
-   assertions="22633"
-   time="0.874"
+   assertions="22676"
+   time="0.885"
 >
 <properties> 
   <property name="generic" value="MAX_W=320" /> 
@@ -287,8 +307,8 @@
 <testcase 
    name="tb_openjls_top_osvvm_OUT_WIDTH_48"
    classname="Top"
-   assertions="22633"
-   time="0.839"
+   assertions="22676"
+   time="0.845"
 >
 <properties> 
   <property name="generic" value="OUT_WIDTH=48" /> 
@@ -297,8 +317,8 @@
 <testcase 
    name="tb_openjls_top_osvvm_OUT_WIDTH_1024"
    classname="Top"
-   assertions="22633"
-   time="0.856"
+   assertions="22676"
+   time="0.862"
 >
 <properties> 
   <property name="generic" value="OUT_WIDTH=1024" /> 

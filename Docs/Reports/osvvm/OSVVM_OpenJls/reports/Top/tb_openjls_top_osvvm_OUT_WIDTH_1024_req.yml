@@ -8,6 +8,11 @@
   - TestName: "tb_openjls_top_osvvm"
     Status: PASSED
     Results: {Goal: 3, Passed: 7, Errors: 0, Checked: 7, AlertCount: {Failure: 0, Error: 0, Warning: 0}, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}}
+- Requirement: "OJLS.RIForward"
+  TestCases: 
+  - TestName: "tb_openjls_top_osvvm"
+    Status: PASSED
+    Results: {Goal: 40, Passed: 41, Errors: 0, Checked: 41, AlertCount: {Failure: 0, Error: 0, Warning: 0}, DisabledAlertCount: {Failure: 0, Error: 0, Warning: 0}}
 - Requirement: "OJLS.NoStallCompress"
   TestCases: 
   - TestName: "tb_openjls_top_osvvm"

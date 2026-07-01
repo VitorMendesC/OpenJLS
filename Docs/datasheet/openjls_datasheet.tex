@@ -374,7 +374,8 @@ both RTL and post-synthesis (gate-level) stages:
 \begin{itemize}
   \item \textbf{OSVVM} --- per-module tests against independent T.87-derived
         reference models, plus top-level control-plane stress (reset injection,
-        backpressure, randomized sizes) with requirements tracking.
+        backpressure, back-to-back images, dimension fallback) with requirements
+        tracking.
   \item \textbf{Coverage} --- OSVVM functional coverage with NVC structural code coverage (99\%+ statements).
   \item \textbf{Golden model} --- byte-exact vs the independent CharLS C++
         encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
@@ -393,7 +394,7 @@ per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
   \toprule
   \textbf{Suite} & \textbf{Status} & \textbf{Test/Cov} & \textbf{Summary} \\
   \midrule
-  OSVVM suite             & PASS & 100\%  & 36 tests, 129\,810 affirmations (module + top control-plane) \\
+  OSVVM suite             & PASS & 100\%  & 38 tests, 138\,010 affirmations (module + top control-plane) \\
   NVC code coverage       & info & 99.8\% & Per-DUT-file statement breakdown \\
   Golden model            & PASS & 100\%  & 287/287 images byte-exact vs CharLS \\
   Post-synth OSVVM        & PASS & 100\%  & Control-plane stress on the gate-level netlist \\
