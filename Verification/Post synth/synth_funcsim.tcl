@@ -30,9 +30,7 @@ foreach f {
   olo_base_pkg_string.vhd
   olo_base_pkg_logic.vhd
   olo_base_pkg_attribute.vhd
-  olo_base_ram_sp.vhd
   olo_base_ram_sdp.vhd
-  olo_base_ram_tdp.vhd
   olo_base_fifo_sync.vhd
 } {
   read_vhdl -vhdl2008 [file join $OL_SRC $f]

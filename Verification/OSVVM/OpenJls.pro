@@ -58,9 +58,7 @@ analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_math.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_string.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_logic.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_pkg_attribute.vhd
-analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_ram_sp.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_ram_sdp.vhd
-analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_ram_tdp.vhd
 analyze ../../ThirdParty/open-logic/src/base/vhdl/olo_base_fifo_sync.vhd
 
 # Shared TB skeleton (clk_tick, apply_reset, end_of_test).
