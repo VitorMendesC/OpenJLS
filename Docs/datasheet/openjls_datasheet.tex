@@ -185,8 +185,8 @@ ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
   \midrule
   \texttt{iClk}        & in  & 1                       & ---             & Clock. \\
   \texttt{iRst}        & in  & 1                       & ---             & Synchronous reset, active high; latches dimensions. \\
-  \texttt{iImageWidth} & in  & $\lceil\log_2(\mathrm{MAX\_IMAGE\_WIDTH}{+}1)\rceil$ & --- & Image width, pixels (configuration). \\
-  \texttt{iImageHeight}& in  & $\lceil\log_2(\mathrm{MAX\_IMAGE\_HEIGHT}{+}1)\rceil$ & --- & Image height, pixels (configuration). \\
+  \texttt{iImageWidth} & in  & 16                      & --- & Image width, pixels (configuration). \\
+  \texttt{iImageHeight}& in  & 16                      & --- & Image height, pixels (configuration). \\
   \texttt{iValid}      & in  & 1                       & \texttt{TVALID} & Pixel valid. \\
   \texttt{iPixel}      & in  & \texttt{BITNESS}        & \texttt{TDATA}  & Pixel data. \\
   \texttt{oReady}      & out & 1                       & \texttt{TREADY} & Input ready. \\
@@ -205,7 +205,7 @@ ecosystem (Avalon-ST maps the same way at \texttt{readyLatency}~=~0).
   \item If an invalid value is provided to \texttt{iImageWidth}, that is \texttt{iImageWidth > MAX\_IMAGE\_WIDTH} or \texttt{iImageWidth < 4}, the encoder uses \texttt{MAX\_IMAGE\_WIDTH} as the image width.
   \item If an invalid value is provided to \texttt{iImageHeight}, that is \texttt{iImageHeight > MAX\_IMAGE\_HEIGHT} or \texttt{iImageHeight < 1}, the encoder uses \texttt{MAX\_IMAGE\_HEIGHT} as the image height.
   \item If you don't intend to change the image dimensions at run-time, wire both inputs to \texttt{0} so that the maximum values are used.
-  \item The ports are only \texttt{$\lceil\log_2(\mathrm{MAX}{+}1)\rceil$} bits wide, so a value far above the maximum can overflow the port and wrap back into the valid range; the encoder cannot detect this case and won't substitute the maximum.
+  \item Both ports are a fixed 16 bits regardless of the \texttt{MAX\_IMAGE\_*} generics --- every representable value is checked, so any out-of-range value is caught and replaced by the maximum.
 \end{itemize}
 
 %======================================================================
@@ -365,7 +365,9 @@ u_enc : entity work.openjls_top
 
 \noindent Being a single entity with standard ready/valid ports, \texttt{openjls\_top}
 can equally be dropped onto a block diagram and wired there, instead of instantiating
-it in HDL.
+it in HDL. The dimension ports are fixed at 16 bits (rather than sized from the
+generics) because Vivado's block-design port-width evaluator only handles literal
+arithmetic in port expressions.
 
 %======================================================================
 \section{Conformance and verification}

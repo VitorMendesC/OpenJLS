@@ -118,8 +118,8 @@ The streaming ports use a plain **ready/valid handshake**; the *AXIS* column giv
 |---|:--:|---|:--:|---|
 | `iClk` | in | 1 | — | Clock; whole core is synchronous to its rising edge. |
 | `iRst` | in | 1 | — | Synchronous reset, active high. Also latches the image dimensions (see below). |
-| `iImageWidth` | in | `⌈log2(MAX_IMAGE_WIDTH+1)⌉` | — | Image width in pixels (configuration). |
-| `iImageHeight` | in | `⌈log2(MAX_IMAGE_HEIGHT+1)⌉` | — | Image height in pixels (configuration). |
+| `iImageWidth` | in | 16 | — | Image width in pixels (configuration). |
+| `iImageHeight` | in | 16 | — | Image height in pixels (configuration). |
 | `iValid` | in | 1 | `TVALID` | Input pixel valid. |
 | `iPixel` | in | `BITNESS` | `TDATA` | Input pixel. |
 | `oReady` | out | 1 | `TREADY` | Input ready. |
@@ -132,10 +132,10 @@ The streaming ports use a plain **ready/valid handshake**; the *AXIS* column giv
 ### Integration notes
 
 - **Pixel stream.** Feed pixels in **scan order** — the first row left to right, then the second row, and so on — one per accepted handshake (`iValid and oReady`), each an unsigned value on `iPixel`. The encoder sustains one pixel per clock and deasserts `oReady` *only* under downstream backpressure (`iReady` low). The output bitstream is byte-serial, MSB-first.
-- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before a new resolution. They latch only during reset, so reset before the first image and whenever the size changes; **no reset is needed between same-size images** — they encode back-to-back. Unwired inputs (`0`) select the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Each port is only `⌈log2(MAX+1)⌉` bits wide, so a value far above the maximum wraps back into range undetected. Minimum image is **4 × 1**.
+- **Image dimensions are configuration, sampled while `iRst` is high** — hold them stable and pulse reset before a new resolution. They latch only during reset, so reset before the first image and whenever the size changes; **no reset is needed between same-size images** — they encode back-to-back. Unwired inputs (`0`) select the `MAX_IMAGE_*` maxima; an out-of-range value falls back to the maximum with a simulation warning. Both ports are a fixed 16 bits regardless of the `MAX_IMAGE_*` generics, so any out-of-range value is caught. Minimum image is **4 × 1**.
 - **No input end-of-frame.** End-of-image is derived internally from the dimensions, so the input has no `TLAST` (optional in AXI4-Stream). The *output* stream is self-delimiting: `oLast` marks the last beat and `oKeep` flags its valid bytes.
 - **Naming.** Port names follow the project's house style; the signals map 1:1 onto AXI4-Stream (see the *AXIS* column), so a conventional-naming `s_axis`/`m_axis` wrapper can be layered on top without touching the core.
-- **Block-diagram drop-in.** Being a single entity with standard ready/valid ports, `openjls_top` can be dropped onto a block diagram and wired there instead of instantiated in HDL.
+- **Block-diagram drop-in.** Being a single entity with standard ready/valid ports, `openjls_top` can be dropped onto a block diagram and wired there instead of instantiated in HDL. The dimension ports are fixed at 16 bits (rather than sized from the generics) because Vivado's block-design port-width evaluator only handles literal arithmetic.
 
 > Full signal timing, the reset/configuration sequence, latency figures, and a worked instantiation example live in the **datasheet** (`Docs/datasheet/`).
 

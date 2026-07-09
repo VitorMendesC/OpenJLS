@@ -46,9 +46,6 @@ library ieee;
   use ieee.numeric_std.all;
   use work.openjls_pkg.all;
 
-library work;
-  use work.olo_base_pkg_math.log2ceil;
-
 library osvvm;
   context osvvm.OsvvmContext;
 
@@ -129,8 +126,8 @@ architecture sim of tb_openjls_top_osvvm is
   signal iValid  : std_logic;
   signal iPixel  : std_logic_vector(BITNESS - 1 downto 0);
   signal oReady  : std_logic;
-  signal iWidth  : std_logic_vector(log2ceil(MAX_W + 1) - 1 downto 0);
-  signal iHeight : std_logic_vector(log2ceil(MAX_H + 1) - 1 downto 0);
+  signal iWidth  : std_logic_vector(15 downto 0);
+  signal iHeight : std_logic_vector(15 downto 0);
   signal oData   : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal oValid  : std_logic;
   signal oKeep   : std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
@@ -188,8 +185,8 @@ begin
         iValid       : in    std_logic;
         iPixel       : in    std_logic_vector(BITNESS - 1 downto 0);
         oReady       : out   std_logic;
-        iImageWidth  : in    std_logic_vector(log2ceil(MAX_W + 1) - 1 downto 0);
-        iImageHeight : in    std_logic_vector(log2ceil(MAX_H + 1) - 1 downto 0);
+        iImageWidth  : in    std_logic_vector(15 downto 0);
+        iImageHeight : in    std_logic_vector(15 downto 0);
         oData        : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
         oValid       : out   std_logic;
         oKeep        : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
@@ -231,8 +228,8 @@ begin
         iValid       : in    std_logic;
         iPixel       : in    std_logic_vector(BITNESS - 1 downto 0);
         oReady       : out   std_logic;
-        iImageWidth  : in    std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-        iImageHeight : in    std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+        iImageWidth  : in    std_logic_vector(15 downto 0);
+        iImageHeight : in    std_logic_vector(15 downto 0);
         oData        : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
         oValid       : out   std_logic;
         oKeep        : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);

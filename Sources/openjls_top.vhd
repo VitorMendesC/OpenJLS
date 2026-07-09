@@ -76,8 +76,11 @@ entity openjls_top is
     iValid           : in    std_logic;
     iPixel           : in    std_logic_vector(BITNESS - 1 downto 0);
     oReady           : out   std_logic;
-    iImageWidth      : in    std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-    iImageHeight     : in    std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+    -- Fixed 16-bit (not log2ceil-sized): Vivado's block-design port-width
+    -- evaluator only handles literal arithmetic in port expressions. Values
+    -- above MAX_IMAGE_WIDTH/HEIGHT are clamped at sample time as before.
+    iImageWidth      : in    std_logic_vector(15 downto 0);
+    iImageHeight     : in    std_logic_vector(15 downto 0);
     oData            : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
     oValid           : out   std_logic;
     oKeep            : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
@@ -555,7 +558,7 @@ begin
 
           sImageWidth <= to_unsigned(MAX_IMAGE_WIDTH, sImageWidth'length);
         else
-          sImageWidth <= vImageWidthUnsi;
+          sImageWidth <= resize(vImageWidthUnsi, sImageWidth'length);
         end if;
 
         if (vImageHeightUnsi < CO_MIN_IMAGE_HEIGHT) then
@@ -571,7 +574,7 @@ begin
 
           sImageHeight <= to_unsigned(MAX_IMAGE_HEIGHT, sImageHeight'length);
         else
-          sImageHeight <= vImageHeightUnsi;
+          sImageHeight <= resize(vImageHeightUnsi, sImageHeight'length);
         end if;
       else
         if (iValid = '1' and sReadyOut = '1' and sStallLogic = '0') then -- handshake

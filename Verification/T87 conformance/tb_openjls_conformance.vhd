@@ -22,9 +22,6 @@ library ieee;
   use std.env.all;
   use work.openjls_pkg.all;
 
-library work;
-  use work.olo_base_pkg_math.log2ceil;
-
 entity tb_openjls_t87_conformance is
   generic (
     REPO_ROOT : string := "./"
@@ -69,8 +66,8 @@ architecture bench of tb_openjls_t87_conformance is
   signal iValid                  : std_logic;
   signal iPixel                  : std_logic_vector(BITNESS - 1 downto 0);
   signal oReady                  : std_logic;
-  signal iImageWidth             : std_logic_vector(log2ceil(MAX_IMAGE_WIDTH + 1) - 1 downto 0);
-  signal iImageHeight            : std_logic_vector(log2ceil(MAX_IMAGE_HEIGHT + 1) - 1 downto 0);
+  signal iImageWidth             : std_logic_vector(15 downto 0);
+  signal iImageHeight            : std_logic_vector(15 downto 0);
   signal oData                   : std_logic_vector(OUT_WIDTH - 1 downto 0);
   signal oValid                  : std_logic;
   signal oKeep                   : std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
