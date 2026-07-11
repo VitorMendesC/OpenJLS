@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------------------------------------
 -- Engineer:    Vitor Mendes Camilo
 --
--- Module Name: openjls_axi - rtl
+-- Module Name: openjls_axis_regs - rtl
 -- Description: AXI4-Stream + AXI4-Lite wrapper around openjls_top (flavor B).
 --
 --          Instantiates openjls_axis (flavor A) and adds an AXI4-Lite register
@@ -14,9 +14,9 @@
 --          Back-to-back images of unchanged dimensions need no APPLY.
 --
 --          While the pulse is active STATUS.BUSY reads 1 and the core holds
---          s_axis_tready low, so a stream started too early stalls instead of
---          losing pixels. Writes to WIDTH/HEIGHT/CTRL while BUSY are dropped
---          (responded OKAY, not applied).
+--          s_axis_pixel_tready low, so a stream started too early stalls
+--          instead of losing pixels. Writes to WIDTH/HEIGHT/CTRL while BUSY
+--          are dropped (responded OKAY, not applied).
 --
 --          WIDTH/HEIGHT writes are clamped to the core's rule (out-of-range
 --          values become the MAX generic), so a readback always returns the
@@ -33,7 +33,7 @@
 --   0x10  WIDTH    RW  [15:0] image width  (clamped on write)
 --   0x14  HEIGHT   RW  [15:0] image height (clamped on write)
 --   0x18  CTRL     WO  [0] APPLY — self-clearing, pulses the core reset
---   0x1C  STATUS   RO  [0] BUSY (reset pulse active), [1] S_AXIS_TREADY mirror
+--   0x1C  STATUS   RO  [0] BUSY (reset pulse active), [1] s_axis_pixel TREADY mirror
 --
 -------------------------------------------------------------------------------------------------------------
 
@@ -42,11 +42,12 @@ library ieee;
   use ieee.numeric_std.all;
   use work.openjls_pkg.all;
 
--- AXI port names must keep the s_axi_*/s_axis_*/m_axis_* convention
--- (lowercase, underscores) for Vivado IP integrator interface inference.
+-- AXI port names must keep the <prefix>_* suffix convention (lowercase,
+-- underscores) for Vivado IP integrator interface inference; the prefix
+-- becomes the interface name in the block diagram.
 -- vsg_off port_010 port_map_002
 
-entity openjls_axi is
+entity openjls_axis_regs is
   generic (
     BITNESS          : positive range 8 to 16    := 12;
     MAX_IMAGE_WIDTH  : positive range 4 to 65535 := 4096;
@@ -55,39 +56,39 @@ entity openjls_axi is
     RESET_CYCLES     : positive                  := 16
   );
   port (
-    aclk             : in    std_logic;
-    aresetn          : in    std_logic;
+    aclk                : in    std_logic;
+    aresetn             : in    std_logic;
     -- AXI4-Lite slave — configuration and status
-    s_axi_awaddr     : in    std_logic_vector(7 downto 0);
-    s_axi_awprot     : in    std_logic_vector(2 downto 0);
-    s_axi_awvalid    : in    std_logic;
-    s_axi_awready    : out   std_logic;
-    s_axi_wdata      : in    std_logic_vector(31 downto 0);
-    s_axi_wstrb      : in    std_logic_vector(3 downto 0);
-    s_axi_wvalid     : in    std_logic;
-    s_axi_wready     : out   std_logic;
-    s_axi_bresp      : out   std_logic_vector(1 downto 0);
-    s_axi_bvalid     : out   std_logic;
-    s_axi_bready     : in    std_logic;
-    s_axi_araddr     : in    std_logic_vector(7 downto 0);
-    s_axi_arprot     : in    std_logic_vector(2 downto 0);
-    s_axi_arvalid    : in    std_logic;
-    s_axi_arready    : out   std_logic;
-    s_axi_rdata      : out   std_logic_vector(31 downto 0);
-    s_axi_rresp      : out   std_logic_vector(1 downto 0);
-    s_axi_rvalid     : out   std_logic;
-    s_axi_rready     : in    std_logic;
+    s_axi_ctrl_awaddr   : in    std_logic_vector(7 downto 0);
+    s_axi_ctrl_awprot   : in    std_logic_vector(2 downto 0);
+    s_axi_ctrl_awvalid  : in    std_logic;
+    s_axi_ctrl_awready  : out   std_logic;
+    s_axi_ctrl_wdata    : in    std_logic_vector(31 downto 0);
+    s_axi_ctrl_wstrb    : in    std_logic_vector(3 downto 0);
+    s_axi_ctrl_wvalid   : in    std_logic;
+    s_axi_ctrl_wready   : out   std_logic;
+    s_axi_ctrl_bresp    : out   std_logic_vector(1 downto 0);
+    s_axi_ctrl_bvalid   : out   std_logic;
+    s_axi_ctrl_bready   : in    std_logic;
+    s_axi_ctrl_araddr   : in    std_logic_vector(7 downto 0);
+    s_axi_ctrl_arprot   : in    std_logic_vector(2 downto 0);
+    s_axi_ctrl_arvalid  : in    std_logic;
+    s_axi_ctrl_arready  : out   std_logic;
+    s_axi_ctrl_rdata    : out   std_logic_vector(31 downto 0);
+    s_axi_ctrl_rresp    : out   std_logic_vector(1 downto 0);
+    s_axi_ctrl_rvalid   : out   std_logic;
+    s_axi_ctrl_rready   : in    std_logic;
     -- AXI4-Stream slave — one pixel per beat, right-justified
-    s_axis_tdata     : in    std_logic_vector(8 * ((BITNESS + 7) / 8) - 1 downto 0);
-    s_axis_tvalid    : in    std_logic;
-    s_axis_tlast     : in    std_logic;
-    s_axis_tready    : out   std_logic;
+    s_axis_pixel_tdata  : in    std_logic_vector(8 * ((BITNESS + 7) / 8) - 1 downto 0);
+    s_axis_pixel_tvalid : in    std_logic;
+    s_axis_pixel_tlast  : in    std_logic;
+    s_axis_pixel_tready : out   std_logic;
     -- AXI4-Stream master — encoded .jls byte stream
-    m_axis_tdata     : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
-    m_axis_tkeep     : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
-    m_axis_tvalid    : out   std_logic;
-    m_axis_tlast     : out   std_logic;
-    m_axis_tready    : in    std_logic
+    m_axis_jls_tdata    : out   std_logic_vector(OUT_WIDTH - 1 downto 0);
+    m_axis_jls_tkeep    : out   std_logic_vector(OUT_WIDTH / 8 - 1 downto 0);
+    m_axis_jls_tvalid   : out   std_logic;
+    m_axis_jls_tlast    : out   std_logic;
+    m_axis_jls_tready   : in    std_logic
   );
 
   -- Vivado IP integrator interface inference
@@ -95,12 +96,12 @@ entity openjls_axi is
   attribute x_interface_parameter              : string;
   attribute x_interface_info of aclk           : signal is "xilinx.com:signal:clock:1.0 aclk CLK";
   -- aresetn is auto-associated with aclk by Vivado (standard name/polarity)
-  attribute x_interface_parameter of aclk      : signal is "ASSOCIATED_BUSIF s_axi:s_axis:m_axis";
+  attribute x_interface_parameter of aclk      : signal is "ASSOCIATED_BUSIF s_axi_ctrl:s_axis_pixel:m_axis_jls";
   attribute x_interface_info of aresetn        : signal is "xilinx.com:signal:reset:1.0 aresetn RST";
   attribute x_interface_parameter of aresetn   : signal is "POLARITY ACTIVE_LOW";
-end entity openjls_axi;
+end entity openjls_axis_regs;
 
-architecture rtl of openjls_axi is
+architecture rtl of openjls_axis_regs is
 
   constant VERSION     : std_logic_vector(31 downto 0) := x"00010000"; -- 1.0.0
 
@@ -175,13 +176,13 @@ begin
   -- valids — legal: ready may depend on valid, not vice versa). Single
   -- outstanding transaction; next one is accepted after BREADY.
 
-  sWrHandshake <= '1' when s_axi_awvalid = '1' and s_axi_wvalid = '1' and sBValid = '0' else
+  sWrHandshake <= '1' when s_axi_ctrl_awvalid = '1' and s_axi_ctrl_wvalid = '1' and sBValid = '0' else
                   '0';
 
-  s_axi_awready <= sWrHandshake;
-  s_axi_wready  <= sWrHandshake;
-  s_axi_bresp   <= "00"; -- OKAY; RO/unmapped writes are silently dropped
-  s_axi_bvalid  <= sBValid;
+  s_axi_ctrl_awready <= sWrHandshake;
+  s_axi_ctrl_wready  <= sWrHandshake;
+  s_axi_ctrl_bresp   <= "00"; -- OKAY; RO/unmapped writes are silently dropped
+  s_axi_ctrl_bvalid  <= sBValid;
 
   p_axi_write : process (aclk) is
 
@@ -201,13 +202,13 @@ begin
           sRstCnt <= sRstCnt - 1;
         end if;
 
-        if (sBValid = '1' and s_axi_bready = '1') then
+        if (sBValid = '1' and s_axi_ctrl_bready = '1') then
           sBValid <= '0';
         end if;
 
         if (sWrHandshake = '1') then
           sBValid   <= '1';
-          vAddrWord := to_integer(unsigned(s_axi_awaddr(7 downto 2)));
+          vAddrWord := to_integer(unsigned(s_axi_ctrl_awaddr(7 downto 2)));
 
           -- Configuration writes are dropped while the reset pulse is live:
           -- the core is sampling these registers right now.
@@ -217,15 +218,15 @@ begin
 
               when REG_WIDTH =>
 
-                sWidth <= merge_clamp_dim(sWidth, s_axi_wdata, s_axi_wstrb, CO_MIN_IMAGE_WIDTH, MAX_IMAGE_WIDTH);
+                sWidth <= merge_clamp_dim(sWidth, s_axi_ctrl_wdata, s_axi_ctrl_wstrb, CO_MIN_IMAGE_WIDTH, MAX_IMAGE_WIDTH);
 
               when REG_HEIGHT =>
 
-                sHeight <= merge_clamp_dim(sHeight, s_axi_wdata, s_axi_wstrb, CO_MIN_IMAGE_HEIGHT, MAX_IMAGE_HEIGHT);
+                sHeight <= merge_clamp_dim(sHeight, s_axi_ctrl_wdata, s_axi_ctrl_wstrb, CO_MIN_IMAGE_HEIGHT, MAX_IMAGE_HEIGHT);
 
               when REG_CTRL =>
 
-                if (s_axi_wstrb(0) = '1' and s_axi_wdata(0) = '1') then
+                if (s_axi_ctrl_wstrb(0) = '1' and s_axi_ctrl_wdata(0) = '1') then
                   sRstCnt <= RESET_CYCLES;
                 end if;
 
@@ -246,13 +247,13 @@ begin
   -- AXI4-Lite READ CHANNEL
   -------------------------------------------------------------------------------------------------------------
 
-  sRdHandshake <= '1' when s_axi_arvalid = '1' and sRValid = '0' else
+  sRdHandshake <= '1' when s_axi_ctrl_arvalid = '1' and sRValid = '0' else
                   '0';
 
-  s_axi_arready <= sRdHandshake;
-  s_axi_rresp   <= "00"; -- OKAY; unmapped reads return zero
-  s_axi_rvalid  <= sRValid;
-  s_axi_rdata   <= sRData;
+  s_axi_ctrl_arready <= sRdHandshake;
+  s_axi_ctrl_rresp   <= "00"; -- OKAY; unmapped reads return zero
+  s_axi_ctrl_rvalid  <= sRValid;
+  s_axi_ctrl_rdata   <= sRData;
 
   p_axi_read : process (aclk) is
 
@@ -265,11 +266,11 @@ begin
         sRValid <= '0';
         sRData  <= (others => '0');
       else
-        if (sRValid = '1' and s_axi_rready = '1') then
+        if (sRValid = '1' and s_axi_ctrl_rready = '1') then
           sRValid <= '0';
         elsif (sRdHandshake = '1') then
           sRValid   <= '1';
-          vAddrWord := to_integer(unsigned(s_axi_araddr(7 downto 2)));
+          vAddrWord := to_integer(unsigned(s_axi_ctrl_araddr(7 downto 2)));
           sRData    <= (others => '0');
 
           case vAddrWord is
@@ -326,7 +327,7 @@ begin
               '0';
   sCoreRst <= (not aresetn) or sSoftRst;
 
-  s_axis_tready <= sReadyMirror;
+  s_axis_pixel_tready <= sReadyMirror;
 
   u_openjls_axis : entity work.openjls_axis(rtl)
     generic map (
@@ -336,19 +337,19 @@ begin
       OUT_WIDTH        => OUT_WIDTH
     )
     port map (
-      iClk             => aclk,
-      iRst             => sCoreRst,
-      iImageWidth      => std_logic_vector(sWidth),
-      iImageHeight     => std_logic_vector(sHeight),
-      s_axis_tdata     => s_axis_tdata,
-      s_axis_tvalid    => s_axis_tvalid,
-      s_axis_tlast     => s_axis_tlast,
-      s_axis_tready    => sReadyMirror,
-      m_axis_tdata     => m_axis_tdata,
-      m_axis_tkeep     => m_axis_tkeep,
-      m_axis_tvalid    => m_axis_tvalid,
-      m_axis_tlast     => m_axis_tlast,
-      m_axis_tready    => m_axis_tready
+      iClk                => aclk,
+      iRst                => sCoreRst,
+      iImageWidth         => std_logic_vector(sWidth),
+      iImageHeight        => std_logic_vector(sHeight),
+      s_axis_pixel_tdata  => s_axis_pixel_tdata,
+      s_axis_pixel_tvalid => s_axis_pixel_tvalid,
+      s_axis_pixel_tlast  => s_axis_pixel_tlast,
+      s_axis_pixel_tready => sReadyMirror,
+      m_axis_jls_tdata    => m_axis_jls_tdata,
+      m_axis_jls_tkeep    => m_axis_jls_tkeep,
+      m_axis_jls_tvalid   => m_axis_jls_tvalid,
+      m_axis_jls_tlast    => m_axis_jls_tlast,
+      m_axis_jls_tready   => m_axis_jls_tready
     );
 
 end architecture rtl;
