@@ -249,7 +249,6 @@ begin
   end process clocked_proc; -----------------------------------------------------------------------------
 
   -- Instance FIFO -------------------------------------------------------------------------
-  -- VHDL-93: port map actuals cannot be expressions, hence the intermediate signal
   sFifoInValid <= iValid and not bool2bit(sIsLastRow);
 
   fifo_inst : entity work.olo_base_fifo_sync(rtl)
