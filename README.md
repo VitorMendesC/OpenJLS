@@ -10,7 +10,7 @@ It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87), a low-complex
 
 OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (the MPSoC family used in onboard processors such as the Xiphos Q8), processing one pixel per clock (~240 Mpixel/s) for ~8k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
 
-The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory primitives) and builds in any synthesis tool; the figures above were characterized on Xilinx.
+The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory primitives, which are VHDL-2008) and builds in any synthesis tool; the figures above were characterized on Xilinx.
 
 ---
 
@@ -194,13 +194,13 @@ OpenJLS is dual-licensed:
 
 ## Dependencies
 
-Dependencies fall into two independent sets. **Using the IP** needs only the base set below — the core is plain VHDL-1993 and synthesizes in any EDA tool on any OS. **Running the verification suite** needs the Linux toolchain in the second table; none of it is part of, or distributed with, the IP.
+Dependencies fall into two independent sets. **Using the IP** needs only the base set below — the core sources are plain VHDL-1993 and synthesize in any EDA tool on any OS; the vendored open-logic files are VHDL-2008, so the toolchain must accept 2008 for those files (any current one does). **Running the verification suite** needs the Linux toolchain in the second table; none of it is part of, or distributed with, the IP.
 
 ### Base IP
 
 | Component | License | Notes |
 |---|---|---|
-| [open-logic](https://github.com/open-logic/open-logic) | LGPL-2.1+ with PSI HDL exception | Vendor-agnostic memory and FIFO primitives. Weak copyleft confined to its own files; the exception explicitly permits distributing FPGA bitstreams under your own terms. |
+| [open-logic](https://github.com/open-logic/open-logic) | LGPL-2.1+ with PSI HDL exception | Vendor-agnostic memory and FIFO primitives, written in VHDL-2008. Weak copyleft confined to its own files; the exception explicitly permits distributing FPGA bitstreams under your own terms. |
 
 The IP carries no OS or vendor lock-in — it builds with Vivado, Quartus, Libero, Lattice, or open-source tools. (The performance figures above were characterized with AMD Vivado, but any synthesis tool works.)
 
