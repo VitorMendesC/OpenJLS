@@ -87,11 +87,15 @@ architecture behavioral of line_buffer is
   signal sIsFifoOutHandshake : boolean;
   signal sIsFirstCol         : boolean;
   signal sPreloadCounter     : unsigned(1 downto 0);
+  signal sFifoInValid        : std_logic;
 
 begin
 
   -- Combinatorial process ----------------------------------------------------------------
-  comb_proc : process (all) is
+  comb_proc : process (iValid, iImageWidth, iImageHeight, sFifoState,
+                       sFifoOutReady, sFifoOutValid, sColCounter, sRowCounter,
+                       sIsLastCol, sIsLastRow, sIsFirstCol, sIsEol, sIsEoi,
+                       sA, sB, sC, sD, sBorderC) is
   begin
 
     oValid              <= iValid;
@@ -105,9 +109,13 @@ begin
     sIsFifoOutHandshake <= (sFifoOutReady and sFifoOutValid) = '1';
 
     -- Read FIFO logic ------------------------------------------------------
-    sFifoOutReady <= '1' when sFifoState = preload else
-                     iValid when sFifoState = nominal else
-                     '0';
+    if (sFifoState = preload) then
+      sFifoOutReady <= '1';
+    elsif (sFifoState = nominal) then
+      sFifoOutReady <= iValid;
+    else
+      sFifoOutReady <= '0';
+    end if;
 
     -- Corner case handling for border conditions (T.87 A.2.1) --------------
     if (sRowCounter = 0) then                                          -- First row: b = c = d = 0
@@ -241,6 +249,9 @@ begin
   end process clocked_proc; -----------------------------------------------------------------------------
 
   -- Instance FIFO -------------------------------------------------------------------------
+  -- VHDL-93: port map actuals cannot be expressions, hence the intermediate signal
+  sFifoInValid <= iValid and not bool2bit(sIsLastRow);
+
   fifo_inst : entity work.olo_base_fifo_sync(rtl)
     generic map (
       WIDTH_G       => BITNESS,
@@ -251,7 +262,7 @@ begin
       Clk           => iClk,
       Rst           => iRst,
       In_Data       => std_logic_vector(iPixel),
-      In_Valid      => iValid and not bool2bit(sIsLastRow),
+      In_Valid      => sFifoInValid,
       Out_Ready     => sFifoOutReady,
       Out_Data      => sFifoOutData,
       Out_Valid     => sFifoOutValid,
