@@ -30,7 +30,6 @@ set olo_pkg_files [list \
 set olo_other_files [list \
   [file join $olo_dir "olo_base_ram_sdp.vhd"] \
   [file join $olo_dir "olo_base_fifo_sync.vhd"] \
-  [file join $olo_dir "olo_base_fifo_packet.vhd"] \
 ]
 
 set olo_files [concat $olo_pkg_files $olo_other_files]
