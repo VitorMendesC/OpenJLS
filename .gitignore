@@ -58,3 +58,6 @@ settings.json
 *.pb
 *.o
 *.exe
+
+# IP packaging scratch projects (package_ip.tcl work_root, wiped each run)
+ip_pkg/
