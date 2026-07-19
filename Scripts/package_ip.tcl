@@ -185,8 +185,10 @@ foreach {name meta} $ips {
     # Source of truth lives in the repo (Docs/Images); copy it into the IP
     # root_dir so the IP-XACT file reference stays relative and the packaged
     # core remains self-contained/portable.
-    set logo_src [file join $repo_dir Docs Images isentropic-icon-512.png]
-    set logo_rel [file join misc isentropic-icon-512.png]
+    # 64x64 matches the Xilinx stock-IP convention (see data/ip/*/misc/logo.png);
+    # Vivado draws the logo at native pixel size on the BD block, no scaling.
+    set logo_src [file join $repo_dir Docs Images isentropic-icon-64.png]
+    set logo_rel [file join misc isentropic-icon-64.png]
     file mkdir [file join $ip_repo $name misc]
     file copy -force $logo_src [file join $ip_repo $name $logo_rel]
     ipx::add_file_group -type utility {} $core

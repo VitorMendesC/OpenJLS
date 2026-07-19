@@ -174,7 +174,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>e40e56f9</spirit:value>
+            <spirit:value>3b1dd4c3</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -792,7 +792,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_utilityxitfiles_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>misc/isentropic-icon-512.png</spirit:name>
+        <spirit:name>misc/isentropic-icon-64.png</spirit:name>
         <spirit:userFileType>LOGO</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -841,12 +841,12 @@
       <xilinx:vendorDisplayName>Vitor Mendes Camilo</xilinx:vendorDisplayName>
       <xilinx:vendorURL>https://github.com/VitorMendesC/OpenJLS</xilinx:vendorURL>
       <xilinx:coreRevision>26071912</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2026-07-19T15:50:03Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2026-07-19T15:55:11Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2025.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="8e5b7ba9"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="cb23e1ec"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="ca796bd3"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="76c8cdce"/>
       <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="b0b062b2"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="7b3665db"/>
