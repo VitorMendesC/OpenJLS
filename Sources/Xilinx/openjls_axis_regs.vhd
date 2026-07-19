@@ -8,7 +8,7 @@
 --          bank plus a reset controller. The core samples iImageWidth/
 --          iImageHeight only while its synchronous reset is high, so
 --          reconfiguration is expressed as: write WIDTH/HEIGHT, set CTRL.APPLY.
---          APPLY pulses the core reset for RESET_CYCLES clocks while the
+--          APPLY pulses the core reset for one clock while the
 --          registers are held stable; the AXI-Lite endpoint itself stays on
 --          aresetn only, so the bus never disappears mid-reconfigure.
 --          Back-to-back images of unchanged dimensions need no APPLY.
@@ -49,11 +49,10 @@ library ieee;
 
 entity openjls_axis_regs is
   generic (
-    BITNESS          : positive range 8 to 16    := 12;
-    MAX_IMAGE_WIDTH  : positive range 4 to 65535 := 4096;
-    MAX_IMAGE_HEIGHT : positive range 1 to 65535 := 4096;
-    OUT_WIDTH        : positive range 48 to 1024 := CO_OUT_WIDTH_STD;
-    RESET_CYCLES     : positive                  := 16
+    BITNESS             : positive range 8 to 16    := 12;
+    MAX_IMAGE_WIDTH     : positive range 4 to 65535 := 4096;
+    MAX_IMAGE_HEIGHT    : positive range 1 to 65535 := 4096;
+    OUT_WIDTH           : positive range 48 to 1024 := CO_OUT_WIDTH_STD
   );
   port (
     aclk                : in    std_logic;
@@ -120,7 +119,6 @@ architecture rtl of openjls_axis_regs is
   signal sHeight       : unsigned(15 downto 0);
 
   -- Reset controller
-  signal sRstCnt       : natural range 0 to RESET_CYCLES;
   signal sSoftRst      : std_logic;
   signal sCoreRst      : std_logic;
 
@@ -192,15 +190,15 @@ begin
 
     if rising_edge(aclk) then
       if (aresetn = '0') then
-        sBValid <= '0';
-        sWidth  <= to_unsigned(MAX_IMAGE_WIDTH, sWidth'length);
-        sHeight <= to_unsigned(MAX_IMAGE_HEIGHT, sHeight'length);
-        sRstCnt <= 0;
+        sBValid  <= '0';
+        sWidth   <= to_unsigned(MAX_IMAGE_WIDTH, sWidth'length);
+        sHeight  <= to_unsigned(MAX_IMAGE_HEIGHT, sHeight'length);
+        sSoftRst <= '0';
       else
-        -- Soft-reset pulse countdown
-        if (sRstCnt > 0) then
-          sRstCnt <= sRstCnt - 1;
-        end if;
+        -- Soft-reset pulse is a single clock: every synchronous element in
+        -- the core resets in one cycle (see openjls_top). Default-clear here,
+        -- set on an APPLY write below (last assignment wins).
+        sSoftRst <= '0';
 
         if (sBValid = '1' and s_axi_ctrl_bready = '1') then
           sBValid <= '0';
@@ -227,7 +225,7 @@ begin
               when REG_CTRL =>
 
                 if (s_axi_ctrl_wstrb(0) = '1' and s_axi_ctrl_wdata(0) = '1') then
-                  sRstCnt <= RESET_CYCLES;
+                  sSoftRst <= '1';
                 end if;
 
               when others =>
@@ -323,18 +321,16 @@ begin
   -- RESET CONTROLLER + CORE
   -------------------------------------------------------------------------------------------------------------
 
-  sSoftRst <= '1' when sRstCnt > 0 else
-              '0';
   sCoreRst <= (not aresetn) or sSoftRst;
 
   s_axis_pixel_tready <= sReadyMirror;
 
   u_openjls_axis : entity work.openjls_axis(rtl)
     generic map (
-      BITNESS          => BITNESS,
-      MAX_IMAGE_WIDTH  => MAX_IMAGE_WIDTH,
-      MAX_IMAGE_HEIGHT => MAX_IMAGE_HEIGHT,
-      OUT_WIDTH        => OUT_WIDTH
+      BITNESS             => BITNESS,
+      MAX_IMAGE_WIDTH     => MAX_IMAGE_WIDTH,
+      MAX_IMAGE_HEIGHT    => MAX_IMAGE_HEIGHT,
+      OUT_WIDTH           => OUT_WIDTH
     )
     port map (
       iClk                => aclk,

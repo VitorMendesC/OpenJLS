@@ -9,6 +9,7 @@ preferred_case = "lower"
 # wouldn't resolve from the sources).
 lib.files = [
     'Sources/*.vhd',
+    'Sources/Xilinx/*.vhd',
     'ThirdParty/open-logic/src/base/vhdl/*.vhd',
     'Verification/OSVVM/Modules/*.vhd',
     'Verification/OSVVM/Top/*.vhd',

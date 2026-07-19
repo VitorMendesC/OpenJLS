@@ -1,0 +1,71 @@
+----------------------------------------------------------------------------------
+-- Engineer:    Vitor Mendes Camilo
+--
+-- Module Name: A12_variables_update - Behavioral
+--
+-- Assumptions:
+--                 B_WIDTH  >=  ERROR_WIDTH
+--                 A_WIDTH  >=  ERROR_WIDTH
+--
+----------------------------------------------------------------------------------
+
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+  use work.openjls_pkg.all;
+
+entity a12_variables_update is
+  generic (
+    ERROR_WIDTH : natural := CO_ERROR_VALUE_WIDTH_STD;
+    A_WIDTH     : natural := CO_AQ_WIDTH_STD;
+    B_WIDTH     : natural := CO_BQ_WIDTH_STD;
+    N_WIDTH     : natural := CO_NQ_WIDTH_STD;
+    RESET       : natural := CO_RESET_STD
+  );
+  port (
+    iErrorVal   : in    signed (ERROR_WIDTH - 1 downto 0);
+    iAq         : in    unsigned (A_WIDTH - 1 downto 0);
+    iBq         : in    signed (B_WIDTH - 1 downto 0);
+    iNq         : in    unsigned (N_WIDTH - 1 downto 0);
+
+    oAq         : out   unsigned (A_WIDTH - 1 downto 0);
+    oBq         : out   signed (B_WIDTH - 1 downto 0);
+    oNq         : out   unsigned (N_WIDTH - 1 downto 0)
+  );
+end entity a12_variables_update;
+
+architecture rtl of a12_variables_update is
+
+  signal sDoRescale      : std_logic;
+  signal sErrorAbsExtend : unsigned(A_WIDTH - 1 downto 0);
+  signal sAqNew          : unsigned(A_WIDTH - 1 downto 0);
+  signal sBqNew          : signed (B_WIDTH - 1 downto 0);
+  signal sNqNew          : unsigned(N_WIDTH - 1 downto 0);
+  signal sARescale       : unsigned(A_WIDTH - 1 downto 0);
+  signal sBRescale       : signed (B_WIDTH - 1 downto 0);
+  signal sNRescale       : unsigned(N_WIDTH - 1 downto 0);
+
+begin
+
+  sDoRescale <= '1' when (iNq = to_unsigned(RESET, iNq'length)) else
+                '0';
+
+  sErrorAbsExtend <= resize(unsigned(abs(iErrorVal)), A_WIDTH);
+
+  sAqNew <= iAq + sErrorAbsExtend;
+  sBqNew <= iBq + resize(iErrorVal, B_WIDTH);
+  sNqNew <= iNq + 1;
+
+  -- Rescale: halve A & B; N sequencing: (N>>1) + 1 (per T.87)
+  sARescale <= shift_right(sAqNew, 1);
+  sBRescale <= shift_right(sBqNew, 1); -- arithmetic >> 1 => floor for negatives
+  sNRescale <= shift_right(iNq, 1) + 1;
+
+  oAq <= sARescale when sDoRescale = '1' else
+         sAqNew;
+  oBq <= sBRescale when sDoRescale = '1' else
+         sBqNew;
+  oNq <= sNRescale when sDoRescale = '1' else
+         sNqNew;
+
+end architecture rtl;
