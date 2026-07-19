@@ -181,6 +181,20 @@ foreach {name meta} $ips {
         ipx::associate_bus_interfaces -busif s_axi_ctrl -clock aclk $core
     }
 
+    # --- Logo ---------------------------------------------------------------
+    # Source of truth lives in the repo (Docs/Images); copy it into the IP
+    # root_dir so the IP-XACT file reference stays relative and the packaged
+    # core remains self-contained/portable.
+    set logo_src [file join $repo_dir Docs Images isentropic-icon-512.png]
+    set logo_rel [file join misc isentropic-icon-512.png]
+    file mkdir [file join $ip_repo $name misc]
+    file copy -force $logo_src [file join $ip_repo $name $logo_rel]
+    ipx::add_file_group -type utility {} $core
+    set logo_grp  [ipx::get_file_groups xilinx_utilityxitfiles -of_objects $core]
+    set logo_file [ipx::add_file $logo_rel $logo_grp]
+    set_property type image $logo_file
+    set_property type LOGO  $logo_file
+
     # --- Finalize -----------------------------------------------------------
     ipx::create_xgui_files $core
     ipx::update_checksums  $core

@@ -98,6 +98,20 @@
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
+      <spirit:view>
+        <spirit:name>xilinx_utilityxitfiles</spirit:name>
+        <spirit:displayName>Utility XIT/TTCL</spirit:displayName>
+        <spirit:envIdentifier>:vivado.xilinx.com:xit.util</spirit:envIdentifier>
+        <spirit:fileSetRef>
+          <spirit:localName>xilinx_utilityxitfiles_view_fileset</spirit:localName>
+        </spirit:fileSetRef>
+        <spirit:parameters>
+          <spirit:parameter>
+            <spirit:name>viewChecksum</spirit:name>
+            <spirit:value>e40e56f9</spirit:value>
+          </spirit:parameter>
+        </spirit:parameters>
+      </spirit:view>
     </spirit:views>
     <spirit:ports>
       <spirit:port>
@@ -677,6 +691,13 @@
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
+    <spirit:fileSet>
+      <spirit:name>xilinx_utilityxitfiles_view_fileset</spirit:name>
+      <spirit:file>
+        <spirit:name>misc/isentropic-icon-512.png</spirit:name>
+        <spirit:userFileType>LOGO</spirit:userFileType>
+      </spirit:file>
+    </spirit:fileSet>
   </spirit:fileSets>
   <spirit:description>JPEG-LS (ITU-T T.87) lossless image encoder, native interface: FIFO-style ready/valid handshakes plus sideband iImageWidth/iImageHeight ports sampled while iRst is high.</spirit:description>
   <spirit:parameters>
@@ -721,13 +742,13 @@
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:vendorDisplayName>Vitor Mendes Camilo</xilinx:vendorDisplayName>
       <xilinx:vendorURL>https://github.com/VitorMendesC/OpenJLS</xilinx:vendorURL>
-      <xilinx:coreRevision>26071823</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2026-07-19T02:35:46Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>26071912</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2026-07-19T15:50:01Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2025.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="84f763e9"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="0f5d7251"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="b9ba882e"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="c2a63f70"/>
       <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="b0b062b2"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="ed61eabb"/>
