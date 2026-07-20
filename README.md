@@ -153,6 +153,18 @@ The streaming ports use a plain **ready/valid handshake**; the *AXIS* column giv
 
 > Full signal timing, the reset/configuration sequence, latency figures, and a worked instantiation example live in the **datasheet** (`Docs/datasheet/`).
 
+### Xilinx IP cores
+
+For the Vivado flow the core ships the following pre-packaged IPs:
+
+| IP Catalog name | Interfaces |
+|---|---|
+| OpenJLS Encoder (Native) | Plain Ready/Valid |
+| OpenJLS Encoder (AXI4-Stream) | AXI-Stream for the data, native pins for control |
+| OpenJLS Encoder (AXI4-Stream + AXI4-Lite) | AXI-Stream for the data, AXI-Lite for control |
+
+To use, simply add [`Sources/Xilinx/ip_repo/`](Sources/Xilinx/ip_repo/) to the project's IP repositories and the three cores appear in the IP Catalog, ready to drop onto a block design.
+
 ---
 
 ## Performance & Resources

@@ -369,21 +369,41 @@ it in HDL. The dimension ports are fixed at 16 bits (rather than sized from the
 generics) because Vivado's block-design port-width evaluator only handles literal
 arithmetic in port expressions.
 
+\subsection{Xilinx IP cores}
+For the Vivado flow the core ships the following pre-packaged IPs
+
+\begin{table}[H]
+  \centering
+\begin{tabularx}{\textwidth}{@{}X X@{}}
+  \toprule
+  \textbf{IP Catalog name} & \textbf{Interfaces} \\
+  \midrule
+  OpenJLS Encoder (Native)                  & Plain Ready/Valid\\
+  OpenJLS Encoder (AXI4-Stream)             & AXI-Stream for the data, native pins for control \\
+  OpenJLS Encoder (AXI4-Stream + AXI4-Lite) & AXI-Stream for the data, AXI-Lite for control \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+To use simply add \texttt{Sources/Xilinx/ip\_repo/} to the project's IP repositories
+and the three cores appear in the
+IP Catalog, ready to drop onto a block design.
+
 %======================================================================
 \section{Conformance and verification}
 Verified by simulation with NVC using a layered, self-checking suite run at
 both RTL and post-synthesis (gate-level) stages:
 \begin{itemize}
-  \item \textbf{OSVVM} --- per-module tests against independent T.87-derived
+  \item \textbf{OSVVM} --- Per-module tests against independent T.87-derived
         reference models, plus top-level control-plane stress (reset injection,
         backpressure, back-to-back images, dimension fallback) with requirements
         tracking.
   \item \textbf{Coverage} --- OSVVM functional coverage with NVC structural code coverage (99\%+ statements).
-  \item \textbf{Golden model} --- byte-exact vs the independent CharLS C++
+  \item \textbf{Golden model} --- Byte-exact vs the independent CharLS C++
         encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
-  \item \textbf{Design contracts} --- embedded PSL assertions (ready/valid handshake protocol, internal handshakes) on every run.
-  \item \textbf{Post-synthesis} --- the stress test and a golden-model subset re-run on the synthesized netlist.
-  \item \textbf{Hardware-in-the-loop} --- the full 287-image corpus encoded end-to-end on a PYNQ-Z2 FPGA (depths 8--16) and byte-compared against CharLS on real silicon; zero mismatches. Produced by the \href{https://github.com/VitorMendesC/OpenJLS-Demos}{OpenJLS-Demos} EncodeOverEthernet project, a companion repository of end-to-end example designs that drive the core on hardware.
+  \item \textbf{Design contracts} --- Embedded PSL assertions (ready/valid handshake protocol, internal handshakes) on every run.
+  \item \textbf{Post-synthesis} --- The stress test and a golden-model subset re-run on the synthesized netlist.
+  \item \textbf{Hardware-in-the-loop} --- The full 287-image corpus encoded end-to-end on a PYNQ-Z2 FPGA and byte-compared against CharLS on real silicon. Produced in the demos repository \href{https://github.com/VitorMendesC/OpenJLS-Demos}{OpenJLS-Demos} by the EncodeOverEthernet project.
 \end{itemize}
 
 \noindent Table~\ref{tab:regression} is the latest regression snapshot (live,
