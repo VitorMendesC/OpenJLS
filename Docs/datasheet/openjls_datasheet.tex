@@ -383,6 +383,7 @@ both RTL and post-synthesis (gate-level) stages:
         encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
   \item \textbf{Design contracts} --- embedded PSL assertions (ready/valid handshake protocol, internal handshakes) on every run.
   \item \textbf{Post-synthesis} --- the stress test and a golden-model subset re-run on the synthesized netlist.
+  \item \textbf{Hardware-in-the-loop} --- the full 287-image corpus encoded end-to-end on a PYNQ-Z2 FPGA (depths 8--16) and byte-compared against CharLS on real silicon; zero mismatches. Produced by the \href{https://github.com/VitorMendesC/OpenJLS-Demos}{OpenJLS-Demos} EncodeOverEthernet project, a companion repository of end-to-end example designs that drive the core on hardware.
 \end{itemize}
 
 \noindent Table~\ref{tab:regression} is the latest regression snapshot (live,
@@ -401,6 +402,7 @@ per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
   Golden model            & PASS & 100\%  & 287/287 images byte-exact vs CharLS \\
   Post-synth OSVVM        & PASS & 100\%  & Control-plane stress on the gate-level netlist \\
   Post-synth golden model & PASS & 100\%  & 156/156 images byte-exact vs CharLS \\
+  Hardware-in-the-loop    & PASS & 100\%  & 287/287 images byte-exact vs CharLS on PYNQ-Z2 silicon \\
   \bottomrule
 \end{tabularx}
 \end{table}

@@ -19,8 +19,8 @@ The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory 
 - **[Datasheet (PDF)](Docs/datasheet/openjls_datasheet.pdf)**
 - **[Verification report](https://vitormendesc.github.io/OpenJLS/)**
 - **[Interface & integration](#interface)**
-- **[Roadmap](Docs/roadmap.md)**
 - **[Licensing](#licensing)**
+- **[Demos](https://github.com/VitorMendesC/OpenJLS-Demos)**
 
 ---
 
@@ -53,12 +53,14 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 | Golden model | PASS | 100% | 287/287 images byte-exact vs CharLS |
 | Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
 | Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |
+| Hardware-in-the-loop | PASS | 100% | 287/287 images byte-exact vs CharLS on PYNQ-Z2 silicon |
 
 - **OSVVM** — 28 module testbenches check each module against an independent behavioral reference derived from ITU-T T.87; a top-level testbench stresses the control plane (reset injection, backpressure, back-to-back images, dimension fallback) with requirements tracking.
 - **Coverage** — OSVVM functional coverage plus NVC structural code coverage (99%+ statements).
 - **Golden model** — Output bitstream compared byte-exact against [CharLS](https://github.com/team-charls/charls), an independent C++ reference encoder, plus the official ISO/IEC 14495-1 reference vectors.
 - **Design contracts** — Embedded PSL assertions (ready/valid and internal handshakes) checked every run.
 - **Post-synthesis** — The top-level stress test and a golden-model subset re-run on the synthesized gate-level netlist, confirming synthesis preserved behavior.
+- **Hardware-in-the-loop** — The full 287-image corpus streamed to a PYNQ-Z2, encoded end-to-end in the FPGA across depths 8–16 (one bitstream per depth), and byte-compared against CharLS on real silicon — zero mismatches. Reproducible from a clean clone via the [EncodeOverEthernet demo](https://github.com/VitorMendesC/OpenJLS-Demos).
 
 **Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
 
@@ -74,6 +76,18 @@ The real datasets give natural image statistics from 256×256 up to **39 megapix
 - **Boundary geometries** — smallest legal image (4×1), tall single-column images, and single rows up to 65535×1.
 - **Predictor-adversarial content** — checkerboard, stripes, and sparse spikes that defeat the MED predictor every pixel, plus incompressible noise.
 - **Tiny-image fuzz batch** — many small randomized images stressing start/end-of-image edges more densely than full-size images can.
+
+---
+
+## Demos
+
+End-to-end example projects live in a companion repository,
+[**OpenJLS-Demos**](https://github.com/VitorMendesC/OpenJLS-Demos), each pinning
+the core as a submodule at its verified commit.
+
+- **[EncodeOverEthernet](https://github.com/VitorMendesC/OpenJLS-Demos/tree/main/EncodeOverEthernet)** — streams raw images to a PYNQ-Z2 over Ethernet, encodes them 100% in the FPGA, and streams the `.jls` files back. Its hardware-in-the-loop sweep is what produces the [HIL verification result](#verification) above.
+
+More demos (additional boards and integrations) are planned.
 
 ---
 
