@@ -48,7 +48,7 @@
 \fancyhf{}
 \lhead{\textbf{OpenJLS} — JPEG-LS Encoder IP}
 \rhead{Datasheet}
-\lfoot{\small v1.0}
+\lfoot{\small v1.1}
 \rfoot{\small \thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
@@ -71,7 +71,8 @@ It encodes single-component (grayscale) images at one pixel per clock with no
 external memory, streaming a standards-compliant JPEG-LS bitstream out over
 a standard ready/valid streaming handshake. Source code, license and the full
 verification suite are public at
-\url{https://github.com/VitorMendesC/OpenJLS}.
+\url{https://github.com/VitorMendesC/OpenJLS}. There's also a companion public
+repository with demo projects for OpenJLS at \url{https://github.com/VitorMendesC/OpenJLS-Demos}.
 
 \begin{table}[H]
   \centering
@@ -106,6 +107,7 @@ verification suite are public at
   \textbf{Version} & \textbf{Date} & \textbf{Notes} \\
   \midrule
   1.0 & 2026-06 & Initial release. \\
+  1.1 & 2026-07 & Packaged IPs for Vivado. \\
   \bottomrule
 \end{tabular}
 \end{table}
@@ -457,8 +459,7 @@ both RTL and post-synthesis (gate-level) stages:
   \item \textbf{Hardware-in-the-loop} --- The full 287-image corpus encoded end-to-end on a PYNQ-Z2 FPGA and byte-compared against CharLS on real silicon. Produced in the demos repository \href{https://github.com/VitorMendesC/OpenJLS-Demos}{OpenJLS-Demos} by the EncodeOverEthernet project.
 \end{itemize}
 
-\noindent Table~\ref{tab:regression} is the latest regression snapshot (live,
-per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
+\noindent Table~\ref{tab:regression} is the latest regression snapshot.
 
 \begin{table}[H]
   \centering
@@ -468,8 +469,8 @@ per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
   \toprule
   \textbf{Suite} & \textbf{Status} & \textbf{Test/Cov} & \textbf{Summary} \\
   \midrule
-  OSVVM suite             & PASS & 100\%  & 44 tests, 139\,393 affirmations (module + top + AXI wrappers) \\
   NVC code coverage       & info & 99.8\% & Per-DUT-file statement breakdown \\
+  OSVVM suite             & PASS & 100\%  & 44 tests, 139\,393 affirmations (module + top + AXI wrappers) \\
   Golden model            & PASS & 100\%  & 287/287 images byte-exact vs CharLS \\
   Post-synth OSVVM        & PASS & 100\%  & Control-plane stress on the gate-level netlist \\
   Post-synth golden model & PASS & 100\%  & 156/156 images byte-exact vs CharLS \\
