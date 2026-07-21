@@ -33,7 +33,7 @@ set cores {
 
 set ip_insts {}
 foreach {name extra} $cores {
-    set vlnv vitormendescamilo:openjls:${name}:1.0
+    set vlnv vitormendescamilo:openjls:${name}:1.1
     puts "==== create_ip $vlnv ===="
     create_ip -vlnv $vlnv -module_name smoke_$name
     # create_ip may return the .xci file object; resolve the IP object so

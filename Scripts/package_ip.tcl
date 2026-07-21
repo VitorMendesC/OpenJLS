@@ -4,7 +4,7 @@
 # from scratch on every run and committed — re-run this script after RTL or
 # interface changes and commit the refreshed Sources/Xilinx/ip_repo/.
 #
-# Cores (VLNV vitormendescamilo:openjls:<name>:1.0):
+# Cores (VLNV vitormendescamilo:openjls:<name>:1.1):
 #   openjls_top       — native interface (FIFO-style handshakes + sideband dims)
 #   openjls_axis      — AXI4-Stream wrapper, sideband iImageWidth/iImageHeight
 #   openjls_axis_regs — AXI4-Stream + AXI4-Lite control registers
