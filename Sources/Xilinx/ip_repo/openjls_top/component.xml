@@ -3,7 +3,7 @@
   <spirit:vendor>vitormendescamilo</spirit:vendor>
   <spirit:library>openjls</spirit:library>
   <spirit:name>openjls_top</spirit:name>
-  <spirit:version>1.0</spirit:version>
+  <spirit:version>1.1</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
       <spirit:name>iClk</spirit:name>
@@ -685,7 +685,7 @@
     <spirit:fileSet>
       <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/openjls_top_v1_0.tcl</spirit:name>
+        <spirit:name>xgui/openjls_top_v1_1.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
         <spirit:userFileType>CHECKSUM_2e067d26</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
@@ -742,8 +742,8 @@
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:vendorDisplayName>Vitor Mendes Camilo</xilinx:vendorDisplayName>
       <xilinx:vendorURL>https://github.com/VitorMendesC/OpenJLS</xilinx:vendorURL>
-      <xilinx:coreRevision>26071912</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2026-07-19T15:55:09Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>26072111</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2026-07-21T14:30:38Z</xilinx:coreCreationDateTime>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2025.2</xilinx:xilinxVersion>
