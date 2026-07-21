@@ -43,5 +43,12 @@ source ../../ThirdParty/osvvm-scripts/StartNVC.tcl
 SetVHDLVersion 2008
 set ::osvvm::FunctionalCoverageIntegratedInSimulator "default"
 build ../../ThirdParty/osvvm/osvvm.pro
+# AXI4 verification components (osvvm_common -> osvvm_axi4) for the Xilinx
+# wrapper TBs. Built via each subtree's own build.pro in the maintained order
+# (common shared packages, then the Axi4Lite and AxiStream models).
+build ../../ThirdParty/osvvm-common/build.pro
+build ../../ThirdParty/osvvm-axi4/common/build.pro
+build ../../ThirdParty/osvvm-axi4/Axi4Lite/build.pro
+build ../../ThirdParty/osvvm-axi4/AxiStream/build.pro
 build OpenJls.pro
 EOF

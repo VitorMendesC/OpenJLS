@@ -395,9 +395,11 @@ Verified by simulation with NVC using a layered, self-checking suite run at
 both RTL and post-synthesis (gate-level) stages:
 \begin{itemize}
   \item \textbf{OSVVM} --- Per-module tests against independent T.87-derived
-        reference models, plus top-level control-plane stress (reset injection,
-        backpressure, back-to-back images, dimension fallback) with requirements
-        tracking.
+        reference models, top-level control-plane stress (reset injection,
+        backpressure, back-to-back images, dimension fallback), and AXI wrapper
+        tests (byte-exact AXI4-Stream pass-through at 8- and 12-bit, AXI4-Lite
+        register map, live reconfiguration, mid-image abort), all with
+        requirements tracking.
   \item \textbf{Coverage} --- OSVVM functional coverage with NVC structural code coverage (99\%+ statements).
   \item \textbf{Golden model} --- Byte-exact vs the independent CharLS C++
         encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
@@ -417,7 +419,7 @@ per-test reports at \url{https://vitormendesc.github.io/OpenJLS/}).
   \toprule
   \textbf{Suite} & \textbf{Status} & \textbf{Test/Cov} & \textbf{Summary} \\
   \midrule
-  OSVVM suite             & PASS & 100\%  & 38 tests, 138\,010 affirmations (module + top control-plane) \\
+  OSVVM suite             & PASS & 100\%  & 44 tests, 139\,393 affirmations (module + top + AXI wrappers) \\
   NVC code coverage       & info & 99.8\% & Per-DUT-file statement breakdown \\
   Golden model            & PASS & 100\%  & 287/287 images byte-exact vs CharLS \\
   Post-synth OSVVM        & PASS & 100\%  & Control-plane stress on the gate-level netlist \\

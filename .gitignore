@@ -16,6 +16,8 @@ Verification/OSVVM/VHDL_LIBS/
 Verification/OSVVM/osvvm/
 Verification/OSVVM/OSVVM_OpenJls/
 Verification/OSVVM/OsvvmTemp_NVC/
+# per-build report trees for the vendored AXI4 VC libraries
+Verification/OSVVM/*_build/
 # code-coverage flow outputs (build_coverage.sh: per-test covdb + HTML)
 Verification/OSVVM/NVC_CodeCoverage/
 Verification/OSVVM/*.html
@@ -26,6 +28,8 @@ Verification/OSVVM/*.yml
 # IP must build without running the fetch script.)
 ThirdParty/osvvm/
 ThirdParty/osvvm-scripts/
+ThirdParty/osvvm-common/
+ThirdParty/osvvm-axi4/
 ThirdParty/tcllib/
 ThirdParty/charls/
 

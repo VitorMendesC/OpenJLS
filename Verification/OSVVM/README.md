@@ -409,6 +409,10 @@ counts described above.
 | `OJLS.RIForward` | Run-interruption context forwarding (two RI updates to the same context one stage apart) emits the CharLS golden byte-for-byte | `tb_openjls_top_osvvm` | 40 |
 | `OJLS.NoStallCompress` | With downstream ready, `oReady` never drops during a feed: the byte_stuffer buffer must not fill while compressing | `tb_openjls_top_osvvm` | 5000 |
 | `OJLS.NoStallEOL` | …including across every line and image boundary | `tb_openjls_top_osvvm` | 100 |
+| `OJLS.AxiStreamTransparent` | AXI4-Stream wrapper output is byte-identical to the golden (H.3 at BITNESS 8, CharLS-minted at BITNESS 12 with garbage on the unused TDATA bits) under clean, backpressured, input-stalled and mid-image-TLAST handshakes | `tb_openjls_axis_osvvm` | 285 |
+| `OJLS.AxiLiteRegMap` | AXI4-Lite register file: RO identity/config read exact, WIDTH/HEIGHT reset defaults + read-write + clamp, partial-WSTRB merge, RO-write dropped, WO/unmapped read zero, STATUS TREADY mirror | `tb_openjls_axis_regs_osvvm` | 16 |
+| `OJLS.AxiApplyReconfig` | Register-programmed dimensions + CTRL.APPLY reconfigure the core and encode the H.3 golden byte-exact | `tb_openjls_axis_regs_osvvm` | 57 |
+| `OJLS.AxiAbortReencode` | CTRL.APPLY mid-image aborts the in-flight encode (whole-beat residue only) and the next image comes out byte-exact | `tb_openjls_axis_regs_osvvm` | 57 |
 
 The infrastructure TBs (`tb_jls_framer`, `tb_byte_stuffer`, `tb_context_ram`,
 `tb_line_buffer`) carry no requirement IDs: they verify implementation detail,

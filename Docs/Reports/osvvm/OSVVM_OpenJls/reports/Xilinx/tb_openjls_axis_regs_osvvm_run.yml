@@ -1,0 +1,24 @@
+Version: "0.1"
+TestCaseName: "tb_openjls_axis_regs_osvvm"
+TestCaseFile:  "../../../Modules/tb_openjls_axis_regs_osvvm.vhd"
+TestSuiteName: "Xilinx"
+BuildName: "OSVVM_OpenJls"
+Generics:           null
+ReportsTestSuiteDirectory:  "reports/Xilinx"
+RequirementsYamlFile:  "reports/Xilinx/tb_openjls_axis_regs_osvvm_req.yml"
+AlertYamlFile:  "reports/Xilinx/tb_openjls_axis_regs_osvvm_alerts.yml"
+CovYamlFile:  "reports/Xilinx/tb_openjls_axis_regs_osvvm_cov.yml"
+ScoreboardDict:
+  slv: "reports/Xilinx/tb_openjls_axis_regs_osvvm_sb_slv.yml"
+TranscriptFiles: ""
+TestCaseFileName: "tb_openjls_axis_regs_osvvm"
+GenericNames: ""
+OsvvmSettingsInfo:
+  ReportsSubdirectory:  "reports"
+  SimulationLogFile: "logs/OSVVM_OpenJls.log"
+  SimulationHtmlLogFile: "logs/OSVVM_OpenJls_log.html"
+  RequirementsSubdirectory: ""
+  CoverageSubdirectory:    "CodeCoverage/OSVVM_OpenJls_code_cov.html"
+  Report2CssFiles:
+    - "reports/CssOsvvmStyle.css"
+  Report2PngFile:  "reports/OsvvmLogo.png"

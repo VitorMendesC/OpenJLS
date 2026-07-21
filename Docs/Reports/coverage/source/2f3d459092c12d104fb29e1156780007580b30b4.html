@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NVC code coverage report</title>
+  <style>
+:root {
+    --table-row-color: #e8e8e8;
+    --margin-left: 20%;
+}
+
+body {
+    background-color: #f0f0e0ff;
+}
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    font-size: 14pt;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    word-wrap: break-word;
+}
+
+h3 {
+    word-wrap: break-word;
+    margin-bottom: 0px;
+}
+
+hr {
+    border:none;
+    height: 2px;
+    background: black;
+}
+
+footer {
+    display: table;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+nav {
+    float: left;
+    background-color: var(--table-row-color);
+    width: 17%;
+    overflow: auto;
+    padding: 10px;
+    margin-top: -2px;
+    border: 2px solid black;
+}
+nav details details {
+    margin-left: 1rem;
+}
+nav details > a {
+    padding-left: 1.9rem;
+    display: block;
+}
+nav summary {
+    display: inline-flex;
+    cursor: pointer;
+    align-items: center;
+}
+nav summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    margin-right: 0.4em;
+}
+nav details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+table {
+    table-layout: fixed;
+}
+
+table, th, td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    word-wrap: break-word;
+}
+
+.tabcontent {
+    display: none;
+    padding: 0px 0px;
+    border: 2px solid #ccc;
+    border-top: none;
+    word-wrap: break-word;
+}
+
+.tab {
+    overflow: hidden;
+    border: 2px solid;
+    margin-left: var(--margin-left);
+    margin-top: 10px;
+}
+
+.cbg:hover {
+    background-color: #dddddd;
+}
+.cbg {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+
+.cbt {
+    margin-top: 8px;
+}
+.cbt th {
+    background-color: #bbbbbb;
+    text-align: center;
+}
+.cbt td, .cbt th {
+    width: 50px;
+    text-align: center;
+}
+.cbt td + td, .cbt th + th {
+    width: 150px;
+}
+.cbt td + td + td, .cbt th + th + th {
+    width: 150px;
+}
+.cbt td + td + td + td, .cbt th + th + th + th {
+    width: 150px;
+}
+
+.percent100 {
+    background-color: #00cc00;
+}
+.percent90 {
+    background-color: #e6e600;
+}
+.percent80 {
+    background-color: #ff9900;
+}
+.percent0 {
+    background-color: #ff0000;
+}
+.percentna {
+    background-color: #cccccc;
+}
+
+.nav-sel {
+    font-weight: bold;
+}
+  </style>
+</head>
+<body style="font-family: verdana">
+
+<header><h1 style="text-align: center;">NVC code coverage report
+</h1></header>
+
+<h2 style="text-align: left;">
+   File:&nbsp; ../../ThirdParty/osvvm-axi4/AxiStream/src/AxiStreamReceiver.vhd
+</h2><pre><code>     0: &nbsp; --&nbsp;
+     1: &nbsp; --&nbsp;&nbsp;File&nbsp;Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AxiStreamReceiver.vhd&nbsp;
+     2: &nbsp; --&nbsp;&nbsp;Design&nbsp;Unit&nbsp;Name:&nbsp;&nbsp;AxiStreamReceiver&nbsp;
+     3: &nbsp; --&nbsp;&nbsp;Revision:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OSVVM&nbsp;MODELS&nbsp;STANDARD&nbsp;VERSION&nbsp;
+     4: &nbsp; --&nbsp;
+     5: &nbsp; --&nbsp;&nbsp;Maintainer:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Jim&nbsp;Lewis&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;email:&nbsp;&nbsp;jim@synthworks.com&nbsp;
+     6: &nbsp; --&nbsp;&nbsp;Contributor(s):&nbsp;
+     7: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Jim&nbsp;Lewis&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;jim@synthworks.com&nbsp;
+     8: &nbsp; --&nbsp;
+     9: &nbsp; --&nbsp;
+    10: &nbsp; --&nbsp;&nbsp;Description:&nbsp;
+    11: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AXI&nbsp;Stream&nbsp;Receiver&nbsp;Verification&nbsp;Component&nbsp;
+    12: &nbsp; --&nbsp;
+    13: &nbsp; --&nbsp;
+    14: &nbsp; --&nbsp;&nbsp;Developed&nbsp;by:&nbsp;
+    15: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SynthWorks&nbsp;Design&nbsp;Inc.&nbsp;
+    16: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VHDL&nbsp;Training&nbsp;Classes&nbsp;
+    17: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;http://www.SynthWorks.com&nbsp;
+    18: &nbsp; --&nbsp;
+    19: &nbsp; --&nbsp;&nbsp;Revision&nbsp;History:&nbsp;
+    20: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Version&nbsp;&nbsp;&nbsp;&nbsp;Description&nbsp;
+    21: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;07/2024&nbsp;&nbsp;&nbsp;2024.07&nbsp;&nbsp;&nbsp;&nbsp;Added&nbsp;OsvvmVcInit&nbsp;barrier&nbsp;before&nbsp;starting&nbsp;to&nbsp;receive.&nbsp;
+    22: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;03/2024&nbsp;&nbsp;&nbsp;2024.03&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;SafeResize&nbsp;to&nbsp;use&nbsp;ModelID&nbsp;
+    23: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;09/2023&nbsp;&nbsp;&nbsp;2023.09&nbsp;&nbsp;&nbsp;&nbsp;Unimplemented&nbsp;transactions&nbsp;handled&nbsp;with&nbsp;ClassifyUnimplementedReceiverOperation&nbsp;
+    24: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;05/2023&nbsp;&nbsp;&nbsp;2023.05&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;methods&nbsp;for&nbsp;Randomized&nbsp;delays&nbsp;&nbsp;
+    25: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;04/2023&nbsp;&nbsp;&nbsp;2023.04&nbsp;&nbsp;&nbsp;&nbsp;Update&nbsp;delays&nbsp;on&nbsp;TReady&nbsp;to&nbsp;be&nbsp;randomized&nbsp;
+    26: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;10/2022&nbsp;&nbsp;&nbsp;2022.10&nbsp;&nbsp;&nbsp;&nbsp;Changed&nbsp;enum&nbsp;value&nbsp;PRIVATE&nbsp;to&nbsp;PRIVATE_NAME&nbsp;due&nbsp;to&nbsp;VHDL-2019&nbsp;keyword&nbsp;conflict.&nbsp;&nbsp;&nbsp;&nbsp;
+    27: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;05/2022&nbsp;&nbsp;&nbsp;2022.05&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;FIFOs&nbsp;so&nbsp;they&nbsp;are&nbsp;Search&nbsp;=&gt;&nbsp;PRIVATE&nbsp;
+    28: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;03/2022&nbsp;&nbsp;&nbsp;2022.03&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;calls&nbsp;to&nbsp;NewID&nbsp;for&nbsp;AlertLogID&nbsp;and&nbsp;FIFOs&nbsp;
+    29: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;02/2022&nbsp;&nbsp;&nbsp;2022.02&nbsp;&nbsp;&nbsp;&nbsp;WaitForGet,&nbsp;don't&nbsp;send&nbsp;TReady&nbsp;until&nbsp;have&nbsp;a&nbsp;Get&nbsp;transaction&nbsp;
+    30: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Replaced&nbsp;to_hstring&nbsp;to&nbsp;to_hxstring&nbsp;
+    31: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;01/2022&nbsp;&nbsp;&nbsp;2022.01&nbsp;&nbsp;&nbsp;&nbsp;Moved&nbsp;MODEL_INSTANCE_NAME&nbsp;and&nbsp;MODEL_NAME&nbsp;to&nbsp;entity&nbsp;declarative&nbsp;region&nbsp;
+    32: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Added&nbsp;GotBurst&nbsp;transaction&nbsp;Y&nbsp;check&nbsp;for&nbsp;BurstLen&nbsp;vs&nbsp;Expected&nbsp;BurstLen&nbsp;in&nbsp;CheckBurst&nbsp;
+    33: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;07/2021&nbsp;&nbsp;&nbsp;2021.07&nbsp;&nbsp;&nbsp;&nbsp;All&nbsp;FIFOs&nbsp;and&nbsp;Scoreboards&nbsp;now&nbsp;use&nbsp;the&nbsp;New&nbsp;Scoreboard/FIFO&nbsp;capability&nbsp;
+    34: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;06/2021&nbsp;&nbsp;&nbsp;2021.06&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;Burst&nbsp;FIFOs.&nbsp;
+    35: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;02/2021&nbsp;&nbsp;&nbsp;2021.02&nbsp;&nbsp;&nbsp;&nbsp;Added&nbsp;MultiDriver&nbsp;Detect.&nbsp;&nbsp;Updated&nbsp;Generics.&nbsp;
+    36: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;10/2020&nbsp;&nbsp;&nbsp;2020.10&nbsp;&nbsp;&nbsp;&nbsp;Added&nbsp;Bursting&nbsp;per&nbsp;updates&nbsp;to&nbsp;Model&nbsp;Independent&nbsp;Transactions&nbsp;
+    37: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;07/2020&nbsp;&nbsp;&nbsp;2020.07&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;for&nbsp;Streaming&nbsp;Model&nbsp;Independent&nbsp;Transactions&nbsp;
+    38: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;01/2020&nbsp;&nbsp;&nbsp;2020.01&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;license&nbsp;notice&nbsp;
+    39: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;05/2019&nbsp;&nbsp;&nbsp;2019.05&nbsp;&nbsp;&nbsp;&nbsp;Removed&nbsp;generics&nbsp;for&nbsp;DEFAULT_ID,&nbsp;DEFAULT_DEST,&nbsp;DEFAULT_USER&nbsp;
+    40: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;05/2018&nbsp;&nbsp;&nbsp;2018.05&nbsp;&nbsp;&nbsp;&nbsp;First&nbsp;Release&nbsp;
+    41: &nbsp; --&nbsp;
+    42: &nbsp; --&nbsp;
+    43: &nbsp; --&nbsp;&nbsp;This&nbsp;file&nbsp;is&nbsp;part&nbsp;of&nbsp;OSVVM.&nbsp;
+    44: &nbsp; --&nbsp;
+    45: &nbsp; --&nbsp;&nbsp;Copyright&nbsp;(c)&nbsp;2018&nbsp;-&nbsp;2024&nbsp;by&nbsp;SynthWorks&nbsp;Design&nbsp;Inc.&nbsp;
+    46: &nbsp; --&nbsp;
+    47: &nbsp; --&nbsp;&nbsp;Licensed&nbsp;under&nbsp;the&nbsp;Apache&nbsp;License,&nbsp;Version&nbsp;2.0&nbsp;(the&nbsp;"License");&nbsp;
+    48: &nbsp; --&nbsp;&nbsp;you&nbsp;may&nbsp;not&nbsp;use&nbsp;this&nbsp;file&nbsp;except&nbsp;in&nbsp;compliance&nbsp;with&nbsp;the&nbsp;License.&nbsp;
+    49: &nbsp; --&nbsp;&nbsp;You&nbsp;may&nbsp;obtain&nbsp;a&nbsp;copy&nbsp;of&nbsp;the&nbsp;License&nbsp;at&nbsp;
+    50: &nbsp; --&nbsp;
+    51: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;https://www.apache.org/licenses/LICENSE-2.0&nbsp;
+    52: &nbsp; --&nbsp;
+    53: &nbsp; --&nbsp;&nbsp;Unless&nbsp;required&nbsp;by&nbsp;applicable&nbsp;law&nbsp;or&nbsp;agreed&nbsp;to&nbsp;in&nbsp;writing,&nbsp;software&nbsp;
+    54: &nbsp; --&nbsp;&nbsp;distributed&nbsp;under&nbsp;the&nbsp;License&nbsp;is&nbsp;distributed&nbsp;on&nbsp;an&nbsp;"AS&nbsp;IS"&nbsp;BASIS,&nbsp;
+    55: &nbsp; --&nbsp;&nbsp;WITHOUT&nbsp;WARRANTIES&nbsp;OR&nbsp;CONDITIONS&nbsp;OF&nbsp;ANY&nbsp;KIND,&nbsp;either&nbsp;express&nbsp;or&nbsp;implied.&nbsp;
+    56: &nbsp; --&nbsp;&nbsp;See&nbsp;the&nbsp;License&nbsp;for&nbsp;the&nbsp;specific&nbsp;language&nbsp;governing&nbsp;permissions&nbsp;and&nbsp;
+    57: &nbsp; --&nbsp;&nbsp;limitations&nbsp;under&nbsp;the&nbsp;License.&nbsp;
+    58: &nbsp; --&nbsp;
+    59: &nbsp; library&nbsp;ieee&nbsp;;&nbsp;
+    60: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.std_logic_1164.all&nbsp;;&nbsp;
+    61: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std.all&nbsp;;&nbsp;
+    62: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.numeric_std_unsigned.all&nbsp;;&nbsp;
+    63: &nbsp; &nbsp;&nbsp;use&nbsp;ieee.math_real.all&nbsp;;&nbsp;
+    64: &nbsp; &nbsp;
+    65: &nbsp; library&nbsp;osvvm&nbsp;;&nbsp;
+    66: &nbsp; &nbsp;&nbsp;context&nbsp;osvvm.OsvvmContext&nbsp;;&nbsp;
+    67: &nbsp; &nbsp;&nbsp;use&nbsp;osvvm.ScoreboardPkg_slv.all&nbsp;;&nbsp;
+    68: &nbsp; &nbsp;
+    69: &nbsp; library&nbsp;osvvm_common&nbsp;;&nbsp;
+    70: &nbsp; &nbsp;&nbsp;context&nbsp;osvvm_common.OsvvmCommonContext&nbsp;;&nbsp;
+    71: &nbsp; &nbsp;
+    72: &nbsp; &nbsp;&nbsp;use&nbsp;work.AxiStreamOptionsPkg.all&nbsp;;&nbsp;
+    73: &nbsp; &nbsp;&nbsp;use&nbsp;work.Axi4CommonPkg.all&nbsp;;&nbsp;
+    74: &nbsp; &nbsp;&nbsp;use&nbsp;work.AxiStreamTbPkg.all&nbsp;;&nbsp;
+    75: &nbsp; &nbsp;
+    76: &nbsp; entity&nbsp;AxiStreamReceiver&nbsp;is&nbsp;
+    77: &nbsp; &nbsp;&nbsp;generic&nbsp;(&nbsp;
+    78: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;MODEL_ID_NAME&nbsp;&nbsp;:&nbsp;string&nbsp;:=""&nbsp;;&nbsp;
+    79: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;INIT_ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector&nbsp;:=&nbsp;""&nbsp;;&nbsp;
+    80: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;INIT_DEST&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector&nbsp;:=&nbsp;""&nbsp;;&nbsp;
+    81: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;INIT_USER&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector&nbsp;:=&nbsp;""&nbsp;;&nbsp;
+    82: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;INIT_LAST&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+    83: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;tperiod_Clk&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;time&nbsp;:=&nbsp;10&nbsp;ns&nbsp;;&nbsp;
+    84: &nbsp; &nbsp;
+    85: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;DEFAULT_DELAY&nbsp;&nbsp;:&nbsp;time&nbsp;:=&nbsp;1&nbsp;ns&nbsp;;&nbsp;
+    86: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;DEFAULT_DELAY&nbsp;&nbsp;:&nbsp;time&nbsp;:=&nbsp;maximum(tperiod_Clk/10,&nbsp;std.env.resolution_limit);&nbsp;
+    87: &nbsp; &nbsp;
+    88: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;tpd_Clk_TReady&nbsp;:&nbsp;time&nbsp;:=&nbsp;DEFAULT_DELAY&nbsp;
+    89: &nbsp; &nbsp;&nbsp;)&nbsp;;&nbsp;
+    90: &nbsp; &nbsp;&nbsp;port&nbsp;(&nbsp;
+    91: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Globals&nbsp;
+    92: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic&nbsp;;&nbsp;
+    93: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;nReset&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic&nbsp;;&nbsp;
+    94: &nbsp; &nbsp;
+    95: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;AXI&nbsp;Receiver&nbsp;Functional&nbsp;Interface&nbsp;
+    96: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TValid&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic&nbsp;;&nbsp;
+    97: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TReady&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;out&nbsp;std_logic&nbsp;;&nbsp;
+    98: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic_vector&nbsp;;&nbsp;
+    99: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TDest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic_vector&nbsp;;&nbsp;
+   100: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TUser&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic_vector&nbsp;;&nbsp;
+   101: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TData&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic_vector&nbsp;;&nbsp;
+   102: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TStrb&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic_vector&nbsp;;&nbsp;
+   103: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TKeep&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic_vector&nbsp;;&nbsp;
+   104: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TLast&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;in&nbsp;&nbsp;std_logic&nbsp;;&nbsp;
+   105: &nbsp; &nbsp;
+   106: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Testbench&nbsp;Transaction&nbsp;Interface&nbsp;
+   107: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TransRec&nbsp;&nbsp;:&nbsp;inout&nbsp;StreamRecType&nbsp;
+   108: &nbsp; &nbsp;&nbsp;)&nbsp;;&nbsp;
+   109: &nbsp; &nbsp;
+   110: &nbsp; &nbsp;&nbsp;--&nbsp;Derive&nbsp;AXI&nbsp;interface&nbsp;properties&nbsp;from&nbsp;interface&nbsp;signals&nbsp;
+   111: &nbsp; &nbsp;&nbsp;constant&nbsp;AXI_STREAM_DATA_WIDTH&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;TData'length&nbsp;;&nbsp;
+   112: &nbsp; &nbsp;
+   113: &nbsp; &nbsp;&nbsp;--&nbsp;Use&nbsp;MODEL_ID_NAME&nbsp;Generic&nbsp;if&nbsp;set,&nbsp;otherwise,&nbsp;
+   114: &nbsp; &nbsp;&nbsp;--&nbsp;use&nbsp;model&nbsp;instance&nbsp;label&nbsp;(preferred&nbsp;if&nbsp;set&nbsp;as&nbsp;entityname_1)&nbsp;
+   115: &nbsp; &nbsp;&nbsp;constant&nbsp;MODEL_INSTANCE_NAME&nbsp;:&nbsp;string&nbsp;:=&nbsp;
+   116: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ifelse(MODEL_ID_NAME'length&nbsp;&gt;&nbsp;0,&nbsp;MODEL_ID_NAME,&nbsp;
+   117: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to_lower(PathTail(AxiStreamReceiver'PATH_NAME)))&nbsp;;&nbsp;
+   118: &nbsp; &nbsp;
+   119: &nbsp; end&nbsp;entity&nbsp;AxiStreamReceiver&nbsp;;&nbsp;
+   120: &nbsp; architecture&nbsp;behavioral&nbsp;of&nbsp;AxiStreamReceiver&nbsp;is&nbsp;
+   121: &nbsp; &nbsp;
+   122: &nbsp; &nbsp;&nbsp;signal&nbsp;ModelID,&nbsp;ProtocolID,&nbsp;DataCheckID,&nbsp;BusFailedID,&nbsp;BurstFifoID&nbsp;:&nbsp;AlertLogIDType&nbsp;;&nbsp;
+   123: &nbsp; &nbsp;&nbsp;signal&nbsp;BurstCov&nbsp;:&nbsp;DelayCoverageIDType&nbsp;;&nbsp;
+   124: &nbsp; &nbsp;&nbsp;&nbsp;
+   125: &nbsp; &nbsp;&nbsp;signal&nbsp;UseCoverageDelays&nbsp;:&nbsp;Boolean&nbsp;:=&nbsp;FALSE&nbsp;;&nbsp;
+   126: &nbsp; &nbsp;
+   127: &nbsp; &nbsp;&nbsp;constant&nbsp;ID_LEN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;TID'length&nbsp;;&nbsp;
+   128: &nbsp; &nbsp;&nbsp;constant&nbsp;DEST_LEN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;TDest'length&nbsp;;&nbsp;
+   129: &nbsp; &nbsp;&nbsp;constant&nbsp;USER_LEN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;TUser'length&nbsp;;&nbsp;
+   130: &nbsp; &nbsp;&nbsp;constant&nbsp;PARAM_LENGTH&nbsp;:&nbsp;integer&nbsp;:=&nbsp;ID_LEN&nbsp;+&nbsp;DEST_LEN&nbsp;+&nbsp;USER_LEN&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   131: &nbsp; &nbsp;&nbsp;constant&nbsp;USER_RIGHT&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;1&nbsp;;&nbsp;
+   132: &nbsp; &nbsp;&nbsp;constant&nbsp;DEST_RIGHT&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;USER_RIGHT&nbsp;+&nbsp;USER_LEN&nbsp;;&nbsp;
+   133: &nbsp; &nbsp;&nbsp;constant&nbsp;ID_RIGHT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;DEST_RIGHT&nbsp;+&nbsp;DEST_LEN&nbsp;;&nbsp;
+   134: &nbsp; &nbsp;
+   135: &nbsp; &nbsp;&nbsp;signal&nbsp;ReceiveFifo&nbsp;:&nbsp;osvvm.ScoreboardPkg_slv.ScoreboardIDType&nbsp;;&nbsp;
+   136: &nbsp; &nbsp;
+   137: &nbsp; &nbsp;&nbsp;signal&nbsp;WordRequestCount,&nbsp;BurstRequestCount&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;&nbsp;
+   138: &nbsp; &nbsp;&nbsp;signal&nbsp;WordReceiveCount,&nbsp;BurstReceiveCount&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   139: &nbsp; &nbsp;&nbsp;signal&nbsp;ReceiveByteCount,&nbsp;TransferByteCount&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   140: &nbsp; &nbsp;
+   141: &nbsp; &nbsp;&nbsp;--&nbsp;Verification&nbsp;Component&nbsp;Configuration&nbsp;
+   142: &nbsp; &nbsp;&nbsp;signal&nbsp;ReceiveReadyBeforeValid&nbsp;:&nbsp;boolean&nbsp;:=&nbsp;TRUE&nbsp;;&nbsp;
+   143: &nbsp; &nbsp;&nbsp;signal&nbsp;ReceiveReadyDelayCycles&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   144: &nbsp; &nbsp;
+   145: &nbsp; &nbsp;&nbsp;signal&nbsp;ParamID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(TID'range)&nbsp;&nbsp;&nbsp;:=&nbsp;ifelse(INIT_ID'length&nbsp;&gt;&nbsp;0,&nbsp;&nbsp;&nbsp;INIT_ID,&nbsp;&nbsp;&nbsp;(TID'range&nbsp;=&gt;&nbsp;'0'))&nbsp;;&nbsp;
+   146: &nbsp; &nbsp;&nbsp;signal&nbsp;ParamDest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(TDest'range)&nbsp;:=&nbsp;ifelse(INIT_DEST'length&nbsp;&gt;&nbsp;0,&nbsp;INIT_DEST,&nbsp;(TDest'range&nbsp;=&gt;&nbsp;'0'))&nbsp;;&nbsp;
+   147: &nbsp; &nbsp;&nbsp;signal&nbsp;ParamUser&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(TUser'range)&nbsp;:=&nbsp;ifelse(INIT_USER'length&nbsp;&gt;&nbsp;0,&nbsp;INIT_USER,&nbsp;(TUser'range&nbsp;=&gt;&nbsp;'0'))&nbsp;;&nbsp;
+   148: &nbsp; &nbsp;&nbsp;signal&nbsp;ParamLast&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;natural&nbsp;:=&nbsp;INIT_LAST&nbsp;;&nbsp;
+   149: &nbsp; &nbsp;&nbsp;signal&nbsp;LastOffsetCount&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   150: &nbsp; &nbsp;&nbsp;constant&nbsp;DEFAULT_BURST_MODE&nbsp;:&nbsp;StreamFifoBurstModeType&nbsp;:=&nbsp;STREAM_BURST_WORD_MODE&nbsp;;&nbsp;
+   151: &nbsp; &nbsp;&nbsp;signal&nbsp;&nbsp;&nbsp;BurstFifoMode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;StreamFifoBurstModeType&nbsp;:=&nbsp;DEFAULT_BURST_MODE&nbsp;;&nbsp;
+   152: &nbsp; &nbsp;&nbsp;&nbsp;
+   153: &nbsp; &nbsp;&nbsp;signal&nbsp;WaitForGet&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;boolean&nbsp;:=&nbsp;FALSE&nbsp;;&nbsp;
+   154: &nbsp; &nbsp;&nbsp;signal&nbsp;TransactionDone&nbsp;:&nbsp;boolean&nbsp;;&nbsp;&nbsp;
+   155: &nbsp; begin&nbsp;
+   156: &nbsp; &nbsp;
+   157: &nbsp; &nbsp;
+   158: &nbsp; &nbsp;&nbsp;------------------------------------------------------------&nbsp;
+   159: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;Initialize&nbsp;alerts&nbsp;
+   160: &nbsp; &nbsp;&nbsp;------------------------------------------------------------&nbsp;
+   161: &nbsp; &nbsp;&nbsp;Initialize&nbsp;:&nbsp;process&nbsp;
+   162: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;ID&nbsp;:&nbsp;AlertLogIDType&nbsp;;&nbsp;
+   163: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   164: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Alerts&nbsp;
+   165: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;NewID(MODEL_INSTANCE_NAME)&nbsp;;&nbsp;
+   166: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ModelID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;ID&nbsp;;&nbsp;
+   167: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;ProtocolID&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;NewID("Protocol&nbsp;Error",&nbsp;ID&nbsp;)&nbsp;;&nbsp;
+   168: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;DataCheckID&nbsp;&nbsp;&nbsp;&lt;=&nbsp;NewID("Data&nbsp;Check",&nbsp;ID&nbsp;)&nbsp;;&nbsp;
+   169: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;BusFailedID&nbsp;&nbsp;&nbsp;&lt;=&nbsp;NewID("No&nbsp;response",&nbsp;ID&nbsp;)&nbsp;;&nbsp;
+   170: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ReceiveFifo&nbsp;&nbsp;&nbsp;&lt;=&nbsp;NewID("ReceiveFifo",&nbsp;ID,&nbsp;ReportMode&nbsp;=&gt;&nbsp;DISABLED,&nbsp;Search&nbsp;=&gt;&nbsp;PRIVATE_NAME)&nbsp;;&nbsp;
+   171: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;;&nbsp;
+   172: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;Initialize&nbsp;;&nbsp;
+   173: &nbsp; &nbsp;
+   174: &nbsp; &nbsp;
+   175: &nbsp; &nbsp;&nbsp;------------------------------------------------------------&nbsp;
+   176: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;Transaction&nbsp;Dispatcher&nbsp;
+   177: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;&nbsp;Dispatches&nbsp;transactions&nbsp;to&nbsp;
+   178: &nbsp; &nbsp;&nbsp;------------------------------------------------------------&nbsp;
+   179: &nbsp; &nbsp;&nbsp;TransactionDispatcher&nbsp;:&nbsp;process&nbsp;
+   180: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;Operation&nbsp;:&nbsp;StreamOperationType&nbsp;is&nbsp;TransRec.Operation&nbsp;;&nbsp;
+   181: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;Data,&nbsp;&nbsp;ExpectedData,&nbsp;&nbsp;PopData&nbsp;&nbsp;:&nbsp;std_logic_vector(TData'range)&nbsp;;&nbsp;
+   182: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;Param,&nbsp;ExpectedParam,&nbsp;PopParam&nbsp;:&nbsp;std_logic_vector(PARAM_LENGTH-1&nbsp;downto&nbsp;0)&nbsp;;&nbsp;
+   183: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;ExpectedUser&nbsp;:&nbsp;std_logic_vector(USER_LEN-1&nbsp;downto&nbsp;0)&nbsp;;&nbsp;
+   184: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;TryWordWaiting,&nbsp;TryBurstWaiting&nbsp;:&nbsp;boolean&nbsp;;&nbsp;&nbsp;
+   185: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;DispatcherReceiveCount&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   186: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;BurstTransferCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;integer&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   187: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;WordCount&nbsp;:&nbsp;integer&nbsp;;&nbsp;
+   188: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;FifoWordCount,&nbsp;CheckWordCount&nbsp;:&nbsp;integer&nbsp;;&nbsp;
+   189: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;BurstBoundary&nbsp;&nbsp;:&nbsp;std_logic&nbsp;;&nbsp;
+   190: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;DropUndriven&nbsp;&nbsp;&nbsp;:&nbsp;boolean&nbsp;:=&nbsp;FALSE&nbsp;;&nbsp;
+   191: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;function&nbsp;param_to_string(Param&nbsp;:&nbsp;std_logic_vector)&nbsp;return&nbsp;string&nbsp;is&nbsp;
+   192: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;aParam&nbsp;:&nbsp;std_logic_vector(Param'length-1&nbsp;downto&nbsp;0)&nbsp;is&nbsp;Param&nbsp;;&nbsp;
+   193: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;ID&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(ID_LEN-1&nbsp;downto&nbsp;0)&nbsp;&nbsp;&nbsp;is&nbsp;aParam(PARAM_LENGTH-1&nbsp;downto&nbsp;PARAM_LENGTH-ID_LEN);&nbsp;
+   194: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;Dest&nbsp;:&nbsp;std_logic_vector(DEST_LEN-1&nbsp;downto&nbsp;0)&nbsp;is&nbsp;aParam(DEST_LEN+USER_LEN&nbsp;downto&nbsp;USER_LEN+1);&nbsp;
+   195: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;User&nbsp;:&nbsp;std_logic_vector(USER_LEN-1&nbsp;downto&nbsp;0)&nbsp;is&nbsp;aParam(USER_LEN&nbsp;downto&nbsp;1)&nbsp;;&nbsp;
+   196: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;Last&nbsp;:&nbsp;std_logic&nbsp;is&nbsp;Param(0)&nbsp;;&nbsp;
+   197: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;begin&nbsp;
+   198: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;
+   199: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(ID_LEN&nbsp;&gt;&nbsp;0,&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;TID:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(ID),&nbsp;&nbsp;&nbsp;"")&nbsp;&amp;&nbsp;
+   200: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(DEST_LEN&nbsp;&gt;&nbsp;0,&nbsp;"&nbsp;&nbsp;TDest:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(Dest),&nbsp;"")&nbsp;&amp;&nbsp;
+   201: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(USER_LEN&nbsp;&gt;&nbsp;0,&nbsp;"&nbsp;&nbsp;TUser:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(User),&nbsp;"")&nbsp;&amp;&nbsp;
+   202: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;TLast:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_string(Last)&nbsp;;&nbsp;
+   203: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;function&nbsp;param_to_string&nbsp;;&nbsp;
+   204: &nbsp; &nbsp;
+   205: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   206: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;&nbsp;--&nbsp;Allow&nbsp;ModelID&nbsp;to&nbsp;initialize&nbsp;
+   207: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TransRec.BurstFifo&nbsp;&lt;=&nbsp;NewID("RxBurstFifo",&nbsp;ModelID,&nbsp;Search&nbsp;=&gt;&nbsp;PRIVATE_NAME)&nbsp;;&nbsp;
+   208: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;BurstCov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;NewID("DelayCov",&nbsp;&nbsp;&nbsp;&nbsp;ModelID,&nbsp;ReportMode&nbsp;=&gt;&nbsp;DISABLED,&nbsp;Search&nbsp;=&gt;&nbsp;NAME_AND_PARENT)&nbsp;;&nbsp;
+   209: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;&nbsp;--&nbsp;Allow&nbsp;TransRec.BurstFifo&nbsp;to&nbsp;update.&nbsp;
+   210: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;BurstFifoID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;GetAlertLogID(TransRec.BurstFifo)&nbsp;;&nbsp;
+   211: &nbsp; &nbsp;
+   212: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;DispatchLoop&nbsp;:&nbsp;loop&nbsp;
+   213: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WaitForTransaction(&nbsp;
+   214: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Clk,&nbsp;
+   215: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rdy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TransRec.Rdy,&nbsp;
+   216: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ack&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TransRec.Ack&nbsp;
+   217: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   218: &nbsp; &nbsp;
+   219: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case&nbsp;Operation&nbsp;is&nbsp;
+   220: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;GOT_BURST&nbsp;=&gt;&nbsp;
+   221: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Used&nbsp;with&nbsp;TryCheckBurst&nbsp;with&nbsp;Patterns&nbsp;VectorOfWords,&nbsp;Increment,&nbsp;Random&nbsp;
+   222: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryBurstWaiting&nbsp;then&nbsp;
+   223: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(BurstRequestCount)&nbsp;;&nbsp;&nbsp;
+   224: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   225: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryBurstWaiting&nbsp;:=&nbsp;TRUE&nbsp;;&nbsp;&nbsp;
+   226: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(BurstReceiveCount&nbsp;-&nbsp;BurstTransferCount)&nbsp;=&nbsp;0&nbsp;then&nbsp;
+   227: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&nbsp;&lt;=&nbsp;FALSE&nbsp;;&nbsp;
+   228: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   229: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&lt;=&nbsp;TRUE&nbsp;;&nbsp;
+   230: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   231: &nbsp; &nbsp;
+   232: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;GET&nbsp;|&nbsp;TRY_GET&nbsp;|&nbsp;CHECK&nbsp;|&nbsp;TRY_CHECK&nbsp;=&gt;&nbsp;
+   233: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;IsEmpty(ReceiveFifo)&nbsp;and&nbsp;&nbsp;IsTry(Operation)&nbsp;then&nbsp;
+   234: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryWordWaiting&nbsp;then&nbsp;
+   235: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(WordRequestCount)&nbsp;;&nbsp;&nbsp;
+   236: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   237: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryWordWaiting&nbsp;:=&nbsp;TRUE&nbsp;;&nbsp;&nbsp;
+   238: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Return&nbsp;if&nbsp;no&nbsp;data&nbsp;
+   239: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&nbsp;&lt;=&nbsp;FALSE&nbsp;;&nbsp;
+   240: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.DataFromModel&nbsp;&nbsp;&lt;=&nbsp;(TransRec.DataFromModel'range&nbsp;=&gt;&nbsp;'0')&nbsp;;&nbsp;
+   241: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;(TransRec.ParamFromModel'range&nbsp;=&gt;&nbsp;'0')&nbsp;;&nbsp;
+   242: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   243: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   244: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryWordWaiting&nbsp;then&nbsp;
+   245: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(WordRequestCount)&nbsp;;&nbsp;&nbsp;
+   246: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   247: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryWordWaiting&nbsp;:=&nbsp;FALSE&nbsp;;&nbsp;&nbsp;
+   248: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DispatcherReceiveCount&nbsp;:=&nbsp;DispatcherReceiveCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   249: &nbsp; &nbsp;
+   250: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Get&nbsp;data&nbsp;
+   251: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&lt;=&nbsp;TRUE&nbsp;;&nbsp;
+   252: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;IsEmpty(ReceiveFifo)&nbsp;then&nbsp;
+   253: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Wait&nbsp;for&nbsp;data&nbsp;
+   254: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WaitForToggle(WordReceiveCount)&nbsp;;&nbsp;
+   255: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   256: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Put&nbsp;Data&nbsp;and&nbsp;Parameters&nbsp;into&nbsp;record&nbsp;
+   257: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Data,&nbsp;Param,&nbsp;BurstBoundary)&nbsp;:=&nbsp;pop(ReceiveFifo)&nbsp;;&nbsp;
+   258: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;BurstBoundary&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   259: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;At&nbsp;BurstBoundary,&nbsp;there&nbsp;is&nbsp;always&nbsp;another&nbsp;word&nbsp;that&nbsp;
+   260: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;follows&nbsp;that&nbsp;triggered&nbsp;the&nbsp;Burst&nbsp;Boundary&nbsp;
+   261: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Data,&nbsp;Param,&nbsp;BurstBoundary)&nbsp;:=&nbsp;pop(ReceiveFifo)&nbsp;;&nbsp;
+   262: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstTransferCount&nbsp;:=&nbsp;BurstTransferCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   263: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   264: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.DataFromModel&nbsp;&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;Data,&nbsp;TransRec.DataFromModel'length)&nbsp;;&nbsp;
+   265: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;Param,&nbsp;TransRec.ParamFromModel'length)&nbsp;;&nbsp;
+   266: &nbsp; &nbsp;
+   267: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Param:&nbsp;(TID&nbsp;&amp;&nbsp;TDest&nbsp;&amp;&nbsp;TUser&nbsp;&amp;&nbsp;TLast)&nbsp;
+   268: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Param(0)&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   269: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstTransferCount&nbsp;:=&nbsp;BurstTransferCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   270: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   271: &nbsp; &nbsp;
+   272: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;IsCheck(Operation)&nbsp;then&nbsp;
+   273: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExpectedData&nbsp;&nbsp;:=&nbsp;SafeResize(ModelID,&nbsp;TransRec.DataToModel,&nbsp;ExpectedData'length)&nbsp;;&nbsp;
+   274: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExpectedParam&nbsp;&nbsp;:=&nbsp;UpdateOptions(&nbsp;
+   275: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Param&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;SafeResize(ModelID,&nbsp;TransRec.ParamToModel,&nbsp;ExpectedParam'length),&nbsp;
+   276: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamID&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ParamID,&nbsp;
+   277: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamDest&nbsp;&nbsp;=&gt;&nbsp;ParamDest,&nbsp;
+   278: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamUser&nbsp;&nbsp;=&gt;&nbsp;ParamUser,&nbsp;
+   279: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamLast&nbsp;&nbsp;=&gt;&nbsp;ParamLast,&nbsp;
+   280: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Count&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;WordReceiveCount&nbsp;-&nbsp;LastOffsetCount&nbsp;
+   281: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   282: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIf(&nbsp;DataCheckID,&nbsp;
+   283: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Data&nbsp;?=&nbsp;ExpectedData&nbsp;and&nbsp;Param&nbsp;?=&nbsp;ExpectedParam)&nbsp;=&nbsp;'1',&nbsp;
+   284: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(MetaMatch(Data,&nbsp;ExpectedData)&nbsp;and&nbsp;MetaMatch(Param,&nbsp;ExpectedParam)),&nbsp;
+   285: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Operation#&nbsp;"&nbsp;&amp;&nbsp;to_string&nbsp;(DispatcherReceiveCount)&nbsp;&amp;&nbsp;"&nbsp;"&nbsp;&amp;&nbsp;
+   286: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Received.&nbsp;&nbsp;Data:&nbsp;"&nbsp;&amp;&nbsp;to_hxstring(Data)&nbsp;&amp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;param_to_string(Param),&nbsp;
+   287: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Expected.&nbsp;&nbsp;Data:&nbsp;"&nbsp;&amp;&nbsp;to_hxstring(ExpectedData)&nbsp;&amp;&nbsp;param_to_string(ExpectedParam),&nbsp;
+   288: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolToModel&nbsp;or&nbsp;IsLogEnabled(ModelID,&nbsp;INFO)&nbsp;
+   289: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   290: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   291: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Log(ModelID,&nbsp;
+   292: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Word&nbsp;Receive.&nbsp;"&nbsp;&amp;&nbsp;
+   293: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Operation#&nbsp;"&nbsp;&amp;&nbsp;to_string&nbsp;(DispatcherReceiveCount)&nbsp;&amp;&nbsp;&nbsp;"&nbsp;"&nbsp;&amp;&nbsp;
+   294: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Data:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(Data)&nbsp;&amp;&nbsp;param_to_string(Param),&nbsp;
+   295: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;INFO,&nbsp;TransRec.BoolToModel&nbsp;
+   296: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   297: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   298: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   299: &nbsp; &nbsp;
+   300: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;GET_BURST&nbsp;|&nbsp;TRY_GET_BURST&nbsp;=&gt;&nbsp;
+   301: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(BurstReceiveCount&nbsp;-&nbsp;BurstTransferCount)&nbsp;=&nbsp;0&nbsp;and&nbsp;IsTry(Operation)&nbsp;then&nbsp;
+   302: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryBurstWaiting&nbsp;then&nbsp;
+   303: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(BurstRequestCount)&nbsp;;&nbsp;&nbsp;
+   304: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   305: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryBurstWaiting&nbsp;:=&nbsp;TRUE&nbsp;;&nbsp;&nbsp;
+   306: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Return&nbsp;if&nbsp;no&nbsp;data&nbsp;
+   307: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&nbsp;&lt;=&nbsp;FALSE&nbsp;;&nbsp;
+   308: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.DataFromModel&nbsp;&nbsp;&lt;=&nbsp;(TransRec.DataFromModel'range&nbsp;=&gt;&nbsp;'0')&nbsp;;&nbsp;
+   309: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;(TransRec.ParamFromModel'range&nbsp;=&gt;&nbsp;'0')&nbsp;;&nbsp;
+   310: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   311: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   312: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryBurstWaiting&nbsp;then&nbsp;
+   313: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(BurstRequestCount)&nbsp;;&nbsp;&nbsp;
+   314: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   315: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryBurstWaiting&nbsp;:=&nbsp;FALSE&nbsp;;&nbsp;&nbsp;
+   316: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DispatcherReceiveCount&nbsp;:=&nbsp;DispatcherReceiveCount&nbsp;+&nbsp;1&nbsp;;&nbsp;--&nbsp;Operation&nbsp;or&nbsp;#Words&nbsp;Transfered&nbsp;based?&nbsp;
+   317: &nbsp; &nbsp;
+   318: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Get&nbsp;data&nbsp;
+   319: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&lt;=&nbsp;TRUE&nbsp;;&nbsp;
+   320: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(BurstReceiveCount&nbsp;-&nbsp;BurstTransferCount)&nbsp;=&nbsp;0&nbsp;then&nbsp;
+   321: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Wait&nbsp;for&nbsp;data&nbsp;
+   322: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WaitForToggle(BurstReceiveCount)&nbsp;;&nbsp;
+   323: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   324: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;ReceiveFIFO:&nbsp;(TData&nbsp;&amp;&nbsp;TID&nbsp;&amp;&nbsp;TDest&nbsp;&amp;&nbsp;TUser&nbsp;&amp;&nbsp;TLast)&nbsp;
+   325: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   326: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WordCount&nbsp;:=&nbsp;0&nbsp;;&nbsp;&nbsp;
+   327: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   328: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(PopData,&nbsp;PopParam,&nbsp;BurstBoundary)&nbsp;:=&nbsp;pop(ReceiveFifo)&nbsp;;&nbsp;
+   329: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;BurstBoundary&nbsp;indication&nbsp;does&nbsp;not&nbsp;contain&nbsp;data&nbsp;for&nbsp;
+   330: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;this&nbsp;transaction&nbsp;so&nbsp;exit&nbsp;
+   331: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;BurstBoundary&nbsp;=&nbsp;'1'&nbsp;;&nbsp;
+   332: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WordCount&nbsp;:=&nbsp;WordCount&nbsp;+&nbsp;1&nbsp;;&nbsp;&nbsp;
+   333: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data&nbsp;&nbsp;:=&nbsp;PopData&nbsp;;&nbsp;
+   334: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Param&nbsp;:=&nbsp;PopParam&nbsp;;&nbsp;
+   335: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case&nbsp;BurstFifoMode&nbsp;is&nbsp;
+   336: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;STREAM_BURST_BYTE_MODE&nbsp;=&gt;&nbsp;
+   337: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PushWord(TransRec.BurstFifo,&nbsp;Data,&nbsp;DropUndriven)&nbsp;;&nbsp;
+   338: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;FifoWordCount&nbsp;+&nbsp;CountBytes(Data,&nbsp;DropUndriven)&nbsp;;&nbsp;
+   339: &nbsp; &nbsp;
+   340: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;STREAM_BURST_WORD_MODE&nbsp;=&gt;&nbsp;
+   341: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Push(TransRec.BurstFifo,&nbsp;Data)&nbsp;;&nbsp;
+   342: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;FifoWordCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   343: &nbsp; &nbsp;
+   344: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;STREAM_BURST_WORD_PARAM_MODE&nbsp;=&gt;&nbsp;
+   345: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Push(TransRec.BurstFifo,&nbsp;Data&nbsp;&amp;&nbsp;Param(USER_LEN&nbsp;downto&nbsp;1))&nbsp;;&nbsp;
+   346: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;FifoWordCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   347: &nbsp; &nbsp;
+   348: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;others&nbsp;=&gt;&nbsp;
+   349: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alert(ModelID,&nbsp;"BurstFifoMode:&nbsp;Invalid&nbsp;Mode:&nbsp;"&nbsp;&amp;&nbsp;to_string(BurstFifoMode))&nbsp;;&nbsp;
+   350: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;case&nbsp;;&nbsp;
+   351: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;Param(0)&nbsp;=&nbsp;'1'&nbsp;;&nbsp;
+   352: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;;&nbsp;
+   353: &nbsp; &nbsp;
+   354: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Adjust&nbsp;WordRequestCount&nbsp;for&nbsp;the&nbsp;number&nbsp;of&nbsp;words&nbsp;consumed&nbsp;during&nbsp;the&nbsp;burst&nbsp;
+   355: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WordRequestCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;Increment(WordRequestCount,&nbsp;WordCount)&nbsp;;&nbsp;&nbsp;
+   356: &nbsp; &nbsp;
+   357: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstTransferCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;BurstTransferCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   358: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.IntFromModel&nbsp;&nbsp;&nbsp;&lt;=&nbsp;FifoWordCount&nbsp;;&nbsp;
+   359: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.DataFromModel&nbsp;&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;Data,&nbsp;TransRec.DataFromModel'length)&nbsp;;&nbsp;
+   360: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;Param,&nbsp;TransRec.ParamFromModel'length)&nbsp;;&nbsp;
+   361: &nbsp; &nbsp;
+   362: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Log(ModelID,&nbsp;
+   363: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Burst&nbsp;Receive.&nbsp;"&nbsp;&amp;&nbsp;
+   364: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Operation#&nbsp;"&nbsp;&amp;&nbsp;to_string&nbsp;(DispatcherReceiveCount)&nbsp;&amp;&nbsp;&nbsp;"&nbsp;"&nbsp;&amp;&nbsp;
+   365: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Last&nbsp;Data:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(Data)&nbsp;&amp;&nbsp;param_to_string(Param),&nbsp;
+   366: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;INFO,&nbsp;TransRec.BoolToModel&nbsp;or&nbsp;IsLogEnabled(ModelID,&nbsp;PASSED)&nbsp;
+   367: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   368: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   369: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   370: &nbsp; &nbsp;
+   371: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;CHECK_BURST&nbsp;|&nbsp;TRY_CHECK_BURST&nbsp;=&gt;&nbsp;
+   372: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(BurstReceiveCount&nbsp;-&nbsp;BurstTransferCount)&nbsp;=&nbsp;0&nbsp;and&nbsp;IsTry(Operation)&nbsp;then&nbsp;
+   373: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryBurstWaiting&nbsp;then&nbsp;
+   374: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(BurstRequestCount)&nbsp;;&nbsp;&nbsp;
+   375: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   376: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryBurstWaiting&nbsp;:=&nbsp;TRUE&nbsp;;&nbsp;&nbsp;
+   377: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Return&nbsp;if&nbsp;no&nbsp;data&nbsp;
+   378: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&nbsp;&lt;=&nbsp;FALSE&nbsp;;&nbsp;
+   379: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.DataFromModel&nbsp;&nbsp;&lt;=&nbsp;(TransRec.DataFromModel'range&nbsp;=&gt;&nbsp;'0')&nbsp;;&nbsp;
+   380: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;(TransRec.ParamFromModel'range&nbsp;=&gt;&nbsp;'0')&nbsp;;&nbsp;
+   381: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   382: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   383: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;TryBurstWaiting&nbsp;then&nbsp;
+   384: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(BurstRequestCount)&nbsp;;&nbsp;&nbsp;
+   385: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   386: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TryBurstWaiting&nbsp;:=&nbsp;FALSE&nbsp;;&nbsp;&nbsp;
+   387: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DispatcherReceiveCount&nbsp;:=&nbsp;DispatcherReceiveCount&nbsp;+&nbsp;1&nbsp;;&nbsp;--&nbsp;Operation&nbsp;or&nbsp;#Words&nbsp;Transfered&nbsp;based?&nbsp;
+   388: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Get&nbsp;data&nbsp;
+   389: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&lt;=&nbsp;TRUE&nbsp;;&nbsp;
+   390: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(BurstReceiveCount&nbsp;-&nbsp;BurstTransferCount)&nbsp;=&nbsp;0&nbsp;then&nbsp;
+   391: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Wait&nbsp;for&nbsp;data&nbsp;
+   392: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WaitForToggle(BurstReceiveCount)&nbsp;;&nbsp;
+   393: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   394: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CheckWordCount&nbsp;:=&nbsp;TransRec.IntToModel&nbsp;;&nbsp;
+   395: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;&nbsp;:=&nbsp;0&nbsp;;&nbsp;
+   396: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WordCount&nbsp;:=&nbsp;0&nbsp;;&nbsp;&nbsp;
+   397: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loop&nbsp;
+   398: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;ReceiveFIFO:&nbsp;(TData&nbsp;&amp;&nbsp;TID&nbsp;&amp;&nbsp;TDest&nbsp;&amp;&nbsp;TUser&nbsp;&amp;&nbsp;TLast)&nbsp;
+   399: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(PopData,&nbsp;PopParam,&nbsp;BurstBoundary)&nbsp;:=&nbsp;pop(ReceiveFifo)&nbsp;;&nbsp;
+   400: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;BurstBoundary&nbsp;indication&nbsp;does&nbsp;not&nbsp;contain&nbsp;data&nbsp;for&nbsp;
+   401: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;this&nbsp;transaction&nbsp;so&nbsp;exit&nbsp;
+   402: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;BurstBoundary&nbsp;=&nbsp;'1'&nbsp;;&nbsp;
+   403: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WordCount&nbsp;:=&nbsp;WordCount&nbsp;+&nbsp;1&nbsp;;&nbsp;&nbsp;
+   404: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data&nbsp;&nbsp;:=&nbsp;PopData&nbsp;;&nbsp;
+   405: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Param&nbsp;:=&nbsp;PopParam&nbsp;;&nbsp;
+   406: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case&nbsp;BurstFifoMode&nbsp;is&nbsp;
+   407: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;STREAM_BURST_BYTE_MODE&nbsp;=&gt;&nbsp;
+   408: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CheckWord(TransRec.BurstFifo,&nbsp;Data,&nbsp;DropUndriven)&nbsp;;&nbsp;
+   409: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;FifoWordCount&nbsp;+&nbsp;CountBytes(Data,&nbsp;DropUndriven)&nbsp;;&nbsp;
+   410: &nbsp; &nbsp;
+   411: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;STREAM_BURST_WORD_MODE&nbsp;=&gt;&nbsp;
+   412: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Check(TransRec.BurstFifo,&nbsp;Data)&nbsp;;&nbsp;
+   413: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;FifoWordCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   414: &nbsp; &nbsp;
+   415: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;STREAM_BURST_WORD_PARAM_MODE&nbsp;=&gt;&nbsp;
+   416: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Checking&nbsp;done&nbsp;here&nbsp;to&nbsp;differentiate&nbsp;data&nbsp;from&nbsp;user&nbsp;
+   417: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ExpectedData,&nbsp;ExpectedUser)&nbsp;:=&nbsp;Pop(TransRec.BurstFifo)&nbsp;;&nbsp;
+   418: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(BurstFifoID,&nbsp;Data,&nbsp;ExpectedData,&nbsp;"Data")&nbsp;;&nbsp;
+   419: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(BurstFifoID,&nbsp;Param(USER_LEN&nbsp;downto&nbsp;1),&nbsp;ExpectedUser,&nbsp;"User")&nbsp;;&nbsp;
+   420: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Check(TransRec.BurstFifo,&nbsp;Data&nbsp;&amp;&nbsp;Param(USER_LEN&nbsp;downto&nbsp;1))&nbsp;;&nbsp;
+   421: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FifoWordCount&nbsp;:=&nbsp;FifoWordCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   422: &nbsp; &nbsp;
+   423: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;others&nbsp;=&gt;&nbsp;
+   424: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alert(ModelID,&nbsp;"BurstFifoMode:&nbsp;Invalid&nbsp;Mode:&nbsp;"&nbsp;&amp;&nbsp;to_string(BurstFifoMode))&nbsp;;&nbsp;
+   425: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;case&nbsp;;&nbsp;
+   426: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;Param(0)&nbsp;=&nbsp;'1'&nbsp;;&nbsp;
+   427: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;FifoWordCount&nbsp;&gt;=&nbsp;CheckWordCount&nbsp;;&nbsp;
+   428: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;;&nbsp;
+   429: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+   430: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Adjust&nbsp;WordRequestCount&nbsp;for&nbsp;the&nbsp;number&nbsp;of&nbsp;words&nbsp;consumed&nbsp;during&nbsp;the&nbsp;burst&nbsp;
+   431: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WordRequestCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;Increment(WordRequestCount,&nbsp;WordCount)&nbsp;;&nbsp;&nbsp;
+   432: &nbsp; &nbsp;
+   433: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstTransferCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;BurstTransferCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   434: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.IntFromModel&nbsp;&nbsp;&nbsp;&lt;=&nbsp;FifoWordCount&nbsp;;&nbsp;
+   435: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.DataFromModel&nbsp;&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;Data,&nbsp;TransRec.DataFromModel'length)&nbsp;;&nbsp;
+   436: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;Param,&nbsp;TransRec.ParamFromModel'length)&nbsp;;&nbsp;
+   437: &nbsp; &nbsp;
+   438: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Log(ModelID,&nbsp;
+   439: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Burst&nbsp;Check.&nbsp;"&nbsp;&amp;&nbsp;
+   440: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Operation#&nbsp;"&nbsp;&amp;&nbsp;to_string&nbsp;(DispatcherReceiveCount)&nbsp;&amp;&nbsp;&nbsp;"&nbsp;"&nbsp;&amp;&nbsp;
+   441: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;Last&nbsp;Data:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(Data)&nbsp;&amp;&nbsp;param_to_string(Param),&nbsp;
+   442: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;INFO,&nbsp;TransRec.BoolToModel&nbsp;or&nbsp;IsLogEnabled(ModelID,&nbsp;PASSED)&nbsp;
+   443: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   444: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;(BurstBoundary&nbsp;=&nbsp;'1'&nbsp;or&nbsp;Param(0)&nbsp;=&nbsp;'1')&nbsp;then&nbsp;
+   445: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Log(ModelID,&nbsp;
+   446: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Burst&nbsp;Check&nbsp;finished&nbsp;without&nbsp;Last&nbsp;or&nbsp;BurstBoundary&nbsp;-&nbsp;normal&nbsp;when&nbsp;next&nbsp;word&nbsp;is&nbsp;burst&nbsp;boundary",&nbsp;
+   447: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DEBUG&nbsp;
+   448: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   449: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   450: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(ModelID,&nbsp;FifoWordCount,&nbsp;CheckWordCount,&nbsp;"Burst&nbsp;Check&nbsp;WordCount")&nbsp;;&nbsp;
+   451: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExpectedParam&nbsp;&nbsp;:=&nbsp;UpdateOptions(&nbsp;
+   452: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Param&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;SafeResize(ModelID,&nbsp;TransRec.ParamToModel,&nbsp;ExpectedParam'length),&nbsp;
+   453: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamID&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ParamID,&nbsp;
+   454: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamDest&nbsp;&nbsp;=&gt;&nbsp;ParamDest,&nbsp;
+   455: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamUser&nbsp;&nbsp;=&gt;&nbsp;ParamUser,&nbsp;
+   456: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamLast&nbsp;&nbsp;=&gt;&nbsp;1,&nbsp;
+   457: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Count&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;0&nbsp;
+   458: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   459: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;ID,&nbsp;Dest,&nbsp;User,&nbsp;Last&nbsp;
+   460: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;ID_LEN&nbsp;&gt;&nbsp;0&nbsp;then&nbsp;
+   461: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(ModelID,&nbsp;Param(ID_RIGHT+ID_LEN-1&nbsp;downto&nbsp;ID_RIGHT),&nbsp;
+   462: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExpectedParam(ID_RIGHT+ID_LEN-1&nbsp;downto&nbsp;ID_RIGHT),&nbsp;"ID")&nbsp;;&nbsp;
+   463: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   464: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;DEST_LEN&nbsp;&gt;&nbsp;0&nbsp;then&nbsp;
+   465: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(ModelID,&nbsp;Param(DEST_RIGHT+DEST_LEN-1&nbsp;downto&nbsp;DEST_RIGHT),&nbsp;
+   466: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExpectedParam(DEST_RIGHT+DEST_LEN-1&nbsp;downto&nbsp;DEST_RIGHT),&nbsp;"DEST")&nbsp;;&nbsp;
+   467: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   468: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;USER_LEN&nbsp;&gt;&nbsp;0&nbsp;and&nbsp;BurstFifoMode&nbsp;/=&nbsp;STREAM_BURST_WORD_PARAM_MODE&nbsp;then&nbsp;
+   469: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(ModelID,&nbsp;Param(USER_RIGHT+USER_LEN-1&nbsp;downto&nbsp;USER_RIGHT),&nbsp;
+   470: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExpectedParam(USER_RIGHT+USER_LEN-1&nbsp;downto&nbsp;USER_RIGHT),&nbsp;"USER")&nbsp;;&nbsp;
+   471: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   472: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AffirmIfEqual(ModelID,&nbsp;Param(0)&nbsp;or&nbsp;BurstBoundary,&nbsp;ExpectedParam(0),&nbsp;"Last")&nbsp;;&nbsp;
+   473: &nbsp; &nbsp;
+   474: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   475: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   476: &nbsp; &nbsp;
+   477: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;SET_MODEL_OPTIONS&nbsp;=&gt;&nbsp;
+   478: &nbsp; &nbsp;
+   479: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case&nbsp;AxiStreamOptionsType'val(TransRec.Options)&nbsp;is&nbsp;
+   480: &nbsp; &nbsp;
+   481: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;RECEIVE_READY_BEFORE_VALID&nbsp;=&gt;&nbsp;
+   482: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReceiveReadyBeforeValid&nbsp;&lt;=&nbsp;TransRec.BoolToModel&nbsp;;&nbsp;
+   483: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;UseCoverageDelays&nbsp;&lt;=&nbsp;FALSE&nbsp;;&nbsp;&nbsp;
+   484: &nbsp; &nbsp;
+   485: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;RECEIVE_READY_DELAY_CYCLES&nbsp;=&gt;&nbsp;
+   486: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReceiveReadyDelayCycles&nbsp;&lt;=&nbsp;TransRec.IntToModel&nbsp;;&nbsp;
+   487: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;UseCoverageDelays&nbsp;&lt;=&nbsp;FALSE&nbsp;;&nbsp;&nbsp;
+   488: &nbsp; &nbsp;
+   489: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;RECEIVE_READY_WAIT_FOR_GET&nbsp;=&gt;&nbsp;
+   490: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WaitForGet&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;TransRec.BoolToModel&nbsp;;&nbsp;
+   491: &nbsp; &nbsp;
+   492: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DROP_UNDRIVEN&nbsp;=&gt;&nbsp;
+   493: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DropUndriven&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;TransRec.BoolToModel&nbsp;;&nbsp;
+   494: &nbsp; &nbsp;
+   495: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_ID&nbsp;=&gt;&nbsp;
+   496: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;TransRec.ParamToModel,&nbsp;ParamID'length)&nbsp;;&nbsp;
+   497: &nbsp; &nbsp;
+   498: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_DEST&nbsp;=&gt;&nbsp;
+   499: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamDest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;TransRec.ParamToModel,&nbsp;ParamDest'length)&nbsp;;&nbsp;
+   500: &nbsp; &nbsp;
+   501: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_USER&nbsp;=&gt;&nbsp;
+   502: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamUser&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;TransRec.ParamToModel,&nbsp;ParamUser'length)&nbsp;;&nbsp;
+   503: &nbsp; &nbsp;
+   504: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_LAST&nbsp;=&gt;&nbsp;
+   505: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ParamLast&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;TransRec.IntToModel&nbsp;;&nbsp;
+   506: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LastOffsetCount&nbsp;&lt;=&nbsp;WordReceiveCount&nbsp;;&nbsp;
+   507: &nbsp; &nbsp;
+   508: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;others&nbsp;=&gt;&nbsp;
+   509: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alert(ModelID,&nbsp;"SetOptions,&nbsp;Unimplemented&nbsp;Option:&nbsp;"&nbsp;&amp;&nbsp;to_string(AxiStreamOptionsType'val(TransRec.Options)),&nbsp;FAILURE)&nbsp;;&nbsp;
+   510: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   511: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;case&nbsp;;&nbsp;
+   512: &nbsp; &nbsp;
+   513: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;GET_MODEL_OPTIONS&nbsp;=&gt;&nbsp;
+   514: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;case&nbsp;AxiStreamOptionsType'val(TransRec.Options)&nbsp;is&nbsp;
+   515: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;RECEIVE_READY_BEFORE_VALID&nbsp;=&gt;&nbsp;
+   516: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&nbsp;&nbsp;&lt;=&nbsp;&nbsp;ReceiveReadyBeforeValid&nbsp;;&nbsp;
+   517: &nbsp; &nbsp;
+   518: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;RECEIVE_READY_DELAY_CYCLES&nbsp;=&gt;&nbsp;
+   519: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.IntFromModel&nbsp;&lt;=&nbsp;ReceiveReadyDelayCycles&nbsp;;&nbsp;
+   520: &nbsp; &nbsp;
+   521: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;RECEIVE_READY_WAIT_FOR_GET&nbsp;=&gt;&nbsp;
+   522: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&lt;=&nbsp;WaitForGet&nbsp;;&nbsp;
+   523: &nbsp; &nbsp;
+   524: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DROP_UNDRIVEN&nbsp;=&gt;&nbsp;
+   525: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.BoolFromModel&nbsp;&lt;=&nbsp;DropUndriven&nbsp;;&nbsp;
+   526: &nbsp; &nbsp;
+   527: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_ID&nbsp;=&gt;&nbsp;
+   528: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;ParamID,&nbsp;TransRec.ParamFromModel'length)&nbsp;;&nbsp;
+   529: &nbsp; &nbsp;
+   530: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_DEST&nbsp;=&gt;&nbsp;
+   531: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;ParamDest,&nbsp;TransRec.ParamFromModel'length)&nbsp;;&nbsp;
+   532: &nbsp; &nbsp;
+   533: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_USER&nbsp;=&gt;&nbsp;
+   534: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.ParamFromModel&nbsp;&lt;=&nbsp;SafeResize(ModelID,&nbsp;ParamUser,&nbsp;TransRec.ParamFromModel'length)&nbsp;;&nbsp;
+   535: &nbsp; &nbsp;
+   536: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;DEFAULT_LAST&nbsp;=&gt;&nbsp;
+   537: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec.IntFromModel&nbsp;&nbsp;&nbsp;&lt;=&nbsp;ParamLast&nbsp;;&nbsp;
+   538: &nbsp; &nbsp;
+   539: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;others&nbsp;=&gt;&nbsp;
+   540: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Alert(ModelID,&nbsp;"GetOptions,&nbsp;Unimplemented&nbsp;Option:&nbsp;"&nbsp;&amp;&nbsp;to_string(AxiStreamOptionsType'val(TransRec.Options)),&nbsp;FAILURE)&nbsp;;&nbsp;
+   541: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   542: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;case&nbsp;;&nbsp;
+   543: &nbsp; &nbsp;
+   544: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;The&nbsp;End&nbsp;--&nbsp;Done&nbsp;
+   545: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;when&nbsp;others&nbsp;=&gt;&nbsp;
+   546: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;Do&nbsp;OSVVM&nbsp;stream&nbsp;directive&nbsp;transactions&nbsp;
+   547: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DoDirectiveTransactions&nbsp;(&nbsp;
+   548: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransRec&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TransRec&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   549: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   550: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ModelID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ModelID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   551: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;UseCoverageDelays&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;UseCoverageDelays&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   552: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DelayCovID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;BurstCov&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   553: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstFifoMode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;BurstFifoMode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   554: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransactionDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TransactionDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   555: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TransactionCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;WordReceiveCount&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+   556: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PendingTransactionCount&nbsp;&nbsp;=&gt;&nbsp;WordRequestCount&nbsp;-&nbsp;WordReceiveCount&nbsp;
+   557: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   558: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;case&nbsp;;&nbsp;
+   559: &nbsp; &nbsp;
+   560: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Wait&nbsp;for&nbsp;1&nbsp;delta&nbsp;cycle,&nbsp;required&nbsp;if&nbsp;a&nbsp;wait&nbsp;is&nbsp;not&nbsp;in&nbsp;all&nbsp;case&nbsp;branches&nbsp;above&nbsp;
+   561: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   562: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;DispatchLoop&nbsp;;&nbsp;
+   563: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;TransactionDispatcher&nbsp;;&nbsp;
+   564: &nbsp; &nbsp;
+   565: &nbsp; &nbsp;&nbsp;TransactionDone&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;=&nbsp;TRUE&nbsp;;&nbsp;--&nbsp;current&nbsp;receiver&nbsp;operations&nbsp;are&nbsp;either&nbsp;blocking&nbsp;or&nbsp;are&nbsp;tryget&nbsp;
+   566: &nbsp; &nbsp;
+   567: &nbsp; &nbsp;&nbsp;------------------------------------------------------------&nbsp;
+   568: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;ReceiveHandler&nbsp;
+   569: &nbsp; &nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;&nbsp;Receive&nbsp;Stream&nbsp;Data&nbsp;Transactions&nbsp;
+   570: &nbsp; &nbsp;&nbsp;------------------------------------------------------------&nbsp;
+   571: &nbsp; &nbsp;&nbsp;ReceiveHandler&nbsp;:&nbsp;process&nbsp;
+   572: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;Data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(TData'length-1&nbsp;downto&nbsp;0)&nbsp;;&nbsp;
+   573: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;Last&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic&nbsp;;&nbsp;
+   574: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;BurstBoundary&nbsp;&nbsp;:&nbsp;std_logic&nbsp;;&nbsp;
+   575: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;LastID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(TID'range)&nbsp;&nbsp;&nbsp;:=&nbsp;(TID'range&nbsp;&nbsp;&nbsp;=&gt;&nbsp;'-')&nbsp;;&nbsp;
+   576: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;LastDest&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic_vector(TDest'range)&nbsp;:=&nbsp;(TDest'range&nbsp;=&gt;&nbsp;'-')&nbsp;;&nbsp;
+   577: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;LastLast&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;std_logic&nbsp;:=&nbsp;'1'&nbsp;;&nbsp;
+   578: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;Strb&nbsp;:&nbsp;std_logic_vector(TStrb'length-1&nbsp;downto&nbsp;0)&nbsp;is&nbsp;TStrb&nbsp;;&nbsp;
+   579: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;alias&nbsp;Keep&nbsp;:&nbsp;std_logic_vector(TKeep'length-1&nbsp;downto&nbsp;0)&nbsp;is&nbsp;TKeep&nbsp;;&nbsp;
+   580: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;Strb&nbsp;:&nbsp;std_logic_vector(TStrb'length-1&nbsp;downto&nbsp;0)&nbsp;;&nbsp;
+   581: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;Keep&nbsp;:&nbsp;std_logic_vector(TKeep'length-1&nbsp;downto&nbsp;0)&nbsp;;&nbsp;
+   582: &nbsp; &nbsp;
+   583: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;variable&nbsp;ReadyBeforeValid,&nbsp;ReadyDelayCycles&nbsp;:&nbsp;integer&nbsp;;&nbsp;&nbsp;
+   584: &nbsp; &nbsp;&nbsp;begin&nbsp;
+   585: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Initialize&nbsp;
+   586: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;TReady&nbsp;&nbsp;&lt;=&nbsp;'0'&nbsp;;&nbsp;
+   587: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;--&nbsp;Allow&nbsp;Cov&nbsp;models&nbsp;to&nbsp;initialize&nbsp;&nbsp;
+   588: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;--&nbsp;Allow&nbsp;Cov&nbsp;models&nbsp;to&nbsp;initialize&nbsp;&nbsp;
+   589: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;BurstLength&nbsp;-&nbsp;once&nbsp;per&nbsp;BurstLength,&nbsp;use&nbsp;BurstDelay,&nbsp;otherwise&nbsp;use&nbsp;BeatDelay&nbsp;
+   590: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddBins&nbsp;(BurstCov.BurstLengthCov,&nbsp;&nbsp;80,&nbsp;GenBin(3,11,1))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;80%&nbsp;Small&nbsp;Burst&nbsp;Length&nbsp;
+   591: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddBins&nbsp;(BurstCov.BurstLengthCov,&nbsp;&nbsp;20,&nbsp;GenBin(109,131,1))&nbsp;;&nbsp;&nbsp;&nbsp;--&nbsp;20%&nbsp;Large&nbsp;Burst&nbsp;Length&nbsp;
+   592: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;BurstDelay&nbsp;-&nbsp;happens&nbsp;at&nbsp;BurstLength&nbsp;boundaries&nbsp;
+   593: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BurstDelayCov,&nbsp;&nbsp;&nbsp;65,&nbsp;GenBin(0),&nbsp;GenBin(2,8,1))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;65%&nbsp;Ready&nbsp;Before&nbsp;Valid,&nbsp;small&nbsp;delay&nbsp;
+   594: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BurstDelayCov,&nbsp;&nbsp;&nbsp;10,&nbsp;GenBin(0),&nbsp;GenBin(108,156,1))&nbsp;;&nbsp;--&nbsp;10%&nbsp;Ready&nbsp;Before&nbsp;Valid,&nbsp;large&nbsp;delay&nbsp;
+   595: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BurstDelayCov,&nbsp;&nbsp;&nbsp;15,&nbsp;GenBin(1),&nbsp;GenBin(2,8,1))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;15%&nbsp;Ready&nbsp;After&nbsp;Valid,&nbsp;small&nbsp;delay&nbsp;
+   596: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BurstDelayCov,&nbsp;&nbsp;&nbsp;10,&nbsp;GenBin(1),&nbsp;GenBin(108,156,1))&nbsp;;&nbsp;--&nbsp;10%&nbsp;Ready&nbsp;After&nbsp;Valid,&nbsp;large&nbsp;delay&nbsp;
+   597: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;BeatDelay&nbsp;-&nbsp;happens&nbsp;between&nbsp;each&nbsp;transfer&nbsp;it&nbsp;not&nbsp;at&nbsp;a&nbsp;BurstLength&nbsp;boundary&nbsp;
+   598: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BeatDelayCov,&nbsp;&nbsp;&nbsp;&nbsp;85,&nbsp;GenBin(0),&nbsp;GenBin(0))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;85%&nbsp;Ready&nbsp;Before&nbsp;Valid,&nbsp;no&nbsp;delay&nbsp;
+   599: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BeatDelayCov,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5,&nbsp;GenBin(0),&nbsp;GenBin(1))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;5%&nbsp;Ready&nbsp;Before&nbsp;Valid,&nbsp;1&nbsp;cycle&nbsp;delay&nbsp;
+   600: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BeatDelayCov,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5,&nbsp;GenBin(1),&nbsp;GenBin(0))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;5%&nbsp;Ready&nbsp;After&nbsp;Valid,&nbsp;no&nbsp;delay&nbsp;
+   601: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;AddCross(BurstCov.BeatDelayCov,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5,&nbsp;GenBin(1),&nbsp;GenBin(1))&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;5%&nbsp;Ready&nbsp;After&nbsp;Valid,&nbsp;1&nbsp;cycle&nbsp;delay&nbsp;
+   602: &nbsp; &nbsp;
+   603: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;WaitForBarrier(OsvvmVcInit)&nbsp;;&nbsp;
+   604: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ReceiveLoop&nbsp;:&nbsp;loop&nbsp;
+   605: &nbsp; &nbsp;
+   606: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;WaitForGet&nbsp;then&nbsp;&nbsp;
+   607: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;if&nbsp;no&nbsp;request,&nbsp;wait&nbsp;until&nbsp;we&nbsp;have&nbsp;one&nbsp;
+   608: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--!!&nbsp;Note:&nbsp;&nbsp;&gt;&nbsp;breaks&nbsp;when&nbsp;**RequestCount&nbsp;&gt;&nbsp;2**30&nbsp;&nbsp;
+   609: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;not&nbsp;((BurstRequestCount&nbsp;&gt;&nbsp;BurstReceiveCount)&nbsp;or&nbsp;(WordRequestCount&nbsp;&gt;&nbsp;WordReceiveCount))&nbsp;then&nbsp;&nbsp;
+   610: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;until&nbsp;(BurstRequestCount&nbsp;&gt;&nbsp;BurstReceiveCount)&nbsp;or&nbsp;(WordRequestCount&nbsp;&gt;&nbsp;WordReceiveCount)&nbsp;or&nbsp;not&nbsp;WaitForGet&nbsp;;&nbsp;&nbsp;
+   611: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   612: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;&nbsp;
+   613: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+   614: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Delay&nbsp;between&nbsp;consecutive&nbsp;signaling&nbsp;of&nbsp;Ready&nbsp;
+   615: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;UseCoverageDelays&nbsp;then&nbsp;&nbsp;
+   616: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;BurstCoverage&nbsp;Delays&nbsp;
+   617: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ReadyBeforeValid,&nbsp;ReadyDelayCycles)&nbsp;&nbsp;:=&nbsp;GetRandDelay(BurstCov)&nbsp;;&nbsp;&nbsp;
+   618: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else&nbsp;
+   619: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Static&nbsp;settings&nbsp;(default)&nbsp;
+   620: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadyBeforeValid&nbsp;:=&nbsp;to_integer(not&nbsp;ReceiveReadyBeforeValid)&nbsp;;&nbsp;&nbsp;
+   621: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadyDelayCycles&nbsp;:=&nbsp;ReceiveReadyDelayCycles&nbsp;;&nbsp;&nbsp;
+   622: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;&nbsp;
+   623: &nbsp; &nbsp;
+   624: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---------------------&nbsp;
+   625: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DoAxiReadyHandshake&nbsp;(&nbsp;
+   626: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---------------------&nbsp;
+   627: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Clk&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Clk,&nbsp;
+   628: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Valid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TValid,&nbsp;
+   629: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ready&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;TReady,&nbsp;
+   630: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadyBeforeValid&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ReadyBeforeValid&nbsp;=&nbsp;0,&nbsp;
+   631: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadyDelayCycles&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ReadyDelayCycles&nbsp;*&nbsp;tperiod_Clk,&nbsp;
+   632: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ReadyDelayCycles&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ReadyDelayCycles,&nbsp;
+   633: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tpd_Clk_Ready&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;tpd_Clk_TReady,&nbsp;
+   634: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AlertLogID&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;ModelID&nbsp;
+   635: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   636: &nbsp; &nbsp;
+   637: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data&nbsp;:=&nbsp;to_x01(TData)&nbsp;;&nbsp;
+   638: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Last&nbsp;:=&nbsp;to_01(TLast)&nbsp;;&nbsp;
+   639: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strb&nbsp;:=&nbsp;to_x01(TStrb)&nbsp;;&nbsp;
+   640: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Keep&nbsp;:=&nbsp;to_x01(TKeep)&nbsp;;&nbsp;
+   641: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Either&nbsp;Strb&nbsp;or&nbsp;Keep&nbsp;can&nbsp;have&nbsp;a&nbsp;null&nbsp;range&nbsp;
+   642: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Make&nbsp;Data&nbsp;a&nbsp;W&nbsp;if&nbsp;Strb(i)&nbsp;is&nbsp;position&nbsp;byte&nbsp;
+   643: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;Strb'range&nbsp;loop&nbsp;
+   644: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Strb(i)&nbsp;=&nbsp;'0'&nbsp;then&nbsp;
+   645: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data(i*8&nbsp;+&nbsp;7&nbsp;downto&nbsp;i*8)&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'W')&nbsp;;&nbsp;
+   646: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   647: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;;&nbsp;
+   648: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Make&nbsp;Data&nbsp;a&nbsp;U&nbsp;if&nbsp;Keep(i)&nbsp;is&nbsp;null&nbsp;byte&nbsp;
+   649: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;Keep'range&nbsp;loop&nbsp;
+   650: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Keep(i)&nbsp;=&nbsp;'0'&nbsp;then&nbsp;
+   651: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data(i*8&nbsp;+&nbsp;7&nbsp;downto&nbsp;i*8)&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'U')&nbsp;;&nbsp;
+   652: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if;&nbsp;
+   653: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;;&nbsp;
+   654: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+   655: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(BurstFifoMode&nbsp;=&nbsp;STREAM_BURST_BYTE_MODE)&nbsp;then&nbsp;&nbsp;
+   656: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;For&nbsp;ByteMode,&nbsp;we&nbsp;drop&nbsp;words&nbsp;with&nbsp;X"--"&nbsp;
+   657: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;For&nbsp;first&nbsp;Word&nbsp;in&nbsp;Transfer,&nbsp;Drop&nbsp;leading&nbsp;bytes&nbsp;until&nbsp;TKeep(i)&nbsp;=&nbsp;'1'&nbsp;
+   658: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;LastLast&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   659: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;Keep'reverse_range&nbsp;loop&nbsp;
+   660: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;Keep(i)&nbsp;/=&nbsp;'0'&nbsp;;&nbsp;
+   661: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data(i*8&nbsp;+&nbsp;7&nbsp;downto&nbsp;i*8)&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'-')&nbsp;;&nbsp;
+   662: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;;&nbsp;
+   663: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   664: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;For&nbsp;last&nbsp;Word&nbsp;in&nbsp;Transfer,&nbsp;Drop&nbsp;ending&nbsp;bytes&nbsp;until&nbsp;TKeep(i)&nbsp;=&nbsp;'1'&nbsp;
+   665: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Last&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   666: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;in&nbsp;Keep'range&nbsp;loop&nbsp;
+   667: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exit&nbsp;when&nbsp;Keep(i)&nbsp;/=&nbsp;'0'&nbsp;;&nbsp;
+   668: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data(i*8&nbsp;+&nbsp;7&nbsp;downto&nbsp;i*8)&nbsp;:=&nbsp;(others&nbsp;=&gt;&nbsp;'-')&nbsp;;&nbsp;
+   669: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;;&nbsp;
+   670: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   671: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   672: &nbsp; &nbsp;
+   673: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(not&nbsp;MetaMatch(TID,&nbsp;LastID)&nbsp;or&nbsp;not&nbsp;MetaMatch(TDest,&nbsp;LastDest))&nbsp;and&nbsp;LastLast&nbsp;/=&nbsp;'1'&nbsp;then&nbsp;
+   674: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;push&nbsp;a&nbsp;burst&nbsp;boundary&nbsp;word,&nbsp;only&nbsp;the&nbsp;Burst&nbsp;Boundary&nbsp;value&nbsp;matters&nbsp;
+   675: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push(ReceiveFifo,&nbsp;Data&nbsp;&amp;&nbsp;TID&nbsp;&amp;&nbsp;TDest&nbsp;&amp;&nbsp;TUser&nbsp;&amp;&nbsp;Last&nbsp;&amp;&nbsp;'1')&nbsp;;&nbsp;
+   676: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstReceiveCount&nbsp;&lt;=&nbsp;BurstReceiveCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   677: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Last&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   678: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   679: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   680: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   681: &nbsp; --&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstBoundary&nbsp;:=&nbsp;'1'&nbsp;when&nbsp;(not&nbsp;MetaMatch(TID,&nbsp;LastID)&nbsp;or&nbsp;not&nbsp;MetaMatch(TDest,&nbsp;LastDest))&nbsp;and&nbsp;LastLast&nbsp;/=&nbsp;'1'&nbsp;else&nbsp;'0'&nbsp;;&nbsp;
+   682: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LastID&nbsp;&nbsp;&nbsp;:=&nbsp;TID&nbsp;;&nbsp;
+   683: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LastDest&nbsp;:=&nbsp;TDest&nbsp;;&nbsp;
+   684: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LastLast&nbsp;:=&nbsp;Last&nbsp;;&nbsp;
+   685: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;capture&nbsp;this&nbsp;transaction&nbsp;
+   686: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push(ReceiveFifo,&nbsp;Data&nbsp;&amp;&nbsp;TID&nbsp;&amp;&nbsp;TDest&nbsp;&amp;&nbsp;TUser&nbsp;&amp;&nbsp;Last&nbsp;&amp;&nbsp;'0')&nbsp;;&nbsp;
+   687: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;Last&nbsp;=&nbsp;'1'&nbsp;then&nbsp;
+   688: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BurstReceiveCount&nbsp;&lt;=&nbsp;BurstReceiveCount&nbsp;+&nbsp;1&nbsp;;&nbsp;
+   689: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;if&nbsp;;&nbsp;
+   690: &nbsp; &nbsp;
+   691: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Log&nbsp;this&nbsp;operation&nbsp;
+   692: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Log(ModelID,&nbsp;
+   693: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Axi&nbsp;Stream&nbsp;Receive."&nbsp;&amp;&nbsp;
+   694: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;TData:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(TData)&nbsp;&amp;&nbsp;
+   695: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(TStrb'length&nbsp;&gt;&nbsp;0,&nbsp;"&nbsp;&nbsp;TStrb:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_string&nbsp;(TStrb),&nbsp;"")&nbsp;&amp;&nbsp;
+   696: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(TKeep'length&nbsp;&gt;&nbsp;0,&nbsp;"&nbsp;&nbsp;TKeep:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_string&nbsp;(TKeep),&nbsp;"")&nbsp;&amp;&nbsp;
+   697: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(TID'length&nbsp;&gt;&nbsp;0,&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;TID:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(TID),&nbsp;&nbsp;&nbsp;"")&nbsp;&amp;&nbsp;
+   698: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(TDest'length&nbsp;&gt;&nbsp;0,&nbsp;"&nbsp;&nbsp;TDest:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(TDest),&nbsp;"")&nbsp;&amp;&nbsp;
+   699: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ifelse(TUser'length&nbsp;&gt;&nbsp;0,&nbsp;"&nbsp;&nbsp;TUser:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_hxstring(TUser),&nbsp;"")&nbsp;&amp;&nbsp;
+   700: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;TLast:&nbsp;"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&amp;&nbsp;to_string&nbsp;(TLast)&nbsp;&amp;&nbsp;
+   701: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"&nbsp;&nbsp;Operation#&nbsp;"&nbsp;&amp;&nbsp;to_string&nbsp;(WordReceiveCount&nbsp;+&nbsp;1),&nbsp;
+   702: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DEBUG&nbsp;
+   703: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;;&nbsp;
+   704: &nbsp; &nbsp;
+   705: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;--&nbsp;Signal&nbsp;completion&nbsp;
+   706: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;increment(WordReceiveCount)&nbsp;;&nbsp;
+   707: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait&nbsp;for&nbsp;0&nbsp;ns&nbsp;;&nbsp;
+   708: &nbsp; &nbsp;&nbsp;&nbsp;&nbsp;end&nbsp;loop&nbsp;ReceiveLoop&nbsp;;&nbsp;
+   709: &nbsp; &nbsp;&nbsp;end&nbsp;process&nbsp;ReceiveHandler&nbsp;;&nbsp;
+   710: &nbsp; end&nbsp;architecture&nbsp;behavioral&nbsp;;&nbsp;
+</code></pre>

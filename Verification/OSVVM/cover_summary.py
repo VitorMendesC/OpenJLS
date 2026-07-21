@@ -19,6 +19,7 @@ Usage: cover_summary.py <covdb-dir> <sources-dir>
 import collections
 import glob
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -27,8 +28,19 @@ import xml.etree.ElementTree as ET
 
 def main():
     covdir, srcdir = sys.argv[1], sys.argv[2]
-    entity2file = {os.path.basename(f)[:-4].upper(): os.path.basename(f)
-                   for f in glob.glob(os.path.join(srcdir, "*.vhd"))}
+    # Sources/ plus the Sources/Xilinx/ wrappers — map by entity name, display
+    # as path relative to srcdir (e.g. "Xilinx/openjls_axis.vhd").
+    entity2file = {os.path.basename(f)[:-4].upper(): os.path.relpath(f, srcdir)
+                   for f in glob.glob(os.path.join(srcdir, "*.vhd"))
+                   + glob.glob(os.path.join(srcdir, "Xilinx", "*.vhd"))}
+    # A labelled generate is exported as its own class named after the LABEL
+    # (e.g. GEN_KEEP((null)) for openjls_top.vhd's gen_keep, with line numbers
+    # of the defining file), so map generate labels back to their files too.
+    gen_re = re.compile(r"^\s*(\w+)\s*:\s*(?:for|if)\b.*\bgenerate\b", re.M)
+    for ent, f in sorted(entity2file.items()):
+        with open(os.path.join(srcdir, f)) as fd:
+            for lbl in gen_re.findall(fd.read()):
+                entity2file.setdefault(lbl.upper(), f)
 
     hits = collections.defaultdict(dict)  # file -> {line: hit}
     with tempfile.TemporaryDirectory() as td:

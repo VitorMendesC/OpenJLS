@@ -1,3 +1,7 @@
+OJLS.AxiAbortReencode, 57, 171, 0, 0, 0, 0, 174
+OJLS.AxiApplyReconfig, 57, 171, 0, 0, 0, 0, 174
+OJLS.AxiLiteRegMap, 16, 48, 0, 0, 0, 0, 51
+OJLS.AxiStreamTransparent, 315, 885, 0, 0, 0, 0, 900
 OJLS.BackToBack, 3, 12, 0, 0, 0, 0, 28
 OJLS.NoStallCompress, 5000, 20000, 0, 0, 0, 0, 28348
 OJLS.NoStallEOL, 100, 400, 0, 0, 0, 0, 712

@@ -1,0 +1,35 @@
+Version: "0.1"
+TestCase: "tb_openjls_axis_osvvm"
+Scoreboards: 
+  - Name:         "TransmitFifo"
+    ParentName:   "u_tx"
+    ItemCount:    80
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  80
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "ReceiveFifo"
+    ParentName:   "u_rx"
+    ItemCount:    50
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  50
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "TxBurstFifo"
+    ParentName:   "u_tx"
+    ItemCount:    80
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  80
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "RxBurstFifo"
+    ParentName:   "u_rx"
+    ItemCount:    285
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  285
+    ItemsDropped: 0
+    FifoCount:    0

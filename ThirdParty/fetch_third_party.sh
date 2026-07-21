@@ -22,7 +22,7 @@
 #
 # Usage:  ./fetch_third_party.sh                 verification deps (default)
 #         ./fetch_third_party.sh open-logic      one or more named components
-#         (names: open-logic osvvm osvvm-scripts tcllib charls nvc)
+#         (names: open-logic osvvm osvvm-scripts osvvm-common osvvm-axi4 tcllib charls nvc)
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -38,6 +38,12 @@ OSVVM_TAG="2026.01"
 
 OSVVM_SCRIPTS_URL="https://github.com/OSVVM/OSVVM-Scripts.git"   # tcl script flow (reports)
 OSVVM_SCRIPTS_TAG="2026.01"                                      # keep in lockstep with OSVVM_TAG
+
+OSVVM_COMMON_URL="https://github.com/OSVVM/OSVVM-Common.git"   # model-independent transactions (AXI4 VC dependency)
+OSVVM_COMMON_TAG="2026.01"                                     # keep in lockstep with OSVVM_TAG
+
+OSVVM_AXI4_URL="https://github.com/OSVVM/AXI4.git"   # AxiStream + Axi4Lite verification components
+OSVVM_AXI4_TAG="2026.01"                             # keep in lockstep with OSVVM_TAG
 
 TCLLIB_URL="https://github.com/tcltk/tcllib.git"   # fileutil + yaml, required by OSVVM-Scripts
 TCLLIB_TAG="tcllib-2-0"
@@ -143,6 +149,40 @@ fetch_osvvm_scripts() {
   find "$TMP/osvvm-scripts" -maxdepth 1 -type f ! -name '.*' -exec cp {} "$SCRIPTS_DST/" \;
 }
 
+# --- OSVVM-Common: model-independent transaction packages (osvvm_common) -----
+# Dependency of the AXI4 VCs, built by the script flow via its own build.pro
+# (Verification/OSVVM/build_reports.sh). Whole src/ tree is vendored: the 2008
+# build path selects the deprecated/*.vhd fallbacks.
+fetch_osvvm_common() {
+  local DST="$HERE/osvvm-common"
+
+  echo "==> OSVVM-Common $OSVVM_COMMON_TAG"
+  git clone --quiet --depth 1 --branch "$OSVVM_COMMON_TAG" -c advice.detachedHead=false "$OSVVM_COMMON_URL" "$TMP/osvvm-common"
+  rm -rf "$DST"
+  mkdir -p "$DST"
+  cp "$TMP/osvvm-common/build.pro" "$TMP/osvvm-common/LICENSE.md" "$DST/"
+  cp -r "$TMP/osvvm-common/src" "$DST/"
+}
+
+# --- OSVVM-AXI4: AxiStream + Axi4Lite verification components (osvvm_axi4) ----
+# The wrappers use those two VCs, so only the shared common + AxiStream +
+# Axi4Lite subtrees are vendored (Axi4 Full is skipped). Each keeps its build.pro
+# so the script flow compiles them in the maintained order; requires osvvm_common.
+fetch_osvvm_axi4() {
+  local DST="$HERE/osvvm-axi4"
+
+  echo "==> OSVVM-AXI4 $OSVVM_AXI4_TAG"
+  git clone --quiet --depth 1 --branch "$OSVVM_AXI4_TAG" -c advice.detachedHead=false "$OSVVM_AXI4_URL" "$TMP/osvvm-axi4"
+  rm -rf "$DST"
+  mkdir -p "$DST"
+  cp "$TMP/osvvm-axi4/LICENSE.md" "$DST/"
+  for sub in common AxiStream Axi4Lite; do
+    mkdir -p "$DST/$sub"
+    cp "$TMP/osvvm-axi4/$sub/build.pro" "$DST/$sub/"
+    cp -r "$TMP/osvvm-axi4/$sub/src" "$DST/$sub/"
+  done
+}
+
 # --- tcllib: pure-tcl modules OSVVM-Scripts requires (not packaged on Arch) --
 # fileutil depends on cmdline; yaml bundles its huddle dependency.
 # build_reports.sh points TCLLIBPATH here.
@@ -239,16 +279,18 @@ fetch_nvc() {
 components=("$@")
 # open-logic is intentionally absent: it is committed in-tree, fetched only when
 # explicitly named (to bump it).
-[ ${#components[@]} -eq 0 ] && components=(osvvm osvvm-scripts tcllib charls nvc)
+[ ${#components[@]} -eq 0 ] && components=(osvvm osvvm-scripts osvvm-common osvvm-axi4 tcllib charls nvc)
 for c in "${components[@]}"; do
   case "$c" in
     open-logic)    fetch_open_logic ;;
     osvvm)         fetch_osvvm ;;
     osvvm-scripts) fetch_osvvm_scripts ;;
+    osvvm-common)  fetch_osvvm_common ;;
+    osvvm-axi4)    fetch_osvvm_axi4 ;;
     tcllib)        fetch_tcllib ;;
     charls)        fetch_charls ;;
     nvc)           fetch_nvc ;;
-    *) echo "unknown component: $c (open-logic osvvm osvvm-scripts tcllib charls nvc)" >&2; exit 1 ;;
+    *) echo "unknown component: $c (open-logic osvvm osvvm-scripts osvvm-common osvvm-axi4 tcllib charls nvc)" >&2; exit 1 ;;
   esac
 done
 

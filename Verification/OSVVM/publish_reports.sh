@@ -30,8 +30,19 @@ PS_OSVVM_LOG="$ROOT/Verification/Post synth/Output/postsynth_osvvm.log"
 PS_GOLDEN_ENV="$ROOT/Verification/Post synth/Output/report_status_golden.env"
 PS_GOLDEN_TSV="$ROOT/Verification/Post synth/Output/ps_golden_image_results.tsv"
 
+# The hardware-in-the-loop pages (hil/) are published out of band from the
+# OpenJLS-Demos on-board sweep — preserve them across full rebuilds.
+HIL_TMP=""
+if [ -d "$DEST/hil" ]; then
+  HIL_TMP="$(mktemp -d)"
+  cp -r "$DEST/hil" "$HIL_TMP/"
+fi
 rm -rf "$DEST"
 mkdir -p "$DEST"
+if [ -n "$HIL_TMP" ]; then
+  cp -r "$HIL_TMP/hil" "$DEST/hil"
+  rm -rf "$HIL_TMP"
+fi
 
 ROWS=""
 # emit_row <name> <note> <status> <pct> <summary> <report-link-or-empty> <date-or-empty>
@@ -195,6 +206,22 @@ ps_golden_link=""
 env_row "$GOLDEN_ENV"    "Golden model"            "CharLS byte-exact, 8-bit corpus"   "$golden_link"
 env_row "$PS_OSVVM_ENV"  "Post-synth OSVVM"        "control-plane stress on netlist"   "$ps_osvvm_link"
 env_row "$PS_GOLDEN_ENV" "Post-synth Golden Model" "byte-exact vs CharLS on netlist"   "$ps_golden_link"
+
+# --- hardware-in-the-loop (published out of band from OpenJLS-Demos) ------
+if [ -f "$DEST/hil/results.csv" ]; then
+  hil_total=$(($(wc -l < "$DEST/hil/results.csv") - 1))
+  hil_pass=$(grep -c ',pass,' "$DEST/hil/results.csv" || true)
+  hil_status=PASS; hil_pct="100%"
+  if [ "$hil_pass" -ne "$hil_total" ]; then
+    hil_status=FAIL
+    hil_pct="$((100 * hil_pass / hil_total))%"
+  fi
+  hil_depths=$(awk -F, 'NR>1{if(min==""||$1+0<min)min=$1;if($1+0>max)max=$1} END{print min"&ndash;"max}' "$DEST/hil/results.csv")
+  hil_date=$(git -C "$ROOT" log -1 --format=%cs -- "Docs/Reports/hil" 2>/dev/null || true)
+  emit_row "Hardware-in-the-loop" "on-board FPGA encode, byte-exact" "$hil_status" "$hil_pct" \
+    "$hil_pass of $hil_total images byte-exact vs CharLS on PYNQ-Z2 silicon (depths $hil_depths)" \
+    "hil/index.html" "$hil_date"
+fi
 
 # --- landing page ----------------------------------------------------------
 GEN_DATE="$(date -u '+%Y-%m-%d %H:%M UTC')"

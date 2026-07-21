@@ -1,0 +1,91 @@
+Version: "0.1"
+TestCase: "tb_openjls_axis_regs_osvvm"
+Scoreboards: 
+  - Name:         "WriteResp SB"
+    ParentName:   "u_manager"
+    ItemCount:    12
+    ErrorCount:   0
+    ItemsChecked: 12
+    ItemsPopped:  12
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "ReadResp SB"
+    ParentName:   "u_manager"
+    ItemCount:    16
+    ErrorCount:   0
+    ItemsChecked: 16
+    ItemsPopped:  16
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "WriteAddrFifo"
+    ParentName:   "u_manager"
+    ItemCount:    12
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  12
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "WriteDataFifo"
+    ParentName:   "u_manager"
+    ItemCount:    12
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  12
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "ReadAddrFifo"
+    ParentName:   "u_manager"
+    ItemCount:    16
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  16
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "ReadByteAddrFifo"
+    ParentName:   "u_manager"
+    ItemCount:    16
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  16
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "ReadDataFifo"
+    ParentName:   "u_manager"
+    ItemCount:    16
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  16
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "TransmitFifo"
+    ParentName:   "u_tx"
+    ItemCount:    40
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  40
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "ReceiveFifo"
+    ParentName:   "u_rx"
+    ItemCount:    21
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  21
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "TxBurstFifo"
+    ParentName:   "u_tx"
+    ItemCount:    40
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  40
+    ItemsDropped: 0
+    FifoCount:    0
+  - Name:         "RxBurstFifo"
+    ParentName:   "u_rx"
+    ItemCount:    154
+    ErrorCount:   0
+    ItemsChecked: 0
+    ItemsPopped:  154
+    ItemsDropped: 0
+    FifoCount:    0

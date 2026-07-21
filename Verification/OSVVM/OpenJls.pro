@@ -34,9 +34,20 @@ if {$::OpenJlsCodeCoverage} {
   # primitives. Regenerated from Sources/ each run so it stays in sync.
   set specfd [open NVC_CodeCoverage/dut_only.spec w]
   puts $specfd "-hierarchy *"
-  foreach src [lsort [glob ../../Sources/*.vhd]] {
+  foreach src [concat [lsort [glob ../../Sources/*.vhd]] [lsort [glob ../../Sources/Xilinx/*.vhd]]] {
     set ent [file rootname [file tail $src]]
     if {$ent ne "openjls_pkg"} { puts $specfd "+block $ent" }
+    # NVC applies +block rules per scope, and a labelled generate is its own
+    # scope named after the label (exact match only — globs like gen_* do not
+    # match). Without these lines "-hierarchy *" silently excludes every
+    # statement inside a generate (e.g. gen_keep in openjls_top, gen_byte_swap
+    # in openjls_axis), so emit one +block per generate label in Sources/.
+    set fd [open $src r]
+    set body [read $fd]
+    close $fd
+    foreach {full lbl} [regexp -all -inline -line {^\s*(\w+)\s*:\s*(?:for|if)\y.*\ygenerate\y} $body] {
+      puts $specfd "+block $lbl"
+    }
   }
   close $specfd
 }
@@ -98,6 +109,9 @@ analyze ../../Sources/context_ram.vhd
 analyze ../../Sources/byte_stuffer.vhd
 analyze ../../Sources/jls_framer.vhd
 analyze ../../Sources/openjls_top.vhd
+# Xilinx AXI4-Stream / AXI4-Lite wrappers (verified by the Xilinx suite below).
+analyze ../../Sources/Xilinx/openjls_axis.vhd
+analyze ../../Sources/Xilinx/openjls_axis_regs.vhd
 
 # Per-module testbenches. RunTest = analyze + simulate + register the test;
 # the test name is the file root name.
@@ -150,3 +164,17 @@ Test Top/tb_openjls_top_osvvm.vhd
 Test Top/tb_openjls_top_osvvm.vhd [generic MAX_W 320] [generic MAX_H 200]
 Test Top/tb_openjls_top_osvvm.vhd [generic OUT_WIDTH 48]
 Test Top/tb_openjls_top_osvvm.vhd [generic OUT_WIDTH 1024]
+
+# Xilinx AXI wrappers, driven by the OSVVM AXI4 verification components:
+# stream-adapter transparency (openjls_axis) and the AXI4-Lite register file /
+# control plane (openjls_axis_regs). Variants cover a non-default OUT_WIDTH
+# (also moves CAPS output-bytes-per-beat), BITNESS 12 (two-byte pixel lane,
+# CharLS-minted golden, garbage on the unused TDATA bits) and
+# non-default/non-square MAX dims (MAXDIM readback + the clamp target).
+TestSuite Xilinx
+Test Modules/tb_openjls_axis_osvvm.vhd
+Test Modules/tb_openjls_axis_osvvm.vhd [generic OUT_WIDTH 48]
+Test Modules/tb_openjls_axis_osvvm.vhd [generic BITNESS 12]
+Test Modules/tb_openjls_axis_regs_osvvm.vhd
+Test Modules/tb_openjls_axis_regs_osvvm.vhd [generic OUT_WIDTH 48]
+Test Modules/tb_openjls_axis_regs_osvvm.vhd [generic MAX_W 1024] [generic MAX_H 768]

@@ -48,14 +48,14 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 
 | Suite | Status | Test/Cov | Summary |
 |---|---|---|---|
-| OSVVM suite | PASS | 100% | 38 tests, 138,010 affirmations (module + top control-plane) |
+| OSVVM suite | PASS | 100% | 44 tests, 139,393 affirmations (module + top + AXI wrappers) |
 | NVC code coverage | info | 99.8% | Per-DUT-file statement breakdown |
 | Golden model | PASS | 100% | 287/287 images byte-exact vs CharLS |
 | Post-synth OSVVM | PASS | 100% | Control-plane stress on the gate-level netlist |
 | Post-synth golden model | PASS | 100% | 156/156 images byte-exact vs CharLS |
 | Hardware-in-the-loop | PASS | 100% | 287/287 images byte-exact vs CharLS on PYNQ-Z2 silicon |
 
-- **OSVVM** — 28 module testbenches check each module against an independent behavioral reference derived from ITU-T T.87; a top-level testbench stresses the control plane (reset injection, backpressure, back-to-back images, dimension fallback) with requirements tracking.
+- **OSVVM** — 28 module testbenches check each module against an independent behavioral reference derived from ITU-T T.87; a top-level testbench stresses the control plane (reset injection, backpressure, back-to-back images, dimension fallback); AXI wrapper testbenches drive the AXI4-Stream and AXI4-Lite wrappers with OSVVM verification components (byte-exact pass-through at 8- and 12-bit, register map, live reconfiguration, mid-image abort) — all with requirements tracking.
 - **Coverage** — OSVVM functional coverage plus NVC structural code coverage (99%+ statements).
 - **Golden model** — Output bitstream compared byte-exact against [CharLS](https://github.com/team-charls/charls), an independent C++ reference encoder, plus the official ISO/IEC 14495-1 reference vectors.
 - **Design contracts** — Embedded PSL assertions (ready/valid and internal handshakes) checked every run.

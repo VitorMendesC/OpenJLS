@@ -1,3 +1,47 @@
+- Requirement: OJLS.AxiAbortReencode
+  TestCases:
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 57, Passed: 58, Errors: 0, Checked: 58, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 57, Passed: 58, Errors: 0, Checked: 58, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 57, Passed: 58, Errors: 0, Checked: 58, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+- Requirement: OJLS.AxiApplyReconfig
+  TestCases:
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 57, Passed: 58, Errors: 0, Checked: 58, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 57, Passed: 58, Errors: 0, Checked: 58, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 57, Passed: 58, Errors: 0, Checked: 58, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+- Requirement: OJLS.AxiLiteRegMap
+  TestCases:
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 16, Passed: 17, Errors: 0, Checked: 17, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 16, Passed: 17, Errors: 0, Checked: 17, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_regs_osvvm
+    Status: PASSED
+    Results: { Goal: 16, Passed: 17, Errors: 0, Checked: 17, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+- Requirement: OJLS.AxiStreamTransparent
+  TestCases:
+  - TestName: tb_openjls_axis_osvvm
+    Status: PASSED
+    Results: { Goal: 285, Passed: 290, Errors: 0, Checked: 290, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_osvvm
+    Status: PASSED
+    Results: { Goal: 285, Passed: 290, Errors: 0, Checked: 290, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
+  - TestName: tb_openjls_axis_osvvm
+    Status: PASSED
+    Results: { Goal: 315, Passed: 320, Errors: 0, Checked: 320, AlertCount: {Failure: 0,  Error: 0,  Warning: 0}, DisabledAlertCount: {Failure: 0,  Error: 0,  Warning: 0}}
 - Requirement: OJLS.BackToBack
   TestCases:
   - TestName: tb_openjls_top_osvvm

@@ -1,0 +1,26 @@
+Version: "0.1"
+TestCaseName: "tb_openjls_axis_regs_osvvm"
+TestCaseFile:  "../../../Modules/tb_openjls_axis_regs_osvvm.vhd"
+TestSuiteName: "Xilinx"
+BuildName: "OSVVM_OpenJls"
+Generics:
+  MAX_W: "1024"
+  MAX_H: "768"
+ReportsTestSuiteDirectory:  "reports/Xilinx"
+RequirementsYamlFile:  "reports/Xilinx/tb_openjls_axis_regs_osvvm_MAX_W_1024_MAX_H_768_req.yml"
+AlertYamlFile:  "reports/Xilinx/tb_openjls_axis_regs_osvvm_MAX_W_1024_MAX_H_768_alerts.yml"
+CovYamlFile:  "reports/Xilinx/tb_openjls_axis_regs_osvvm_MAX_W_1024_MAX_H_768_cov.yml"
+ScoreboardDict:
+  slv: "reports/Xilinx/tb_openjls_axis_regs_osvvm_MAX_W_1024_MAX_H_768_sb_slv.yml"
+TranscriptFiles: ""
+TestCaseFileName: "tb_openjls_axis_regs_osvvm_MAX_W_1024_MAX_H_768"
+GenericNames: "_MAX_W_1024_MAX_H_768"
+OsvvmSettingsInfo:
+  ReportsSubdirectory:  "reports"
+  SimulationLogFile: "logs/OSVVM_OpenJls.log"
+  SimulationHtmlLogFile: "logs/OSVVM_OpenJls_log.html"
+  RequirementsSubdirectory: ""
+  CoverageSubdirectory:    "CodeCoverage/OSVVM_OpenJls_code_cov.html"
+  Report2CssFiles:
+    - "reports/CssOsvvmStyle.css"
+  Report2PngFile:  "reports/OsvvmLogo.png"
