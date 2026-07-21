@@ -62,6 +62,24 @@ emit_row() {
   ROWS+="<td>$report</td><td>${date:-&mdash;}</td></tr>"$'\n'
 }
 
+# --- NVC code coverage (HTML tree) ----------------------------------------
+if [ -d "$COV_HTML" ]; then
+  rm -rf "$DEST/coverage"; cp -r "$COV_HTML" "$DEST/coverage"
+  pct=""
+  if [ -f "$COVDB" ]; then
+    pct=$(cd "$HERE" && python3 cover_summary.py NVC_CodeCoverage ../../Sources 2>/dev/null \
+            | awk '/^TOTAL/{print $3}')
+  fi
+  # Coverage HTML carries no machine-readable date, so take the generation time
+  # from the report's mtime (it is rewritten on every build_run.sh).
+  cov_date=$(date -u -r "$COV_HTML/index.html" '+%Y-%m-%d' 2>/dev/null || true)
+  emit_row "NVC code coverage" "statement, union over all tests" "INFO" \
+    "${pct:-n/a}" "per-file breakdown in report" "coverage/index.html" "$cov_date"
+else
+  emit_row "NVC code coverage" "statement, union over all tests" "NA" "" \
+    "run ./build_run.sh to populate" "" ""
+fi
+
 # --- OSVVM regression (HTML tree) -----------------------------------------
 if [ -f "$HERE/index.html" ] && [ -f "$OSVVM_YML" ]; then
   # one report dir holds index.html + OSVVM_OpenJls/ + osvvm/ (relative links)
@@ -82,24 +100,6 @@ if [ -f "$HERE/index.html" ] && [ -f "$OSVVM_YML" ]; then
     "osvvm/OSVVM_OpenJls/OSVVM_OpenJls.html" "${rdate%T*}"
 else
   emit_row "OSVVM suite" "module + top control-plane" "NA" "" \
-    "run ./build_run.sh to populate" "" ""
-fi
-
-# --- NVC code coverage (HTML tree) ----------------------------------------
-if [ -d "$COV_HTML" ]; then
-  rm -rf "$DEST/coverage"; cp -r "$COV_HTML" "$DEST/coverage"
-  pct=""
-  if [ -f "$COVDB" ]; then
-    pct=$(cd "$HERE" && python3 cover_summary.py NVC_CodeCoverage ../../Sources 2>/dev/null \
-            | awk '/^TOTAL/{print $3}')
-  fi
-  # Coverage HTML carries no machine-readable date, so take the generation time
-  # from the report's mtime (it is rewritten on every build_run.sh).
-  cov_date=$(date -u -r "$COV_HTML/index.html" '+%Y-%m-%d' 2>/dev/null || true)
-  emit_row "NVC code coverage" "statement, union over all tests" "INFO" \
-    "${pct:-n/a}" "per-file breakdown in report" "coverage/index.html" "$cov_date"
-else
-  emit_row "NVC code coverage" "statement, union over all tests" "NA" "" \
     "run ./build_run.sh to populate" "" ""
 fi
 
