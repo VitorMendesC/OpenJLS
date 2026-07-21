@@ -389,6 +389,48 @@ To use simply add \texttt{Sources/Xilinx/ip\_repo/} to the project's IP reposito
 and the three cores appear in the
 IP Catalog, ready to drop onto a block design.
 
+\subsection{AXI4-Lite register map}
+The AXI4-Lite variant replaces the native control pins with a register bank
+(32-bit registers, word-aligned offsets):
+
+\begin{table}[H]
+  \centering
+\begin{tabularx}{\textwidth}{@{}l l l X@{}}
+  \toprule
+  \textbf{Offset} & \textbf{Name} & \textbf{Access} & \textbf{Contents} \\
+  \midrule
+  \texttt{0x00} & ID      & RO & ASCII \texttt{"OJLS"} (\texttt{0x4F4A4C53}) \\
+  \texttt{0x04} & VERSION & RO & \texttt{0x00MMmmpp} (major/minor/patch) \\
+  \texttt{0x08} & CAPS    & RO & [7:0] \texttt{BITNESS}, [15:8] output bytes per beat (\texttt{OUT\_WIDTH}/8) \\
+  \texttt{0x0C} & MAXDIM  & RO & [15:0] \texttt{MAX\_IMAGE\_WIDTH}, [31:16] \texttt{MAX\_IMAGE\_HEIGHT} \\
+  \texttt{0x10} & WIDTH   & RW & [15:0] image width (clamped on write) \\
+  \texttt{0x14} & HEIGHT  & RW & [15:0] image height (clamped on write) \\
+  \texttt{0x18} & CTRL    & WO & [0] APPLY --- self-clearing, pulses the core reset \\
+  \texttt{0x1C} & STATUS  & RO & [0] BUSY (reset pulse active), [1] pixel-stream TREADY mirror \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+The core samples the dimensions only while its reset is high, so reconfiguration
+is: write WIDTH/HEIGHT, set CTRL.APPLY. APPLY pulses the core reset for one clock
+while the registers are held stable; the AXI-Lite endpoint itself stays on
+\texttt{aresetn} only, so the bus never disappears mid-reconfigure. While the
+pulse is active STATUS.BUSY reads 1 and the pixel stream's TREADY is held low, so
+a stream started too early stalls instead of losing pixels --- WIDTH/HEIGHT/CTRL
+writes while BUSY are dropped. Back-to-back images of unchanged dimensions need
+no APPLY.
+
+WIDTH/HEIGHT writes are merged per WSTRB and clamped to the core's rule
+(out-of-range values become the MAX generic), so a readback always returns the
+value the core will actually use. Writes to RO or unmapped offsets are
+acknowledged (OKAY) and dropped; unmapped reads return zero.
+
+\medskip
+\noindent For driver code the map ships as a copy/paste C header,
+\texttt{Sources/Xilinx/ojls\_regs.h}, including the CAPS/MAXDIM
+field-extraction macros and the core minima
+(\texttt{OJLS\_MIN\_WIDTH}/\texttt{OJLS\_MIN\_HEIGHT}).
+
 %======================================================================
 \section{Conformance and verification}
 Verified by simulation with NVC using a layered, self-checking suite run at

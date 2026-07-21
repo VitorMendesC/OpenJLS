@@ -165,6 +165,27 @@ For the Vivado flow the core ships the following pre-packaged IPs:
 
 To use, simply add [`Sources/Xilinx/ip_repo/`](Sources/Xilinx/ip_repo/) to the project's IP repositories and the three cores appear in the IP Catalog, ready to drop onto a block design.
 
+#### AXI4-Lite register map
+
+The AXI4-Lite variant replaces the native control pins with a register bank (32-bit registers, word-aligned offsets):
+
+| Offset | Name | Access | Contents |
+|---|---|---|---|
+| `0x00` | ID | RO | ASCII `"OJLS"` (`0x4F4A4C53`) |
+| `0x04` | VERSION | RO | `0x00MMmmpp` (major/minor/patch) |
+| `0x08` | CAPS | RO | `[7:0]` `BITNESS`, `[15:8]` output bytes per beat (`OUT_WIDTH`/8) |
+| `0x0C` | MAXDIM | RO | `[15:0]` `MAX_IMAGE_WIDTH`, `[31:16]` `MAX_IMAGE_HEIGHT` |
+| `0x10` | WIDTH | RW | `[15:0]` image width (clamped on write) |
+| `0x14` | HEIGHT | RW | `[15:0]` image height (clamped on write) |
+| `0x18` | CTRL | WO | `[0]` APPLY — self-clearing, pulses the core reset |
+| `0x1C` | STATUS | RO | `[0]` BUSY (reset pulse active), `[1]` pixel-stream `TREADY` mirror |
+
+The core samples the dimensions only while its reset is high, so reconfiguration is: write WIDTH/HEIGHT, set CTRL.APPLY. APPLY pulses the core reset for one clock; while it is active STATUS.BUSY reads 1 and the pixel stream's `TREADY` is held low, so a stream started too early stalls instead of losing pixels — WIDTH/HEIGHT/CTRL writes while BUSY are dropped. Back-to-back images of unchanged dimensions need no APPLY.
+
+WIDTH/HEIGHT writes are merged per `WSTRB` and clamped to the core's rule (out-of-range values become the MAX generic), so a readback always returns the value the core will actually use. Writes to RO or unmapped offsets are acknowledged (OKAY) and dropped; unmapped reads return zero.
+
+For driver code the map ships as a copy/paste C header — [`Sources/Xilinx/ojls_regs.h`](Sources/Xilinx/ojls_regs.h) — including the CAPS/MAXDIM field-extraction macros and the core minima (`OJLS_MIN_WIDTH`/`OJLS_MIN_HEIGHT`).
+
 ---
 
 ## Performance & Resources
