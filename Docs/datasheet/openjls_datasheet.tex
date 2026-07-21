@@ -17,7 +17,15 @@
 \usepackage{listings}
 \usepackage{tikz}
 \usepackage{tikz-timing}
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=blue
+  }
+
 
 \graphicspath{{../Images/}}
 \setlist{nosep,leftmargin=1.4em}
@@ -136,8 +144,8 @@ one-pixel-per-clock input.
   \includegraphics[width=\textwidth]{OpenJLS_arch.png}
 \end{figure}
 
-\noindent A full-resolution version of this diagram is available in the
-repository: \url{https://github.com/VitorMendesC/OpenJLS}.
+\noindent A \href{https://github.com/VitorMendesC/OpenJLS/blob/main/Docs/Images/OpenJLS_arch.png}{full-resolution version} of this diagram is available in the
+repository.
 
 %======================================================================
 \section{Generics}
@@ -426,10 +434,9 @@ value the core will actually use. Writes to RO or unmapped offsets are
 acknowledged (OKAY) and dropped; unmapped reads return zero.
 
 \medskip
-\noindent For driver code the map ships as a copy/paste C header,
-\texttt{Sources/Xilinx/ojls\_regs.h}, including the CAPS/MAXDIM
-field-extraction macros and the core minima
-(\texttt{OJLS\_MIN\_WIDTH}/\texttt{OJLS\_MIN\_HEIGHT}).
+\noindent For driver code there is a C header in the repository,
+\href{https://github.com/VitorMendesC/OpenJLS/blob/main/Sources/Xilinx/ojls_regs.h}{ojls\_regs.h}.
+
 
 %======================================================================
 \section{Conformance and verification}
