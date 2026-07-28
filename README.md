@@ -1,4 +1,7 @@
-# OpenJLS
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/Images/openjls-wordmark-dark.svg">
+  <img alt="OpenJLS" src="Docs/Images/openjls-wordmark.svg" width="320">
+</picture>
 
 [![RTL](https://img.shields.io/badge/RTL-VHDL--93-1f6feb)](Sources/)
 [![standard](https://img.shields.io/badge/JPEG--LS-ISO%2FIEC_14495--1-8a2be2)](https://www.itu.int/rec/T-REC-T.87)
@@ -233,7 +236,7 @@ Resource usage by `MAX_IMAGE_WIDTH` (default strategy; near-identical across str
 OpenJLS is dual-licensed:
 
 - **[GPL v3](LICENSE.md)** — free for any use that complies with GPL v3 terms. This means if you distribute a product containing OpenJLS, your design must also be released under GPL v3.
-- **Commercial License** — for use in proprietary/closed-source products without GPL obligations. Contact vitormendescamilo@protonmail.com for pricing and terms.
+- **Commercial License** — for use in proprietary/closed-source products without GPL obligations. Contact Isentropic at contact@isentropic.com.br for pricing and terms.
 
 **Evaluation is unrestricted.** You can clone, simulate, synthesize, and test OpenJLS freely under the GPL. A commercial license is only required when shipping a product.
 
@@ -281,4 +284,6 @@ open-logic is committed in-tree, so the IP builds without the fetch step. NVC in
 
 ## Contact
 
-For commercial licensing, technical questions, or collaboration inquiries: vitormendescamilo@protonmail.com
+OpenJLS is developed and maintained by **Isentropic**.
+
+For commercial licensing, technical questions, or collaboration inquiries: contact@isentropic.com.br
