@@ -239,6 +239,7 @@ cat > "$DEST/index.html" <<EOF
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenJLS — verification reports</title>
+<meta name="description" content="Verification results for OpenJLS, an open-source JPEG-LS (ISO/IEC 14495-1) FPGA encoder IP core: OSVVM regression, NVC coverage and byte-exact CharLS cross-checks.">
 <style>
   :root { color-scheme: light dark; }
   body { font: 15px/1.5 system-ui, sans-serif; max-width: 60rem; margin: 2.5rem auto;
@@ -263,7 +264,8 @@ cat > "$DEST/index.html" <<EOF
 <body>
 <h1>OpenJLS — verification reports</h1>
 <p class="sub">JPEG-LS encoder IP &middot; results published from the project's own
-verification suites. Drill into a row's report for per-test detail.</p>
+verification suites. Drill into a row's report for per-test detail.
+<a href="https://isentropic.com.br/openjls">IP core specifications, throughput figures and licensing &rarr;</a></p>
 <table>
   <thead><tr><th>Suite</th><th>Status</th><th>Pass / cov</th><th>Summary</th><th>Notes</th><th>Report</th><th>Run date</th></tr></thead>
   <tbody>
