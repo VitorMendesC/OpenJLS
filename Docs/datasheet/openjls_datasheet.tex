@@ -63,9 +63,14 @@
 
 \begin{document}
 
+% wordmark PNGs carry ~9% transparent padding; the negative kern pulls the
+% mark's ink flush with the right margin instead of the image box.
+{\raggedleft\includegraphics[height=9mm]{isentropic-wordmark.png}\hspace*{-2.15mm}\par}
+
+\vspace{3mm}
+
 \begin{center}
-  \includegraphics[height=14mm]{isentropic-wordmark.png}\\[12pt]
-  {\LARGE\bfseries OpenJLS}\\[2pt]
+  \includegraphics[height=20mm]{openjls-wordmark.png}\\[-2pt]
   {\large JPEG-LS Lossless Encoder IP Core --- Datasheet}
 \end{center}
 
