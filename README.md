@@ -19,6 +19,7 @@ The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory 
 
 ## Resources
 
+- **[Product page](https://isentropic.com.br/openjls)**
 - **[Datasheet (PDF)](Docs/datasheet/openjls_datasheet.pdf)**
 - **[Verification report](https://isentropic-fpga.github.io/OpenJLS/)**
 - **[Interface & integration](#interface)**
@@ -236,7 +237,7 @@ Resource usage by `MAX_IMAGE_WIDTH` (default strategy; near-identical across str
 OpenJLS is dual-licensed:
 
 - **[GPL v3](LICENSE.md)** — free for any use that complies with GPL v3 terms. This means if you distribute a product containing OpenJLS, your design must also be released under GPL v3.
-- **Commercial License** — for use in proprietary/closed-source products without GPL obligations. Contact Isentropic at contact@isentropic.com.br for pricing and terms.
+- **Commercial License** — for use in proprietary/closed-source products without GPL obligations. Contact [Isentropic](https://isentropic.com.br/contact) at contact@isentropic.com.br for pricing and terms.
 
 **Evaluation is unrestricted.** You can clone, simulate, synthesize, and test OpenJLS freely under the GPL. A commercial license is only required when shipping a product.
 
@@ -288,9 +289,11 @@ open-logic is committed in-tree, so the IP builds without the fetch step. NVC in
 
 OpenJLS is developed and maintained by
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="Docs/Images/isentropic-wordmark-dark.svg">
-  <img alt="Isentropic" src="Docs/Images/isentropic-wordmark.svg" width="200">
-</picture>
+<a href="https://isentropic.com.br">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/Images/isentropic-wordmark-dark.svg">
+    <img alt="Isentropic" src="Docs/Images/isentropic-wordmark.svg" width="200">
+  </picture>
+</a>
 
-For commercial licensing, technical questions, or collaboration inquiries: contact@isentropic.com.br
+For commercial licensing, technical questions, or collaboration inquiries: [isentropic.com.br](https://isentropic.com.br/contact) or contact@isentropic.com.br
