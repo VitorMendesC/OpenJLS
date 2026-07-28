@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 """Deterministic 16-bit byte_stuffer stall probes (random + adversarial).
 
 The byte_stuffer drains at OUT_BYTES_PER_CYCLE = 4 B/cycle, while a single

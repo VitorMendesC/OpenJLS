@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Post-synthesis netlist verification (vendor tool for synthesis ONLY).
 # Synthesizes openjls_top at the OSVVM top TB's default config (BITNESS=8,
 # 4096x4096, OUT_WIDTH=64), then runs the full OSVVM control-plane stress TB

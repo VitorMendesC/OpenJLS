@@ -1,3 +1,10 @@
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 #-----------------------------------------------------------------------------
 # synth_funcsim.tcl - Synthesize openjls_top and export a VHDL funcsim netlist
 # for gate-level simulation under NVC (driven by build_run_osvvm.sh and

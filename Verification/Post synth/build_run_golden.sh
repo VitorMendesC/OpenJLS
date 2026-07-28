@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Post-synthesis GOLDEN cross-check — the real payload test on gate-level HW.
 #
 # Synthesizes an 8-bit openjls_top sized to fit the largest 8-bit image in the

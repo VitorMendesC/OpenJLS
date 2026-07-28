@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 """Plot resource usage vs maximum image width (default strategy only) from fmax_sweep.csv.
 
 LUTs/FFs (counts) and Block-RAM tiles (~1-11) are on very different scales, so

@@ -1,3 +1,10 @@
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # This script adds the open-logic base sources the RTL depends on to a Vivado
 # project. They share the design's default library (the RTL references them as
 # work.*), so no separate library is created — just add these files alongside

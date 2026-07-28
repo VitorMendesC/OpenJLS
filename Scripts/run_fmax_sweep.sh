@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Launch the fmax sweep in Vivado batch mode. `vivado` must be on PATH (if
 # Vivado lives in a container on your machine, point a local shim at it).
 # Usage: ./Scripts/run_fmax_sweep.sh

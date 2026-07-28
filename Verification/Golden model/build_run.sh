@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Golden-model cross-check — vendor-agnostic NVC build + run.
 #
 # For each test image: mint a reference .jls with the CharLS encoder, then have

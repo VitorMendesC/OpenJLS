@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Package the three OpenJLS IP cores (openjls_top, openjls_axis,
 # openjls_axis_regs) into <repo>/Sources/Xilinx/ip_repo. `vivado` must be on
 # PATH (if Vivado

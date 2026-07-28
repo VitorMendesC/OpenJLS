@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # ITU-T T.87 conformance test — vendor-agnostic NVC build + run.
 # Compiles OpenLogic base, the project sources and the conformance TB into a
 # local library tree, then elaborates and runs it. REPO_ROOT is derived from

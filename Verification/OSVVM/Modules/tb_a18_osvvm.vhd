@@ -1,3 +1,10 @@
+-- Copyright (C) 2026 Vitor Mendes Camilo
+-- SPDX-License-Identifier: GPL-3.0-only
+--
+-- This file is part of OpenJLS. Available under GPLv3 or a
+-- commercial license. See LICENSE and README for details.
+--
+
 --------------------------------------------------------------------------------
 -- OSVVM testbench: a18_run_interruption_prediction_error (combinational).
 --

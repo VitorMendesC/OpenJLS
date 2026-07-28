@@ -1,3 +1,10 @@
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Smoke test for the packaged OpenJLS IP cores: point a scratch project at
 # <repo>/Sources/Xilinx/ip_repo, create_ip each core with NON-default
 # generics, and run OOC

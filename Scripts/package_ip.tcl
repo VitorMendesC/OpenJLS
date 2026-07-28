@@ -1,3 +1,10 @@
+# Copyright (C) 2026 Vitor Mendes Camilo
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This file is part of OpenJLS. Available under GPLv3 or a
+# commercial license. See LICENSE and README for details.
+#
+
 # Package the three OpenJLS IP cores into <repo>/Sources/Xilinx/ip_repo using
 # the Vivado IP packager (ipx::). Run via Scripts/run_package_ip.sh (batch
 # mode, cd'd to a scratch dir outside the repo). The output is regenerated
