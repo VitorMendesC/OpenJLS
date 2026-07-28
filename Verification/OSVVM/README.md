@@ -129,7 +129,7 @@ regression sweep keys on).
 ### Publishing reports (GitHub Pages)
 
 `./publish_reports.sh` assembles the committed report site under
-`Docs/Reports/` (served at `https://<user>.github.io/OpenJLS/` by
+`Docs/Reports/` (served at `https://isentropic-fpga.github.io/OpenJLS/` by
 `.github/workflows/pages.yml`). The OSVVM suite owns the report: the script
 copies the OSVVM HTML tree (`osvvm/`) and the NVC coverage HTML (`coverage/`)
 it generates, then stitches in the text-only suites — golden model and

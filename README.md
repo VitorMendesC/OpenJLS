@@ -5,11 +5,11 @@
 
 [![RTL](https://img.shields.io/badge/RTL-VHDL--93-1f6feb)](Sources/)
 [![standard](https://img.shields.io/badge/JPEG--LS-ISO%2FIEC_14495--1-8a2be2)](https://www.itu.int/rec/T-REC-T.87)
-[![verification](https://img.shields.io/badge/verification-report-0969da)](https://vitormendesc.github.io/OpenJLS/)
+[![verification](https://img.shields.io/badge/verification-report-0969da)](https://isentropic-fpga.github.io/OpenJLS/)
 
 OpenJLS is an open, verification-signed JPEG-LS encoder IP core for FPGAs - the open alternative to closed, commercial JPEG-LS cores, for teams who want to audit the RTL and evaluate before they buy.
 
-It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87), a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost. Every release is checked byte-exact against an independent reference encoder across 287 images, including post-synthesis (see [Verification report](https://vitormendesc.github.io/OpenJLS/)).
+It implements the JPEG-LS standard (ISO/IEC 14495-1 / ITU-T T.87), a low-complexity lossless image codec with compression ratios comparable to JPEG 2000 lossless at a fraction of the computational cost. Every release is checked byte-exact against an independent reference encoder across 287 images, including post-synthesis (see [Verification report](https://isentropic-fpga.github.io/OpenJLS/)).
 
 OpenJLS reaches ~240 MHz on a Xilinx UltraScale+ ZU7EG (the MPSoC family used in onboard processors such as the Xiphos Q8), processing one pixel per clock (~240 Mpixel/s) for ~8k LUTs and no external memory. It handles single-component (grayscale) data, so a multi-band sensor instantiates one compressor per band - resource usage is low enough that all bands run in parallel cheaply.
 
@@ -20,10 +20,10 @@ The RTL is vendor-neutral by construction (plain VHDL-1993 on open-logic memory 
 ## Resources
 
 - **[Datasheet (PDF)](Docs/datasheet/openjls_datasheet.pdf)**
-- **[Verification report](https://vitormendesc.github.io/OpenJLS/)**
+- **[Verification report](https://isentropic-fpga.github.io/OpenJLS/)**
 - **[Interface & integration](#interface)**
 - **[Licensing](#licensing)**
-- **[Demos](https://github.com/VitorMendesC/OpenJLS-Demos)**
+- **[Demos](https://github.com/isentropic-fpga/OpenJLS-Demos)**
 
 ---
 
@@ -47,7 +47,7 @@ Specifications
 
 OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using a layered suite that combines constrained-random self-checking tests, functional coverage, and byte-exact comparison against an independent reference encoder — run at both the RTL and post-synthesis (gate-level) stages:
 
-> **Browse the latest [verification report](https://vitormendesc.github.io/OpenJLS/)** — a published snapshot aggregating the OSVVM and NVC HTML reports and the post-synthesis verification logs. It is updated when the reports are regenerated and committed, not on every push.
+> **Browse the latest [verification report](https://isentropic-fpga.github.io/OpenJLS/)** — a published snapshot aggregating the OSVVM and NVC HTML reports and the post-synthesis verification logs. It is updated when the reports are regenerated and committed, not on every push.
 
 | Suite | Status | Test/Cov | Summary |
 |---|---|---|---|
@@ -63,7 +63,7 @@ OpenJLS is verified by simulation with [NVC](https://www.nickg.me.uk/nvc/) using
 - **Golden model** — Output bitstream compared byte-exact against [CharLS](https://github.com/team-charls/charls), an independent C++ reference encoder, plus the official ISO/IEC 14495-1 reference vectors.
 - **Design contracts** — Embedded PSL assertions (ready/valid and internal handshakes) checked every run.
 - **Post-synthesis** — The top-level stress test and a golden-model subset re-run on the synthesized gate-level netlist, confirming synthesis preserved behavior.
-- **Hardware-in-the-loop** — The full 287-image corpus streamed to a PYNQ-Z2, encoded end-to-end in the FPGA across depths 8–16 (one bitstream per depth), and byte-compared against CharLS on real silicon — zero mismatches. Reproducible from a clean clone via the [EncodeOverEthernet demo](https://github.com/VitorMendesC/OpenJLS-Demos).
+- **Hardware-in-the-loop** — The full 287-image corpus streamed to a PYNQ-Z2, encoded end-to-end in the FPGA across depths 8–16 (one bitstream per depth), and byte-compared against CharLS on real silicon — zero mismatches. Reproducible from a clean clone via the [EncodeOverEthernet demo](https://github.com/isentropic-fpga/OpenJLS-Demos).
 
 **Golden-model dataset.** The corpus is **287 images** pulled from public datasets and exercised across the full datapath:
 
@@ -85,10 +85,10 @@ The real datasets give natural image statistics from 256×256 up to **39 megapix
 ## Demos
 
 End-to-end example projects live in a companion repository,
-[**OpenJLS-Demos**](https://github.com/VitorMendesC/OpenJLS-Demos), each pinning
+[**OpenJLS-Demos**](https://github.com/isentropic-fpga/OpenJLS-Demos), each pinning
 the core as a submodule at its verified commit.
 
-- **[EncodeOverEthernet](https://github.com/VitorMendesC/OpenJLS-Demos/tree/main/EncodeOverEthernet)** — streams raw images to a PYNQ-Z2 over Ethernet, encodes them 100% in the FPGA, and streams the `.jls` files back. Its hardware-in-the-loop sweep is what produces the [HIL verification result](#verification) above.
+- **[EncodeOverEthernet](https://github.com/isentropic-fpga/OpenJLS-Demos/tree/main/EncodeOverEthernet)** — streams raw images to a PYNQ-Z2 over Ethernet, encodes them 100% in the FPGA, and streams the `.jls` files back. Its hardware-in-the-loop sweep is what produces the [HIL verification result](#verification) above.
 
 More demos (additional boards and integrations) are planned.
 

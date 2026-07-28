@@ -83,8 +83,8 @@ It encodes single-component (grayscale) images at one pixel per clock with no
 external memory, streaming a standards-compliant JPEG-LS bitstream out over
 a standard ready/valid streaming handshake. Source code, license and the full
 verification suite are public at
-\url{https://github.com/VitorMendesC/OpenJLS}. There's also a companion public
-repository with demo projects for OpenJLS at \url{https://github.com/VitorMendesC/OpenJLS-Demos}.
+\url{https://github.com/isentropic-fpga/OpenJLS}. There's also a companion public
+repository with demo projects for OpenJLS at \url{https://github.com/isentropic-fpga/OpenJLS-Demos}.
 
 \begin{table}[H]
   \centering
@@ -158,7 +158,7 @@ one-pixel-per-clock input.
   \includegraphics[width=\textwidth]{OpenJLS_arch.png}
 \end{figure}
 
-\noindent A \href{https://github.com/VitorMendesC/OpenJLS/blob/main/Docs/Images/OpenJLS_arch.png}{full-resolution version} of this diagram is available in the
+\noindent A \href{https://github.com/isentropic-fpga/OpenJLS/blob/main/Docs/Images/OpenJLS_arch.png}{full-resolution version} of this diagram is available in the
 repository.
 
 %======================================================================
@@ -449,7 +449,7 @@ acknowledged (OKAY) and dropped; unmapped reads return zero.
 
 \medskip
 \noindent For driver code there is a C header in the repository,
-\href{https://github.com/VitorMendesC/OpenJLS/blob/main/Sources/Xilinx/ojls_regs.h}{ojls\_regs.h}.
+\href{https://github.com/isentropic-fpga/OpenJLS/blob/main/Sources/Xilinx/ojls_regs.h}{ojls\_regs.h}.
 
 
 %======================================================================
@@ -468,7 +468,7 @@ both RTL and post-synthesis (gate-level) stages:
         encoder over 287 real and synthetic images, plus ISO/IEC 14495-1 vectors.
   \item \textbf{Design contracts} --- Embedded PSL assertions (ready/valid handshake protocol, internal handshakes) on every run.
   \item \textbf{Post-synthesis} --- The stress test and a golden-model subset re-run on the synthesized netlist.
-  \item \textbf{Hardware-in-the-loop} --- The full 287-image corpus encoded end-to-end on a PYNQ-Z2 FPGA and byte-compared against CharLS on real silicon. Produced in the demos repository \href{https://github.com/VitorMendesC/OpenJLS-Demos}{OpenJLS-Demos} by the EncodeOverEthernet project.
+  \item \textbf{Hardware-in-the-loop} --- The full 287-image corpus encoded end-to-end on a PYNQ-Z2 FPGA and byte-compared against CharLS on real silicon. Produced in the demos repository \href{https://github.com/isentropic-fpga/OpenJLS-Demos}{OpenJLS-Demos} by the EncodeOverEthernet project.
 \end{itemize}
 
 \noindent Table~\ref{tab:regression} is the latest regression snapshot.
