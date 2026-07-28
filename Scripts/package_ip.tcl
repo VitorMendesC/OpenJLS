@@ -11,7 +11,7 @@
 # from scratch on every run and committed — re-run this script after RTL or
 # interface changes and commit the refreshed Sources/Xilinx/ip_repo/.
 #
-# Cores (VLNV vitormendescamilo:openjls:<name>:1.1):
+# Cores (VLNV isentropic:openjls:<name>:1.1):
 #   openjls_top       — native interface (FIFO-style handshakes + sideband dims)
 #   openjls_axis      — AXI4-Stream wrapper, sideband iImageWidth/iImageHeight
 #   openjls_axis_regs — AXI4-Stream + AXI4-Lite control registers
@@ -21,7 +21,7 @@ set repo_dir   [file normalize [file join $script_dir ..]]
 set ip_repo    [file join $repo_dir Sources Xilinx ip_repo]
 set work_root  [file join [pwd] ip_pkg]
 
-set vendor   vitormendescamilo
+set vendor   isentropic
 set library  openjls
 set version  1.1
 set repo_url https://github.com/VitorMendesC/OpenJLS
@@ -99,7 +99,7 @@ foreach {name meta} $ips {
     set_property display_name $display  $core
     set_property description  $desc     $core
     set_property company_url  $repo_url $core
-    set_property vendor_display_name "Vitor Mendes Camilo" $core
+    set_property vendor_display_name "Isentropic" $core
     # Vendor-agnostic RTL only — no primitives, support all families.
     set_property auto_family_support_level level_2 $core
 

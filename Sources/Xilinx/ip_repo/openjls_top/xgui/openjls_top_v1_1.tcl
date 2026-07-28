@@ -1,10 +1,3 @@
-# Copyright (C) 2026 Vitor Mendes Camilo
-# SPDX-License-Identifier: GPL-3.0-only
-#
-# This file is part of OpenJLS. Available under GPLv3 or a
-# commercial license. See LICENSE and README for details.
-#
-
 # Definitional proc to organize widgets for parameters.
 proc init_gui { IPINST } {
   ipgui::add_param $IPINST -name "Component_Name"
