@@ -286,6 +286,11 @@ open-logic is committed in-tree, so the IP builds without the fetch step. NVC in
 
 ## Contact
 
-OpenJLS is developed and maintained by **Isentropic**.
+OpenJLS is developed and maintained by
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/Images/isentropic-wordmark-dark.svg">
+  <img alt="Isentropic" src="Docs/Images/isentropic-wordmark.svg" width="200">
+</picture>
 
 For commercial licensing, technical questions, or collaboration inquiries: contact@isentropic.com.br
