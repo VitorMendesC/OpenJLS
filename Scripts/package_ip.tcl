@@ -11,7 +11,7 @@
 # from scratch on every run and committed — re-run this script after RTL or
 # interface changes and commit the refreshed Sources/Xilinx/ip_repo/.
 #
-# Cores (VLNV isentropic:openjls:<name>:1.1):
+# Cores (VLNV isentropic:openjls:<name>:1.2):
 #   openjls_top       — native interface (FIFO-style handshakes + sideband dims)
 #   openjls_axis      — AXI4-Stream wrapper, sideband iImageWidth/iImageHeight
 #   openjls_axis_regs — AXI4-Stream + AXI4-Lite control registers
@@ -23,7 +23,7 @@ set work_root  [file join [pwd] ip_pkg]
 
 set vendor   isentropic
 set library  openjls
-set version  1.1
+set version  1.2
 set repo_url https://github.com/isentropic-fpga/OpenJLS
 
 # The part is only a packaging vehicle; auto_family_support_level level_2
